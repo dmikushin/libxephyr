@@ -662,6 +662,8 @@ hostx_init(void)
             tmpstr = getenv("RESOURCE_NAME");
             if (tmpstr && (!ephyrResNameFromCmd))
                 ephyrResName = tmpstr;
+            if (!ephyrResName)
+                ephyrResName = "Xephyr";
             class_len = strlen(ephyrResName) + 1 + strlen("Xephyr") + 1;
             class_hint = malloc(class_len);
             if (class_hint) {
