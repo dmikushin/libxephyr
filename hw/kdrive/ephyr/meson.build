@@ -121,3 +121,10 @@ libxephyr = shared_library(
 
 # Install the header file
 install_headers('libxephyr.h', subdir: 'libxephyr')
+
+# Export libxephyr dependency for subprojects
+libxephyr_dep = declare_dependency(
+    link_with: libxephyr,
+    include_directories: include_directories('.'),
+    dependencies: xephyr_dep
+)

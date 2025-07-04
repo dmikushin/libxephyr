@@ -11,10 +11,15 @@ release_date = '2022-07-12'
 add_project_arguments('-DHAVE_DIX_CONFIG_H', language: ['c', 'objc'])
 cc = meson.get_compiler('c')
 
-add_global_arguments('-fno-strict-aliasing', language : 'c')
-add_global_arguments('-fvisibility=hidden', language : 'c')
-
-add_global_link_arguments('-fvisibility=hidden', language : 'c')
+if not meson.is_subproject()
+    add_global_arguments('-fno-strict-aliasing', language : 'c')
+    add_global_arguments('-fvisibility=hidden', language : 'c')
+    add_global_link_arguments('-fvisibility=hidden', language : 'c')
+else
+    # For subprojects, add these to specific targets instead
+    subproject_c_args = ['-fno-strict-aliasing', '-fvisibility=hidden']
+    subproject_link_args = ['-fvisibility=hidden']
+endif
 
 if cc.get_id() == 'gcc' or cc.get_id() == 'clang'
     test_wflags = [
@@ -58,7 +63,11 @@ foreach wflag: test_wflags
     endif
 endforeach
 
-add_global_arguments(common_wflags, language : ['c', 'objc'])
+if not meson.is_subproject()
+    add_global_arguments(common_wflags, language : ['c', 'objc'])
+else
+    subproject_c_args += common_wflags
+endif
 
 libdrm_req = '>= 2.4.89'
 libselinux_req = '>= 2.0.86'
