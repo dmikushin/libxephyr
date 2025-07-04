@@ -5,6 +5,8 @@
  * Copyright © 2025 Two-Tiles Project
  */
 
+#define _GNU_SOURCE
+
 // Override visibility for our API functions
 #ifdef __GNUC__
 #pragma GCC visibility push(default)
@@ -20,6 +22,8 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <stdio.h>
+#include <time.h>
+#include <errno.h>
 
 /* Internal server structure */
 struct XephyrServer {
@@ -27,8 +31,12 @@ struct XephyrServer {
     pid_t server_pid;
     Window embedded_window;
     char display_name[32];
+    char title[64];
     bool running;
+    bool ready;
     pthread_t server_thread;
+    pthread_mutex_t mutex;
+    pthread_cond_t ready_cond;
     int argc;
     char** argv;
 };
@@ -36,6 +44,7 @@ struct XephyrServer {
 /* Global state */
 static bool library_initialized = false;
 static int server_counter = 0;
+static XephyrServer* current_server = NULL;
 
 /* Forward declarations */
 static void* xephyr_server_thread(void* arg);
@@ -108,16 +117,47 @@ XephyrServer* xephyr_server_create(const XephyrConfig* config) {
     }
     
     memset(server, 0, sizeof(XephyrServer));
+    
+    fprintf(stderr, "DEBUG: Before copy - config->width=%d, config->height=%d\n", 
+            config->width, config->height);
+    
     server->config = *config;
+    
+    fprintf(stderr, "DEBUG: After copy - server->config.width=%d, server->config.height=%d\n", 
+            server->config.width, server->config.height);
+    
     server->server_pid = -1;
     server->running = false;
+    server->ready = false;
+    
+    /* Initialize synchronization primitives */
+    if (pthread_mutex_init(&server->mutex, NULL) != 0) {
+        free(server);
+        return NULL;
+    }
+    if (pthread_cond_init(&server->ready_cond, NULL) != 0) {
+        pthread_mutex_destroy(&server->mutex);
+        free(server);
+        return NULL;
+    }
     
     /* Generate unique display name if not provided */
     if (!config->display_name) {
         snprintf(server->display_name, sizeof(server->display_name), ":%d", 100 + server_counter++);
-        server->config.display_name = server->display_name;
     } else {
         strncpy(server->display_name, config->display_name, sizeof(server->display_name) - 1);
+        server->display_name[sizeof(server->display_name) - 1] = '\0';
+    }
+    server->config.display_name = server->display_name;
+    
+    /* Copy title if provided */
+    if (config->title) {
+        strncpy(server->title, config->title, sizeof(server->title) - 1);
+        server->title[sizeof(server->title) - 1] = '\0';
+        server->config.title = server->title;
+    } else {
+        strcpy(server->title, "Xephyr");
+        server->config.title = server->title;
     }
     
     return server;
@@ -133,6 +173,8 @@ void xephyr_server_destroy(XephyrServer* server) {
     }
     
     cleanup_argv(server);
+    pthread_mutex_destroy(&server->mutex);
+    pthread_cond_destroy(&server->ready_cond);
     free(server);
 }
 
@@ -150,22 +192,25 @@ static int build_argv(XephyrServer* server) {
     server->argv[server->argc++] = strdup("Xephyr");
     
     /* Display name */
-    server->argv[server->argc++] = strdup(server->config.display_name);
+    server->argv[server->argc++] = strdup(server->display_name);
     
-    /* Screen size */
-    char screen_size[64];
-    snprintf(screen_size, sizeof(screen_size), "%dx%d", 
-             server->config.width, server->config.height);
-    server->argv[server->argc++] = strdup("-screen");
-    server->argv[server->argc++] = strdup(screen_size);
-    
-    /* Parent window */
+    /* Parent window FIRST - before -screen */
     if (server->config.parent_window) {
         char parent_str[32];
         snprintf(parent_str, sizeof(parent_str), "%lu", server->config.parent_window);
         server->argv[server->argc++] = strdup("-parent");
         server->argv[server->argc++] = strdup(parent_str);
     }
+    
+    /* Screen size AFTER parent */
+    char screen_size[64];
+    fprintf(stderr, "DEBUG: config.width=%d, config.height=%d\n", 
+            server->config.width, server->config.height);
+    snprintf(screen_size, sizeof(screen_size), "%dx%d", 
+             server->config.width, server->config.height);
+    fprintf(stderr, "DEBUG: screen_size='%s'\n", screen_size);
+    server->argv[server->argc++] = strdup("-screen");
+    server->argv[server->argc++] = strdup(screen_size);
     
     /* Additional options */
     if (server->config.resizable) {
@@ -207,25 +252,61 @@ static void* xephyr_server_thread(void* arg) {
     XephyrServer* server = (XephyrServer*)arg;
     
     if (build_argv(server) < 0) {
+        pthread_mutex_lock(&server->mutex);
         server->running = false;
+        server->ready = false;
+        pthread_cond_signal(&server->ready_cond);
+        pthread_mutex_unlock(&server->mutex);
         return NULL;
     }
     
-    /* Mark as running */
+    /* Mark as running and set as current server */
+    pthread_mutex_lock(&server->mutex);
     server->running = true;
+    current_server = server;
+    pthread_mutex_unlock(&server->mutex);
     
     /* Call the actual X server main function directly */
     extern int dix_main(int argc, char *argv[], char *envp[]);
     extern char **environ;
     
-    /* Call real X server - this should work for single instance */
+    /* Debug: print arguments */
+    fprintf(stderr, "Starting Xephyr with args: ");
+    for (int i = 0; i < server->argc; i++) {
+        fprintf(stderr, "'%s' ", server->argv[i]);
+    }
+    fprintf(stderr, "\n");
+    fflush(stderr);
+    
+    /* Call real X server - this blocks until server exits */
     int result = dix_main(server->argc, server->argv, environ);
     
-    /* Server finished */
+    /* Server finished - signal waiting thread */
+    pthread_mutex_lock(&server->mutex);
     server->running = false;
+    server->ready = false;
+    pthread_cond_signal(&server->ready_cond); /* Signal in case main thread is still waiting */
+    pthread_mutex_unlock(&server->mutex);
     
     cleanup_argv(server);
     return NULL;
+}
+
+/* Function to be called from X server when ready */
+void xephyr_signal_ready(void) {
+    fprintf(stderr, "DEBUG: xephyr_signal_ready called\n");
+    fflush(stderr);
+    if (current_server) {
+        pthread_mutex_lock(&current_server->mutex);
+        current_server->ready = true;
+        pthread_cond_signal(&current_server->ready_cond);
+        pthread_mutex_unlock(&current_server->mutex);
+        fprintf(stderr, "DEBUG: xephyr_signal_ready completed\n");
+        fflush(stderr);
+    } else {
+        fprintf(stderr, "DEBUG: current_server is NULL\n");
+        fflush(stderr);
+    }
 }
 
 XephyrError xephyr_server_start(XephyrServer* server) {
@@ -233,19 +314,41 @@ XephyrError xephyr_server_start(XephyrServer* server) {
         return XEPHYR_ERROR_NULL_POINTER;
     }
     
+    pthread_mutex_lock(&server->mutex);
     if (server->running) {
+        pthread_mutex_unlock(&server->mutex);
         return XEPHYR_SUCCESS; /* Already running */
     }
+    pthread_mutex_unlock(&server->mutex);
     
     /* Create server thread */
     if (pthread_create(&server->server_thread, NULL, xephyr_server_thread, server) != 0) {
         return XEPHYR_ERROR_SERVER_START;
     }
     
-    /* Wait a bit for server to start */
-    usleep(100000); /* 100ms */
+    /* Wait for server to be ready or fail with timeout */
+    pthread_mutex_lock(&server->mutex);
     
-    return server->running ? XEPHYR_SUCCESS : XEPHYR_ERROR_SERVER_START;
+    struct timespec timeout;
+    clock_gettime(CLOCK_REALTIME, &timeout);
+    timeout.tv_sec += 10; // 10 second timeout
+    
+    /* Wait until either ready or timeout */
+    int wait_result = 0;
+    while (!server->ready && wait_result == 0) {
+        wait_result = pthread_cond_timedwait(&server->ready_cond, &server->mutex, &timeout);
+    }
+    
+    bool ready = server->ready;
+    bool running = server->running;
+    pthread_mutex_unlock(&server->mutex);
+    
+    /* If server failed to start, wait for thread to finish before returning error */
+    if (!ready && !running) {
+        pthread_join(server->server_thread, NULL);
+    }
+    
+    return ready ? XEPHYR_SUCCESS : XEPHYR_ERROR_SERVER_START;
 }
 
 XephyrError xephyr_server_stop(XephyrServer* server) {
@@ -253,14 +356,37 @@ XephyrError xephyr_server_stop(XephyrServer* server) {
         return XEPHYR_ERROR_NULL_POINTER;
     }
     
+    pthread_mutex_lock(&server->mutex);
     if (!server->running) {
+        pthread_mutex_unlock(&server->mutex);
         return XEPHYR_SUCCESS; /* Already stopped */
     }
     
     server->running = false;
+    pthread_mutex_unlock(&server->mutex);
     
-    /* Wait for thread to finish */
-    pthread_join(server->server_thread, NULL);
+    /* Force server shutdown by setting dispatchException */
+    extern volatile char dispatchException;
+    extern void AbortServer(void);
+    
+    /* Signal server to exit gracefully */
+    dispatchException = 1; /* DE_TERMINATE */
+    
+    /* Give it a moment to exit gracefully */
+    struct timespec wait_time = {0, 100000000}; /* 100ms */
+    nanosleep(&wait_time, NULL);
+    
+    /* Wait for thread to finish with timeout */
+    struct timespec timeout;
+    clock_gettime(CLOCK_REALTIME, &timeout);
+    timeout.tv_sec += 2; /* 2 second timeout */
+    
+    int result = pthread_timedjoin_np(server->server_thread, NULL, &timeout);
+    if (result == ETIMEDOUT) {
+        /* Force termination if thread doesn't exit gracefully */
+        pthread_cancel(server->server_thread);
+        pthread_join(server->server_thread, NULL);
+    }
     
     return XEPHYR_SUCCESS;
 }
@@ -276,7 +402,7 @@ const char* xephyr_server_get_display(XephyrServer* server) {
     if (!server) {
         return NULL;
     }
-    return server->config.display_name;
+    return server->display_name;
 }
 
 bool xephyr_server_is_running(XephyrServer* server) {
