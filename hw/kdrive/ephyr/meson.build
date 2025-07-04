@@ -68,3 +68,56 @@ xephyr_man = configure_file(
     configuration: manpage_config,
 )
 install_man(xephyr_man)
+
+# Create libxephyr shared library
+libxephyr_srcs = [
+    'ephyr.c',
+    'ephyr_lib.c',
+    'ephyrcursor.c',
+    'ephyr_draw.c',
+    'hostx.c',
+    'libxephyr_api.c',
+]
+
+libxephyr_glamor = []
+if build_glamor
+    libxephyr_srcs += 'ephyr_glamor_glx.c'
+    if build_xv
+        libxephyr_srcs += 'ephyr_glamor_xv.c'
+    endif
+    libxephyr_glamor += glamor
+    libxephyr_glamor += glamor_egl_stubs
+endif
+
+if build_xv
+    libxephyr_srcs += 'ephyrvideo.c'
+endif
+
+libxephyr = shared_library(
+    'xephyr',
+    libxephyr_srcs,
+    include_directories: [
+        inc,
+        include_directories('../src')
+    ],
+    dependencies: xephyr_dep,
+    link_with: [
+        libxserver_main,
+        libxserver_exa,
+        libxephyr_glamor,
+        kdrive,
+        libxserver_fb,
+        libxserver,
+        libxserver_config,
+        libxserver_xkb_stubs,
+        libxserver_xi_stubs,
+        libxserver_glx,
+        libglxvnd,
+    ],
+    install: true,
+    version: '21.1.4',
+    soversion: '21',
+)
+
+# Install the header file
+install_headers('libxephyr.h', subdir: 'libxephyr')

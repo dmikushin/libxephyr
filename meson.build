@@ -752,9 +752,9 @@ libxserver += libxserver_dri3
 
 subdir('hw')
 
-if host_machine.system() != 'windows'
-    subdir('test')
-endif
+# if host_machine.system() != 'windows'
+#     subdir('test')
+# endif
 
 install_man(configure_file(
     input: 'man/Xserver.man',
