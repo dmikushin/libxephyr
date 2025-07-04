@@ -269,6 +269,12 @@ dix_main(int argc, char *argv[], char *envp[])
 
         InputThreadInit();
 
+        /* Signal libxephyr that server is ready (if available) */
+        extern void xephyr_signal_ready(void) __attribute__((weak));
+        if (xephyr_signal_ready) {
+            xephyr_signal_ready();
+        }
+
         Dispatch();
 
         UndisplayDevices();
