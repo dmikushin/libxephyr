@@ -414,8 +414,11 @@ if not xdmcp_dep.found()
 endif
 
 build_glx = get_option('glx')
+message('GLX option value: @0@'.format(get_option('glx')))
+message('build_glx result: @0@'.format(build_glx))
 if build_glx
     build_hashtable = true
+    message('GLX enabled - setting build_hashtable = true')
 endif
 
 libdrm_dep = dependency('libdrm', version: libdrm_req, required: false)

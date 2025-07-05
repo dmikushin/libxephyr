@@ -223,6 +223,8 @@ static int build_argv(XephyrServer* server) {
     
     if (server->config.use_glamor) {
         server->argv[server->argc++] = strdup("-glamor");
+        server->argv[server->argc++] = strdup("-iglx");
+        server->argv[server->argc++] = strdup("-noreset");
     }
     
     if (server->config.title) {
