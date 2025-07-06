@@ -573,7 +573,6 @@ inc = include_directories(
     'Xi',
     'composite',
     'damageext',
-    'exa',
     'fb',
     'glamor',
     'mi',
@@ -581,12 +580,12 @@ inc = include_directories(
     'miext/shadow',
     'miext/sync',
     'dbe',
-    'dri3',
     'include',
     'present',
     'randr',
     'render',
     'xfixes',
+    '/usr/include/xorg',  # For system exa.h
 )
 
 build_xselinux = false
@@ -653,126 +652,112 @@ manpage_config.set('modulepath', module_dir)
 manpage_config.set('suid_wrapper_dir', join_paths(get_option('prefix'), 'libexec'))
 manpage_config.set('default_font_path', default_font_path)
 
-require_docs = get_option('docs') == 'true'
-require_devel_docs = get_option('devel-docs') == 'true'
-require_docs_pdf = (require_docs or require_devel_docs) and get_option('docs-pdf') == 'true'
-
-sgml_doctools_dep = dependency('xorg-sgml-doctools',
-                               required: require_docs or require_devel_docs)
-xmlto = find_program('xmlto', required: require_docs or require_devel_docs)
-xsltproc = find_program('xsltproc', required: require_docs or require_devel_docs)
-fop = find_program('fop', required: require_docs_pdf)
-
-build_docs = (get_option('docs') != 'false' and
-    sgml_doctools_dep.found() and
-    xmlto.found())
-
-build_docs_devel = (get_option('devel-docs') != 'false' and
-    sgml_doctools_dep.found() and
-    xmlto.found())
-
-build_docs_pdf = (get_option('docs-pdf') != 'false' and
-    (build_docs or build_docs_devel) and
-    fop.found())
-
-if build_docs or build_docs_devel
-    doc_sgml_path = sgml_doctools_dep.get_pkgconfig_variable('sgmlrootdir')
-    doc_stylesheet_srcdir = join_paths(doc_sgml_path, 'X11')
-
-    # once we bump meson dependency to 0.56.0 we can use
-    # meson.project_build_root() instead of meson.build_root()
-
-    # Meson does not and will not support functions so we are copy-pasting
-    # documentation build code around which is unfortunate
-    # See https://mesonbuild.com/FAQ.html#why-doesnt-meson-have-user-defined-functionsmacros
-
-    docs_xmlto_search_flags = [
-        '--searchpath', doc_stylesheet_srcdir,
-        '--searchpath', meson.build_root(),
-    ]
-
-    docs_xslt_search_flags = [
-        '--path', doc_stylesheet_srcdir,
-        '--path', meson.build_root(),
-    ]
-endif
-
 # Include must come first, as it sets up dix-config.h
 subdir('include')
 
-# X server core
-subdir('config')
-subdir('dix')
-subdir('dri3')
-subdir('glx')
-subdir('fb')
-subdir('mi')
-subdir('os')
-# X extensions
-subdir('composite')
-subdir('damageext')
-subdir('dbe')
-subdir('miext/damage')
-subdir('miext/shadow')
-subdir('miext/sync')
-if build_rootless
-    subdir('miext/rootless')
-endif
-subdir('present')
-if build_xwin or build_xquartz
-    subdir('pseudoramiX')
-endif
-subdir('randr')
-subdir('record')
-subdir('render')
-subdir('xfixes')
-subdir('xkb')
-subdir('Xext')
-subdir('Xi')
-# other
-if build_glamor
-    subdir('glamor')
-endif
-if build_xorg or get_option('xephyr')
+# Only compile what's needed for Xephyr
+if get_option('xephyr')
+    # Core X server components needed for Xephyr
+    subdir('dix')
+    subdir('fb')
+    subdir('mi')
+    subdir('os')
+    
+    # Essential extensions for Xephyr
+    subdir('miext/damage')
+    subdir('miext/shadow')
+    subdir('miext/sync')
+    subdir('randr')
+    subdir('render')
+    subdir('xfixes')
+    subdir('xkb')
+    subdir('Xext')
+    subdir('Xi')
+    
+    # GLX support if enabled
+    if build_glx
+        subdir('glx')
+    endif
+    
+    # Glamor support if enabled
+    if build_glamor
+        subdir('glamor')
+    endif
+    
+    # EXA is required for Xephyr functionality
     subdir('exa')
+    # DRI3 not needed for basic Xephyr functionality  
+    # subdir('dri3')
+    
+    # Present extension for synchronization
+    subdir('present')
+    
+    # Composite for window composition
+    subdir('composite')
+    
+    # Damage extension for efficient updates
+    subdir('damageext')
+    
+    # DBE (Double Buffer Extension) - minimal overhead
+    subdir('dbe')
+    
+    # Record extension - sometimes needed
+    subdir('record')
+    
+    # Config system for input devices
+    subdir('config')
 endif
-subdir('doc')
 
-# Common static libraries of all X servers
-libxserver = [
-    libxserver_mi,
-    libxserver_dix,
-
-    libxserver_composite,
-    libxserver_damageext,
-    libxserver_dbe,
-    libxserver_randr,
-    libxserver_miext_damage,
-    libxserver_render,
-    libxserver_present,
-    libxserver_xext,
-    libxserver_miext_sync,
-    libxserver_xfixes,
-    libxserver_xi,
-    libxserver_xkb,
-    libxserver_record,
-
-    libxserver_os,
-]
-
-libxserver += libxserver_dri3
+# Static libraries for Xephyr
+libxserver = []
+if get_option('xephyr')
+    libxserver = [
+        libxserver_mi,
+        libxserver_dix,
+        libxserver_fb,
+        libxserver_os,
+        
+        # Extensions
+        libxserver_miext_damage,
+        libxserver_miext_shadow,
+        libxserver_miext_sync,
+        libxserver_randr,
+        libxserver_render,
+        libxserver_xfixes,
+        libxserver_xkb,
+        libxserver_xext,
+        libxserver_xi,
+        
+        # Optional components
+        libxserver_composite,
+        libxserver_damageext,
+        libxserver_dbe,
+        libxserver_present,
+        libxserver_record,
+        libxserver_config,
+        
+        # EXA is required for Xephyr
+        libxserver_exa,
+        # DRI3 not needed for basic Xephyr
+        # libxserver_dri3,
+    ]
+    
+    # Add GLX if enabled
+    if build_glx
+        libxserver += libxserver_glx
+    endif
+    
+    # Add Glamor if enabled
+    if build_glamor
+        libxserver += libxserver_glamor
+    endif
+endif
 
 subdir('hw')
 
 # if host_machine.system() != 'windows'
 #     subdir('test')
 # endif
-
-install_man(configure_file(
-    input: 'man/Xserver.man',
-    output: 'Xserver.1',
-    configuration: manpage_config,
-))
 
 if build_xorg
     sdkconfig = configuration_data()
@@ -835,13 +820,3 @@ if build_xorg
                  install_dir: join_paths(get_option('datadir'), 'aclocal'))
 endif
 
-if build_docs or build_docs_devel
-    docxmlconfig = configuration_data()
-    docxmlconfig.set('PACKAGE_VERSION', meson.project_version())
-    docxmlconfig.set('RELEASE_DATE', release_date)
-    configure_file(
-        input: 'xserver.ent.in',
-        output: 'xserver.ent',
-        configuration: docxmlconfig
-    )
-endif

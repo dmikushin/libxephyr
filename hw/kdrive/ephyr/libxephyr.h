@@ -20,7 +20,6 @@ extern "C" {
 
 /* Forward declarations to avoid conflicts */
 typedef unsigned long Window;
-typedef unsigned long Display;
 
 /* Xephyr server handle */
 typedef struct XephyrServer XephyrServer;
@@ -84,9 +83,6 @@ XephyrError xephyr_server_process_events(XephyrServer* server);
 
 /* Cleanup library */
 void xephyr_cleanup(void);
-
-/* Internal function - signals server ready (called from X server) */
-void xephyr_signal_ready(void);
 
 /* Utility function to create default config */
 XephyrConfig xephyr_config_default(void);

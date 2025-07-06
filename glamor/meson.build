@@ -55,6 +55,9 @@ glamor_egl_stubs = static_library('glamor_egl_stubs',
     dependencies: common_dep,
 )
 
+# Define libxserver_glamor for use in main build
+libxserver_glamor = glamor
+
 if build_xorg
     install_data('glamor.h', install_dir: xorgsdkdir)
 endif

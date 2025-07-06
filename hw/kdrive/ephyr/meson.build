@@ -43,7 +43,8 @@ xephyr_server = executable(
     srcs,
     include_directories: [
         inc,
-        include_directories('../src')
+        include_directories('../src'),
+        include_directories('../../../exa')
     ],
     dependencies: xephyr_dep,
     link_with: [
@@ -98,7 +99,8 @@ libxephyr = shared_library(
     libxephyr_srcs,
     include_directories: [
         inc,
-        include_directories('../src')
+        include_directories('../src'),
+        include_directories('../../../exa')
     ],
     dependencies: xephyr_dep,
     link_with: [
