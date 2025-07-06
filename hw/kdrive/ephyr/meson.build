@@ -94,7 +94,7 @@ if build_xv
     libxephyr_srcs += 'ephyrvideo.c'
 endif
 
-libxephyr = shared_library(
+libxephyr = static_library(
     'xephyr',
     libxephyr_srcs,
     include_directories: [
@@ -103,7 +103,16 @@ libxephyr = shared_library(
         include_directories('../../../exa')
     ],
     dependencies: xephyr_dep,
+    install: true,
+)
+
+# Install the header file
+install_headers('libxephyr.h', subdir: 'libxephyr')
+
+# Export libxephyr dependency for subprojects
+libxephyr_dep = declare_dependency(
     link_with: [
+        libxephyr,
         libxserver_main,
         libxserver_exa,
         libxephyr_glamor,
@@ -112,21 +121,10 @@ libxephyr = shared_library(
         libxserver,
         libxserver_config,
         libxserver_xkb_stubs,
-        libxserver_xi_stubs,
+        # libxserver_xi_stubs,  # Excluded due to symbol conflicts with kdrive
         libxserver_glx,
         libglxvnd,
     ],
-    install: true,
-    version: '21.1.4',
-    soversion: '21',
-)
-
-# Install the header file
-install_headers('libxephyr.h', subdir: 'libxephyr')
-
-# Export libxephyr dependency for subprojects
-libxephyr_dep = declare_dependency(
-    link_with: libxephyr,
     include_directories: include_directories('.'),
     dependencies: xephyr_dep
 )
