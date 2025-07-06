@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
 Copyright 1995  Kaleb S. KEITHLEY
@@ -245,9 +246,9 @@ ProcVidModeGetModeLine(ClientPtr client)
                                     SIZEOF(xGenericReply));
     }
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
         return BadImplementation;
@@ -338,9 +339,9 @@ ProcVidModeGetAllModeLines(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeGetAllModeLinesReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
     ver = ClientMajorVersion(client);
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -518,9 +519,9 @@ ProcVidModeAddModeLine(ClientPtr client)
     if (len != stuff->privsize)
         return BadLength;
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     if (stuff->hsyncstart < stuff->hdisplay ||
         stuff->hsyncend < stuff->hsyncstart ||
@@ -674,9 +675,9 @@ ProcVidModeDeleteModeLine(ClientPtr client)
         return BadLength;
     }
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -796,9 +797,9 @@ ProcVidModeModModeLine(ClientPtr client)
         stuff->vsyncend < stuff->vsyncstart || stuff->vtotal < stuff->vsyncend)
         return BadValue;
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -927,9 +928,9 @@ ProcVidModeValidateModeLine(ClientPtr client)
     if (len != stuff->privsize)
         return BadLength;
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     status = MODE_OK;
 
@@ -1006,9 +1007,9 @@ ProcVidModeSwitchMode(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeSwitchModeReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1080,9 +1081,9 @@ ProcVidModeSwitchToMode(ClientPtr client)
     if (len != stuff->privsize)
         return BadLength;
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1138,9 +1139,9 @@ ProcVidModeLockModeSwitch(ClientPtr client)
 
     DEBUG_P("XF86VidModeLockModeSwitch");
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1169,9 +1170,9 @@ ProcVidModeGetMonitor(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeGetMonitorReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1262,9 +1263,9 @@ ProcVidModeGetViewPort(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeGetViewPortReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1301,9 +1302,9 @@ ProcVidModeSetViewPort(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeSetViewPortReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1332,9 +1333,9 @@ ProcVidModeGetDotClocks(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeGetDotClocksReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1399,9 +1400,9 @@ ProcVidModeSetGamma(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeSetGammaReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1428,9 +1429,9 @@ ProcVidModeGetGamma(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeGetGammaReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1469,9 +1470,9 @@ ProcVidModeSetGammaRamp(ClientPtr client)
     REQUEST(xXF86VidModeSetGammaRampReq);
     REQUEST_AT_LEAST_SIZE(xXF86VidModeSetGammaRampReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1508,9 +1509,9 @@ ProcVidModeGetGammaRamp(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeGetGammaRampReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1566,9 +1567,9 @@ ProcVidModeGetGammaRampSize(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeGetGammaRampSizeReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
-    pScreen = screenInfo.screens[stuff->screen];
+    pScreen = xephyr_context->screenInfo.screens[stuff->screen];
 
     pVidMode = VidModeGetPtr(pScreen);
     if (pVidMode == NULL)
@@ -1604,7 +1605,7 @@ ProcVidModeGetPermissions(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXF86VidModeGetPermissionsReq);
 
-    if (stuff->screen >= screenInfo.numScreens)
+    if (stuff->screen >= xephyr_context->screenInfo.numScreens)
         return BadValue;
 
     if (VidModeAllowNonLocal || client->local) {

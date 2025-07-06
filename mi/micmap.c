@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright (c) 1987, Oracle and/or its affiliates. All rights reserved.
  *
@@ -77,7 +78,7 @@ miUninstallColormap(ColormapPtr pmap)
         if (pmap->mid != pmap->pScreen->defColormap) {
             dixLookupResourceByType((void **) &curpmap,
                                     pmap->pScreen->defColormap,
-                                    RT_COLORMAP, serverClient, DixUseAccess);
+                                    RT_COLORMAP, xephyr_context->serverClient, DixUseAccess);
             (*pmap->pScreen->InstallColormap) (curpmap);
         }
     }
@@ -386,8 +387,8 @@ miSetPixmapDepths(void)
     int d, f;
 
     /* Add any unlisted depths from the pixmap formats */
-    for (f = 0; f < screenInfo.numPixmapFormats; f++) {
-        d = screenInfo.formats[f].depth;
+    for (f = 0; f < xephyr_context->screenInfo.numPixmapFormats; f++) {
+        d = xephyr_context->screenInfo.formats[f].depth;
         if (!miVisualTypesSet(d)) {
             if (!miSetVisualTypes(d, 0, 0, -1))
                 return FALSE;
@@ -440,9 +441,9 @@ miInitVisuals(VisualPtr * visualp, DepthPtr * depthp, int *nvisualp,
 
     /* none specified, we'll guess from pixmap formats */
     if (!miVisuals) {
-        for (f = 0; f < screenInfo.numPixmapFormats; f++) {
-            d = screenInfo.formats[f].depth;
-            b = screenInfo.formats[f].bitsPerPixel;
+        for (f = 0; f < xephyr_context->screenInfo.numPixmapFormats; f++) {
+            d = xephyr_context->screenInfo.formats[f].depth;
+            b = xephyr_context->screenInfo.formats[f].bitsPerPixel;
             if (sizes & (1 << (b - 1)))
                 vtype = miGetDefaultVisualMask(d);
             else
@@ -540,7 +541,7 @@ miInitVisuals(VisualPtr * visualp, DepthPtr * depthp, int *nvisualp,
      * default visual/depth from that depth.
      */
     first_depth = 0;
-    if (preferredVis < 0 && defaultColorVisualClass < 0) {
+    if (preferredVis < 0 && xephyr_context->defaultColorVisualClass < 0) {
         for (i = 0; i < ndepth; i++) {
             if (preferredCVCs[i] >= 0) {
                 first_depth = i;
@@ -552,8 +553,8 @@ miInitVisuals(VisualPtr * visualp, DepthPtr * depthp, int *nvisualp,
     for (i = first_depth; i < ndepth; i++) {
         int prefColorVisualClass = -1;
 
-        if (defaultColorVisualClass >= 0)
-            prefColorVisualClass = defaultColorVisualClass;
+        if (xephyr_context->defaultColorVisualClass >= 0)
+            prefColorVisualClass = xephyr_context->defaultColorVisualClass;
         else if (preferredVis >= 0)
             prefColorVisualClass = preferredVis;
         else if (preferredCVCs[i] >= 0)

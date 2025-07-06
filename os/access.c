@@ -1,3 +1,5 @@
+#include <string.h>
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -184,7 +186,7 @@ SOFTWARE.
 
 #include "xace.h"
 
-Bool defeatAccessControl = FALSE;
+/* Bool defeatAccessControl = FALSE; - moved to XephyrContext */
 
 #define addrEqual(fam, address, length, host) \
 			 ((fam) == (host)->family &&\
@@ -205,9 +207,9 @@ static Bool NewHost(int /*family */ ,
                     int /* addingLocalHosts */ );
 
 /* XFree86 bug #156: To keep track of which hosts were explicitly requested in
-   /etc/X<display>.hosts, we've added a requested field to the HOST struct,
+   /etc/X<xephyr_context->display>.hosts, we've added a requested field to the HOST struct,
    and a LocalHostRequested variable.  These default to FALSE, but are set
-   to TRUE in ResetHosts when reading in /etc/X<display>.hosts.  They are
+   to TRUE in ResetHosts when reading in /etc/X<xephyr_context->display>.hosts.  They are
    checked in DisableLocalHost(), which is called to disable the default
    local host entries when stronger authentication is turned on. */
 
@@ -950,7 +952,7 @@ ResetHosts(const char *display)
     int len;
 
     siTypesInitialize();
-    AccessEnabled = !defeatAccessControl;
+    AccessEnabled = !xephyr_context->defeatAccessControl;
     LocalHostEnabled = FALSE;
     while ((host = validhosts) != 0) {
         validhosts = host->next;
@@ -964,11 +966,11 @@ ResetHosts(const char *display)
 #endif
 #define ETC_HOST_SUFFIX ".hosts"
     fnamelen = strlen(ETC_HOST_PREFIX) + strlen(ETC_HOST_SUFFIX) +
-        strlen(display) + 1;
+        strlen(xephyr_context->display) + 1;
     if (fnamelen > sizeof(fname))
-        FatalError("Display name `%s' is too long\n", display);
+        FatalError("Display name `%s' is too long\n", xephyr_context->display);
     snprintf(fname, sizeof(fname), ETC_HOST_PREFIX "%s" ETC_HOST_SUFFIX,
-             display);
+             xephyr_context->display);
 
     if ((fd = fopen(fname, "r")) != 0) {
         while (fgets(ohostname, sizeof(ohostname), fd)) {
@@ -1277,7 +1279,7 @@ AuthorizedClient(ClientPtr client)
 {
     int rc;
 
-    if (!client || defeatAccessControl)
+    if (!client || xephyr_context->defeatAccessControl)
         return Success;
 
     /* untrusted clients can't change host access */

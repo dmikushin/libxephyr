@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -142,9 +143,7 @@ typedef struct _Client *ClientPtr;      /* also in misc.h */
 
 typedef struct _WorkQueue *WorkQueuePtr;
 
-extern _X_EXPORT ClientPtr clients[MAXCLIENTS];
-extern _X_EXPORT ClientPtr serverClient;
-extern _X_EXPORT int currentMaxClients;
+
 extern _X_EXPORT char dispatchExceptionAtReset;
 extern _X_EXPORT int terminateDelay;
 extern _X_EXPORT Bool touchEmulatePointer;

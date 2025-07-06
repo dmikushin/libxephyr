@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1987, 1989, 1998  The Open Group
@@ -98,7 +99,7 @@ Equipment Corporation.
 
 #ifdef HAVE_DIX_CONFIG_H
 #include <dix-config.h>
-#include <version-config.h>
+
 #endif
 
 #ifdef PANORAMIX_DEBUG
@@ -162,7 +163,7 @@ static void KillAllClients(void);
 
 static int nextFreeClientID;    /* always MIN free client ID */
 
-static int nClients;            /* number of authorized clients */
+static int nClients;            /* number of authorized xephyr_context->clients */
 
 CallbackListPtr ClientStateCallback;
 OsTimerPtr dispatchExceptionTimer;
@@ -210,14 +211,14 @@ UpdateCurrentTime(void)
     /* To avoid time running backwards, we must call GetTimeInMillis before
      * calling ProcessInputEvents.
      */
-    systime.months = currentTime.months;
+    systime.months = xephyr_context->currentTime.months;
     systime.milliseconds = GetTimeInMillis();
-    if (systime.milliseconds < currentTime.milliseconds)
+    if (systime.milliseconds < xephyr_context->currentTime.milliseconds)
         systime.months++;
     if (InputCheckPending())
         ProcessInputEvents();
-    if (CompareTimeStamps(systime, currentTime) == LATER)
-        currentTime = systime;
+    if (CompareTimeStamps(systime, xephyr_context->currentTime) == LATER)
+        xephyr_context->currentTime = systime;
 }
 
 /* Like UpdateCurrentTime, but can't call ProcessInputEvents */
@@ -226,12 +227,12 @@ UpdateCurrentTimeIf(void)
 {
     TimeStamp systime;
 
-    systime.months = currentTime.months;
+    systime.months = xephyr_context->currentTime.months;
     systime.milliseconds = GetTimeInMillis();
-    if (systime.milliseconds < currentTime.milliseconds)
+    if (systime.milliseconds < xephyr_context->currentTime.milliseconds)
         systime.months++;
-    if (CompareTimeStamps(systime, currentTime) == LATER)
-        currentTime = systime;
+    if (CompareTimeStamps(systime, xephyr_context->currentTime) == LATER)
+        xephyr_context->currentTime = systime;
 }
 
 #undef SMART_DEBUG
@@ -340,7 +341,7 @@ SmartScheduleClient(void)
     xorg_list_for_each_entry(pClient, &ready_clients, ready) {
         nready++;
 
-        /* Praise clients which haven't run in a while */
+        /* Praise xephyr_context->clients which haven't run in a while */
         if ((now - pClient->smart_stop_tick) >= idle) {
             if (pClient->smart_priority < 0)
                 pClient->smart_priority++;
@@ -442,14 +443,14 @@ ShouldDisconnectRemainingClients(void)
 {
     int i;
 
-    for (i = 1; i < currentMaxClients; i++) {
-        if (clients[i]) {
-            if (!XFixesShouldDisconnectClient(clients[i]))
+    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
+        if (xephyr_context->clients[i]) {
+            if (!XFixesShouldDisconnectClient(xephyr_context->clients[i]))
                 return FALSE;
         }
     }
 
-    /* All remaining clients can be safely ignored */
+    /* All remaining xephyr_context->clients can be safely ignored */
     return TRUE;
 }
 
@@ -510,7 +511,7 @@ Dispatch(void)
                 FlushIfCriticalOutputPending();
                 if ((SmartScheduleTime - start_tick) >= SmartScheduleSlice)
                 {
-                    /* Penalize clients which consume ticks */
+                    /* Penalize xephyr_context->clients which consume ticks */
                     if (client->smart_priority > SMART_MIN_PRIORITY)
                         client->smart_priority--;
                     break;
@@ -541,7 +542,7 @@ Dispatch(void)
                                           client->index,
                                           client->requestBuffer);
 #endif
-                if (result > (maxBigRequestSize << 2))
+                if (result > (xephyr_context->maxBigRequestSize << 2))
                     result = BadLength;
                 else {
                     result = XaceHookDispatch(client, client->majorOp);
@@ -588,6 +589,8 @@ Dispatch(void)
     ResetOsBuffers();
 }
 
+#define VENDOR_RELEASE 21104000
+#define VENDOR_NAME "The X.Org Foundation"
 static int VendorRelease = VENDOR_RELEASE;
 
 void
@@ -617,16 +620,16 @@ CreateConnectionBlock(void)
     /*
      * per-server image and bitmap parameters are defined in Xmd.h
      */
-    setup.imageByteOrder = screenInfo.imageByteOrder;
+    setup.imageByteOrder = xephyr_context->screenInfo.imageByteOrder;
 
-    setup.bitmapScanlineUnit = screenInfo.bitmapScanlineUnit;
-    setup.bitmapScanlinePad = screenInfo.bitmapScanlinePad;
+    setup.bitmapScanlineUnit = xephyr_context->screenInfo.bitmapScanlineUnit;
+    setup.bitmapScanlinePad = xephyr_context->screenInfo.bitmapScanlinePad;
 
-    setup.bitmapBitOrder = screenInfo.bitmapBitOrder;
+    setup.bitmapBitOrder = xephyr_context->screenInfo.bitmapBitOrder;
     setup.motionBufferSize = NumMotionEvents();
-    setup.numRoots = screenInfo.numScreens;
+    setup.numRoots = xephyr_context->screenInfo.numScreens;
     setup.nbytesVendor = strlen(VendorString);
-    setup.numFormats = screenInfo.numPixmapFormats;
+    setup.numFormats = xephyr_context->screenInfo.numPixmapFormats;
     setup.maxRequestSize = MAX_REQUEST_SIZE;
     QueryMinMaxKeyCodes(&setup.minKeyCode, &setup.maxKeyCode);
 
@@ -634,13 +637,13 @@ CreateConnectionBlock(void)
         pad_to_int32(setup.nbytesVendor) +
         (setup.numFormats * sizeof(xPixmapFormat)) +
         (setup.numRoots * sizeof(xWindowRoot));
-    ConnectionInfo = malloc(lenofblock);
-    if (!ConnectionInfo)
+    xephyr_context->ConnectionInfo = malloc(lenofblock);
+    if (!xephyr_context->ConnectionInfo)
         return FALSE;
 
-    memmove(ConnectionInfo, (char *) &setup, sizeof(xConnSetup));
+    memmove(xephyr_context->ConnectionInfo, (char *) &setup, sizeof(xConnSetup));
     sizesofar = sizeof(xConnSetup);
-    pBuf = ConnectionInfo + sizeof(xConnSetup);
+    pBuf = xephyr_context->ConnectionInfo + sizeof(xConnSetup);
 
     memmove(pBuf, VendorString, (int) setup.nbytesVendor);
     sizesofar += setup.nbytesVendor;
@@ -651,10 +654,10 @@ CreateConnectionBlock(void)
         *pBuf++ = 0;
 
     memset(&format, 0, sizeof(xPixmapFormat));
-    for (i = 0; i < screenInfo.numPixmapFormats; i++) {
-        format.depth = screenInfo.formats[i].depth;
-        format.bitsPerPixel = screenInfo.formats[i].bitsPerPixel;
-        format.scanLinePad = screenInfo.formats[i].scanlinePad;
+    for (i = 0; i < xephyr_context->screenInfo.numPixmapFormats; i++) {
+        format.depth = xephyr_context->screenInfo.formats[i].depth;
+        format.bitsPerPixel = xephyr_context->screenInfo.formats[i].bitsPerPixel;
+        format.scanLinePad = xephyr_context->screenInfo.formats[i].scanlinePad;
         memmove(pBuf, (char *) &format, sizeof(xPixmapFormat));
         pBuf += sizeof(xPixmapFormat);
         sizesofar += sizeof(xPixmapFormat);
@@ -663,12 +666,12 @@ CreateConnectionBlock(void)
     connBlockScreenStart = sizesofar;
     memset(&depth, 0, sizeof(xDepth));
     memset(&visual, 0, sizeof(xVisualType));
-    for (i = 0; i < screenInfo.numScreens; i++) {
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
         ScreenPtr pScreen;
         DepthPtr pDepth;
         VisualPtr pVisual;
 
-        pScreen = screenInfo.screens[i];
+        pScreen = xephyr_context->screenInfo.screens[i];
         root.windowId = pScreen->root->drawable.id;
         root.defaultColormap = pScreen->defColormap;
         root.whitePixel = pScreen->whitePixel;
@@ -693,12 +696,12 @@ CreateConnectionBlock(void)
         for (j = 0; j < pScreen->numDepths; j++, pDepth++) {
             lenofblock += sizeof(xDepth) +
                 (pDepth->numVids * sizeof(xVisualType));
-            pBuf = (char *) realloc(ConnectionInfo, lenofblock);
+            pBuf = (char *) realloc(xephyr_context->ConnectionInfo, lenofblock);
             if (!pBuf) {
-                free(ConnectionInfo);
+                free(xephyr_context->ConnectionInfo);
                 return FALSE;
             }
-            ConnectionInfo = pBuf;
+            xephyr_context->ConnectionInfo = pBuf;
             pBuf += sizesofar;
             depth.depth = pDepth->depth;
             depth.nVisuals = pDepth->numVids;
@@ -1203,7 +1206,7 @@ UngrabServer(ClientPtr client)
         while (!GETBIT(grabWaiters, i))
             i++;
         BITCLEAR(grabWaiters, i);
-        AttendClient(clients[i]);
+        AttendClient(xephyr_context->clients[i]);
     }
 
     if (ServerGrabCallback) {
@@ -2092,13 +2095,13 @@ ProcPutImage(ClientPtr client)
     VALIDATE_DRAWABLE_AND_GC(stuff->drawable, pDraw, DixWriteAccess);
     if (stuff->format == XYBitmap) {
         if ((stuff->depth != 1) ||
-            (stuff->leftPad >= (unsigned int) screenInfo.bitmapScanlinePad))
+            (stuff->leftPad >= (unsigned int) xephyr_context->screenInfo.bitmapScanlinePad))
             return BadMatch;
         length = BitmapBytePad(stuff->width + stuff->leftPad);
     }
     else if (stuff->format == XYPixmap) {
         if ((pDraw->depth != stuff->depth) ||
-            (stuff->leftPad >= (unsigned int) screenInfo.bitmapScanlinePad))
+            (stuff->leftPad >= (unsigned int) xephyr_context->screenInfo.bitmapScanlinePad))
             return BadMatch;
         length = BitmapBytePad(stuff->width + stuff->leftPad);
         length *= stuff->depth;
@@ -3164,8 +3167,8 @@ ProcSetScreenSaver(ClientPtr client)
     REQUEST(xSetScreenSaverReq);
     REQUEST_SIZE_MATCH(xSetScreenSaverReq);
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, screenInfo.screens[i],
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, xephyr_context->screenInfo.screens[i],
                       DixSetAttrAccess);
         if (rc != Success)
             return rc;
@@ -3195,22 +3198,22 @@ ProcSetScreenSaver(ClientPtr client)
     }
 
     if (blankingOption == DefaultBlanking)
-        ScreenSaverBlanking = defaultScreenSaverBlanking;
+        xephyr_context->ScreenSaverBlanking = xephyr_context->defaultScreenSaverBlanking;
     else
-        ScreenSaverBlanking = blankingOption;
+        xephyr_context->ScreenSaverBlanking = blankingOption;
     if (exposureOption == DefaultExposures)
-        ScreenSaverAllowExposures = defaultScreenSaverAllowExposures;
+        xephyr_context->ScreenSaverAllowExposures = xephyr_context->defaultScreenSaverAllowExposures;
     else
-        ScreenSaverAllowExposures = exposureOption;
+        xephyr_context->ScreenSaverAllowExposures = exposureOption;
 
     if (stuff->timeout >= 0)
-        ScreenSaverTime = stuff->timeout * MILLI_PER_SECOND;
+        xephyr_context->ScreenSaverTime = stuff->timeout * MILLI_PER_SECOND;
     else
-        ScreenSaverTime = defaultScreenSaverTime;
+        xephyr_context->ScreenSaverTime = xephyr_context->defaultScreenSaverTime;
     if (stuff->interval >= 0)
-        ScreenSaverInterval = stuff->interval * MILLI_PER_SECOND;
+        xephyr_context->ScreenSaverInterval = stuff->interval * MILLI_PER_SECOND;
     else
-        ScreenSaverInterval = defaultScreenSaverInterval;
+        xephyr_context->ScreenSaverInterval = xephyr_context->defaultScreenSaverInterval;
 
     SetScreenSaverTimer();
     return Success;
@@ -3224,8 +3227,8 @@ ProcGetScreenSaver(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xReq);
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, screenInfo.screens[i],
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, xephyr_context->screenInfo.screens[i],
                       DixGetAttrAccess);
         if (rc != Success)
             return rc;
@@ -3235,10 +3238,10 @@ ProcGetScreenSaver(ClientPtr client)
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = 0,
-        .timeout = ScreenSaverTime / MILLI_PER_SECOND,
-        .interval = ScreenSaverInterval / MILLI_PER_SECOND,
-        .preferBlanking = ScreenSaverBlanking,
-        .allowExposures = ScreenSaverAllowExposures
+        .timeout = xephyr_context->ScreenSaverTime / MILLI_PER_SECOND,
+        .interval = xephyr_context->ScreenSaverInterval / MILLI_PER_SECOND,
+        .preferBlanking = xephyr_context->ScreenSaverBlanking,
+        .allowExposures = xephyr_context->ScreenSaverAllowExposures
     };
     WriteReplyToClient(client, sizeof(xGetScreenSaverReply), &rep);
     return Success;
@@ -3273,7 +3276,7 @@ ProcListHosts(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xListHostsReq);
 
-    /* untrusted clients can't list hosts */
+    /* untrusted xephyr_context->clients can't list hosts */
     result = XaceHook(XACE_SERVER_ACCESS, client, DixReadAccess);
     if (result != Success)
         return result;
@@ -3314,7 +3317,7 @@ ProcChangeAccessControl(ClientPtr client)
 /*********************
  * CloseDownRetainedResources
  *
- *    Find all clients that are gone and have terminated in RetainTemporary
+ *    Find all xephyr_context->clients that are gone and have terminated in RetainTemporary
  *    and destroy their resources.
  *********************/
 
@@ -3324,8 +3327,8 @@ CloseDownRetainedResources(void)
     int i;
     ClientPtr client;
 
-    for (i = 1; i < currentMaxClients; i++) {
-        client = clients[i];
+    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
+        client = xephyr_context->clients[i];
         if (client && (client->closeDownMode == RetainTemporary)
             && (client->clientGone))
             CloseDownClient(client);
@@ -3552,12 +3555,12 @@ CloseDownClient(ClientPtr client)
 #endif
         if (client->index < nextFreeClientID)
             nextFreeClientID = client->index;
-        clients[client->index] = NullClient;
+        xephyr_context->clients[client->index] = NullClient;
         SmartLastClient = NullClient;
         dixFreeObjectWithPrivates(client, PRIVATE_CLIENT);
 
-        while (!clients[currentMaxClients - 1])
-            currentMaxClients--;
+        while (!xephyr_context->clients[xephyr_context->currentMaxClients - 1])
+            xephyr_context->currentMaxClients--;
     }
 
     if (ShouldDisconnectRemainingClients())
@@ -3569,11 +3572,11 @@ KillAllClients(void)
 {
     int i;
 
-    for (i = 1; i < currentMaxClients; i++)
-        if (clients[i]) {
-            /* Make sure Retained clients are released. */
-            clients[i]->closeDownMode = DestroyAll;
-            CloseDownClient(clients[i]);
+    for (i = 1; i < xephyr_context->currentMaxClients; i++)
+        if (xephyr_context->clients[i]) {
+            /* Make sure Retained xephyr_context->clients are released. */
+            xephyr_context->clients[i]->closeDownMode = DestroyAll;
+            CloseDownClient(xephyr_context->clients[i]);
         }
 }
 
@@ -3597,7 +3600,7 @@ InitClient(ClientPtr client, int i, void *ospriv)
  * int NextAvailableClient(ospriv)
  *
  * OS dependent portion can't assign client id's because of CloseDownModes.
- * Returns NULL if there are no free clients.
+ * Returns NULL if there are no free xephyr_context->clients.
  *************************/
 
 ClientPtr
@@ -3610,7 +3613,7 @@ NextAvailableClient(void *ospriv)
     i = nextFreeClientID;
     if (i == LimitClients)
         return (ClientPtr) NULL;
-    clients[i] = client =
+    xephyr_context->clients[i] = client =
         dixAllocateObjectWithPrivates(ClientRec, PRIVATE_CLIENT);
     if (!client)
         return (ClientPtr) NULL;
@@ -3626,9 +3629,9 @@ NextAvailableClient(void *ospriv)
         dixFreeObjectWithPrivates(client, PRIVATE_CLIENT);
         return (ClientPtr) NULL;
     }
-    if (i == currentMaxClients)
-        currentMaxClients++;
-    while ((nextFreeClientID < LimitClients) && clients[nextFreeClientID])
+    if (i == xephyr_context->currentMaxClients)
+        xephyr_context->currentMaxClients++;
+    while ((nextFreeClientID < LimitClients) && xephyr_context->clients[nextFreeClientID])
         nextFreeClientID++;
 
     /* Enable client ID tracking. This must be done before
@@ -3701,8 +3704,8 @@ SendConnSetup(ClientPtr client, const char *reason)
         return client->noClientException = -1;
     }
 
-    numScreens = screenInfo.numScreens;
-    lConnectionInfo = ConnectionInfo;
+    numScreens = xephyr_context->screenInfo.numScreens;
+    lConnectionInfo = xephyr_context->ConnectionInfo;
     lconnSetupPrefix = &connSetupPrefix;
 
     /* We're about to start speaking X protocol back to the client by
@@ -3724,15 +3727,15 @@ SendConnSetup(ClientPtr client, const char *reason)
     root = (xWindowRoot *) (lConnectionInfo + connBlockScreenStart);
 #ifdef PANORAMIX
     if (noPanoramiXExtension)
-        numScreens = screenInfo.numScreens;
+        numScreens = xephyr_context->screenInfo.numScreens;
     else
-        numScreens = ((xConnSetup *) ConnectionInfo)->numRoots;
+        numScreens = ((xConnSetup *) xephyr_context->ConnectionInfo)->numRoots;
 #endif
 
     for (i = 0; i < numScreens; i++) {
         unsigned int j;
         xDepth *pDepth;
-        WindowPtr pRoot = screenInfo.screens[i]->root;
+        WindowPtr pRoot = xephyr_context->screenInfo.screens[i]->root;
 
         root->currentInputMask = pRoot->eventMask | wOtherEventMasks(pRoot);
         pDepth = (xDepth *) (root + 1);
@@ -3931,10 +3934,10 @@ static int init_screen(ScreenPtr pScreen, int i, Bool gpu)
      * Anyway, this must be called after InitOutput and before the
      * screen init routine is called.
      */
-    for (format = 0; format < screenInfo.numPixmapFormats; format++) {
-        depth = screenInfo.formats[format].depth;
-        bitsPerPixel = screenInfo.formats[format].bitsPerPixel;
-        scanlinepad = screenInfo.formats[format].scanlinePad;
+    for (format = 0; format < xephyr_context->screenInfo.numPixmapFormats; format++) {
+        depth = xephyr_context->screenInfo.formats[format].depth;
+        bitsPerPixel = xephyr_context->screenInfo.formats[format].bitsPerPixel;
+        scanlinepad = xephyr_context->screenInfo.formats[format].scanlinePad;
         j = indexForBitsPerPixel[bitsPerPixel];
         k = indexForScanlinePad[scanlinepad];
         PixmapWidthPaddingInfo[depth].padPixelsLog2 = answer[j][k];
@@ -3966,7 +3969,7 @@ AddScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
     ScreenPtr pScreen;
     Bool ret;
 
-    i = screenInfo.numScreens;
+    i = xephyr_context->screenInfo.numScreens;
     if (i == MAXSCREENS)
         return -1;
 
@@ -3987,13 +3990,13 @@ AddScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
        any of the strings pointed to by argv.  They may be passed to
        multiple screens.
      */
-    screenInfo.screens[i] = pScreen;
-    screenInfo.numScreens++;
+    xephyr_context->screenInfo.screens[i] = pScreen;
+    xephyr_context->screenInfo.numScreens++;
     if (!(*pfnInit) (pScreen, argc, argv)) {
         dixFreeScreenSpecificPrivates(pScreen);
         dixFreePrivates(pScreen->devPrivates, PRIVATE_SCREEN);
         free(pScreen);
-        screenInfo.numScreens--;
+        xephyr_context->screenInfo.numScreens--;
         return -1;
     }
 
@@ -4016,7 +4019,7 @@ AddGPUScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
     ScreenPtr pScreen;
     Bool ret;
 
-    i = screenInfo.numGPUScreens;
+    i = xephyr_context->screenInfo.numGPUScreens;
     if (i == MAXGPUSCREENS)
         return -1;
 
@@ -4038,12 +4041,12 @@ AddGPUScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
        any of the strings pointed to by argv.  They may be passed to
        multiple screens.
      */
-    screenInfo.gpuscreens[i] = pScreen;
-    screenInfo.numGPUScreens++;
+    xephyr_context->screenInfo.gpuscreens[i] = pScreen;
+    xephyr_context->screenInfo.numGPUScreens++;
     if (!(*pfnInit) (pScreen, argc, argv)) {
         dixFreePrivates(pScreen->devPrivates, PRIVATE_SCREEN);
         free(pScreen);
-        screenInfo.numGPUScreens--;
+        xephyr_context->screenInfo.numGPUScreens--;
         return -1;
     }
 
@@ -4070,11 +4073,11 @@ RemoveGPUScreen(ScreenPtr pScreen)
         return;
 
     idx = pScreen->myNum - GPU_SCREEN_OFFSET;
-    for (j = idx; j < screenInfo.numGPUScreens - 1; j++) {
-        screenInfo.gpuscreens[j] = screenInfo.gpuscreens[j + 1];
-        screenInfo.gpuscreens[j]->myNum = j + GPU_SCREEN_OFFSET;
+    for (j = idx; j < xephyr_context->screenInfo.numGPUScreens - 1; j++) {
+        xephyr_context->screenInfo.gpuscreens[j] = xephyr_context->screenInfo.gpuscreens[j + 1];
+        xephyr_context->screenInfo.gpuscreens[j]->myNum = j + GPU_SCREEN_OFFSET;
     }
-    screenInfo.numGPUScreens--;
+    xephyr_context->screenInfo.numGPUScreens--;
 
     /* this gets freed later in the resource list, but without
      * the screen existing it causes crashes - so remove it here */

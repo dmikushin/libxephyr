@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -223,7 +224,7 @@ typedef struct _colorResource {
 
 /* Invariants:
  * refcnt == 0 means entry is empty
- * refcnt > 0 means entry is useable by many clients, so it can't be changed
+ * refcnt > 0 means entry is useable by many xephyr_context->clients, so it can't be changed
  * refcnt == AllocPrivate means entry owned by one client only
  * fShared should only be set if refcnt == AllocPrivate, and only in red map
  */
@@ -376,7 +377,7 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
     /*
      * Security creation/labeling check
      */
-    i = XaceHook(XACE_RESOURCE_ACCESS, clients[client], mid, RT_COLORMAP,
+    i = XaceHook(XACE_RESOURCE_ACCESS, xephyr_context->clients[client], mid, RT_COLORMAP,
                  pmap, RT_NONE, NULL, DixCreateAccess);
     if (i != Success) {
         FreeResource(mid, RT_NONE);
@@ -1017,7 +1018,7 @@ AllocColor(ColormapPtr pmap,
 
             dixLookupResourceByType((void **) &prootmap,
                                     pmap->pScreen->defColormap, RT_COLORMAP,
-                                    clients[client], DixReadAccess);
+                                    xephyr_context->clients[client], DixReadAccess);
 
             if (pmap->class == prootmap->class)
                 FindColorInRootCmap(prootmap, prootmap->red, entries, &rgb,
@@ -1035,7 +1036,7 @@ AllocColor(ColormapPtr pmap,
 
             dixLookupResourceByType((void **) &prootmap,
                                     pmap->pScreen->defColormap, RT_COLORMAP,
-                                    clients[client], DixReadAccess);
+                                    xephyr_context->clients[client], DixReadAccess);
 
             if (pmap->class == prootmap->class) {
                 pixR = (*pPix & pVisual->redMask) >> pVisual->offsetRed;
@@ -1472,7 +1473,7 @@ FreeClientPixels(void *value, XID fakeid)
     colorResource *pcr = value;
     int rc;
 
-    rc = dixLookupResourceByType(&pmap, pcr->mid, RT_COLORMAP, serverClient,
+    rc = dixLookupResourceByType(&pmap, pcr->mid, RT_COLORMAP, xephyr_context->serverClient,
                                  DixRemoveAccess);
     if (rc == Success)
         FreePixels((ColormapPtr) pmap, pcr->client);
@@ -2089,7 +2090,7 @@ FreeColors(ColormapPtr pmap, int client, int count, Pixel * pixels, Pixel mask)
         result = FreeCo(pmap, client, PSEUDOMAP, count, pixels, rmask);
     }
     if ((mask != rmask) && count) {
-        clients[client]->errorValue = *pixels | mask;
+        xephyr_context->clients[client]->errorValue = *pixels | mask;
         result = BadValue;
     }
     /* XXX should worry about removing any RT_CMAPENTRY resource */
@@ -2167,7 +2168,7 @@ FreeCo(ColormapPtr pmap, int client, int color, int npixIn, Pixel * ppixIn,
         for (pptr = ppixIn, n = npixIn; --n >= 0; pptr++) {
             pixTest = ((*pptr | bits) & cmask) >> offset;
             if ((pixTest >= numents) || (*pptr & rgbbad)) {
-                clients[client]->errorValue = *pptr | bits;
+                xephyr_context->clients[client]->errorValue = *pptr | bits;
                 errVal = BadValue;
                 continue;
             }
@@ -2539,7 +2540,7 @@ ResizeVisualArray(ScreenPtr pScreen, int new_visual_count, DepthPtr depth)
 
     cdata.visuals = visuals;
     cdata.pScreen = pScreen;
-    FindClientResourcesByType(serverClient, RT_COLORMAP,
+    FindClientResourcesByType(xephyr_context->serverClient, RT_COLORMAP,
                               _colormap_find_resource, &cdata);
 
     pScreen->visuals = visuals;

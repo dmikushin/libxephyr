@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -92,7 +93,7 @@ SOFTWARE.
  *   This returns the number of padding units, for depth d and width w.
  * For bitmaps this can be calculated with the macros above.
  * Other depths require either grovelling over the formats field of the
- * screenInfo or hardwired constants.
+ * xephyr_context->screenInfo or hardwired constants.
  */
 
 typedef struct _PaddingInfo {

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2003 Keith Packard
  *
@@ -866,7 +867,7 @@ PanoramiXFixesSetWindowShapeRegion(ClientPtr client)
         VERIFY_REGION_OR_NONE(reg, stuff->region, client, DixReadAccess);
 
     FOR_NSCREENS_FORWARD(j) {
-        ScreenPtr screen = screenInfo.screens[j];
+        ScreenPtr screen = xephyr_context->screenInfo.screens[j];
         stuff->dest = win->info[j].id;
 
         if (reg)
@@ -906,7 +907,7 @@ PanoramiXFixesSetPictureClipRegion(ClientPtr client)
         VERIFY_REGION_OR_NONE(reg, stuff->region, client, DixReadAccess);
 
     FOR_NSCREENS_BACKWARD(j) {
-        ScreenPtr screen = screenInfo.screens[j];
+        ScreenPtr screen = xephyr_context->screenInfo.screens[j];
         stuff->picture = pict->info[j].id;
 
         if (reg)

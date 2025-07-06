@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * libxephyr - Xephyr as a shared library
  * API implementation for embedding Xephyr X server instances
@@ -55,7 +56,7 @@ static void cleanup_argv(XephyrServer* server);
 static const char* error_strings[] = {
     "Success",
     "Invalid configuration",
-    "Failed to open display",
+    "Failed to open xephyr_context->display",
     "Failed to create window",
     "Failed to start server",
     "Failed to stop server",
@@ -141,7 +142,7 @@ XephyrServer* xephyr_server_create(const XephyrConfig* config) {
         return NULL;
     }
     
-    /* Generate unique display name if not provided */
+    /* Generate unique xephyr_context->display name if not provided */
     if (!config->display_name) {
         snprintf(server->display_name, sizeof(server->display_name), ":%d", 100 + server_counter++);
     } else {

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  *
  * Copyright © 2000 SuSE, Inc.

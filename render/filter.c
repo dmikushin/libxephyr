@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2002 Keith Packard
  *
@@ -289,7 +290,7 @@ SetPictureFilter(PicturePtr pPicture, char *name, int len, xFixed * params,
     if (pPicture->pDrawable != NULL)
         pScreen = pPicture->pDrawable->pScreen;
     else
-        pScreen = screenInfo.screens[0];
+        pScreen = xephyr_context->screenInfo.screens[0];
 
     pFilter = PictureFindFilter(pScreen, name, len);
 
@@ -302,10 +303,10 @@ SetPictureFilter(PicturePtr pPicture, char *name, int len, xFixed * params,
         /* For source pictures, the picture isn't tied to a screen.  So, ensure
          * that all screens can handle a filter we set for the picture.
          */
-        for (s = 1; s < screenInfo.numScreens; s++) {
+        for (s = 1; s < xephyr_context->screenInfo.numScreens; s++) {
             PictFilterPtr pScreenFilter;
 
-            pScreenFilter = PictureFindFilter(screenInfo.screens[s], name, len);
+            pScreenFilter = PictureFindFilter(xephyr_context->screenInfo.screens[s], name, len);
             if (!pScreenFilter || pScreenFilter->id != pFilter->id)
                 return BadMatch;
         }
@@ -323,7 +324,7 @@ SetPicturePictFilter(PicturePtr pPicture, PictFilterPtr pFilter,
     if (pPicture->pDrawable)
         pScreen = pPicture->pDrawable->pScreen;
     else
-        pScreen = screenInfo.screens[0];
+        pScreen = xephyr_context->screenInfo.screens[0];
 
     if (pFilter->ValidateParams) {
         int width, height;

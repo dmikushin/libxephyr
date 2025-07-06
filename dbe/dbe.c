@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /******************************************************************************
  *
  * Copyright (c) 1994, 1995  Hewlett-Packard Company
@@ -598,7 +599,7 @@ ProcDbeGetVisualInfo(ClientPtr client)
         }
     }
 
-    count = (stuff->n == 0) ? screenInfo.numScreens : stuff->n;
+    count = (stuff->n == 0) ? xephyr_context->screenInfo.numScreens : stuff->n;
     if (!(pScrVisInfo = calloc(count, sizeof(XdbeScreenVisualInfo)))) {
         free(pDrawables);
 
@@ -608,7 +609,7 @@ ProcDbeGetVisualInfo(ClientPtr client)
     length = 0;
 
     for (i = 0; i < count; i++) {
-        pScreen = (stuff->n == 0) ? screenInfo.screens[i] :
+        pScreen = (stuff->n == 0) ? xephyr_context->screenInfo.screens[i] :
             pDrawables[i]->pScreen;
         pDbeScreenPriv = DBE_SCREEN_PRIV(pScreen);
 
@@ -1254,8 +1255,8 @@ DbeResetProc(ExtensionEntry * extEntry)
     ScreenPtr pScreen;
     DbeScreenPrivPtr pDbeScreenPriv;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        pScreen = xephyr_context->screenInfo.screens[i];
         pDbeScreenPriv = DBE_SCREEN_PRIV(pScreen);
 
         if (pDbeScreenPriv) {
@@ -1390,12 +1391,12 @@ DbeExtensionInit(void)
     if (!dixRegisterPrivateKey(&dbeWindowPrivKeyRec, PRIVATE_WINDOW, 0))
         return;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
         /* For each screen, set up DBE screen privates and init DIX and DDX
          * interface.
          */
 
-        pScreen = screenInfo.screens[i];
+        pScreen = xephyr_context->screenInfo.screens[i];
 
         if (!(pDbeScreenPriv = malloc(sizeof(DbeScreenPrivRec)))) {
             /* If we can not alloc a window or screen private,
@@ -1403,9 +1404,9 @@ DbeExtensionInit(void)
              */
 
             for (j = 0; j < i; j++) {
-                free(dixLookupPrivate(&screenInfo.screens[j]->devPrivates,
+                free(dixLookupPrivate(&xephyr_context->screenInfo.screens[j]->devPrivates,
                                       dbeScreenPrivKey));
-                dixSetPrivate(&screenInfo.screens[j]->devPrivates,
+                dixSetPrivate(&xephyr_context->screenInfo.screens[j]->devPrivates,
                               dbeScreenPrivKey, NULL);
             }
             return;
@@ -1446,13 +1447,13 @@ DbeExtensionInit(void)
 
         }
 
-    }                           /* for (i = 0; i < screenInfo.numScreens; i++) */
+    }                           /* for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) */
 
-    if (nStubbedScreens == screenInfo.numScreens) {
+    if (nStubbedScreens == xephyr_context->screenInfo.numScreens) {
         /* All screens stubbed.  Clean up and return. */
 
-        for (i = 0; i < screenInfo.numScreens; i++) {
-            free(dixLookupPrivate(&screenInfo.screens[i]->devPrivates,
+        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+            free(dixLookupPrivate(&xephyr_context->screenInfo.screens[i]->devPrivates,
                                   dbeScreenPrivKey));
             dixSetPrivate(&pScreen->devPrivates, dbeScreenPrivKey, NULL);
         }

@@ -34,9 +34,7 @@ srcs_glamor = [
     'glamor_sync.c',
 ]
 
-if build_xv
-    srcs_glamor += 'glamor_xv.c'
-endif
+srcs_glamor += 'glamor_xv.c'
 
 epoxy_dep = dependency('epoxy')
 
@@ -57,7 +55,3 @@ glamor_egl_stubs = static_library('glamor_egl_stubs',
 
 # Define libxserver_glamor for use in main build
 libxserver_glamor = glamor
-
-if build_xorg
-    install_data('glamor.h', install_dir: xorgsdkdir)
-endif

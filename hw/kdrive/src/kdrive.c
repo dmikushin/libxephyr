@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 1999 Keith Packard
  *
@@ -518,8 +519,8 @@ KdAllocatePrivates(ScreenPtr pScreen)
 {
     KdPrivScreenPtr pScreenPriv;
 
-    if (kdGeneration != serverGeneration)
-        kdGeneration = serverGeneration;
+    if (kdGeneration != xephyr_context->serverGeneration)
+        kdGeneration = xephyr_context->serverGeneration;
 
     if (!dixRegisterPrivateKey(&kdScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
         return FALSE;
@@ -718,8 +719,8 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
     pScreen->x = screen->origin.x;
     pScreen->y = screen->origin.y;
 
-    if (!monitorResolution)
-        monitorResolution = 75;
+    if (!xephyr_context->monitorResolution)
+        xephyr_context->monitorResolution = 75;
     /*
      * This is done in this order so that backing store wraps
      * our GC functions; fbFinishScreenInit initializes MI
@@ -728,7 +729,7 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
     if (!fbSetupScreen(pScreen,
                        screen->fb.frameBuffer,
                        width, height,
-                       monitorResolution, monitorResolution,
+                       xephyr_context->monitorResolution, xephyr_context->monitorResolution,
                        screen->fb.pixelStride, screen->fb.bitsPerPixel)) {
         return FALSE;
     }
@@ -747,7 +748,7 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
     if (!fbFinishScreenInit(pScreen,
                             screen->fb.frameBuffer,
                             width, height,
-                            monitorResolution, monitorResolution,
+                            xephyr_context->monitorResolution, xephyr_context->monitorResolution,
                             screen->fb.pixelStride, screen->fb.bitsPerPixel)) {
         return FALSE;
     }
@@ -799,7 +800,7 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
     if (screen->softCursor ||
         !card->cfuncs->initCursor || !(*card->cfuncs->initCursor) (pScreen)) {
-        /* Use MI for cursor display and event queueing. */
+        /* Use MI for cursor xephyr_context->display and event queueing. */
         screen->softCursor = TRUE;
         miDCInitialize(pScreen, &kdPointerScreenFuncs);
     }

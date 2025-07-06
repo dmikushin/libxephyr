@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1989, 1998  The Open Group
@@ -67,7 +68,7 @@ SOFTWARE.
 /***********************************************************************
  *
  * This procedure changes the control attributes for an extension device,
- * for clients on machines with a different byte ordering than the server.
+ * for xephyr_context->clients on machines with a different byte ordering than the server.
  *
  */
 
@@ -226,7 +227,7 @@ ProcXChangeDeviceControl(ClientPtr client)
     if (ret == Success) {
         devicePresenceNotify dpn = {
             .type = DevicePresenceNotify,
-            .time = currentTime.milliseconds,
+            .time = xephyr_context->currentTime.milliseconds,
             .devchange = DeviceControlChanged,
             .deviceid = dev->id,
             .control = stuff->control

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2006 Nokia Corporation
  * Copyright © 2006-2007 Daniel Stone
@@ -344,15 +345,15 @@ updateSlaveDeviceCoords(DeviceIntPtr master, DeviceIntPtr pDev)
         pDev->last.valuators[0] = rescaleValuatorAxis(pDev->last.valuators[0],
                                                       NULL,
                                                       pDev->valuator->axes + 0,
-                                                      screenInfo.x,
-                                                      screenInfo.width);
+                                                      xephyr_context->screenInfo.x,
+                                                      xephyr_context->screenInfo.width);
     }
     if (pDev->valuator->numAxes > 1) {
         pDev->last.valuators[1] = rescaleValuatorAxis(pDev->last.valuators[1],
                                                       NULL,
                                                       pDev->valuator->axes + 1,
-                                                      screenInfo.y,
-                                                      screenInfo.height);
+                                                      xephyr_context->screenInfo.y,
+                                                      xephyr_context->screenInfo.height);
     }
 
     /* other axes are left as-is */
@@ -761,7 +762,7 @@ scale_for_device_resolution(DeviceIntPtr dev, ValuatorMask *mask)
     int xrange = v->axes[0].max_value - v->axes[0].min_value + 1;
     int yrange = v->axes[1].max_value - v->axes[1].min_value + 1;
 
-    double screen_ratio = 1.0 * screenInfo.width/screenInfo.height;
+    double screen_ratio = 1.0 * xephyr_context->screenInfo.width/xephyr_context->screenInfo.height;
     double device_ratio = 1.0 * xrange/yrange;
     double resolution_ratio = 1.0;
     double ratio;
@@ -853,7 +854,7 @@ scale_from_screen(DeviceIntPtr dev, ValuatorMask *mask, int flags)
             scaled += scr->x;
         scaled = rescaleValuatorAxis(scaled,
                                      NULL, dev->valuator->axes + 0,
-                                     screenInfo.x, screenInfo.width);
+                                     xephyr_context->screenInfo.x, xephyr_context->screenInfo.width);
         valuator_mask_set_double(mask, 0, scaled);
     }
     if (valuator_mask_isset(mask, 1)) {
@@ -862,7 +863,7 @@ scale_from_screen(DeviceIntPtr dev, ValuatorMask *mask, int flags)
             scaled += scr->y;
         scaled = rescaleValuatorAxis(scaled,
                                      NULL, dev->valuator->axes + 1,
-                                     screenInfo.y, screenInfo.height);
+                                     xephyr_context->screenInfo.y, xephyr_context->screenInfo.height);
         valuator_mask_set_double(mask, 1, scaled);
     }
 }
@@ -907,9 +908,9 @@ scale_to_desktop(DeviceIntPtr dev, ValuatorMask *mask,
 
     /* scale x&y to desktop coordinates */
     *screenx = rescaleValuatorAxis(x, dev->valuator->axes + 0, NULL,
-                                   screenInfo.x, screenInfo.width);
+                                   xephyr_context->screenInfo.x, xephyr_context->screenInfo.width);
     *screeny = rescaleValuatorAxis(y, dev->valuator->axes + 1, NULL,
-                                   screenInfo.y, screenInfo.height);
+                                   xephyr_context->screenInfo.y, xephyr_context->screenInfo.height);
 
     *devx = x;
     *devy = y;
@@ -966,11 +967,11 @@ positionSprite(DeviceIntPtr dev, int mode, ValuatorMask *mask,
      */
     if (tmpx != *screenx)
         *devx = rescaleValuatorAxis(*screenx, NULL, dev->valuator->axes + 0,
-                                    screenInfo.x, screenInfo.width);
+                                    xephyr_context->screenInfo.x, xephyr_context->screenInfo.width);
 
     if (tmpy != *screeny)
         *devy = rescaleValuatorAxis(*screeny, NULL, dev->valuator->axes + 1,
-                                    screenInfo.y, screenInfo.height);
+                                    xephyr_context->screenInfo.y, xephyr_context->screenInfo.height);
 
     /* Recalculate the per-screen device coordinates */
     if (valuator_mask_isset(mask, 0)) {
@@ -1301,7 +1302,7 @@ QueuePointerEvents(DeviceIntPtr device, int type,
  * We use several different coordinate systems and need to switch between
  * the three in fill_pointer_events, positionSprite and
  * miPointerSetPosition. "desktop" refers to the width/height of all
- * screenInfo.screens[n]->width/height added up. "screen" is ScreenRec, not
+ * xephyr_context->screenInfo.screens[n]->width/height added up. "screen" is ScreenRec, not
  * output.
  *
  * Coordinate systems:
@@ -1327,7 +1328,7 @@ QueuePointerEvents(DeviceIntPtr device, int type,
  * x/y of range [n..m] that maps to positions Sx/Sy on Screen S must be
  * rescaled to match Sx/Sy for [n..m]. In the simplest example, x of (m/2-1)
  * is the last coordinate on the first screen and must be rescaled for the
- * event to be m. XI2 clients that do their own coordinate mapping would
+ * event to be m. XI2 xephyr_context->clients that do their own coordinate mapping would
  * otherwise interpret the position of the device elsewhere to the cursor.
  * However, this scaling leads to losses:
  * if we have two ScreenRecs we scale from e.g. [0..44704]  (Wacom I4) to
@@ -1701,7 +1702,7 @@ GetPointerEvents(InternalEvent *events, DeviceIntPtr pDev, int type,
     valuator_mask_zero(&scroll);
 
     /* Now turn the smooth-scrolling axes back into emulated button presses
-     * for legacy clients, based on the integer delta between before and now */
+     * for legacy xephyr_context->clients, based on the integer delta between before and now */
     for (i = 0; i < valuator_mask_size(&mask); i++) {
         if ( !pDev->valuator || (i >= pDev->valuator->numAxes))
             break;
@@ -2086,8 +2087,8 @@ PostSyntheticMotion(DeviceIntPtr pDev,
        will translate from sprite screen to screen 0 upon reentry
        to the DIX layer. */
     if (!noPanoramiXExtension) {
-        x += screenInfo.screens[0]->x - screenInfo.screens[screen]->x;
-        y += screenInfo.screens[0]->y - screenInfo.screens[screen]->y;
+        x += xephyr_context->screenInfo.screens[0]->x - xephyr_context->screenInfo.screens[screen]->x;
+        y += xephyr_context->screenInfo.screens[0]->y - xephyr_context->screenInfo.screens[screen]->y;
     }
 #endif
 

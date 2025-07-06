@@ -10,7 +10,7 @@ hdrs_miext_sync = [
     'misyncstr.h',
 ]
 
-if build_dri3
+if xshmfence_dep.found()
     srcs_miext_sync += 'misyncshm.c'
 endif
 
@@ -22,7 +22,3 @@ libxserver_miext_sync = static_library('libxserver_miext_sync',
         xshmfence_dep,
     ],
 )
-
-if build_xorg
-    install_data(hdrs_miext_sync, install_dir: xorgsdkdir)
-endif

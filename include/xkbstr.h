@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 Copyright (c) 1993 by Silicon Graphics Computer Systems, Inc.
 
@@ -330,7 +331,7 @@ typedef struct _XkbServerMapRec {
 #define	XkbSMKeyActionsPtr(m, k) (&(m)->acts[(m)->key_acts[(k)]])
 
         /*
-         * Structures and access macros used primarily by clients
+         * Structures and access macros used primarily by xephyr_context->clients
          */
 
 typedef struct _XkbSymMapRec {

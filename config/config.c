@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2006-2007 Daniel Stone
  *

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 1999 Keith Packard
  *
@@ -59,7 +60,7 @@ KdSetColormap(ScreenPtr pScreen)
         pixels[i] = i;
 
     QueryColors(pCmap, (1 << pScreenPriv->screen->fb.depth), pixels, colors,
-                serverClient);
+                xephyr_context->serverClient);
 
     for (i = 0; i < (1 << pScreenPriv->screen->fb.depth); i++) {
         defs[i].pixel = i;
@@ -131,7 +132,7 @@ KdInstallColormap(ColormapPtr pCmap)
     if (pCmap == pScreenPriv->pInstalledmap)
         return;
 
-    /* Tell X clients that the installed colormap is going away. */
+    /* Tell X xephyr_context->clients that the installed colormap is going away. */
     if (pScreenPriv->pInstalledmap)
         WalkTree(pScreenPriv->pInstalledmap->pScreen, TellLostMap,
                  (void *) &(pScreenPriv->pInstalledmap->mid));
@@ -141,7 +142,7 @@ KdInstallColormap(ColormapPtr pCmap)
 
     KdSetColormap(pCmap->pScreen);
 
-    /* Tell X clients of the new colormap */
+    /* Tell X xephyr_context->clients of the new colormap */
     WalkTree(pCmap->pScreen, TellGainedMap, (void *) &(pCmap->mid));
 }
 
@@ -170,7 +171,7 @@ KdUninstallColormap(ColormapPtr pCmap)
 
     /* install default */
     dixLookupResourceByType((void **) &defMap, defMapID, RT_COLORMAP,
-                            serverClient, DixInstallAccess);
+                            xephyr_context->serverClient, DixInstallAccess);
     if (defMap)
         (*pCmap->pScreen->InstallColormap) (defMap);
     else {

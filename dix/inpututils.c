@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2008 Daniel Stone
  *
@@ -82,15 +83,15 @@ do_butmap_change(DeviceIntPtr dev, CARD8 *map, int len, ClientPtr client)
     core_mn.u.mappingNotify.request = MappingPointer;
 
     /* 0 is the server client. */
-    for (i = 1; i < currentMaxClients; i++) {
-        /* Don't send irrelevant events to naïve clients. */
-        if (!clients[i] || clients[i]->clientState != ClientStateRunning)
+    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
+        /* Don't send irrelevant events to naïve xephyr_context->clients. */
+        if (!xephyr_context->clients[i] || xephyr_context->clients[i]->clientState != ClientStateRunning)
             continue;
 
-        if (!XIShouldNotify(clients[i], dev))
+        if (!XIShouldNotify(xephyr_context->clients[i], dev))
             continue;
 
-        WriteEventsToClient(clients[i], 1, &core_mn);
+        WriteEventsToClient(xephyr_context->clients[i], 1, &core_mn);
     }
 
     xi_mn = (deviceMappingNotify) {
@@ -217,7 +218,7 @@ check_modmap_change_slave(ClientPtr client, DeviceIntPtr master,
 static void
 do_modmap_change(ClientPtr client, DeviceIntPtr dev, CARD8 *modmap)
 {
-    XkbApplyMappingChange(dev, NULL, 0, 0, modmap, serverClient);
+    XkbApplyMappingChange(dev, NULL, 0, 0, modmap, xephyr_context->serverClient);
 }
 
 /* Rebuild modmap (key -> mod) from map (mod -> key). */
@@ -855,7 +856,7 @@ point_on_screen(ScreenPtr pScreen, int x, int y)
 }
 
 /**
- * Update desktop dimensions on the screenInfo struct.
+ * Update desktop dimensions on the xephyr_context->screenInfo struct.
  */
 void
 update_desktop_dimensions(void)
@@ -864,8 +865,8 @@ update_desktop_dimensions(void)
     int x1 = INT_MAX, y1 = INT_MAX;     /* top-left */
     int x2 = INT_MIN, y2 = INT_MIN;     /* bottom-right */
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr screen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr screen = xephyr_context->screenInfo.screens[i];
 
         x1 = min(x1, screen->x);
         y1 = min(y1, screen->y);
@@ -873,10 +874,10 @@ update_desktop_dimensions(void)
         y2 = max(y2, screen->y + screen->height);
     }
 
-    screenInfo.x = x1;
-    screenInfo.y = y1;
-    screenInfo.width = x2 - x1;
-    screenInfo.height = y2 - y1;
+    xephyr_context->screenInfo.x = x1;
+    xephyr_context->screenInfo.y = y1;
+    xephyr_context->screenInfo.width = x2 - x1;
+    xephyr_context->screenInfo.height = y2 - y1;
 }
 
 /*

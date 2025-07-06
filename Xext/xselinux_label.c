@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Author: Eamon Walsh <ewalsh@tycho.nsa.gov>

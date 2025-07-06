@@ -21,16 +21,10 @@ hdrs_randr = [
     'rrtransform.h',
 ]
 
-if build_xinerama
-    srcs_randr += 'rrxinerama.c'
-endif
+srcs_randr += 'rrxinerama.c'
 
 libxserver_randr = static_library('libxserver_randr',
     srcs_randr,
     include_directories: inc,
     dependencies: common_dep,
 )
-
-if build_xorg
-    install_data(hdrs_randr, install_dir: xorgsdkdir)
-endif

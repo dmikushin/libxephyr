@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
    Copyright (c) 2002  XFree86 Inc
 */
@@ -223,11 +224,11 @@ ProcXResQueryClients(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXResQueryClientsReq);
 
-    current_clients = xallocarray(currentMaxClients, sizeof(int));
+    current_clients = xallocarray(xephyr_context->currentMaxClients, sizeof(int));
 
     num_clients = 0;
-    for (i = 0; i < currentMaxClients; i++) {
-        if (clients[i]) {
+    for (i = 0; i < xephyr_context->currentMaxClients; i++) {
+        if (xephyr_context->clients[i]) {
             current_clients[num_clients] = i;
             num_clients++;
         }
@@ -250,7 +251,7 @@ ProcXResQueryClients(ClientPtr client)
         xXResClient scratch;
 
         for (i = 0; i < num_clients; i++) {
-            scratch.resource_base = clients[current_clients[i]]->clientAsMask;
+            scratch.resource_base = xephyr_context->clients[current_clients[i]]->clientAsMask;
             scratch.resource_mask = RESOURCE_ID_MASK;
 
             if (client->swapped) {
@@ -304,14 +305,14 @@ ProcXResQueryClientResources(ClientPtr client)
 
     clientID = CLIENT_ID(stuff->xid);
 
-    if ((clientID >= currentMaxClients) || !clients[clientID]) {
+    if ((clientID >= xephyr_context->currentMaxClients) || !xephyr_context->clients[clientID]) {
         client->errorValue = stuff->xid;
         return BadValue;
     }
 
     counts = calloc(lastResourceType + 1, sizeof(int));
 
-    FindAllClientResources(clients[clientID], ResFindAllRes, counts);
+    FindAllClientResources(xephyr_context->clients[clientID], ResFindAllRes, counts);
 
     num_types = 0;
 
@@ -380,14 +381,14 @@ ProcXResQueryClientPixmapBytes(ClientPtr client)
 
     clientID = CLIENT_ID(stuff->xid);
 
-    if ((clientID >= currentMaxClients) || !clients[clientID]) {
+    if ((clientID >= xephyr_context->currentMaxClients) || !xephyr_context->clients[clientID]) {
         client->errorValue = stuff->xid;
         return BadValue;
     }
 
     bytes = 0;
 
-    FindAllClientResources(clients[clientID], ResFindResourcePixmaps,
+    FindAllClientResources(xephyr_context->clients[clientID], ResFindResourcePixmaps,
                            (void *) (&bytes));
 
     rep = (xXResQueryClientPixmapBytesReply) {
@@ -418,7 +419,7 @@ ProcXResQueryClientPixmapBytes(ClientPtr client)
     @param client   The client to send information about
     @param mask     The request mask (0 to send everything, otherwise a
                     bitmask of X_XRes*Mask)
-    @param ctx      The context record that tells which clients and id types
+    @param ctx      The context record that tells which xephyr_context->clients and id types
                     have been already handled
     @param sendMask Which id type are we now considering. One of X_XRes*Mask.
 
@@ -447,7 +448,7 @@ WillConstructMask(ClientPtr client, CARD32 mask,
     @param mask       The client id spec mask indicating which information
                       we want about this client.
     @param ctx        The context record containing the constructed response
-                      and information on which clients and masks have been
+                      and information on which xephyr_context->clients and masks have been
                       already handled.
 
     @return Return TRUE if everything went OK, otherwise FALSE which indicates
@@ -517,7 +518,7 @@ ConstructClientIdValue(ClientPtr sendClient, ClientPtr client, CARD32 mask,
     return TRUE;
 }
 
-/** @brief Constructs a response about all clients, based on a client id specs
+/** @brief Constructs a response about all xephyr_context->clients, based on a client id specs
 
     @param client   Which client which we are constructing the response for.
     @param numSpecs Number of client id specs in specs
@@ -536,9 +537,9 @@ ConstructClientIds(ClientPtr client,
     for (specIdx = 0; specIdx < numSpecs; ++specIdx) {
         if (specs[specIdx].client == 0) {
             int c;
-            for (c = 0; c < currentMaxClients; ++c) {
-                if (clients[c]) {
-                    if (!ConstructClientIdValue(client, clients[c],
+            for (c = 0; c < xephyr_context->currentMaxClients; ++c) {
+                if (xephyr_context->clients[c]) {
+                    if (!ConstructClientIdValue(client, xephyr_context->clients[c],
                                                 specs[specIdx].mask, ctx)) {
                         return BadAlloc;
                     }
@@ -547,8 +548,8 @@ ConstructClientIds(ClientPtr client,
         } else {
             int clientID = CLIENT_ID(specs[specIdx].client);
 
-            if ((clientID < currentMaxClients) && clients[clientID]) {
-                if (!ConstructClientIdValue(client, clients[clientID],
+            if ((clientID < xephyr_context->currentMaxClients) && xephyr_context->clients[clientID]) {
+                if (!ConstructClientIdValue(client, xephyr_context->clients[clientID],
                                             specs[specIdx].mask, ctx)) {
                     return BadAlloc;
                 }
@@ -870,7 +871,7 @@ ConstructClientResourceBytes(ClientPtr aboutClient,
    @see ConstructResourceBytesByResource
 
    @param[in] aboutClient  Which client is being considered. This may be None
-                           to mean all clients.
+                           to mean all xephyr_context->clients.
    @param[in/out] ctx      The context that contains the resource id
                            specifications as well as the result buffer. In
                            addition this function uses the curSpec field to
@@ -886,9 +887,9 @@ ConstructResourceBytesByResource(XID aboutClient, ConstructResourceBytesCtx *ctx
         xXResResourceIdSpec *spec = ctx->specs + specIdx;
         if (spec->resource) {
             int cid = CLIENT_ID(spec->resource);
-            if (cid < currentMaxClients &&
+            if (cid < xephyr_context->currentMaxClients &&
                 (aboutClient == None || cid == aboutClient)) {
-                ClientPtr client = clients[cid];
+                ClientPtr client = xephyr_context->clients[cid];
                 if (client) {
                     ctx->curSpec = spec;
                     FindAllClientResources(client,
@@ -904,7 +905,7 @@ ConstructResourceBytesByResource(XID aboutClient, ConstructResourceBytesCtx *ctx
            (or all if not specified) per the parameters set up
            in the context object.
 
-  @param[in] aboutClient  Which client to consider or None for all clients
+  @param[in] aboutClient  Which client to consider or None for all xephyr_context->clients
   @param[in/out] ctx      The context object that contains the request as well
                           as the response buffer.
 */
@@ -916,12 +917,12 @@ ConstructResourceBytes(XID aboutClient,
         int clientIdx = CLIENT_ID(aboutClient);
         ClientPtr client = NullClient;
 
-        if ((clientIdx >= currentMaxClients) || !clients[clientIdx]) {
+        if ((clientIdx >= xephyr_context->currentMaxClients) || !xephyr_context->clients[clientIdx]) {
             ctx->sendClient->errorValue = aboutClient;
             return BadValue;
         }
 
-        client = clients[clientIdx];
+        client = xephyr_context->clients[clientIdx];
 
         ConstructClientResourceBytes(client, ctx);
         ConstructResourceBytesByResource(aboutClient, ctx);
@@ -930,8 +931,8 @@ ConstructResourceBytes(XID aboutClient,
 
         ConstructClientResourceBytes(NULL, ctx);
 
-        for (clientIdx = 0; clientIdx < currentMaxClients; ++clientIdx) {
-            ClientPtr client = clients[clientIdx];
+        for (clientIdx = 0; clientIdx < xephyr_context->currentMaxClients; ++clientIdx) {
+            ClientPtr client = xephyr_context->clients[clientIdx];
 
             if (client) {
                 ConstructClientResourceBytes(client, ctx);

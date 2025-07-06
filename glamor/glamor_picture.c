@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2016 Broadcom
  * Copyright © 2009 Intel Corporation

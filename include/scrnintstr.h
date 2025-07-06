@@ -1,3 +1,4 @@
+/* #include "dix/context.h" - causes circular dependency */
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -55,6 +56,8 @@ SOFTWARE.
 #include <X11/Xproto.h>
 #include "dix.h"
 #include "privates.h"
+#include "pixmap.h"
+#include "miscstruct.h"
 #include <X11/extensions/randr.h>
 
 typedef struct _PixmapFormat {
@@ -686,9 +689,5 @@ typedef struct _ScreenInfo {
 } ScreenInfo;
 
 extern _X_EXPORT ScreenInfo screenInfo;
-
-extern _X_EXPORT void InitOutput(ScreenInfo * /*pScreenInfo */ ,
-                                 int /*argc */ ,
-                                 char ** /*argv */ );
 
 #endif                          /* SCREENINTSTRUCT_H */

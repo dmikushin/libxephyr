@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
  *

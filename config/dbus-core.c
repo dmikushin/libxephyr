@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2006-2007 Daniel Stone
  *
@@ -219,6 +220,7 @@ dbus_core_remove_hook(struct dbus_core_hook *hook)
     }
 }
 
+#ifdef NEED_DBUS
 int
 dbus_core_init(void)
 {
@@ -236,3 +238,4 @@ dbus_core_fini(void)
 {
     teardown();
 }
+#endif

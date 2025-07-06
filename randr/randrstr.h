@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2000 Compaq Computer Corporation
  * Copyright © 2002 Hewlett-Packard Company
@@ -419,7 +420,7 @@ extern _X_EXPORT DevPrivateKeyRec rrPrivKeyRec;
 #define SetRRScreen(s,p) dixSetPrivate(&(s)->devPrivates, rrPrivKey, p)
 
 /*
- * each window has a list of clients requesting
+ * each window has a list of xephyr_context->clients requesting
  * RRNotify events.  Each client has a resource
  * for each window it selects RRNotify input for,
  * this resource is used to delete the RRNotifyRec
@@ -1200,7 +1201,7 @@ Query state:
 Asynchronous state setting (1.2 only)
     When setting state asynchronously, the driver invokes the
     ->rrGetInfo function and then calls RRTellChanged to flush
-    the changes to the clients and reset pointer if necessary
+    the changes to the xephyr_context->clients and reset pointer if necessary
 
 Set state
 

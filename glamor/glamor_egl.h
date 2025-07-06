@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2016 Red Hat, Inc.
  *
@@ -34,7 +35,7 @@
 #include <glamor_egl_ext.h>
 
 /*
- * Create an EGLDisplay from a native display type. This is a little quirky
+ * Create an EGLDisplay from a native xephyr_context->display type. This is a little quirky
  * for a few reasons.
  *
  * 1: GetPlatformDisplayEXT and GetPlatformDisplay are the API you want to
@@ -47,7 +48,7 @@
  * will crash.
  *
  * 3: You can't tell whether you have EGL 1.5 at this point, because
- * eglQueryString(EGL_VERSION) is a property of the display, which we don't
+ * eglQueryString(EGL_VERSION) is a property of the xephyr_context->display, which we don't
  * have yet. So you have to query for extensions no matter what. Fortunately
  * epoxy_has_egl_extension _does_ let you query for client extensions, so
  * we don't have to write our own extension string parsing.

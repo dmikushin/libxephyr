@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2008 Red Hat, Inc
  *
@@ -119,8 +120,8 @@ static int
 server_has_depth(int depth)
 {
     int i;
-    for (i = 0; i < screenInfo.numPixmapFormats; i++)
-        if (screenInfo.formats[i].depth == depth)
+    for (i = 0; i < xephyr_context->screenInfo.numPixmapFormats; i++)
+        if (xephyr_context->screenInfo.formats[i].depth == depth)
             return 1;
     return 0;
 }

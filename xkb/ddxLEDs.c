@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 Copyright (c) 1993 by Silicon Graphics Computer Systems, Inc.
 

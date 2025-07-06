@@ -1,7 +1,8 @@
+#include "dix/context.h"
 /*
  * midispcur.c
  *
- * machine independent cursor display routines
+ * machine independent cursor xephyr_context->display routines
  */
 
 /*
@@ -169,7 +170,7 @@ miDCMakePicture(PicturePtr * ppPicture, DrawablePtr pDraw, WindowPtr pWin)
         return 0;
     pPicture = CreatePicture(0, pDraw, pFormat,
                              CPSubwindowMode, &subwindow_mode,
-                             serverClient, &error);
+                             xephyr_context->serverClient, &error);
     *ppPicture = pPicture;
     return pPicture;
 }
@@ -213,7 +214,7 @@ miDCRealize(ScreenPtr pScreen, CursorPtr pCursor)
                                0, ZPixmap, (char *) pCursor->bits->argb);
         FreeScratchGC(pGC);
         pPicture = CreatePicture(0, &pPixmap->drawable,
-                                 pFormat, 0, 0, serverClient, &error);
+                                 pFormat, 0, 0, xephyr_context->serverClient, &error);
         (*pScreen->DestroyPixmap) (pPixmap);
         if (!pPicture)
             return FALSE;
@@ -343,7 +344,7 @@ miDCMakeGC(WindowPtr pWin)
     gcvals[1] = FALSE;
     pGC = CreateGC((DrawablePtr) pWin,
                    GCSubwindowMode | GCGraphicsExposures, gcvals, &status,
-                   (XID) 0, serverClient);
+                   (XID) 0, xephyr_context->serverClient);
     return pGC;
 }
 
@@ -445,8 +446,8 @@ miDCDeviceInitialize(DeviceIntPtr pDev, ScreenPtr pScreen)
     if (!DevHasCursor(pDev))
         return TRUE;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        pScreen = xephyr_context->screenInfo.screens[i];
 
         pBuffer = calloc(1, sizeof(miDCBufferRec));
         if (!pBuffer)
@@ -494,8 +495,8 @@ miDCDeviceCleanup(DeviceIntPtr pDev, ScreenPtr pScreen)
     int i;
 
     if (DevHasCursor(pDev)) {
-        for (i = 0; i < screenInfo.numScreens; i++) {
-            pScreen = screenInfo.screens[i];
+        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+            pScreen = xephyr_context->screenInfo.screens[i];
 
             pBuffer = miGetDCDevice(pDev, pScreen);
 

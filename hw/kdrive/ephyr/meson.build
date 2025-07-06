@@ -21,56 +21,11 @@ xephyr_dep = [
     dependency('xcb-xkb'),
 ]
 
-xephyr_glamor = []
-if build_glamor
-    srcs += 'ephyr_glamor_glx.c'
-    if build_xv
-        srcs += 'ephyr_glamor_xv.c'
-    endif
-    xephyr_glamor += glamor
-    xephyr_glamor += glamor_egl_stubs
-    xephyr_dep += dependency('x11-xcb')
-    xephyr_dep += epoxy_dep
-endif
+xephyr_glamor = [glamor, glamor_egl_stubs]
+srcs += ['ephyr_glamor_glx.c', 'ephyr_glamor_xv.c', 'ephyrvideo.c']
+xephyr_dep += [dependency('x11-xcb'), dependency('xcb-xv'), epoxy_dep]
 
-if build_xv
-    srcs += 'ephyrvideo.c'
-    xephyr_dep += dependency('xcb-xv')
-endif
-
-xephyr_server = executable(
-    'Xephyr',
-    srcs,
-    include_directories: [
-        inc,
-        include_directories('../src'),
-        include_directories('../../../exa')
-    ],
-    dependencies: xephyr_dep,
-    link_with: [
-        libxserver_main,
-        libxserver_exa,
-        xephyr_glamor,
-        kdrive,
-        libxserver_fb,
-        libxserver,
-        libxserver_config,
-        libxserver_xkb_stubs,
-        libxserver_xi_stubs,
-        libxserver_glx,
-        libglxvnd,
-    ],
-    install: true,
-)
-
-xephyr_man = configure_file(
-    input: 'man/Xephyr.man',
-    output: 'Xephyr.1',
-    configuration: manpage_config,
-)
-install_man(xephyr_man)
-
-# Create libxephyr shared library
+# Create libxephyr static library
 libxephyr_srcs = [
     'ephyr.c',
     'ephyr_lib.c',
@@ -80,19 +35,8 @@ libxephyr_srcs = [
     'libxephyr_api.c',
 ]
 
-libxephyr_glamor = []
-if build_glamor
-    libxephyr_srcs += 'ephyr_glamor_glx.c'
-    if build_xv
-        libxephyr_srcs += 'ephyr_glamor_xv.c'
-    endif
-    libxephyr_glamor += glamor
-    libxephyr_glamor += glamor_egl_stubs
-endif
-
-if build_xv
-    libxephyr_srcs += 'ephyrvideo.c'
-endif
+libxephyr_glamor = [glamor, glamor_egl_stubs]
+libxephyr_srcs += ['ephyr_glamor_glx.c', 'ephyr_glamor_xv.c', 'ephyrvideo.c']
 
 libxephyr = static_library(
     'xephyr',
@@ -113,17 +57,11 @@ install_headers('libxephyr.h', subdir: 'libxephyr')
 libxephyr_dep = declare_dependency(
     link_with: [
         libxephyr,
-        libxserver_main,
         libxserver_exa,
-        libxephyr_glamor,
+        xephyr_glamor,
         kdrive,
         libxserver_fb,
-        libxserver,
         libxserver_config,
-        libxserver_xkb_stubs,
-        # libxserver_xi_stubs,  # Excluded due to symbol conflicts with kdrive
-        libxserver_glx,
-        libglxvnd,
     ],
     include_directories: include_directories('.'),
     dependencies: xephyr_dep

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
 Copyright 1987, 1998  The Open Group
@@ -42,34 +43,7 @@ extern _X_EXPORT volatile char dispatchException;
 #define DE_TERMINATE 2
 #define DE_PRIORITYCHANGE 4     /* set when a client's priority changes */
 
-extern _X_EXPORT int ScreenSaverBlanking;
-extern _X_EXPORT int ScreenSaverAllowExposures;
-extern _X_EXPORT int defaultScreenSaverBlanking;
-extern _X_EXPORT int defaultScreenSaverAllowExposures;
-extern _X_EXPORT const char *display;
-extern _X_EXPORT int displayfd;
-extern _X_EXPORT Bool explicit_display;
 
-extern _X_EXPORT Bool disableBackingStore;
-extern _X_EXPORT Bool enableBackingStore;
-extern _X_EXPORT Bool enableIndirectGLX;
-extern _X_EXPORT Bool PartialNetwork;
-extern _X_EXPORT Bool RunFromSigStopParent;
-
-#ifdef RLIMIT_DATA
-extern _X_EXPORT int limitDataSpace;
-#endif
-#ifdef RLIMIT_STACK
-extern _X_EXPORT int limitStackSpace;
-#endif
-#ifdef RLIMIT_NOFILE
-extern _X_EXPORT int limitNoFile;
-#endif
-extern _X_EXPORT Bool defeatAccessControl;
-extern _X_EXPORT long maxBigRequestSize;
-extern _X_EXPORT Bool party_like_its_1989;
-extern _X_EXPORT Bool whiteRoot;
-extern _X_EXPORT Bool bgNoneRoot;
 
 extern _X_EXPORT Bool CoreDump;
 extern _X_EXPORT Bool NoListenAll;

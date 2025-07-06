@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1989, 1998  The Open Group
@@ -122,12 +123,12 @@ ProcXGetDeviceMotionEvents(ClientPtr client)
     start = ClientTimeToServerTime(stuff->start);
     stop = ClientTimeToServerTime(stuff->stop);
     if (CompareTimeStamps(start, stop) == LATER ||
-        CompareTimeStamps(start, currentTime) == LATER) {
+        CompareTimeStamps(start, xephyr_context->currentTime) == LATER) {
         WriteReplyToClient(client, sizeof(xGetDeviceMotionEventsReply), &rep);
         return Success;
     }
-    if (CompareTimeStamps(stop, currentTime) == LATER)
-        stop = currentTime;
+    if (CompareTimeStamps(stop, xephyr_context->currentTime) == LATER)
+        stop = xephyr_context->currentTime;
     num_events = v->numMotionEvents;
     if (num_events) {
         size = sizeof(Time) + (axes * sizeof(INT32));

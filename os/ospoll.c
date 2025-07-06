@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2016 Keith Packard
  *
@@ -28,6 +29,7 @@
 #include <X11/Xproto.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <poll.h>
 #include "misc.h"               /* for typedef of pointer */
 #include "ospoll.h"
 #include "list.h"
@@ -659,7 +661,7 @@ ospoll_wait(struct ospoll *ospoll, int timeout)
     ospoll_clean_deleted(ospoll);
 #endif
 #if POLL
-    nready = xserver_poll(ospoll->fds, ospoll->num, timeout);
+        nready = poll(ospoll->fds, ospoll->num, timeout);
     ospoll->changed = FALSE;
     if (nready > 0) {
         int f;

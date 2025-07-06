@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  *
  * Copyright © 2001 Keith Packard, member of The XFree86 Project, Inc.
@@ -263,7 +264,7 @@ miInitIndexed(ScreenPtr pScreen, PictFormatPtr pFormat)
     /*
      * Build mapping from pixel value to ARGB
      */
-    QueryColors(pColormap, num, pixels, rgb, serverClient);
+    QueryColors(pColormap, num, pixels, rgb, xephyr_context->serverClient);
     for (i = 0; i < num; i++) {
         p = pixels[i];
         pFormat->index.pValues[i].pixel = p;

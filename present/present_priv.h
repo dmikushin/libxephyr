@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2013 Keith Packard
  *
@@ -197,7 +198,7 @@ present_screen_priv(ScreenPtr screen)
 }
 
 /*
- * Each window has a list of clients and event masks
+ * Each window has a list of xephyr_context->clients and event masks
  */
 typedef struct present_event *present_event_ptr;
 

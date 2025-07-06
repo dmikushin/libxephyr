@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -140,7 +141,7 @@ typedef struct _Window {
     RegionRec borderSize;
     DDXPointRec origin;         /* position relative to parent */
     unsigned short borderWidth;
-    unsigned short deliverableEvents;   /* all masks from all clients */
+    unsigned short deliverableEvents;   /* all masks from all xephyr_context->clients */
     Mask eventMask;             /* mask from the creating client */
     PixUnion background;
     PixUnion border;
@@ -195,7 +196,7 @@ extern _X_EXPORT Mask DontPropagateMasks[];
 #define wBoundingShape(w)	wUseDefault(w, boundingShape, NULL)
 #define wClipShape(w)		wUseDefault(w, clipShape, NULL)
 #define wInputShape(w)          wUseDefault(w, inputShape, NULL)
-#define wClient(w)		(clients[CLIENT_ID((w)->drawable.id)])
+#define wClient(w)		(xephyr_context->clients[CLIENT_ID((w)->drawable.id)])
 #define wBorderWidth(w)		((int) (w)->borderWidth)
 
 /* true when w needs a border drawn. */

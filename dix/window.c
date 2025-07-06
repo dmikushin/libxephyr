@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
 Copyright (c) 2006, Red Hat, Inc.
@@ -371,18 +372,18 @@ PrintPassiveGrabs(void)
 
     ErrorF("Printing all currently registered grabs\n");
 
-    for (i = 1; i < currentMaxClients; i++) {
-        if (!clients[i] || clients[i]->clientState != ClientStateRunning)
+    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
+        if (!xephyr_context->clients[i] || xephyr_context->clients[i]->clientState != ClientStateRunning)
             continue;
 
-        clientpid = GetClientPid(clients[i]);
-        cmdname = GetClientCmdName(clients[i]);
-        cmdargs = GetClientCmdArgs(clients[i]);
+        clientpid = GetClientPid(xephyr_context->clients[i]);
+        cmdname = GetClientCmdName(xephyr_context->clients[i]);
+        cmdargs = GetClientCmdArgs(xephyr_context->clients[i]);
         if ((clientpid > 0) && (cmdname != NULL)) {
             ErrorF("  Printing all registered grabs of client pid %ld %s %s\n",
                    (long) clientpid, cmdname, cmdargs ? cmdargs : "");
         } else {
-            if (GetLocalClientCreds(clients[i], &lcc) == -1) {
+            if (GetLocalClientCreds(xephyr_context->clients[i], &lcc) == -1) {
                 ErrorF("  GetLocalClientCreds() failed\n");
                 continue;
             }
@@ -393,7 +394,7 @@ PrintPassiveGrabs(void)
             FreeLocalClientCreds(lcc);
         }
 
-        FindClientResourcesByType(clients[i], RT_PASSIVEGRAB, log_grab_info, NULL);
+        FindClientResourcesByType(xephyr_context->clients[i], RT_PASSIVEGRAB, log_grab_info, NULL);
     }
     ErrorF("End list of registered passive grabs\n");
 }
@@ -405,8 +406,8 @@ PrintWindowTree(void)
     ScreenPtr pScreen;
     WindowPtr pWin;
 
-    for (scrnum = 0; scrnum < screenInfo.numScreens; scrnum++) {
-        pScreen = screenInfo.screens[scrnum];
+    for (scrnum = 0; scrnum < xephyr_context->screenInfo.numScreens; scrnum++) {
+        pScreen = xephyr_context->screenInfo.screens[scrnum];
         ErrorF("[dix] Dumping windows for screen %d (pixmap %x):\n", scrnum,
                (unsigned) pScreen->GetScreenPixmap(pScreen)->drawable.id);
         pWin = pScreen->root;
@@ -537,7 +538,7 @@ MakeRootTile(WindowPtr pWin)
 
     ValidateGC((DrawablePtr) pWin->background.pixmap, pGC);
 
-    from = (screenInfo.bitmapBitOrder == LSBFirst) ? _back_lsb : _back_msb;
+    from = (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst) ? _back_lsb : _back_msb;
     to = back;
 
     for (i = 4; i > 0; i--, from++)
@@ -578,7 +579,7 @@ CreateRootWindow(ScreenPtr pScreen)
     pWin->drawable.type = DRAWABLE_WINDOW;
 
     pWin->drawable.depth = pScreen->rootDepth;
-    for (format = screenInfo.formats;
+    for (format = xephyr_context->screenInfo.formats;
          format->depth != pScreen->rootDepth; format++);
     pWin->drawable.bitsPerPixel = format->bitsPerPixel;
 
@@ -636,7 +637,7 @@ CreateRootWindow(ScreenPtr pScreen)
 
     /*  security creation/labeling check
      */
-    if (XaceHook(XACE_RESOURCE_ACCESS, serverClient, pWin->drawable.id,
+    if (XaceHook(XACE_RESOURCE_ACCESS, xephyr_context->serverClient, pWin->drawable.id,
                  RT_WINDOW, pWin, RT_NONE, NULL, DixCreateAccess))
         return FALSE;
 
@@ -668,9 +669,9 @@ InitRootWindow(WindowPtr pWin)
     (*pScreen->PositionWindow) (pWin, 0, 0);
 
     pWin->cursorIsNone = FALSE;
-    pWin->optional->cursor = RefCursor(rootCursor);
+    pWin->optional->cursor = RefCursor(xephyr_context->rootCursor);
 
-    if (party_like_its_1989) {
+    if (xephyr_context->party_like_its_1989) {
         MakeRootTile(pWin);
         backFlag |= CWBackPixmap;
     }
@@ -681,7 +682,7 @@ InitRootWindow(WindowPtr pWin)
     }
     else {
         pWin->backgroundState = BackgroundPixel;
-        if (whiteRoot)
+        if (xephyr_context->whiteRoot)
             pWin->background.pixel = pScreen->whitePixel;
         else
             pWin->background.pixel = pScreen->blackPixel;
@@ -692,7 +693,7 @@ InitRootWindow(WindowPtr pWin)
     /* We SHOULD check for an error value here XXX */
     (*pScreen->ChangeWindowAttributes) (pWin, backFlag);
 
-    MapWindow(pWin, serverClient);
+    MapWindow(pWin, xephyr_context->serverClient);
 }
 
 /* Set the region to the intersection of the rectangle and the
@@ -838,7 +839,7 @@ CreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
     if (depth == pParent->drawable.depth)
         pWin->drawable.bitsPerPixel = pParent->drawable.bitsPerPixel;
     else {
-        for (format = screenInfo.formats; format->depth != depth; format++);
+        for (format = xephyr_context->screenInfo.formats; format->depth != depth; format++);
         pWin->drawable.bitsPerPixel = format->bitsPerPixel;
     }
     if (class == InputOnly)
@@ -1133,11 +1134,11 @@ SetRootWindowBackground(WindowPtr pWin, ScreenPtr pScreen, Mask *index2)
         pWin->backgroundState = XaceBackgroundNoneState(pWin);
         pWin->background.pixel = pScreen->whitePixel;
     }
-    else if (party_like_its_1989)
+    else if (xephyr_context->party_like_its_1989)
         MakeRootTile(pWin);
     else {
         pWin->backgroundState = BackgroundPixel;
-        if (whiteRoot)
+        if (xephyr_context->whiteRoot)
             pWin->background.pixel = pScreen->whitePixel;
         else
             pWin->background.pixel = pScreen->blackPixel;
@@ -1486,7 +1487,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
              */
             if (cursorID == None) {
                 if (pWin == pWin->drawable.pScreen->root)
-                    pCursor = rootCursor;
+                    pCursor = xephyr_context->rootCursor;
                 else
                     pCursor = (CursorPtr) None;
             }
@@ -1717,7 +1718,7 @@ SetWinSize(WindowPtr pWin)
         BoxRec box;
 
         /*
-         * Redirected clients get clip list equal to their
+         * Redirected xephyr_context->clients get clip list equal to their
          * own geometry, not clipped to their parent
          */
         box.x1 = pWin->drawable.x;
@@ -1755,7 +1756,7 @@ SetBorderSize(WindowPtr pWin)
             BoxRec box;
 
             /*
-             * Redirected clients get clip list equal to their
+             * Redirected xephyr_context->clients get clip list equal to their
              * own geometry, not clipped to their parent
              */
             box.x1 = pWin->drawable.x - bw;
@@ -2300,8 +2301,8 @@ ConfigureWindow(WindowPtr pWin, Mask mask, XID *vlist, ClientPtr client)
         event.u.u.detail = (mask & CWStackMode) ? smode : Above;
 #ifdef PANORAMIX
         if (!noPanoramiXExtension && (!pParent || !pParent->parent)) {
-            event.u.configureRequest.x += screenInfo.screens[0]->x;
-            event.u.configureRequest.y += screenInfo.screens[0]->y;
+            event.u.configureRequest.x += xephyr_context->screenInfo.screens[0]->x;
+            event.u.configureRequest.y += xephyr_context->screenInfo.screens[0]->y;
         }
 #endif
         if (MaybeDeliverEventsToClient(pParent, &event, 1,
@@ -2383,8 +2384,8 @@ ConfigureWindow(WindowPtr pWin, Mask mask, XID *vlist, ClientPtr client)
         event.u.u.type = ConfigureNotify;
 #ifdef PANORAMIX
         if (!noPanoramiXExtension && (!pParent || !pParent->parent)) {
-            event.u.configureNotify.x += screenInfo.screens[0]->x;
-            event.u.configureNotify.y += screenInfo.screens[0]->y;
+            event.u.configureNotify.x += xephyr_context->screenInfo.screens[0]->x;
+            event.u.configureNotify.y += xephyr_context->screenInfo.screens[0]->y;
         }
 #endif
         DeliverEvents(pWin, &event, 1, NullWindow);
@@ -2528,8 +2529,8 @@ ReparentWindow(WindowPtr pWin, WindowPtr pParent,
     event.u.u.type = ReparentNotify;
 #ifdef PANORAMIX
     if (!noPanoramiXExtension && !pParent->parent) {
-        event.u.reparent.x += screenInfo.screens[0]->x;
-        event.u.reparent.y += screenInfo.screens[0]->y;
+        event.u.reparent.x += xephyr_context->screenInfo.screens[0]->x;
+        event.u.reparent.y += xephyr_context->screenInfo.screens[0]->y;
     }
 #endif
     DeliverEvents(pWin, &event, 1, pParent);
@@ -2796,7 +2797,7 @@ UnrealizeTree(WindowPtr pWin, Bool fromConfigure)
                 int rc = dixLookupResourceByType((void **) &win,
                                                  pChild->drawable.id,
                                                  XRT_WINDOW,
-                                                 serverClient, DixWriteAccess);
+                                                 xephyr_context->serverClient, DixWriteAccess);
 
                 if (rc == Success)
                     win->u.win.visibility = VisibilityNotViewable;
@@ -3038,7 +3039,7 @@ SendVisibilityNotify(WindowPtr pWin)
             if (i == Scrnum)
                 continue;
 
-            rc = dixLookupWindow(&pWin2, win->info[i].id, serverClient,
+            rc = dixLookupWindow(&pWin2, win->info[i].id, xephyr_context->serverClient,
                                  DixWriteAccess);
 
             if (rc == Success) {
@@ -3052,7 +3053,7 @@ SendVisibilityNotify(WindowPtr pWin)
             break;
         case VisibilityPartiallyObscured:
             if (Scrnum) {
-                rc = dixLookupWindow(&pWin2, win->info[0].id, serverClient,
+                rc = dixLookupWindow(&pWin2, win->info[0].id, xephyr_context->serverClient,
                                      DixWriteAccess);
                 if (rc == Success)
                     pWin = pWin2;
@@ -3063,7 +3064,7 @@ SendVisibilityNotify(WindowPtr pWin)
             if (i == Scrnum)
                 continue;
 
-            rc = dixLookupWindow(&pWin2, win->info[i].id, serverClient,
+            rc = dixLookupWindow(&pWin2, win->info[i].id, xephyr_context->serverClient,
                                  DixWriteAccess);
 
             if (rc == Success) {
@@ -3110,14 +3111,14 @@ dixSaveScreens(ClientPtr client, int on, int mode)
             type = SCREEN_SAVER_CYCLE;
     }
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, screenInfo.screens[i],
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, xephyr_context->screenInfo.screens[i],
                       DixShowAccess | DixHideAccess);
         if (rc != Success)
             return rc;
     }
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
 
         if (on == SCREEN_SAVER_FORCER)
             (*pScreen->SaveScreen) (pScreen, on);
@@ -3163,18 +3164,18 @@ dixSaveScreens(ClientPtr client, int on, int mode)
             }
             break;
         case SCREEN_SAVER_ON:
-            if (ScreenSaverBlanking != DontPreferBlanking) {
+            if (xephyr_context->ScreenSaverBlanking != DontPreferBlanking) {
                 if ((*pScreen->SaveScreen) (pScreen, what)) {
                     pScreen->screensaver.blanked = SCREEN_IS_BLANKED;
                     continue;
                 }
-                if ((ScreenSaverAllowExposures != DontAllowExposures) &&
+                if ((xephyr_context->ScreenSaverAllowExposures != DontAllowExposures) &&
                     TileScreenSaver(pScreen, SCREEN_IS_BLACK)) {
                     pScreen->screensaver.blanked = SCREEN_IS_BLACK;
                     continue;
                 }
             }
-            if ((ScreenSaverAllowExposures != DontAllowExposures) &&
+            if ((xephyr_context->ScreenSaverAllowExposures != DontAllowExposures) &&
                 TileScreenSaver(pScreen, SCREEN_IS_TILED)) {
                 pScreen->screensaver.blanked = SCREEN_IS_TILED;
             }
@@ -3189,7 +3190,7 @@ dixSaveScreens(ClientPtr client, int on, int mode)
             DeviceIntPtr dev;
             UpdateCurrentTimeIf();
             nt_list_for_each_entry(dev, inputInfo.devices, next)
-                NoticeTime(dev, currentTime);
+                NoticeTime(dev, xephyr_context->currentTime);
         }
         SetScreenSaverTimer();
     }
@@ -3199,7 +3200,7 @@ dixSaveScreens(ClientPtr client, int on, int mode)
 int
 SaveScreens(int on, int mode)
 {
-    return dixSaveScreens(serverClient, on, mode);
+    return dixSaveScreens(xephyr_context->serverClient, on, mode);
 }
 
 static Bool
@@ -3260,7 +3261,7 @@ TileScreenSaver(ScreenPtr pScreen, int kind)
         for (j = 0; j < BitmapBytePad(32) * 16; j++)
             srcbits[j] = mskbits[j] = 0x0;
         result = AllocARGBCursor(srcbits, mskbits, NULL, &cm, 0, 0, 0, 0, 0, 0,
-                                 &cursor, serverClient, (XID) 0);
+                                 &cursor, xephyr_context->serverClient, (XID) 0);
         if (cursor) {
             cursorID = FakeClientID(0);
             if (AddResource(cursorID, RT_CURSOR, (void *) cursor)) {
@@ -3282,7 +3283,7 @@ TileScreenSaver(ScreenPtr pScreen, int kind)
                      -RANDOM_WIDTH, -RANDOM_WIDTH,
                      (unsigned short) pScreen->width + RANDOM_WIDTH,
                      (unsigned short) pScreen->height + RANDOM_WIDTH,
-                     0, InputOutput, mask, attributes, 0, serverClient,
+                     0, InputOutput, mask, attributes, 0, xephyr_context->serverClient,
                      wVisual(pScreen->root), &result);
 
     if (cursor)
@@ -3299,7 +3300,7 @@ TileScreenSaver(ScreenPtr pScreen, int kind)
         MakeRootTile(pWin);
         (*pWin->drawable.pScreen->ChangeWindowAttributes) (pWin, CWBackPixmap);
     }
-    MapWindow(pWin, serverClient);
+    MapWindow(pWin, xephyr_context->serverClient);
     return TRUE;
 }
 
@@ -3430,7 +3431,7 @@ MakeWindowOptional(WindowPtr pWin)
  * standard cursor is for the window. If all devices have a cursor set,
  * changing the window cursor (e.g. using XDefineCursor()) will not have any
  * visible effect. Only when one of the device cursors is set to None again,
- * this device's cursor will display the changed standard cursor.
+ * this device's cursor will xephyr_context->display the changed standard cursor.
  *
  * CursorIsNone of the window struct is NOT modified if you set a device
  * cursor.

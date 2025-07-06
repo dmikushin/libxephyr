@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  *
@@ -82,7 +83,7 @@ compReportDamage(DamagePtr pDamage, RegionPtr pRegion, void *closure)
     CompWindowPtr cw = GetCompWindow(pWin);
 
     if (!cs->pendingScreenUpdate) {
-        QueueWorkProc(compScreenUpdate, serverClient, pScreen);
+        QueueWorkProc(compScreenUpdate, xephyr_context->serverClient, pScreen);
         cs->pendingScreenUpdate = TRUE;
     }
     cw->damaged = TRUE;
@@ -427,7 +428,7 @@ compFreeClientSubwindows(WindowPtr pWin, XID id)
         return;
     for (prev = &csw->clients; (ccw = *prev); prev = &ccw->next) {
         if (ccw->id == id) {
-            ClientPtr pClient = clients[CLIENT_ID(id)];
+            ClientPtr pClient = xephyr_context->clients[CLIENT_ID(id)];
 
             *prev = ccw->next;
             if (ccw->update == CompositeRedirectManual) {
@@ -496,7 +497,7 @@ compRedirectOneSubwindow(WindowPtr pParent, WindowPtr pWin)
     if (!csw)
         return Success;
     for (ccw = csw->clients; ccw; ccw = ccw->next) {
-        int ret = compRedirectWindow(clients[CLIENT_ID(ccw->id)],
+        int ret = compRedirectWindow(xephyr_context->clients[CLIENT_ID(ccw->id)],
                                      pWin, ccw->update);
 
         if (ret != Success)
@@ -518,7 +519,7 @@ compUnredirectOneSubwindow(WindowPtr pParent, WindowPtr pWin)
     if (!csw)
         return Success;
     for (ccw = csw->clients; ccw; ccw = ccw->next) {
-        int ret = compUnredirectWindow(clients[CLIENT_ID(ccw->id)],
+        int ret = compUnredirectWindow(xephyr_context->clients[CLIENT_ID(ccw->id)],
                                        pWin, ccw->update);
 
         if (ret != Success)
@@ -571,13 +572,13 @@ compNewPixmap(WindowPtr pWin, int x, int y, int w, int h)
                                                pSrcFormat,
                                                CPSubwindowMode,
                                                &inferiors,
-                                               serverClient, &error);
+                                               xephyr_context->serverClient, &error);
 
         PicturePtr pDstPicture = CreatePicture(None,
                                                &pPixmap->drawable,
                                                pDstFormat,
                                                0, 0,
-                                               serverClient, &error);
+                                               xephyr_context->serverClient, &error);
 
         if (pSrcPicture && pDstPicture) {
             CompositePicture(PictOpSrc,

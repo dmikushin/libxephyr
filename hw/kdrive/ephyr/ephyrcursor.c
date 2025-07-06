@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2014 Red Hat, Inc.
  *

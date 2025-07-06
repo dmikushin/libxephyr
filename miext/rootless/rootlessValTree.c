@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Calculate window clip lists for rootless mode
  *

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2006 Intel Corporation
  *

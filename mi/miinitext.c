@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -106,6 +107,9 @@ SOFTWARE.
 
 #include "miinitext.h"
 
+/* Global pointer for dynamically set extension disable flags */
+static Bool *noTestExtensionsPtr = NULL;
+
 /* List of built-in (statically linked) extensions */
 static const ExtensionModule staticExtensions[] = {
     {GEExtensionInit, "Generic Event Extension", &noGEExtension},
@@ -115,7 +119,7 @@ static const ExtensionModule staticExtensions[] = {
 #endif
     {XInputExtensionInit, "XInputExtension", NULL},
 #ifdef XTEST
-    {XTestExtensionInit, "XTEST", &noTestExtensions},
+    {XTestExtensionInit, "XTEST", NULL},
 #endif
     {BigReqExtensionInit, "BIG-REQUESTS", NULL},
     {SyncExtensionInit, "SYNC", NULL},
@@ -149,7 +153,7 @@ static const ExtensionModule staticExtensions[] = {
     {DbeExtensionInit, "DOUBLE-BUFFER", &noDbeExtension},
 #endif
 #ifdef XRECORD
-    {RecordExtensionInit, "RECORD", &noTestExtensions},
+    {RecordExtensionInit, "RECORD", NULL},
 #endif
 #ifdef DPMSExtension
     {DPMSExtensionInit, "DPMS", &noDPMSExtension},
@@ -242,6 +246,33 @@ static ExtensionModule *ExtensionModuleList = NULL;
 static int numExtensionModules = 0;
 
 static void
+UpdateExtensionPointers(void)
+{
+    ExtensionModule *ext;
+    int i;
+
+    /* Set up runtime pointers for context-based flags */
+    if (!noTestExtensionsPtr && xephyr_context) {
+        noTestExtensionsPtr = &xephyr_context->noTestExtensions;
+    }
+
+    /* Update extension module pointers to use context-based flags */
+    for (i = 0; i < ARRAY_SIZE(staticExtensions); i++) {
+        ext = (ExtensionModule *)&staticExtensions[i];
+#ifdef XTEST
+        if (strcmp(ext->name, "XTEST") == 0) {
+            ext->disablePtr = noTestExtensionsPtr;
+        }
+#endif
+#ifdef XRECORD
+        if (strcmp(ext->name, "RECORD") == 0) {
+            ext->disablePtr = noTestExtensionsPtr;
+        }
+#endif
+    }
+}
+
+static void
 AddStaticExtensions(void)
 {
     static Bool listInitialised = FALSE;
@@ -249,6 +280,9 @@ AddStaticExtensions(void)
     if (listInitialised)
         return;
     listInitialised = TRUE;
+
+    /* Update extension pointers to use context-based flags */
+    UpdateExtensionPointers();
 
     /* Add built-in extensions to the list. */
     LoadExtensionList(staticExtensions, ARRAY_SIZE(staticExtensions), TRUE);

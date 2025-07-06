@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2014 Keith Packard
  *
@@ -213,12 +214,12 @@ glamor_font_init(ScreenPtr screen)
     if (!glamor_glsl_has_ints(glamor_priv))
         return TRUE;
 
-    if (glamor_font_generation != serverGeneration) {
+    if (glamor_font_generation != xephyr_context->serverGeneration) {
         glamor_font_private_index = xfont2_allocate_font_private_index();
         if (glamor_font_private_index == -1)
             return FALSE;
         glamor_font_screen_count = 0;
-        glamor_font_generation = serverGeneration;
+        glamor_font_generation = xephyr_context->serverGeneration;
     }
 
     if (screen->myNum >= glamor_font_screen_count)

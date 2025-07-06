@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Screen routines for generic rootless X server
  */
@@ -735,11 +736,11 @@ RootlessUpdateRooted(Bool state)
     int i;
 
     if (!state) {
-        for (i = 0; i < screenInfo.numScreens; i++)
-            RootlessDisableRoot(screenInfo.screens[i]);
+        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
+            RootlessDisableRoot(xephyr_context->screenInfo.screens[i]);
     }
     else {
-        for (i = 0; i < screenInfo.numScreens; i++)
-            RootlessEnableRoot(screenInfo.screens[i]);
+        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
+            RootlessEnableRoot(xephyr_context->screenInfo.screens[i]);
     }
 }

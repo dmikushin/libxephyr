@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -85,7 +86,7 @@ int limitStackSpace = -1;
 int limitNoFile = -1;
 #endif
 
-/* The actual user defined max number of clients */
+/* The actual user defined max number of xephyr_context->clients */
 int LimitClients = LIMITCLIENTS;
 
 static OsSigWrapperPtr OsSigWrapper = NULL;
@@ -239,8 +240,8 @@ OsInit(void)
         if (write(2, fname, 0) == -1) {
             FILE *err;
 
-            if (strlen(display) + strlen(ADMPATH) + 1 < sizeof fname)
-                snprintf(fname, sizeof(fname), ADMPATH, display);
+            if (strlen(xephyr_context->display) + strlen(ADMPATH) + 1 < sizeof fname)
+                snprintf(fname, sizeof(fname), ADMPATH, xephyr_context->display);
             else
                 strcpy(fname, devnull);
             /*

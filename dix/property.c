@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -121,7 +122,7 @@ deliverPropertyNotifyEvent(WindowPtr pWin, int state, PropertyPtr pProp)
         .u.property.window = pWin->drawable.id,
         .u.property.state = state,
         .u.property.atom = pProp->propertyName,
-        .u.property.time = currentTime.milliseconds,
+        .u.property.time = xephyr_context->currentTime.milliseconds,
     };
     event.u.u.type = PropertyNotify;
 

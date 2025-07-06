@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /* DO NOT EDIT - This file generated automatically by glX_server_table.py (from Mesa) script */
 
 /*

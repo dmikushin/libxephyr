@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -64,8 +65,6 @@ SOFTWARE.
 #include "dix.h"
 #include "xace.h"
 #include <assert.h>
-
-extern FontPtr defaultFont;
 
 static Bool CreateDefaultTile(GCPtr pGC);
 
@@ -501,7 +500,7 @@ NewGCObject(ScreenPtr pScreen, int depth)
     pGC->dashOffset = 0;
 
     /* use the default font and stipple */
-    pGC->font = defaultFont;
+    pGC->font = xephyr_context->defaultFont;
     if (pGC->font)              /* necessary, because open of default font could fail */
         pGC->font->refcnt++;
     pGC->stipple = pGC->pScreen->defaultStipple;
@@ -822,7 +821,7 @@ FreeGCperDepth(int screenNum)
     ScreenPtr pScreen;
     GCPtr *ppGC;
 
-    pScreen = screenInfo.screens[screenNum];
+    pScreen = xephyr_context->screenInfo.screens[screenNum];
     ppGC = pScreen->GCperDepth;
 
     for (i = 0; i <= pScreen->numDepths; i++) {
@@ -839,7 +838,7 @@ CreateGCperDepth(int screenNum)
     DepthPtr pDepth;
     GCPtr *ppGC;
 
-    pScreen = screenInfo.screens[screenNum];
+    pScreen = xephyr_context->screenInfo.screens[screenNum];
     ppGC = pScreen->GCperDepth;
     /* do depth 1 separately because it's not included in list */
     if (!(ppGC[0] = CreateScratchGC(pScreen, 1)))
@@ -868,7 +867,7 @@ CreateDefaultStipple(int screenNum)
     CARD16 w, h;
     GCPtr pgcScratch;
 
-    pScreen = screenInfo.screens[screenNum];
+    pScreen = xephyr_context->screenInfo.screens[screenNum];
 
     w = 16;
     h = 16;
@@ -900,7 +899,7 @@ CreateDefaultStipple(int screenNum)
 void
 FreeDefaultStipple(int screenNum)
 {
-    ScreenPtr pScreen = screenInfo.screens[screenNum];
+    ScreenPtr pScreen = xephyr_context->screenInfo.screens[screenNum];
 
     (*pScreen->DestroyPixmap) (pScreen->defaultStipple);
 }

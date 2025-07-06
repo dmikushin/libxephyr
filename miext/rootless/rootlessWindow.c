@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Rootless window management
  */
@@ -60,8 +61,8 @@ extern Bool no_configure_window;
   static Atom func (void) {                                       \
     static unsigned int generation = 0;                             \
     static Atom atom;                                           \
-    if (generation != serverGeneration) {                       \
-      generation = serverGeneration;                          \
+    if (generation != xephyr_context->serverGeneration) {                       \
+      generation = xephyr_context->serverGeneration;                          \
       atom = MakeAtom (atom_name, strlen (atom_name), TRUE);  \
     }                                                           \
     return atom;                                                \
@@ -120,7 +121,7 @@ RootlessNativeWindowMoved(WindowPtr pWin)
 
     /* pretend we're the owner of the window! */
     err =
-        dixLookupClient(&pClient, pWin->drawable.id, serverClient,
+        dixLookupClient(&pClient, pWin->drawable.id, xephyr_context->serverClient,
                         DixUnknownAccess);
     if (err != Success) {
         ErrorF("RootlessNativeWindowMoved(): Failed to lookup window: 0x%x\n",
@@ -303,7 +304,7 @@ RootlessChangeWindowAttributes(WindowPtr pWin, unsigned long vmask)
         if (pWin->backgroundState == ParentRelative) {
             XID pixel = 0;
 
-            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, serverClient);
+            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, xephyr_context->serverClient);
         }
     }
 
@@ -459,7 +460,7 @@ RootlessRealizeWindow(WindowPtr pWin)
         if (pWin->backgroundState == ParentRelative) {
             XID pixel = 0;
 
-            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, serverClient);
+            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, xephyr_context->serverClient);
         }
     }
 
@@ -1388,7 +1389,7 @@ RootlessReparentWindow(WindowPtr pWin, WindowPtr pPriorParent)
 
     pWin->unhittable = FALSE;
 
-    DeleteProperty(serverClient, pWin, xa_native_window_id());
+    DeleteProperty(xephyr_context->serverClient, pWin, xa_native_window_id());
 
     if (WINREC(pTopWin) != NULL) {
         /* We're screwed. */
@@ -1512,10 +1513,10 @@ RootlessOrderAllWindows(Bool include_unhitable)
         return;
 
     RL_DEBUG_MSG("RootlessOrderAllWindows() ");
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        if (screenInfo.screens[i] == NULL)
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        if (xephyr_context->screenInfo.screens[i] == NULL)
             continue;
-        pWin = screenInfo.screens[i]->root;
+        pWin = xephyr_context->screenInfo.screens[i]->root;
         if (pWin == NULL)
             continue;
 
@@ -1557,7 +1558,7 @@ RootlessDisableRoot(ScreenPtr pScreen)
         return;
 
     RootlessDestroyFrame(pRoot, winRec);
-    DeleteProperty(serverClient, pRoot, xa_native_window_id());
+    DeleteProperty(xephyr_context->serverClient, pRoot, xa_native_window_id());
 }
 
 void
@@ -1573,8 +1574,8 @@ RootlessHideAllWindows(void)
 
     windows_hidden = TRUE;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        pScreen = xephyr_context->screenInfo.screens[i];
         if (pScreen == NULL)
             continue;
         pWin = pScreen->root;
@@ -1609,8 +1610,8 @@ RootlessShowAllWindows(void)
 
     windows_hidden = FALSE;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        pScreen = xephyr_context->screenInfo.screens[i];
         if (pScreen == NULL)
             continue;
         pWin = pScreen->root;
@@ -1648,7 +1649,7 @@ RootlessSetPixmapOfAncestors(WindowPtr pWin)
             // disallow ParentRelative background state on top level
             XID pixel = 0;
 
-            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, serverClient);
+            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, xephyr_context->serverClient);
             RL_DEBUG_MSG("Cleared ParentRelative on 0x%x.\n", pWin);
             break;
         }

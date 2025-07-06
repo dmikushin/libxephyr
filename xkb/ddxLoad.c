@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 Copyright (c) 1993 by Silicon Graphics Computer Systems, Inc.
 
@@ -115,7 +116,7 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata)
     const char *xkmfile = "-";
 #endif
 
-    snprintf(keymap, sizeof(keymap), "server-%s", display);
+    snprintf(keymap, sizeof(keymap), "server-%s", xephyr_context->display);
 
     OutputDirectory(xkm_output_dir, sizeof(xkm_output_dir));
 

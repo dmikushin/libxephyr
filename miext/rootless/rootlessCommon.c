@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Common rootless definitions and code
  */

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  *
  * Copyright © 2006-2009 Simon Thum             simon dot thum at gmx dot de

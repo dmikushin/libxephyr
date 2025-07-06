@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  *
  * Copyright © 2002 Keith Packard, member of The XFree86 Project, Inc.
@@ -122,7 +123,7 @@ AnimCurCursorLimits(DeviceIntPtr pDev,
 }
 
 /*
- * The cursor animation timer has expired, go display any relevant cursor changes
+ * The cursor animation timer has expired, go xephyr_context->display any relevant cursor changes
  * and compute a new timeout value
  */
 
@@ -304,8 +305,8 @@ AnimCursorCreate(CursorPtr *cursors, CARD32 *deltas, int ncursor,
     int rc = BadAlloc, i;
     AnimCurPtr ac;
 
-    for (i = 0; i < screenInfo.numScreens; i++)
-        if (!GetAnimCurScreen(screenInfo.screens[i]))
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
+        if (!GetAnimCurScreen(xephyr_context->screenInfo.screens[i]))
             return BadImplementation;
 
     for (i = 0; i < ncursor; i++)

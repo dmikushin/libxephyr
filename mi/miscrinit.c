@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
 Copyright 1990, 1998  The Open Group

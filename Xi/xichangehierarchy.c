@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright 2007-2008 Peter Hutterer
  * Copyright 2009 Red Hat, Inc.
@@ -55,7 +56,7 @@
 #include "xibarriers.h"
 
 /**
- * Send the current state of the device hierarchy to all clients.
+ * Send the current state of the device hierarchy to all xephyr_context->clients.
  */
 void
 XISendDeviceHierarchyEvent(int flags[MAXDEVICES])
@@ -194,8 +195,8 @@ add_master(ClientPtr client, xXIAddMasterInfo * c, int flags[MAXDEVICES])
     flags[XTestptr->id] |= XISlaveAttached;
     flags[XTestkeybd->id] |= XISlaveAttached;
 
-    for (int i = 0; i < currentMaxClients; i++)
-        XIBarrierNewMasterDevice(clients[i], ptr->id);
+    for (int i = 0; i < xephyr_context->currentMaxClients; i++)
+        XIBarrierNewMasterDevice(xephyr_context->clients[i], ptr->id);
 
  unwind:
     free(name);
@@ -207,8 +208,8 @@ disable_clientpointer(DeviceIntPtr dev)
 {
     int i;
 
-    for (i = 0; i < currentMaxClients; i++) {
-        ClientPtr client = clients[i];
+    for (i = 0; i < xephyr_context->currentMaxClients; i++) {
+        ClientPtr client = xephyr_context->clients[i];
 
         if (client && client->clientPtr == dev)
             client->clientPtr = NULL;
@@ -301,8 +302,8 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
         }
     }
 
-    for (int i = 0; i < currentMaxClients; i++)
-        XIBarrierRemoveMasterDevice(clients[i], ptr->id);
+    for (int i = 0; i < xephyr_context->currentMaxClients; i++)
+        XIBarrierRemoveMasterDevice(xephyr_context->clients[i], ptr->id);
 
     /* disable the remove the devices, XTest devices must be done first
        else the sprites they rely on will be destroyed  */

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1989, 1998  The Open Group
@@ -67,7 +68,7 @@ SOFTWARE.
 
 /***********************************************************************
  *
- * Handle requests from clients with a different byte order.
+ * Handle requests from xephyr_context->clients with a different byte order.
  *
  */
 

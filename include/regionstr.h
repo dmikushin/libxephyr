@@ -51,6 +51,9 @@ typedef struct pixman_region16 RegionRec, *RegionPtr;
 
 #include "miscstruct.h"
 
+#include <limits.h>
+#include <stdlib.h>
+
 /* Return values from RectIn() */
 
 #define rgnOUT 0

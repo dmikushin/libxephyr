@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2013 Keith Packard
  *
@@ -233,8 +234,8 @@ present_extension_init(void)
     if (!present_event_init())
         goto bail;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        if (!present_screen_init(screenInfo.screens[i], NULL))
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        if (!present_screen_init(xephyr_context->screenInfo.screens[i], NULL))
             goto bail;
     }
     return;

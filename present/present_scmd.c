@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2013 Keith Packard
  *
@@ -396,8 +397,8 @@ present_event_notify(uint64_t event_id, uint64_t ust, uint64_t msc)
         }
     }
 
-    for (s = 0; s < screenInfo.numScreens; s++) {
-        ScreenPtr               screen = screenInfo.screens[s];
+    for (s = 0; s < xephyr_context->screenInfo.numScreens; s++) {
+        ScreenPtr               screen = xephyr_context->screenInfo.screens[s];
         present_screen_priv_ptr screen_priv = present_screen_priv(screen);
 
         if (event_id == screen_priv->unflip_event_id) {

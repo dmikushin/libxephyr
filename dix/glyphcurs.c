@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -86,7 +87,7 @@ ServerBitsFromGlyph(FontPtr pfont, unsigned ch, CursorMetricPtr cm,
     char2b[0] = (unsigned char) (ch >> 8);
     char2b[1] = (unsigned char) (ch & 0xff);
 
-    pScreen = screenInfo.screens[0];
+    pScreen = xephyr_context->screenInfo.screens[0];
     pbits = calloc(BitmapBytePad(cm->width), cm->height);
     if (!pbits)
         return BadAlloc;

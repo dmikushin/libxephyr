@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 Copyright 1991 by Digital Equipment Corporation, Maynard, Massachusetts,
 and the Massachusetts Institute of Technology, Cambridge, Massachusetts.
@@ -910,7 +911,7 @@ ProcXvShmPutImage(ClientPtr client)
         return BadMatch;
 
     status = dixLookupResourceByType((void **) &shmdesc, stuff->shmseg,
-                                     ShmSegType, serverClient, DixReadAccess);
+                                     ShmSegType, xephyr_context->serverClient, DixReadAccess);
     if (status != Success)
         return status;
 
@@ -1529,8 +1530,8 @@ XineramaXvShmPutImage(ClientPtr client)
             stuff->drw_x = x;
             stuff->drw_y = y;
             if (isRoot) {
-                stuff->drw_x -= screenInfo.screens[i]->x;
-                stuff->drw_y -= screenInfo.screens[i]->y;
+                stuff->drw_x -= xephyr_context->screenInfo.screens[i]->x;
+                stuff->drw_y -= xephyr_context->screenInfo.screens[i]->y;
             }
             stuff->send_event = (send_event && !i) ? 1 : 0;
 
@@ -1581,8 +1582,8 @@ XineramaXvPutImage(ClientPtr client)
             stuff->drw_x = x;
             stuff->drw_y = y;
             if (isRoot) {
-                stuff->drw_x -= screenInfo.screens[i]->x;
-                stuff->drw_y -= screenInfo.screens[i]->y;
+                stuff->drw_x -= xephyr_context->screenInfo.screens[i]->x;
+                stuff->drw_y -= xephyr_context->screenInfo.screens[i]->y;
             }
 
             result = ProcXvPutImage(client);
@@ -1629,8 +1630,8 @@ XineramaXvPutVideo(ClientPtr client)
             stuff->drw_x = x;
             stuff->drw_y = y;
             if (isRoot) {
-                stuff->drw_x -= screenInfo.screens[i]->x;
-                stuff->drw_y -= screenInfo.screens[i]->y;
+                stuff->drw_x -= xephyr_context->screenInfo.screens[i]->x;
+                stuff->drw_y -= xephyr_context->screenInfo.screens[i]->y;
             }
 
             result = ProcXvPutVideo(client);
@@ -1677,8 +1678,8 @@ XineramaXvPutStill(ClientPtr client)
             stuff->drw_x = x;
             stuff->drw_y = y;
             if (isRoot) {
-                stuff->drw_x -= screenInfo.screens[i]->x;
-                stuff->drw_y -= screenInfo.screens[i]->y;
+                stuff->drw_x -= xephyr_context->screenInfo.screens[i]->x;
+                stuff->drw_y -= xephyr_context->screenInfo.screens[i]->y;
             }
 
             result = ProcXvPutStill(client);
@@ -1748,7 +1749,7 @@ void
 XineramifyXv(void)
 {
     XvScreenPtr xvsp0 =
-        dixLookupPrivate(&screenInfo.screens[0]->devPrivates, XvGetScreenKey());
+        dixLookupPrivate(&xephyr_context->screenInfo.screens[0]->devPrivates, XvGetScreenKey());
     XvAdaptorPtr MatchingAdaptors[MAXSCREENS];
     int i, j, k;
 
@@ -1769,7 +1770,7 @@ XineramifyXv(void)
         isOverlay = hasOverlay(refAdapt);
         FOR_NSCREENS_FORWARD_SKIP(j)
             MatchingAdaptors[j] =
-            matchAdaptor(screenInfo.screens[j], refAdapt, isOverlay);
+            matchAdaptor(xephyr_context->screenInfo.screens[j], refAdapt, isOverlay);
 
         /* now create a resource for each port */
         for (j = 0; j < refAdapt->nPorts; j++) {

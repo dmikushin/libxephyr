@@ -32,33 +32,17 @@ srcs_dix = [
     'tables.c',
     'touch.c',
     'window.c',
+    'context.c',
 ]
-
-dtrace_src = []
-if with_dtrace
-    dtrace_object = generator(dtrace,
-        output: '@BASENAME@.o',
-        arguments: ['-G', '-s', '@INPUT@', '-o', '@OUTPUT@']
-    )
-
-    dtrace_src += dtrace_object.process(dtrace_tmpl)
-endif
-
-dtrace_dep = declare_dependency(sources: [dtrace_src, dtrace_hdr])
 
 libxserver_dix = static_library('libxserver_dix',
     srcs_dix,
     include_directories: inc,
-    dependencies: [ dtrace_dep, common_dep, ]
+    dependencies: common_dep,
 )
 
 libxserver_main = static_library('libxserver_main',
     'stubmain.c',
     include_directories: inc,
     dependencies: common_dep,
-)
-
-install_data(
-    'protocol.txt',
-    install_dir: serverconfigdir,
 )

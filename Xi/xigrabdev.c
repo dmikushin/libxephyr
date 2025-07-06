@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2009 Red Hat, Inc.
  *
@@ -163,7 +164,7 @@ ProcXIUngrabDevice(ClientPtr client)
     grab = dev->deviceGrab.grab;
 
     time = ClientTimeToServerTime(stuff->time);
-    if ((CompareTimeStamps(time, currentTime) != LATER) &&
+    if ((CompareTimeStamps(time, xephyr_context->currentTime) != LATER) &&
         (CompareTimeStamps(time, dev->deviceGrab.grabTime) != EARLIER) &&
         (grab) && SameClient(grab, client) && grab->grabtype == XI2)
         (*dev->deviceGrab.DeactivateGrab) (dev);

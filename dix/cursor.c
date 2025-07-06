@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -117,8 +118,8 @@ FreeCursor(void *value, XID cid)
 
     BUG_WARN(CursorRefCount(pCurs) < 0);
 
-    for (nscr = 0; nscr < screenInfo.numScreens; nscr++) {
-        pscr = screenInfo.screens[nscr];
+    for (nscr = 0; nscr < xephyr_context->screenInfo.numScreens; nscr++) {
+        pscr = xephyr_context->screenInfo.screens[nscr];
         (void) (*pscr->UnrealizeCursor) (pDev, pscr, pCurs);
     }
     FreeCursorBits(pCurs->bits);
@@ -151,7 +152,7 @@ CursorRefCount(const CursorPtr cursor)
 
 
 /*
- * We check for empty cursors so that we won't have to display them
+ * We check for empty cursors so that we won't have to xephyr_context->display them
  */
 static void
 CheckForEmptyMask(CursorBitsPtr bits)
@@ -188,8 +189,8 @@ RealizeCursorAllScreens(CursorPtr pCurs)
     ScreenPtr pscr;
     int nscr;
 
-    for (nscr = 0; nscr < screenInfo.numScreens; nscr++) {
-        pscr = screenInfo.screens[nscr];
+    for (nscr = 0; nscr < xephyr_context->screenInfo.numScreens; nscr++) {
+        pscr = xephyr_context->screenInfo.screens[nscr];
         for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
             if (DevHasCursor(pDev)) {
                 if (!(*pscr->RealizeCursor) (pDev, pscr, pCurs)) {
@@ -207,7 +208,7 @@ RealizeCursorAllScreens(CursorPtr pCurs)
                         pDevIt = pDevIt->next;
                     }
                     while (--nscr >= 0) {
-                        pscr = screenInfo.screens[nscr];
+                        pscr = xephyr_context->screenInfo.screens[nscr];
                         /* now unrealize all devices on previous screens */
                         pDevIt = inputInfo.devices;
                         while (pDevIt) {
@@ -497,17 +498,17 @@ CreateRootCursor(char *unused1, unsigned int unused2)
     const char defaultCursorFont[] = "cursor";
 
     fontID = FakeClientID(0);
-    err = OpenFont(serverClient, fontID, FontLoadAll | FontOpenSync,
+    err = OpenFont(xephyr_context->serverClient, fontID, FontLoadAll | FontOpenSync,
                    (unsigned) strlen(defaultCursorFont), defaultCursorFont);
     if (err != Success)
         return NullCursor;
 
     err = dixLookupResourceByType((void **) &cursorfont, fontID, RT_FONT,
-                                  serverClient, DixReadAccess);
+                                  xephyr_context->serverClient, DixReadAccess);
     if (err != Success)
         return NullCursor;
     if (AllocGlyphCursor(fontID, 0, fontID, 1, 0, 0, 0, ~0, ~0, ~0,
-                         &curs, serverClient, (XID) 0) != Success)
+                         &curs, xephyr_context->serverClient, (XID) 0) != Success)
         return NullCursor;
 
     if (!AddResource(FakeClientID(0), RT_CURSOR, (void *) curs))

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  *
 Copyright 1992, 1998  The Open Group
@@ -25,7 +26,7 @@ in this Software without prior written authorization from The Open Group.
  * Author:  Keith Packard, MIT X Consortium
  */
 
-/* dixsleep.c - implement millisecond timeouts for X clients */
+/* dixsleep.c - implement millisecond timeouts for X xephyr_context->clients */
 
 #ifdef HAVE_DIX_CONFIG_H
 #include <dix-config.h>
@@ -76,12 +77,12 @@ ClientSleepUntil(ClientPtr client,
 {
     SertafiedPtr pRequest, pReq, pPrev;
 
-    if (SertafiedGeneration != serverGeneration) {
+    if (SertafiedGeneration != xephyr_context->serverGeneration) {
         SertafiedResType = CreateNewResourceType(SertafiedDelete,
                                                  "ClientSleep");
         if (!SertafiedResType)
             return FALSE;
-        SertafiedGeneration = serverGeneration;
+        SertafiedGeneration = xephyr_context->serverGeneration;
         BlockHandlerRegistered = FALSE;
     }
     pRequest = malloc(sizeof(SertafiedRec));
@@ -159,8 +160,8 @@ SertafiedBlockHandler(void *data, void *wt)
     if (!pPending)
         return;
     now.milliseconds = GetTimeInMillis();
-    now.months = currentTime.months;
-    if ((int) (now.milliseconds - currentTime.milliseconds) < 0)
+    now.months = xephyr_context->currentTime.months;
+    if ((int) (now.milliseconds - xephyr_context->currentTime.milliseconds) < 0)
         now.months++;
     for (pReq = pPending; pReq; pReq = pNext) {
         pNext = pReq->next;
@@ -188,8 +189,8 @@ SertafiedWakeupHandler(void *data, int i)
     TimeStamp now;
 
     now.milliseconds = GetTimeInMillis();
-    now.months = currentTime.months;
-    if ((int) (now.milliseconds - currentTime.milliseconds) < 0)
+    now.months = xephyr_context->currentTime.months;
+    if ((int) (now.milliseconds - xephyr_context->currentTime.milliseconds) < 0)
         now.months++;
     for (pReq = pPending; pReq; pReq = pNext) {
         pNext = pReq->next;

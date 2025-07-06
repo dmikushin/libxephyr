@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
    XFree86 Xv DDX written by Mark Vojkovich (markv@valinux.com)
@@ -117,8 +118,8 @@ KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr adaptors, int num)
 
 /*   fprintf(stderr,"KdXVScreenInit initializing %d adaptors\n",num); */
 
-    if (KdXVGeneration != serverGeneration)
-        KdXVGeneration = serverGeneration;
+    if (KdXVGeneration != xephyr_context->serverGeneration)
+        KdXVGeneration = xephyr_context->serverGeneration;
 
     if (noXvExtension)
         return FALSE;
@@ -381,7 +382,7 @@ KdXVInitAdaptors(ScreenPtr pScreen, KdVideoAdaptorPtr infoPtr, int number)
             pp->pDraw = (DrawablePtr) NULL;
             pp->client = (ClientPtr) NULL;
             pp->grab.client = (ClientPtr) NULL;
-            pp->time = currentTime;
+            pp->time = xephyr_context->currentTime;
             pp->devPriv.ptr = portPriv;
 
             portPriv->screen = screen;

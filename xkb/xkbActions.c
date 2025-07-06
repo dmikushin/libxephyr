@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 Copyright (c) 1993 by Silicon Graphics Computer Systems, Inc.
 
@@ -1067,7 +1068,7 @@ _XkbFilterDeviceBtn(XkbSrvInfoPtr xkbi,
         DeviceIntPtr dev;
         int button;
 
-        _XkbLookupButtonDevice(&dev, pAction->devbtn.device, serverClient,
+        _XkbLookupButtonDevice(&dev, pAction->devbtn.device, xephyr_context->serverClient,
                                DixUnknownAccess, &button);
         if (!dev || !dev->public.on)
             return 1;
@@ -1112,7 +1113,7 @@ _XkbFilterDeviceBtn(XkbSrvInfoPtr xkbi,
 
         filter->active = 0;
         _XkbLookupButtonDevice(&dev, filter->upAction.devbtn.device,
-                               serverClient, DixUnknownAccess, &button);
+                               xephyr_context->serverClient, DixUnknownAccess, &button);
         if (!dev || !dev->public.on)
             return 1;
 

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
 Copyright 1996, 1998  The Open Group
@@ -63,7 +64,7 @@ typedef struct {
     XID authId;
 } SecurityStateRec;
 
-/* The only extensions that untrusted clients have access to */
+/* The only extensions that untrusted xephyr_context->clients have access to */
 static const char *SecurityTrustedExtensions[] = {
     "XC-MISC",
     "BIG-REQUESTS",
@@ -71,7 +72,7 @@ static const char *SecurityTrustedExtensions[] = {
 };
 
 /*
- * Access modes that untrusted clients are allowed on trusted objects.
+ * Access modes that untrusted xephyr_context->clients are allowed on trusted objects.
  */
 static const Mask SecurityResourceMask =
     DixGetAttrAccess | DixReceiveAccess | DixListPropAccess |
@@ -137,8 +138,8 @@ SecurityLabelInitial(void)
 {
     SecurityStateRec *state;
 
-    /* Do the serverClient */
-    state = dixLookupPrivate(&serverClient->devPrivates, stateKey);
+    /* Do the xephyr_context->serverClient */
+    state = dixLookupPrivate(&xephyr_context->serverClient->devPrivates, stateKey);
     state->trustLevel = XSecurityClientTrusted;
     state->haveState = TRUE;
     state->live = FALSE;
@@ -201,15 +202,15 @@ SecurityDeleteAuthorization(void *value, XID id)
         FreeResource(pEventClient->resource, RT_NONE);
     }
 
-    /* kill all clients using this auth */
+    /* kill all xephyr_context->clients using this auth */
 
-    for (i = 1; i < currentMaxClients; i++)
-        if (clients[i]) {
+    for (i = 1; i < xephyr_context->currentMaxClients; i++)
+        if (xephyr_context->clients[i]) {
             SecurityStateRec *state;
 
-            state = dixLookupPrivate(&clients[i]->devPrivates, stateKey);
+            state = dixLookupPrivate(&xephyr_context->clients[i]->devPrivates, stateKey);
             if (state->haveState && state->authId == pAuth->id)
-                CloseDownClient(clients[i]);
+                CloseDownClient(xephyr_context->clients[i]);
         }
 
     SecurityAudit("revoked authorization ID %lu\n", (unsigned long)pAuth->id);
@@ -700,7 +701,7 @@ SecurityDevice(CallbackListPtr *pcbl, void *unused, void *calldata)
     Mask allowed = SecurityDeviceMask;
 
     subj = dixLookupPrivate(&rec->client->devPrivates, stateKey);
-    obj = dixLookupPrivate(&serverClient->devPrivates, stateKey);
+    obj = dixLookupPrivate(&xephyr_context->serverClient->devPrivates, stateKey);
 
     if (rec->dev != inputInfo.keyboard)
         /* this extension only supports the core keyboard */
@@ -770,8 +771,8 @@ SecurityResource(CallbackListPtr *pcbl, void *unused, void *calldata)
             allowed |= DixReadAccess;
     }
 
-    if (clients[cid] != NULL) {
-        obj = dixLookupPrivate(&clients[cid]->devPrivates, stateKey);
+    if (xephyr_context->clients[cid] != NULL) {
+        obj = dixLookupPrivate(&xephyr_context->clients[cid]->devPrivates, stateKey);
         if (SecurityDoCheck(subj, obj, requested, allowed) == Success)
             return;
     }
@@ -815,7 +816,7 @@ SecurityServer(CallbackListPtr *pcbl, void *unused, void *calldata)
     Mask allowed = SecurityServerMask;
 
     subj = dixLookupPrivate(&rec->client->devPrivates, stateKey);
-    obj = dixLookupPrivate(&serverClient->devPrivates, stateKey);
+    obj = dixLookupPrivate(&xephyr_context->serverClient->devPrivates, stateKey);
 
     if (SecurityDoCheck(subj, obj, requested, allowed) != Success) {
         SecurityAudit("Security: denied client %d access to server "
@@ -960,7 +961,7 @@ SecurityClientState(CallbackListPtr *pcbl, void *unused, void *calldata)
     case ClientStateRunning:
         state->authId = AuthorizationIDOfClient(pci->client);
         rc = dixLookupResourceByType((void **) &pAuth, state->authId,
-                                     SecurityAuthorizationResType, serverClient,
+                                     SecurityAuthorizationResType, xephyr_context->serverClient,
                                      DixGetAttrAccess);
         if (rc == Success) {
             /* it is a generated authorization */
@@ -976,7 +977,7 @@ SecurityClientState(CallbackListPtr *pcbl, void *unused, void *calldata)
     case ClientStateGone:
     case ClientStateRetained:
         rc = dixLookupResourceByType((void **) &pAuth, state->authId,
-                                     SecurityAuthorizationResType, serverClient,
+                                     SecurityAuthorizationResType, xephyr_context->serverClient,
                                      DixGetAttrAccess);
         if (rc == Success && state->live) {
             /* it is a generated authorization */

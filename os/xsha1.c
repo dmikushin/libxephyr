@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /* Copyright © 2007 Carl Worth
  * Copyright © 2009 Jeremy Huddleston, Julien Cristau, and Matthieu Herrb
  * Copyright © 2009-2010 Mikhail Gusarov

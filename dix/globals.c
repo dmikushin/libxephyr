@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -57,10 +58,10 @@ SOFTWARE.
 #include "dixfont.h"
 #include "dixstruct.h"
 #include "os.h"
+/* Original global: 
+   ScreenInfo xephyr_context->screenInfo; */
 
-ScreenInfo screenInfo;
-
-KeybdCtrl defaultKeyboardControl = {
+/* KeybdCtrl xephyr_context->defaultKeyboardControl = {
     DEFAULT_KEYBOARD_CLICK,
     DEFAULT_BELL,
     DEFAULT_BELL_PITCH,
@@ -69,52 +70,52 @@ KeybdCtrl defaultKeyboardControl = {
     DEFAULT_AUTOREPEATS,
     DEFAULT_LEDS,
     0
-};
+}; */
 
-PtrCtrl defaultPointerControl = {
+/* PtrCtrl xephyr_context->defaultPointerControl = {
     DEFAULT_PTR_NUMERATOR,
     DEFAULT_PTR_DENOMINATOR,
     DEFAULT_PTR_THRESHOLD,
     0
-};
-
-ClientPtr clients[MAXCLIENTS];
-ClientPtr serverClient;
-int currentMaxClients;          /* current size of clients array */
-long maxBigRequestSize = MAX_BIG_REQUEST_SIZE;
-
-unsigned long globalSerialNumber = 0;
-unsigned long serverGeneration = 0;
+}; */
+/* Original global: */
+/* ClientPtr xephyr_context->clients[MAXCLIENTS]; */
+/* Original global: ClientPtr xephyr_context->serverClient; */
+/* Original global: int xephyr_context->currentMaxClients; */          /* current size of xephyr_context->clients array */
+/* Original global: long xephyr_context->maxBigRequestSize = MAX_BIG_REQUEST_SIZE; */
+/* Original global:  */
+/* unsigned long xephyr_context->globalSerialNumber = 0; */
+/* Original global: unsigned long xephyr_context->serverGeneration = 0; */
 
 /* these next four are initialized in main.c */
-CARD32 ScreenSaverTime;
-CARD32 ScreenSaverInterval;
-int ScreenSaverBlanking;
-int ScreenSaverAllowExposures;
+/* Original global: CARD32 xephyr_context->ScreenSaverTime; */
+/* Original global: CARD32 xephyr_context->ScreenSaverInterval; */
+/* Original global: int xephyr_context->ScreenSaverBlanking; */
+/* Original global: int xephyr_context->ScreenSaverAllowExposures; */
 
 /* default time of 10 minutes */
-CARD32 defaultScreenSaverTime = (10 * (60 * 1000));
-CARD32 defaultScreenSaverInterval = (10 * (60 * 1000));
-int defaultScreenSaverBlanking = PreferBlanking;
-int defaultScreenSaverAllowExposures = AllowExposures;
+/* Original global: CARD32 xephyr_context->defaultScreenSaverTime = (10 * (60 * 1000)); */
+/* Original global: CARD32 xephyr_context->defaultScreenSaverInterval = (10 * (60 * 1000)); */
+/* Original global: int xephyr_context->defaultScreenSaverBlanking = PreferBlanking; */
+/* Original global: int xephyr_context->defaultScreenSaverAllowExposures = AllowExposures; */
 
 #ifdef SCREENSAVER
-Bool screenSaverSuspended = FALSE;
+/* Original global: Bool xephyr_context->screenSaverSuspended = FALSE; */
 #endif
-
-const char *defaultFontPath = COMPILEDDEFAULTFONTPATH;
-FontPtr defaultFont;            /* not declared in dix.h to avoid including font.h in
+/* Original global: */
+/* const char *xephyr_context->defaultFontPath = COMPILEDDEFAULTFONTPATH; */
+/* Original global: FontPtr xephyr_context->defaultFont; */            /* not declared in dix.h to avoid including font.h in
                                    every compilation of dix code */
-CursorPtr rootCursor;
-Bool party_like_its_1989 = FALSE;
-Bool whiteRoot = FALSE;
-
-TimeStamp currentTime;
-
-int defaultColorVisualClass = -1;
-int monitorResolution = 0;
-
-const char *display;
-int displayfd = -1;
-Bool explicit_display = FALSE;
-char *ConnectionInfo;
+/* Original global: CursorPtr xephyr_context->rootCursor; */
+/* Original global: Bool xephyr_context->party_like_its_1989 = FALSE; */
+/* Original global: Bool xephyr_context->whiteRoot = FALSE; */
+/* Original global: */
+/* TimeStamp xephyr_context->currentTime; */
+/* Original global: */
+/* int xephyr_context->defaultColorVisualClass = -1; */
+/* Original global: int xephyr_context->monitorResolution = 0; */
+/* Original global: */
+/* const char *xephyr_context->display; */
+/* Original global: int xephyr_context->displayfd = -1; */
+/* Original global: Bool xephyr_context->explicit_display = FALSE; */
+/* Original global: char *xephyr_context->ConnectionInfo; */

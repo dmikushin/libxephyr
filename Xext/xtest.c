@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
    Copyright 1992, 1998  The Open Group
@@ -327,7 +328,7 @@ ProcXTestFakeInput(ClientPtr client)
         TimeStamp activateTime;
         CARD32 ms;
 
-        activateTime = currentTime;
+        activateTime = xephyr_context->currentTime;
         ms = activateTime.milliseconds + ev->u.keyButtonPointer.time;
         if (ms < activateTime.milliseconds)
             activateTime.months++;
@@ -406,7 +407,7 @@ ProcXTestFakeInput(ClientPtr client)
         break;
     }
     if (screenIsSaved == SCREEN_SAVER_ON)
-        dixSaveScreens(serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
+        dixSaveScreens(xephyr_context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
 
     switch (type) {
     case MotionNotify:
@@ -564,7 +565,7 @@ SProcXTestDispatch(ClientPtr client)
 void
 InitXTestDevices(void)
 {
-    if (AllocXTestDevice(serverClient, "Virtual core",
+    if (AllocXTestDevice(xephyr_context->serverClient, "Virtual core",
                          &xtestpointer, &xtestkeyboard,
                          inputInfo.pointer, inputInfo.keyboard) != Success)
          FatalError("Failed to allocate XTest devices");

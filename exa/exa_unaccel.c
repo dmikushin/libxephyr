@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  *
  * Copyright © 1999 Keith Packard

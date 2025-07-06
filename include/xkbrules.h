@@ -29,6 +29,8 @@
 
 /***====================================================================***/
 
+#include <stdio.h>
+
 typedef struct _XkbRMLVOSet {
     char *rules;
     char *model;

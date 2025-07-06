@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * (C) Copyright IBM Corporation 2002-2006
  * All Rights Reserved.

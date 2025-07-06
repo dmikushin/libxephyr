@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1989, 1998  The Open Group
@@ -67,7 +68,7 @@ SOFTWARE.
 /***********************************************************************
  *
  * This procedure gets the key mapping for an extension device,
- * for clients on machines with a different byte ordering than the server.
+ * for xephyr_context->clients on machines with a different byte ordering than the server.
  *
  */
 

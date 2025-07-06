@@ -51,6 +51,4 @@ libxserver_mi = static_library('libxserver_mi',
     ],
 )
 
-if build_xorg
-    install_data(hdrs_mi, install_dir: xorgsdkdir)
-endif
+

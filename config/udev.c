@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2009 Julien Cristau
  *
@@ -82,10 +83,10 @@ check_seat(struct udev_device *udev_device)
     if (!dev_seat)
         dev_seat = "seat0";
 
-    if (SeatId && strcmp(dev_seat, SeatId))
+    if (xephyr_context->SeatId && strcmp(dev_seat, xephyr_context->SeatId))
         return FALSE;
 
-    if (!SeatId && strcmp(dev_seat, "seat0"))
+    if (!xephyr_context->SeatId && strcmp(dev_seat, "seat0"))
         return FALSE;
 
     return TRUE;

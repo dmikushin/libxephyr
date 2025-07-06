@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2011 Collabra Ltd.
  * Copyright © 2011 Red Hat, Inc.
@@ -51,9 +52,9 @@ GestureInitGestureInfo(GestureInfoPtr gi)
         return FALSE;
     }
     gi->sprite.spriteTraceSize = 32;
-    gi->sprite.spriteTrace[0] = screenInfo.screens[0]->root;
-    gi->sprite.hot.pScreen = screenInfo.screens[0];
-    gi->sprite.hotPhys.pScreen = screenInfo.screens[0];
+    gi->sprite.spriteTrace[0] = xephyr_context->screenInfo.screens[0]->root;
+    gi->sprite.hot.pScreen = xephyr_context->screenInfo.screens[0];
+    gi->sprite.hotPhys.pScreen = xephyr_context->screenInfo.screens[0];
 
     return TRUE;
 }

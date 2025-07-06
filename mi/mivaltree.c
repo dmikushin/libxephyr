@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * mivaltree.c --
  *	Functions for recalculating window clip lists. Main function

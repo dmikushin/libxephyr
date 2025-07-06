@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  *
@@ -135,7 +136,7 @@ compSetPixmapVisitWindow(WindowPtr pWindow, void *data)
     SetWinSize(pWindow);
     SetBorderSize(pWindow);
     if (pVisit->bw)
-        QueueWorkProc(compRepaintBorder, serverClient,
+        QueueWorkProc(compRepaintBorder, xephyr_context->serverClient,
                       (void *) (intptr_t) pWindow->drawable.id);
     return WT_WALKCHILDREN;
 }
@@ -446,7 +447,7 @@ compReparentWindow(WindowPtr pWin, WindowPtr pPriorParent)
      * Remove any implicit redirect due to synthesized visual
      */
     if (compImplicitRedirect(pWin, pPriorParent))
-        compUnredirectWindow(serverClient, pWin, CompositeRedirectAutomatic);
+        compUnredirectWindow(xephyr_context->serverClient, pWin, CompositeRedirectAutomatic);
     /*
      * Handle subwindows redirection
      */
@@ -456,7 +457,7 @@ compReparentWindow(WindowPtr pWin, WindowPtr pPriorParent)
      * Add any implicit redirect due to synthesized visual
      */
     if (compImplicitRedirect(pWin, pWin->parent))
-        compRedirectWindow(serverClient, pWin, CompositeRedirectAutomatic);
+        compRedirectWindow(xephyr_context->serverClient, pWin, CompositeRedirectAutomatic);
 
     /*
      * Allocate any necessary redirect pixmap
@@ -585,10 +586,10 @@ compCreateWindow(WindowPtr pWin)
             (*pScreen->SetWindowPixmap) (pWin, parent_pixmap);
         if (csw)
             for (ccw = csw->clients; ccw; ccw = ccw->next)
-                compRedirectWindow(clients[CLIENT_ID(ccw->id)],
+                compRedirectWindow(xephyr_context->clients[CLIENT_ID(ccw->id)],
                                    pWin, ccw->update);
         if (compImplicitRedirect(pWin, pWin->parent))
-            compRedirectWindow(serverClient, pWin, CompositeRedirectAutomatic);
+            compRedirectWindow(xephyr_context->serverClient, pWin, CompositeRedirectAutomatic);
     }
     cs->CreateWindow = pScreen->CreateWindow;
     pScreen->CreateWindow = compCreateWindow;
@@ -676,14 +677,14 @@ compWindowUpdateAutomatic(WindowPtr pWin)
     PicturePtr pSrcPicture = CreatePicture(0, &pSrcPixmap->drawable,
                                            pSrcFormat,
                                            0, 0,
-                                           serverClient,
+                                           xephyr_context->serverClient,
                                            &error);
     XID subwindowMode = IncludeInferiors;
     PicturePtr pDstPicture = CreatePicture(0, &pParent->drawable,
                                            pDstFormat,
                                            CPSubwindowMode,
                                            &subwindowMode,
-                                           serverClient,
+                                           xephyr_context->serverClient,
                                            &error);
 
     /*

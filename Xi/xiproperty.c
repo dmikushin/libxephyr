@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2006 Keith Packard
  * Copyright © 2008 Peter Hutterer
@@ -190,7 +191,7 @@ send_property_event(DeviceIntPtr dev, Atom property, int what)
         .deviceid = dev->id,
         .state = state,
         .atom = property,
-        .time = currentTime.milliseconds
+        .time = xephyr_context->currentTime.milliseconds
     };
     xXIPropertyEvent xi2 = {
         .type = GenericEvent,
@@ -198,7 +199,7 @@ send_property_event(DeviceIntPtr dev, Atom property, int what)
         .length = 0,
         .evtype = XI_PropertyEvent,
         .deviceid = dev->id,
-        .time = currentTime.milliseconds,
+        .time = xephyr_context->currentTime.milliseconds,
         .property = property,
         .what = what
     };

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  *
@@ -70,7 +71,7 @@ compFreeOverlayClient(CompOverlayClientPtr pOcToDel)
         }
     }
 
-    /* Destroy overlay window when there are no more clients using it */
+    /* Destroy overlay window when there are no more xephyr_context->clients using it */
     if (cs->pOverlayClients == NULL)
         compDestroyOverlayWindow(pScreen);
 }
@@ -148,14 +149,14 @@ compCreateOverlayWindow(ScreenPtr pScreen)
         CreateWindow(cs->overlayWid, pRoot, x, y, w, h, 0,
                      InputOutput, CWBackPixmap | CWOverrideRedirect, &attrs[0],
                      pRoot->drawable.depth,
-                     serverClient, pScreen->rootVisual, &result);
+                     xephyr_context->serverClient, pScreen->rootVisual, &result);
     if (pWin == NULL)
         return FALSE;
 
     if (!AddResource(pWin->drawable.id, RT_WINDOW, (void *) pWin))
         return FALSE;
 
-    MapWindow(pWin, serverClient);
+    MapWindow(pWin, xephyr_context->serverClient);
 
     return TRUE;
 }

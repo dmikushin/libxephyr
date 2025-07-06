@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 Copyright 1987 by Digital Equipment Corporation, Maynard, Massachusetts.
 
@@ -191,7 +192,7 @@ typedef struct _WorkQueue {
     void *closure;
 } WorkQueueRec;
 
-extern _X_EXPORT TimeStamp currentTime;
+
 
 extern _X_EXPORT int
 CompareTimeStamps(TimeStamp /*a */ ,

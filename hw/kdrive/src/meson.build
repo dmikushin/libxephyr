@@ -8,9 +8,7 @@ srcs_kdrive = [
     '../../../mi/miinitext.h',
 ]
 
-if build_xv
-    srcs_kdrive += 'kxv.c'
-endif
+srcs_kdrive += 'kxv.c'
 
 kdrive = static_library('kdrive',
     srcs_kdrive,

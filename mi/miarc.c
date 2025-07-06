@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -83,17 +84,6 @@ static double miDsin(double a);
 static double miDcos(double a);
 static double miDasin(double v);
 static double miDatan2(double dy, double dx);
-
-#ifndef HAVE_CBRT
-static double
-cbrt(double x)
-{
-    if (x > 0.0)
-        return pow(x, 1.0 / 3.0);
-    else
-        return -pow(-x, 1.0 / 3.0);
-}
-#endif
 
 /*
  * some interesting semantic interpretation of the protocol:

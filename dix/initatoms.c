@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /* THIS IS A GENERATED FILE
  *
  * Do not change!  Changing this file implies a protocol change!

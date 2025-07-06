@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  *
 Copyright 1990, 1998  The Open Group
@@ -551,13 +552,13 @@ mieqProcessInputEvents(void)
         master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
 
         if (screenIsSaved == SCREEN_SAVER_ON)
-            dixSaveScreens(serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
+            dixSaveScreens(xephyr_context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
 #ifdef DPMSExtension
         else if (DPMSPowerLevel != DPMSModeOn)
             SetScreenSaverTimer();
 
         if (DPMSPowerLevel != DPMSModeOn)
-            DPMSSet(serverClient, DPMSModeOn);
+            DPMSSet(xephyr_context->serverClient, DPMSModeOn);
 #endif
 
         mieqProcessDeviceEvent(dev, &event, screen);

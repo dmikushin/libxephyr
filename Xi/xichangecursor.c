@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright 2007-2008 Peter Hutterer
  *
@@ -91,7 +92,7 @@ ProcXIChangeCursor(ClientPtr client)
 
     if (stuff->cursor == None) {
         if (pWin == pWin->drawable.pScreen->root)
-            pCursor = rootCursor;
+            pCursor = xephyr_context->rootCursor;
         else
             pCursor = (CursorPtr) None;
     }

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2009 Red Hat, Inc.
  *
@@ -440,7 +441,7 @@ getValuatorEvents(DeviceEvent *ev, deviceValuator * xv)
     if (num_valuators > 0) {
         DeviceIntPtr dev = NULL;
 
-        dixLookupDevice(&dev, ev->deviceid, serverClient, DixUseAccess);
+        dixLookupDevice(&dev, ev->deviceid, xephyr_context->serverClient, DixUseAccess);
         /* State needs to be assembled BEFORE the device is updated. */
         state = (dev &&
                  dev->key) ? XkbStateFieldFromRec(&dev->key->xkbInfo->

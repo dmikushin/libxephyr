@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2000 Compaq Computer Corporation
  * Copyright © 2002 Hewlett-Packard Company
@@ -72,8 +73,8 @@ RRClientCallback(CallbackListPtr *list, void *closure, void *data)
 
     pRRClient->major_version = 0;
     pRRClient->minor_version = 0;
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
 
         rrScrPriv(pScreen);
 
@@ -282,7 +283,7 @@ static int RRGeneration;
 Bool
 RRInit(void)
 {
-    if (RRGeneration != serverGeneration) {
+    if (RRGeneration != xephyr_context->serverGeneration) {
         if (!RRModeInit())
             return FALSE;
         if (!RRCrtcInit())
@@ -293,7 +294,7 @@ RRInit(void)
             return FALSE;
         if (!RRLeaseInit())
             return FALSE;
-        RRGeneration = serverGeneration;
+        RRGeneration = xephyr_context->serverGeneration;
     }
     if (!dixRegisterPrivateKey(&rrPrivKeyRec, PRIVATE_SCREEN, 0))
         return FALSE;
@@ -348,8 +349,8 @@ RRScreenInit(ScreenPtr pScreen)
      * GetScreenInfo before reading it which will automatically update
      * the time
      */
-    pScrPriv->lastSetTime = currentTime;
-    pScrPriv->lastConfigTime = currentTime;
+    pScrPriv->lastSetTime = xephyr_context->currentTime;
+    pScrPriv->lastConfigTime = xephyr_context->currentTime;
 
     wrap(pScrPriv, pScreen, CloseScreen, RRCloseScreen);
 
@@ -378,7 +379,7 @@ RRFreeClient(void *data, XID id)
     pRREvent = (RREventPtr) data;
     pWin = pRREvent->window;
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            RREventType, serverClient, DixDestroyAccess);
+                            RREventType, xephyr_context->serverClient, DixDestroyAccess);
     if (pHead) {
         pPrev = 0;
         for (pCur = *pHead; pCur && pCur != pRREvent; pCur = pCur->next)
@@ -419,7 +420,7 @@ RRExtensionInit(void)
 
     if (!dixRegisterPrivateKey(&RRClientPrivateKeyRec, PRIVATE_CLIENT,
                                sizeof(RRClientRec) +
-                               screenInfo.numScreens * sizeof(RRTimesRec)))
+                               xephyr_context->screenInfo.numScreens * sizeof(RRTimesRec)))
         return;
     if (!AddCallback(&ClientStateCallback, RRClientCallback, 0))
         return;
@@ -490,13 +491,13 @@ TellChanged(WindowPtr pWin, void *value)
     int i;
 
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            RREventType, serverClient, DixReadAccess);
+                            RREventType, xephyr_context->serverClient, DixReadAccess);
     if (!pHead)
         return WT_WALKCHILDREN;
 
     for (pRREvent = *pHead; pRREvent; pRREvent = pRREvent->next) {
         client = pRREvent->client;
-        if (client == serverClient || client->clientGone)
+        if (client == xephyr_context->serverClient || client->clientGone)
             continue;
 
         if (pRREvent->mask & RRScreenChangeNotifyMask)
@@ -634,7 +635,7 @@ RRTellChanged(ScreenPtr pScreen)
     if (primarysp->changed) {
         UpdateCurrentTimeIf();
         if (primarysp->configChanged) {
-            primarysp->lastConfigTime = currentTime;
+            primarysp->lastConfigTime = xephyr_context->currentTime;
             primarysp->configChanged = FALSE;
         }
         pScrPriv->changed = FALSE;

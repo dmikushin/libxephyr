@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * libxephyr - Xephyr as a shared library
  * API header for embedding Xephyr X server instances
@@ -17,9 +18,6 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdbool.h>
-
-/* Forward declarations to avoid conflicts */
-typedef unsigned long Window;
 
 /* Xephyr server handle */
 typedef struct XephyrServer XephyrServer;
@@ -66,7 +64,7 @@ void xephyr_server_destroy(XephyrServer* server);
 /* Get the embedded window ID */
 Window xephyr_server_get_window(XephyrServer* server);
 
-/* Get the display name */
+/* Get the xephyr_context->display name */
 const char* xephyr_server_get_display(XephyrServer* server);
 
 /* Check if server is running */

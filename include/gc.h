@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -76,8 +77,8 @@ SOFTWARE.
 
 #define MAX_SERIAL_NUM     (1L<<28)
 
-#define NEXT_SERIAL_NUMBER ((++globalSerialNumber) > MAX_SERIAL_NUM ? \
-	    (globalSerialNumber  = 1): globalSerialNumber)
+#define NEXT_SERIAL_NUMBER ((++xephyr_context->globalSerialNumber) > MAX_SERIAL_NUM ? \
+	    (xephyr_context->globalSerialNumber  = 1): xephyr_context->globalSerialNumber)
 
 typedef struct _GCInterest *GCInterestPtr;
 typedef struct _GC *GCPtr;

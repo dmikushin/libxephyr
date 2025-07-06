@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Xephyr - A kdrive X server that runs in a host X window.
  *          Authored by Matthew Allum <mallum@openedhand.com>
@@ -191,7 +192,7 @@ ephyrWindowLinear(ScreenPtr pScreen,
 }
 
 /**
- * Figure out display buffer size. If fakexa is enabled, allocate a larger
+ * Figure out xephyr_context->display buffer size. If fakexa is enabled, allocate a larger
  * buffer so that fakexa has space to put offscreen pixmaps.
  */
 int
@@ -541,7 +542,7 @@ ephyrRandRSetConfig(ScreenPtr pScreen,
             ephyr_glamor_create_screen_resources(pScreen);
 #endif
         /* Without shadow fb ( non rotated ) we need
-         * to use damage to efficiently update display
+         * to use damage to efficiently update xephyr_context->display
          * via signal regions what to copy from 'fb'.
          */
         if (!ephyrSetInternalDamage(screen->pScreen))
@@ -841,8 +842,8 @@ screen_from_window(Window w)
 {
     int i = 0;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
         KdPrivScreenPtr kdscrpriv = KdGetScreenPriv(pScreen);
         KdScreenInfo *screen = kdscrpriv->screen;
         EphyrScrPriv *scrpriv = screen->driver;
@@ -1331,7 +1332,7 @@ EphyrKeyboardInit(KdKeyboardInfo * ki)
         XkbApplyMappingChange(ki->dixdev, &keySyms,
                               keySyms.minKeyCode,
                               keySyms.maxKeyCode - keySyms.minKeyCode + 1,
-                              modmap, serverClient);
+                              modmap, xephyr_context->serverClient);
         XkbDDXChangeControls(ki->dixdev, &controls, &controls);
         free(keySyms.map);
     }

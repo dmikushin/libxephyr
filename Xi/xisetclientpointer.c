@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright 2007-2008 Peter Hutterer
  *

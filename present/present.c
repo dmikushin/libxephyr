@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2013 Keith Packard
  *
@@ -78,7 +79,7 @@ present_copy_region(DrawablePtr drawable,
 
         changes[0].val = x_off;
         changes[1].val = y_off;
-        ChangeGC(serverClient, gc,
+        ChangeGC(xephyr_context->serverClient, gc,
                  GCClipXOrigin|GCClipYOrigin,
                  changes);
         (*gc->funcs->ChangeClip)(gc, CT_REGION, update, 0);

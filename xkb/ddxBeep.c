@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 Copyright (c) 1993 by Silicon Graphics Computer Systems, Inc.
 
@@ -127,9 +128,9 @@ _XkbDDXBeepExpire(OsTimerPtr timer, CARD32 now, void *arg)
     if ((dev == NULL) || (dev->key == NULL) || (dev->key->xkbInfo == NULL) ||
         (dev->kbdfeed == NULL))
         return 0;
-    if (atomGeneration != serverGeneration) {
+    if (atomGeneration != xephyr_context->serverGeneration) {
         _XkbDDXBeepInitAtoms();
-        atomGeneration = serverGeneration;
+        atomGeneration = xephyr_context->serverGeneration;
     }
 
     feed = dev->kbdfeed;

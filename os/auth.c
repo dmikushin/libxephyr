@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
 Copyright 1988, 1998  The Open Group
@@ -150,7 +151,7 @@ LoadAuthorization(void)
 #ifdef XDMCP
 /*
  * XdmcpInit calls this function to discover all authorization
- * schemes supported by the display
+ * schemes supported by the xephyr_context->display
  */
 void
 RegisterAuthorizations(void)

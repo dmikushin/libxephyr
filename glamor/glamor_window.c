@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2008 Intel Corporation
  * Copyright © 1998 Keith Packard

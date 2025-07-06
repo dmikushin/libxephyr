@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -278,7 +279,7 @@ _dixInitScreenPrivates(ScreenPtr pScreen, PrivatePtr *privates, void *addr, DevP
  * For objects created during server initialization, this allows those
  * privates to be re-allocated as new private keys are registered.
  *
- * This includes screens, the serverClient, default colormaps and
+ * This includes screens, the xephyr_context->serverClient, default colormaps and
  * extensions entries.
  */
 extern _X_EXPORT Bool

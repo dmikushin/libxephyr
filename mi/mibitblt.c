@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -337,13 +338,13 @@ miGetPlane(DrawablePtr pDraw, int planeNum,     /* number of the bitPlane */
 #endif
 #else
                 /* XXX assuming byte order == LSBFirst */
-                if (screenInfo.bitmapBitOrder == LSBFirst)
+                if (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst)
                     bit <<= k;
                 else
-                    bit <<= ((screenInfo.bitmapScanlineUnit - 1) -
-                             (k % screenInfo.bitmapScanlineUnit)) +
-                        ((k / screenInfo.bitmapScanlineUnit) *
-                         screenInfo.bitmapScanlineUnit);
+                    bit <<= ((xephyr_context->screenInfo.bitmapScanlineUnit - 1) -
+                             (k % xephyr_context->screenInfo.bitmapScanlineUnit)) +
+                        ((k / xephyr_context->screenInfo.bitmapScanlineUnit) *
+                         xephyr_context->screenInfo.bitmapScanlineUnit);
 #endif
                 *pOut |= (OUT_TYPE) bit;
                 k++;

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Xephyr - A kdrive X server that runs in a host X window.
  *          Authored by Matthew Allum <mallum@o-hand.com>
@@ -63,7 +64,7 @@ InitInput(int argc, char **argv)
     KdKeyboardInfo *ki;
     KdPointerInfo *pi;
 
-    if (!SeatId) {
+    if (!xephyr_context->SeatId) {
         KdAddKeyboardDriver(&EphyrKeyboardDriver);
         KdAddPointerDriver(&EphyrMouseDriver);
 
@@ -319,7 +320,7 @@ ddxProcessArgument(int argc, char **argv, int i)
         hostx_set_display_name(argv[i]);
     }
     /* Xnest compatibility */
-    else if (!strcmp(argv[i], "-display")) {
+    else if (!strcmp(argv[i], "-xephyr_context->display")) {
         hostx_set_display_name(argv[i + 1]);
         return 2;
     }
@@ -354,13 +355,13 @@ OsVendorInit(void)
 {
     EPHYR_DBG("mark");
 
-    if (SeatId)
+    if (xephyr_context->SeatId)
         hostx_use_sw_cursor();
 
     if (hostx_want_host_cursor())
         ephyrFuncs.initCursor = &ephyrCursorInit;
 
-    if (serverGeneration == 1) {
+    if (xephyr_context->serverGeneration == 1) {
         if (!KdCardInfoLast()) {
             processScreenArg("640x480", NULL);
         }

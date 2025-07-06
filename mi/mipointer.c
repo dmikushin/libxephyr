@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -155,7 +156,7 @@ miPointerInitialize(ScreenPtr pScreen,
 /**
  * Destroy screen-specific information.
  *
- * @param index Screen index of the screen in screenInfo.screens[]
+ * @param index Screen index of the screen in xephyr_context->screenInfo.screens[]
  * @param pScreen The actual screen pointer
  */
 static Bool
@@ -458,7 +459,7 @@ miPointerUpdateSprite(DeviceIntPtr pDev)
         pPointer->pSpriteScreen = pScreen;
     }
     /*
-     * if the cursor has changed, display the new one
+     * if the cursor has changed, xephyr_context->display the new one
      */
     else if (pPointer->pCursor != pPointer->pSpriteCursor) {
         pCursor = pPointer->pCursor;
@@ -510,7 +511,7 @@ miPointerSetScreen(DeviceIntPtr pDev, int screen_no, int x, int y)
 
     pPointer = MIPOINTER(pDev);
 
-    pScreen = screenInfo.screens[screen_no];
+    pScreen = xephyr_context->screenInfo.screens[screen_no];
     mieqSwitchScreen(pDev, pScreen, FALSE);
     NewCurrentScreen(pDev, pScreen, x, y);
 

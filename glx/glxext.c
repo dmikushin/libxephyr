@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * SGI FREE SOFTWARE LICENSE B (Version 2.0, Sept. 18, 2008)
  * Copyright (C) 1991-2000 Silicon Graphics, Inc. All Rights Reserved.
@@ -286,8 +287,8 @@ checkScreenVisuals(void)
 {
     int i, j;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr screen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr screen = xephyr_context->screenInfo.screens[i];
         for (j = 0; j < screen->numVisuals; j++) {
             if ((screen->visuals[j].class == TrueColor ||
                  screen->visuals[j].class == DirectColor) &&
@@ -335,10 +336,10 @@ xorgGlxHandleRequest(ClientPtr client)
 static ScreenPtr
 screenNumToScreen(int screen)
 {
-    if (screen < 0 || screen >= screenInfo.numScreens)
+    if (screen < 0 || screen >= xephyr_context->screenInfo.numScreens)
         return NULL;
 
-    return screenInfo.screens[screen];
+    return xephyr_context->screenInfo.screens[screen];
 }
 
 static int
@@ -471,7 +472,7 @@ xorgGlxGetDispatchAddress(CARD8 minorOpcode, CARD32 vendorCode)
 static Bool
 xorgGlxServerPreInit(const ExtensionEntry *extEntry)
 {
-    if (glxGeneration != serverGeneration) {
+    if (glxGeneration != xephyr_context->serverGeneration) {
         /* Mesa requires at least one True/DirectColor visual */
         if (!checkScreenVisuals())
             return FALSE;
@@ -497,10 +498,10 @@ xorgGlxServerPreInit(const ExtensionEntry *extEntry)
         __glXregisterPresentCompleteNotify();
 #endif
 
-        glxGeneration = serverGeneration;
+        glxGeneration = xephyr_context->serverGeneration;
     }
 
-    return glxGeneration == serverGeneration;
+    return glxGeneration == xephyr_context->serverGeneration;
 }
 
 static void
@@ -536,8 +537,8 @@ xorgGlxServerInit(CallbackListPtr *pcbl, void *param, void *ext)
         return;
     }
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
         __GLXprovider *p;
 
         if (glxServer.getVendorForScreen(NULL, pScreen) != NULL) {
@@ -576,7 +577,7 @@ xorgGlxCreateVendor(void)
 
 /*
 ** Make a context the current one for the GL (in this implementation, there
-** is only one instance of the GL, and we use it to serve all GL clients by
+** is only one instance of the GL, and we use it to serve all GL xephyr_context->clients by
 ** switching it between different contexts).  While we are at it, look up
 ** a context by its tag and return its (__GLXcontext *).
 */
@@ -653,9 +654,9 @@ glxSuspendClients(void)
 {
     int i;
 
-    for (i = 1; i < currentMaxClients; i++) {
-        if (clients[i] && glxGetClient(clients[i])->client)
-            IgnoreClient(clients[i]);
+    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
+        if (xephyr_context->clients[i] && glxGetClient(xephyr_context->clients[i])->client)
+            IgnoreClient(xephyr_context->clients[i]);
     }
 
     glxBlockClients = TRUE;
@@ -669,9 +670,9 @@ glxResumeClients(void)
 
     glxBlockClients = FALSE;
 
-    for (i = 1; i < currentMaxClients; i++) {
-        if (clients[i] && glxGetClient(clients[i])->client)
-            AttendClient(clients[i]);
+    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
+        if (xephyr_context->clients[i] && glxGetClient(xephyr_context->clients[i])->client)
+            AttendClient(xephyr_context->clients[i]);
     }
 
     for (cx = glxPendingDestroyContexts; cx != NULL; cx = next) {
@@ -716,7 +717,7 @@ __glXDispatch(ClientPtr client)
     if (!cl->client)
         cl->client = client;
 
-    /* If we're currently blocking GLX clients, just put this guy to
+    /* If we're currently blocking GLX xephyr_context->clients, just put this guy to
      * sleep, reset the request and return. */
     if (glxBlockClients) {
         ResetCurrentRequest(client);

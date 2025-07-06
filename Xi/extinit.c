@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1989, 1998  The Open Group
@@ -250,7 +251,7 @@ static int (*ProcIVector[]) (ClientPtr) = {
         ProcXIBarrierReleasePointer /* 61 */
 };
 
-/* For swapped clients */
+/* For swapped xephyr_context->clients */
 static int (*SProcIVector[]) (ClientPtr) = {
     NULL,                       /*  0 */
         SProcXGetExtensionVersion,      /*  1 */

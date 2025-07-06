@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -243,8 +244,7 @@ typedef struct {
     unsigned char id;
 } LedCtrl;
 
-extern _X_EXPORT KeybdCtrl defaultKeyboardControl;
-extern _X_EXPORT PtrCtrl defaultPointerControl;
+
 
 typedef struct _InputOption InputOption;
 typedef struct _XI2Mask XI2Mask;
@@ -268,7 +268,7 @@ typedef struct _InputAttributes {
 #define ATTR_KEY (1<<6)
 #define ATTR_TABLET_PAD (1<<7)
 
-/* Key/Button has been run through all input processing and events sent to clients. */
+/* Key/Button has been run through all input processing and events sent to xephyr_context->clients. */
 #define KEY_PROCESSED 1
 #define BUTTON_PROCESSED 1
 /* Key/Button has not been fully processed, no events have been sent. */
@@ -677,7 +677,7 @@ extern void ProcessGestureEvent(InternalEvent *ev, DeviceIntPtr dev);
 
 /* misc event helpers */
 extern void CopyPartialInternalEvent(InternalEvent* dst_event, const InternalEvent* src_event);
-extern Mask GetEventMask(DeviceIntPtr dev, xEvent *ev, InputClientsPtr clients);
+
 extern Mask GetEventFilter(DeviceIntPtr dev, xEvent *event);
 extern Bool WindowXI2MaskIsset(DeviceIntPtr dev, WindowPtr win, xEvent *ev);
 extern int GetXI2MaskByte(XI2Mask *mask, DeviceIntPtr dev, int event_type);

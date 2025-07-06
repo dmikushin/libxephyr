@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2006 Keith Packard
  *
@@ -126,7 +127,7 @@ ProcRRSelectInput(ClientPtr client)
                 return BadAlloc;
             /*
              * create a resource to contain a pointer to the list
-             * of clients selecting input.  This must be indirect as
+             * of xephyr_context->clients selecting input.  This must be indirect as
              * the list may be arbitrarily rearranged which cannot be
              * done through the resource database.
              */
@@ -209,7 +210,7 @@ ProcRRSelectInput(ClientPtr client)
 
 int (*ProcRandrVector[RRNumberRequests]) (ClientPtr) = {
     ProcRRQueryVersion,         /* 0 */
-/* we skip 1 to make old clients fail pretty immediately */
+/* we skip 1 to make old xephyr_context->clients fail pretty immediately */
         NULL,                   /* 1 ProcRandrOldGetScreenInfo */
 /* V1.0 apps share the same set screen config request id */
         ProcRRSetScreenConfig,  /* 2 */

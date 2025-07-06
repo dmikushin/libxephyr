@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Author: Eamon Walsh <ewalsh@tycho.nsa.gov>
@@ -154,7 +155,7 @@ ProcSELinuxGetCreateContext(ClientPtr client, unsigned offset)
     REQUEST_SIZE_MATCH(SELinuxGetCreateContextReq);
 
     if (offset == CTX_DEV)
-        ptr = dixLookupPrivate(&serverClient->devPrivates, subjectKey);
+        ptr = dixLookupPrivate(&xephyr_context->serverClient->devPrivates, subjectKey);
     else
         ptr = dixLookupPrivate(&client->devPrivates, subjectKey);
 

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2012 Red Hat Inc.
  * Copyright 2019 DisplayLink (UK) Ltd.
@@ -88,7 +89,7 @@ ProcRRGetProviders (ClientPtr client)
             .type = X_Reply,
             .sequenceNumber = client->sequence,
             .length = 0,
-            .timestamp = currentTime.milliseconds,
+            .timestamp = xephyr_context->currentTime.milliseconds,
             .nProviders = 0
         };
         extra = NULL;

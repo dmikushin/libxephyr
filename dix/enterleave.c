@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2008 Red Hat, Inc.
  *
@@ -635,7 +636,7 @@ FixDeviceStateNotify(DeviceIntPtr dev, deviceStateNotify * ev, KeyClassPtr k,
 {
     ev->type = DeviceStateNotify;
     ev->deviceid = dev->id;
-    ev->time = currentTime.milliseconds;
+    ev->time = xephyr_context->currentTime.milliseconds;
     ev->classes_reported = 0;
     ev->num_keys = 0;
     ev->num_buttons = 0;
@@ -796,7 +797,7 @@ DeviceFocusEvent(DeviceIntPtr dev, int type, int mode, int detail,
     xi2event->length = bytes_to_int32(len - sizeof(xEvent));
     xi2event->buttons_len = btlen;
     xi2event->detail = detail;
-    xi2event->time = currentTime.milliseconds;
+    xi2event->time = xephyr_context->currentTime.milliseconds;
     xi2event->deviceid = dev->id;
     xi2event->sourceid = dev->id;       /* a device doesn't change focus by itself */
     xi2event->mode = mode;
@@ -834,7 +835,7 @@ DeviceFocusEvent(DeviceIntPtr dev, int type, int mode, int detail,
         .type = (type == XI_FocusIn) ? DeviceFocusIn : DeviceFocusOut,
         .detail = detail,
         .window = pWin->drawable.id,
-        .time = currentTime.milliseconds
+        .time = xephyr_context->currentTime.milliseconds
     };
 
     DeliverEventsToWindow(dev, pWin, (xEvent *) &event, 1,
@@ -1256,7 +1257,7 @@ CoreFocusPointerRootNoneSwitch(DeviceIntPtr dev,
 {
     WindowPtr root;
     int i;
-    int nscreens = screenInfo.numScreens;
+    int nscreens = xephyr_context->screenInfo.numScreens;
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension)
@@ -1264,7 +1265,7 @@ CoreFocusPointerRootNoneSwitch(DeviceIntPtr dev,
 #endif
 
     for (i = 0; i < nscreens; i++) {
-        root = screenInfo.screens[i]->root;
+        root = xephyr_context->screenInfo.screens[i]->root;
         if (!HasOtherPointer(root, GetMaster(dev, POINTER_OR_FLOAT)) &&
             !FirstFocusChild(root)) {
             /* If pointer was on PointerRootWin and changes to NoneWin, and
@@ -1300,7 +1301,7 @@ CoreFocusToPointerRootOrNone(DeviceIntPtr dev, WindowPtr A,
 {
     WindowPtr root;
     int i;
-    int nscreens = screenInfo.numScreens;
+    int nscreens = xephyr_context->screenInfo.numScreens;
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension)
@@ -1326,7 +1327,7 @@ CoreFocusToPointerRootOrNone(DeviceIntPtr dev, WindowPtr A,
     CoreFocusOutEvents(dev, A, NullWindow, mode, NotifyNonlinearVirtual);
 
     for (i = 0; i < nscreens; i++) {
-        root = screenInfo.screens[i]->root;
+        root = xephyr_context->screenInfo.screens[i]->root;
         if (!HasFocus(root) && !FirstFocusChild(root)) {
             CoreFocusEvent(dev, FocusIn, mode,
                            B ? NotifyPointerRoot : NotifyDetailNone, root);
@@ -1347,7 +1348,7 @@ CoreFocusFromPointerRootOrNone(DeviceIntPtr dev,
 {
     WindowPtr root;
     int i;
-    int nscreens = screenInfo.numScreens;
+    int nscreens = xephyr_context->screenInfo.numScreens;
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension)
@@ -1355,7 +1356,7 @@ CoreFocusFromPointerRootOrNone(DeviceIntPtr dev,
 #endif
 
     for (i = 0; i < nscreens; i++) {
-        root = screenInfo.screens[i]->root;
+        root = xephyr_context->screenInfo.screens[i]->root;
         if (!HasFocus(root) && !FirstFocusChild(root)) {
             /* If pointer was on PointerRootWin and changes to NoneWin, and
              * the pointer paired with dev is below the current root window,
@@ -1430,7 +1431,7 @@ DeviceFocusEvents(DeviceIntPtr dev, WindowPtr from, WindowPtr to, int mode)
     int out, in;                /* for holding details for to/from
                                    PointerRoot/None */
     int i;
-    int nscreens = screenInfo.numScreens;
+    int nscreens = xephyr_context->screenInfo.numScreens;
     SpritePtr sprite = dev->spriteInfo->sprite;
 
     if (from == to)
@@ -1456,7 +1457,7 @@ DeviceFocusEvents(DeviceIntPtr dev, WindowPtr from, WindowPtr to, int mode)
             /* Notify all the roots */
             for (i = 0; i < nscreens; i++)
                 DeviceFocusEvent(dev, XI_FocusOut, mode, out,
-                                 screenInfo.screens[i]->root);
+                                 xephyr_context->screenInfo.screens[i]->root);
         }
         else {
             if (IsParent(from, sprite->win)) {
@@ -1473,7 +1474,7 @@ DeviceFocusEvents(DeviceIntPtr dev, WindowPtr from, WindowPtr to, int mode)
         /* Notify all the roots */
         for (i = 0; i < nscreens; i++)
             DeviceFocusEvent(dev, XI_FocusIn, mode, in,
-                             screenInfo.screens[i]->root);
+                             xephyr_context->screenInfo.screens[i]->root);
         if (to == PointerRootWin) {
             DeviceFocusInEvents(dev, GetCurrentRootWindow(dev), sprite->win,
                                 mode, NotifyPointer);
@@ -1491,7 +1492,7 @@ DeviceFocusEvents(DeviceIntPtr dev, WindowPtr from, WindowPtr to, int mode)
             }
             for (i = 0; i < nscreens; i++)
                 DeviceFocusEvent(dev, XI_FocusOut, mode, out,
-                                 screenInfo.screens[i]->root);
+                                 xephyr_context->screenInfo.screens[i]->root);
             if (to->parent != NullWindow)
                 DeviceFocusInEvents(dev, GetCurrentRootWindow(dev), to, mode,
                                     NotifyNonlinearVirtual);

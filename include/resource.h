@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1989, 1998  The Open Group
@@ -109,7 +110,7 @@ extern _X_EXPORT unsigned int ResourceClientBits(void);
 
 #define BAD_RESOURCE 0xe0000000
 
-#define rClient(obj) (clients[CLIENT_ID((obj)->resource)])
+#define rClient(obj) (xephyr_context->clients[CLIENT_ID((obj)->resource)])
 
 /* Resource state callback */
 extern _X_EXPORT CallbackListPtr ResourceStateCallback;

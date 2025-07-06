@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 1999 Keith Packard
  * Copyright © 2006 Nokia Corporation
@@ -691,11 +692,11 @@ KdNewKeyboard(void)
     ki->options = NULL;
     ki->name = strdup("Generic Keyboard");
     ki->path = NULL;
-    ki->xkbRules = strdup(kdGlobalXkbRules ? kdGlobalXkbRules : XKB_DFLT_RULES);
-    ki->xkbModel = strdup(kdGlobalXkbModel ? kdGlobalXkbModel : XKB_DFLT_MODEL);
-    ki->xkbLayout = strdup(kdGlobalXkbLayout ? kdGlobalXkbLayout : XKB_DFLT_LAYOUT);
-    ki->xkbVariant = strdup(kdGlobalXkbVariant ? kdGlobalXkbVariant :XKB_DFLT_VARIANT);
-    ki->xkbOptions = strdup(kdGlobalXkbOptions ? kdGlobalXkbOptions : XKB_DFLT_OPTIONS);
+    ki->xkbRules = strdup(kdGlobalXkbRules ? kdGlobalXkbRules : XKB_DFLT_RULES_FILE);
+    ki->xkbModel = strdup(kdGlobalXkbModel ? kdGlobalXkbModel : XKB_DFLT_KB_MODEL);
+    ki->xkbLayout = strdup(kdGlobalXkbLayout ? kdGlobalXkbLayout : XKB_DFLT_KB_LAYOUT);
+    ki->xkbVariant = strdup(kdGlobalXkbVariant ? kdGlobalXkbVariant : XKB_DFLT_KB_VARIANT);
+    ki->xkbOptions = strdup(kdGlobalXkbOptions ? kdGlobalXkbOptions : XKB_DFLT_KB_OPTIONS);
 
     return ki;
 }
@@ -729,7 +730,7 @@ KdAddKeyboard(KdKeyboardInfo * ki)
     if (!ki)
         return !Success;
 
-    ki->dixdev = AddInputDevice(serverClient, KdKeyboardProc, TRUE);
+    ki->dixdev = AddInputDevice(xephyr_context->serverClient, KdKeyboardProc, TRUE);
     if (!ki->dixdev) {
         ErrorF("Couldn't register keyboard device %s\n",
                ki->name ? ki->name : "(unnamed)");
@@ -796,7 +797,7 @@ KdAddPointer(KdPointerInfo * pi)
     pi->mouseState = start;
     pi->eventHeld = FALSE;
 
-    pi->dixdev = AddInputDevice(serverClient, KdPointerProc, TRUE);
+    pi->dixdev = AddInputDevice(xephyr_context->serverClient, KdPointerProc, TRUE);
     if (!pi->dixdev) {
         ErrorF("Couldn't add pointer device %s\n",
                pi->name ? pi->name : "(unnamed)");
@@ -1796,7 +1797,7 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
     int n_best_x, n_best_y;
     CARD32 ms;
 
-    if (kdDisableZaphod || screenInfo.numScreens <= 1)
+    if (kdDisableZaphod || xephyr_context->screenInfo.numScreens <= 1)
         return FALSE;
 
     if (0 <= *x && *x < pScreen->width && 0 <= *y && *y < pScreen->height)
@@ -1811,8 +1812,8 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
     best_x = 32767;
     n_best_y = -1;
     best_y = 32767;
-    for (n = 0; n < screenInfo.numScreens; n++) {
-        pNewScreen = screenInfo.screens[n];
+    for (n = 0; n < xephyr_context->screenInfo.numScreens; n++) {
+        pNewScreen = xephyr_context->screenInfo.screens[n];
         if (pNewScreen == pScreen)
             continue;
         dx = KdScreenOrigin(pNewScreen)->x - KdScreenOrigin(pScreen)->x;
@@ -1846,7 +1847,7 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
         n_best_x = n_best_y;
     if (n_best_x == -1)
         return FALSE;
-    pNewScreen = screenInfo.screens[n_best_x];
+    pNewScreen = xephyr_context->screenInfo.screens[n_best_x];
 
     if (*x < 0)
         *x += pNewScreen->width;

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright 2012 Red Hat, Inc.
  *
@@ -730,7 +731,7 @@ static void remove_master_func(void *res, XID id, void *devid)
     int rc;
     Time ms = GetTimeInMillis();
 
-    rc = dixLookupDevice(&dev, *deviceid, serverClient, DixSendAccess);
+    rc = dixLookupDevice(&dev, *deviceid, xephyr_context->serverClient, DixSendAccess);
     if (rc != Success)
         return;
 
@@ -919,8 +920,8 @@ XIBarrierInit(void)
     if (!dixRegisterPrivateKey(&BarrierScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
         return FALSE;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
         BarrierScreenPtr cs;
 
         cs = (BarrierScreenPtr) calloc(1, sizeof(BarrierScreenRec));
@@ -940,8 +941,8 @@ void
 XIBarrierReset(void)
 {
     int i;
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
         BarrierScreenPtr cs = GetBarrierScreen(pScreen);
         free(cs);
         SetBarrierScreen(pScreen, NULL);

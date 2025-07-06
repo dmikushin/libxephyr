@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -330,9 +331,9 @@ miSendExposures(WindowPtr pWin, RegionPtr pRgn, int dx, int dy)
         XID realWin = 0;
 
         if (!pWin->parent) {
-            x = screenInfo.screens[scrnum]->x;
-            y = screenInfo.screens[scrnum]->y;
-            pWin = screenInfo.screens[0]->root;
+            x = xephyr_context->screenInfo.screens[scrnum]->x;
+            y = xephyr_context->screenInfo.screens[scrnum]->y;
+            pWin = xephyr_context->screenInfo.screens[0]->root;
             realWin = pWin->drawable.id;
         }
         else if (scrnum) {
@@ -345,7 +346,7 @@ miSendExposures(WindowPtr pWin, RegionPtr pRgn, int dx, int dy)
                 return;
             }
             realWin = win->info[0].id;
-            dixLookupWindow(&pWin, realWin, serverClient, DixSendAccess);
+            dixLookupWindow(&pWin, realWin, xephyr_context->serverClient, DixSendAccess);
         }
         if (x || y || scrnum)
             for (i = 0; i < numRects; i++) {

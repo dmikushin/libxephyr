@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2007 Red Hat, Inc
  *
@@ -784,7 +785,7 @@ glxDRIEnterVT(ScrnInfoPtr scrn)
     __GLXDRIscreen *screen = (__GLXDRIscreen *)
         glxGetScreen(xf86ScrnToScreen(scrn));
 
-    LogMessage(X_INFO, "AIGLX: Resuming AIGLX clients after VT switch\n");
+    LogMessage(X_INFO, "AIGLX: Resuming AIGLX xephyr_context->clients after VT switch\n");
 
     scrn->EnterVT = screen->enterVT;
 
@@ -807,7 +808,7 @@ glxDRILeaveVT(ScrnInfoPtr scrn)
     __GLXDRIscreen *screen = (__GLXDRIscreen *)
         glxGetScreen(xf86ScrnToScreen(scrn));
 
-    LogMessageVerbSigSafe(X_INFO, -1, "AIGLX: Suspending AIGLX clients for VT switch\n");
+    LogMessageVerbSigSafe(X_INFO, -1, "AIGLX: Suspending AIGLX xephyr_context->clients for VT switch\n");
 
     glxSuspendClients();
 
@@ -939,7 +940,7 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
     if (screen == NULL)
         return NULL;
 
-    if (!DRI2Connect(serverClient, pScreen, DRI2DriverDRI,
+    if (!DRI2Connect(xephyr_context->serverClient, pScreen, DRI2DriverDRI,
                      &screen->fd, &driverName, &deviceName)) {
         LogMessage(X_INFO,
                    "AIGLX: Screen %d is not DRI2 capable\n", pScreen->myNum);

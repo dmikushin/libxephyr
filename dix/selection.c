@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1987, 1989, 1998  The Open Group
@@ -155,7 +156,7 @@ ProcSetSelectionOwner(ClientPtr client)
 
     /* If the client's time stamp is in the future relative to the server's
        time stamp, do not set the selection, just return success. */
-    if (CompareTimeStamps(time, currentTime) == LATER)
+    if (CompareTimeStamps(time, xephyr_context->currentTime) == LATER)
         return Success;
 
     if (stuff->window != None) {
@@ -295,7 +296,7 @@ ProcConvertSelection(ClientPtr client)
         event.u.selectionRequest.selection = stuff->selection;
         event.u.selectionRequest.target = stuff->target;
         event.u.selectionRequest.property = stuff->property;
-        if (pSel->client && pSel->client != serverClient &&
+        if (pSel->client && pSel->client != xephyr_context->serverClient &&
             !pSel->client->clientGone) {
             WriteEventsToClient(pSel->client, 1, &event);
             return Success;

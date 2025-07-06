@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2006 Keith Packard
  *
@@ -239,7 +240,7 @@ ProcRRXineramaIsActive(ClientPtr client)
         .type = X_Reply,
         .length = 0,
         .sequenceNumber = client->sequence,
-        .state = RRXineramaScreenActive(screenInfo.screens[RR_XINERAMA_SCREEN])
+        .state = RRXineramaScreenActive(xephyr_context->screenInfo.screens[RR_XINERAMA_SCREEN])
     };
     if (client->swapped) {
         swaps(&rep.sequenceNumber);
@@ -274,7 +275,7 @@ int
 ProcRRXineramaQueryScreens(ClientPtr client)
 {
     xXineramaQueryScreensReply rep;
-    ScreenPtr pScreen = screenInfo.screens[RR_XINERAMA_SCREEN];
+    ScreenPtr pScreen = xephyr_context->screenInfo.screens[RR_XINERAMA_SCREEN];
     int m;
     RRMonitorPtr monitors = NULL;
     int nmonitors = 0;
@@ -427,7 +428,7 @@ RRXineramaExtensionInit(void)
      * with their own output geometry.  So if there's more than one protocol
      * screen, just don't even try.
      */
-    if (screenInfo.numScreens > 1)
+    if (xephyr_context->screenInfo.numScreens > 1)
         return;
 
     (void) AddExtension(PANORAMIX_PROTOCOL_NAME, 0, 0,

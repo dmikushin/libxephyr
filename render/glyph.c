@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  *
  * Copyright © 2000 SuSE, Inc.
@@ -233,8 +234,8 @@ FreeGlyphPicture(GlyphPtr glyph)
     PictureScreenPtr ps;
     int i;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
 
         if (GetGlyphPicture(glyph, pScreen))
             FreePicture((void *) GetGlyphPicture(glyph, pScreen), 0);
@@ -349,7 +350,7 @@ AllocateGlyph(xGlyphInfo * gi, int fdepth)
     int i;
     int head_size;
 
-    head_size = sizeof(GlyphRec) + screenInfo.numScreens * sizeof(PicturePtr);
+    head_size = sizeof(GlyphRec) + xephyr_context->screenInfo.numScreens * sizeof(PicturePtr);
     size = (head_size + dixPrivatesSize(PRIVATE_GLYPH));
     glyph = (GlyphPtr) malloc(size);
     if (!glyph)
@@ -359,8 +360,8 @@ AllocateGlyph(xGlyphInfo * gi, int fdepth)
     glyph->info = *gi;
     dixInitPrivates(glyph, (char *) glyph + head_size, PRIVATE_GLYPH);
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = screenInfo.screens[i];
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
         SetGlyphPicture(glyph, pScreen, NULL);
         ps = GetPictureScreenIfSet(pScreen);
 
@@ -374,9 +375,9 @@ AllocateGlyph(xGlyphInfo * gi, int fdepth)
 
  bail:
     while (i--) {
-        ps = GetPictureScreenIfSet(screenInfo.screens[i]);
+        ps = GetPictureScreenIfSet(xephyr_context->screenInfo.screens[i]);
         if (ps)
-            (*ps->UnrealizeGlyph) (screenInfo.screens[i], glyph);
+            (*ps->UnrealizeGlyph) (xephyr_context->screenInfo.screens[i], glyph);
     }
 
     dixFreeObjectWithPrivates(glyph, PRIVATE_GLYPH);
@@ -609,7 +610,7 @@ miGlyphs(CARD8 op,
         component_alpha = NeedsComponent(maskFormat->format);
         pMask = CreatePicture(0, &pMaskPixmap->drawable,
                               maskFormat, CPComponentAlpha, &component_alpha,
-                              serverClient, &error);
+                              xephyr_context->serverClient, &error);
         if (!pMask) {
             (*pScreen->DestroyPixmap) (pMaskPixmap);
             return;

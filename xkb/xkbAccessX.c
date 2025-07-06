@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 Copyright (c) 1993 by Silicon Graphics Computer Systems, Inc.
 
@@ -732,7 +733,7 @@ ProcessPointerEvent(InternalEvent *ev, DeviceIntPtr mouse)
             DeviceIntPtr source;
             int rc;
 
-            rc = dixLookupDevice(&source, event->sourceid, serverClient,
+            rc = dixLookupDevice(&source, event->sourceid, xephyr_context->serverClient,
                     DixWriteAccess);
             if (rc != Success)
                 ErrorF("[xkb] bad sourceid '%d' on button release event.\n",

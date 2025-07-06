@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
 Copyright 1993, 1998  The Open Group
@@ -319,13 +320,13 @@ PixmapDirtyCompositeRotate(PixmapPtr dst_pixmap,
                         dirty->src,
                         format,
                         CPSubwindowMode,
-                        &include_inferiors, serverClient, &error);
+                        &include_inferiors, xephyr_context->serverClient, &error);
     if (!src)
         return;
 
     dst = CreatePicture(None,
                         &dst_pixmap->drawable,
-                        format, 0L, NULL, serverClient, &error);
+                        format, 0L, NULL, xephyr_context->serverClient, &error);
     if (!dst)
         return;
 

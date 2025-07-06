@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2002 Keith Packard
  * Copyright 2013 Red Hat, Inc.
@@ -57,7 +58,7 @@ DamageNoteCritical(ClientPtr pClient)
 {
     DamageClientPtr pDamageClient = GetDamageClient(pClient);
 
-    /* Composite extension marks clients with manual Subwindows as critical */
+    /* Composite extension marks xephyr_context->clients with manual Subwindows as critical */
     if (pDamageClient->critical > 0) {
         SetCriticalOutputPending();
         pClient->smart_priority = SMART_MAX_PRIORITY;
@@ -72,10 +73,10 @@ damageGetGeometry(DrawablePtr draw, int *x, int *y, int *w, int *h)
         WindowPtr win = (WindowPtr)draw;
 
         if (!win->parent) {
-            *x = screenInfo.x;
-            *y = screenInfo.y;
-            *w = screenInfo.width;
-            *h = screenInfo.height;
+            *x = xephyr_context->screenInfo.x;
+            *y = xephyr_context->screenInfo.y;
+            *w = xephyr_context->screenInfo.width;
+            *h = xephyr_context->screenInfo.height;
             return;
         }
     }
@@ -103,7 +104,7 @@ DamageExtNotify(DamageExtPtr pDamageExt, BoxPtr pBoxes, int nBoxes)
         .level = pDamageExt->level,
         .drawable = pDamageExt->drawable,
         .damage = pDamageExt->id,
-        .timestamp = currentTime.milliseconds,
+        .timestamp = xephyr_context->currentTime.milliseconds,
         .geometry.x = x,
         .geometry.y = y,
         .geometry.width = w,
@@ -331,7 +332,7 @@ DamageExtSubtractWindowClip(DamageExtPtr pDamageExt)
         return &PanoramiXScreenRegion;
 
     dixLookupResourceByType((void **)&res, win->drawable.id, XRT_WINDOW,
-                            serverClient, DixReadAccess);
+                            xephyr_context->serverClient, DixReadAccess);
     if (!res)
         return NULL;
 
@@ -341,7 +342,7 @@ DamageExtSubtractWindowClip(DamageExtPtr pDamageExt)
 
     FOR_NSCREENS_FORWARD(i) {
         ScreenPtr screen;
-        if (Success != dixLookupWindow(&win, res->info[i].id, serverClient,
+        if (Success != dixLookupWindow(&win, res->info[i].id, xephyr_context->serverClient,
                                        DixReadAccess))
             goto out;
 
@@ -665,7 +666,7 @@ PanoramiXDamageCreate(ClientPtr client)
                                              PanoramiXDamageExtDestroy,
                                              DamageReportRawRegion,
                                              FALSE,
-                                             screenInfo.screens[i],
+                                             xephyr_context->screenInfo.screens[i],
                                              damage);
             if (!pDamage) {
                 rc = BadAlloc;
@@ -730,8 +731,8 @@ DamageExtensionInit(void)
     ExtensionEntry *extEntry;
     int s;
 
-    for (s = 0; s < screenInfo.numScreens; s++)
-        DamageSetup(screenInfo.screens[s]);
+    for (s = 0; s < xephyr_context->screenInfo.numScreens; s++)
+        DamageSetup(xephyr_context->screenInfo.screens[s]);
 
     DamageExtType = CreateNewResourceType(FreeDamageExt, "DamageExt");
     if (!DamageExtType)

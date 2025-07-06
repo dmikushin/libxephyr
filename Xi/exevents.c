@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1989, 1998  The Open Group
@@ -231,7 +232,7 @@ XIGetDevice(xEvent *xE)
 
         id = ((deviceKeyButtonPointer *) xE)->deviceid & ~MORE_EVENTS;
 
-        rc = dixLookupDevice(&pDev, id, serverClient, DixUnknownAccess);
+        rc = dixLookupDevice(&pDev, id, xephyr_context->serverClient, DixUnknownAccess);
         if (rc != Success)
             ErrorF("[dix] XIGetDevice failed on XACE restrictions (%d)\n", rc);
     }
@@ -240,7 +241,7 @@ XIGetDevice(xEvent *xE)
 
 /**
  * Copy the device->key into master->key and send a mapping notify to the
- * clients if appropriate.
+ * xephyr_context->clients if appropriate.
  * master->key needs to be allocated by the caller.
  *
  * Device is the slave device. If it is attached to a master device, we may
@@ -738,7 +739,7 @@ DeepCopyDeviceClasses(DeviceIntPtr from, DeviceIntPtr to,
 }
 
 /**
- * Send an XI2 DeviceChangedEvent to all interested clients.
+ * Send an XI2 DeviceChangedEvent to all interested xephyr_context->clients.
  */
 void
 XISendDeviceChangedEvent(DeviceIntPtr device, DeviceChangedEvent *dce)
@@ -768,7 +769,7 @@ ChangeMasterDeviceClasses(DeviceIntPtr device, DeviceChangedEvent *dce)
     if (!IsMaster(device))
         return;
 
-    rc = dixLookupDevice(&slave, dce->sourceid, serverClient, DixReadAccess);
+    rc = dixLookupDevice(&slave, dce->sourceid, xephyr_context->serverClient, DixReadAccess);
 
     if (rc != Success)
         return;                 /* Device has disappeared */
@@ -1268,7 +1269,7 @@ TouchRejected(DeviceIntPtr sourcedev, TouchPointInfoPtr ti, XID resource,
 /**
  * Processes a TouchOwnership event, indicating a grab has accepted the touch
  * it currently owns, or a grab or selection has been removed.  Will generate
- * and send TouchEnd events to all clients removed from the delivery list, as
+ * and send TouchEnd events to all xephyr_context->clients removed from the delivery list, as
  * well as possibly sending the new TouchOwnership event.  May end the
  * touchpoint if it is pending finish.
  */
@@ -1369,7 +1370,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
     else {
         rc = dixLookupResourceByType((void **) win, listener->listener,
                                      listener->resource_type,
-                                     serverClient, DixSendAccess);
+                                     xephyr_context->serverClient, DixSendAccess);
         if (rc != Success)
             return FALSE;
 
@@ -1627,7 +1628,7 @@ ProcessTouchEvent(InternalEvent *ev, DeviceIntPtr dev)
          !xi2mask_isset(dev->deviceGrab.grab->xi2mask, dev, XI_TouchBegin)))
     {
         /* Active pointer grab on touch point and we get a TouchEnd - claim this
-         * touchpoint accepted, otherwise clients waiting for ownership will
+         * touchpoint accepted, otherwise xephyr_context->clients waiting for ownership will
          * wait on this touchpoint until this client ungrabs, or the cows come
          * home, whichever is earlier */
         if (ti && type == ET_TouchEnd)
@@ -1713,7 +1714,7 @@ ProcessBarrierEvent(InternalEvent *e, DeviceIntPtr dev)
     if (!IsMaster(dev))
         return;
 
-    if (dixLookupWindow(&pWin, be->window, serverClient, DixReadAccess) != Success)
+    if (dixLookupWindow(&pWin, be->window, xephyr_context->serverClient, DixReadAccess) != Success)
         return;
 
     if (grab)
@@ -1898,7 +1899,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device)
     switch (event->type) {
     case ET_KeyPress:
         /* Don't deliver focus events (e.g. from KeymapNotify when running
-         * nested) to clients. */
+         * nested) to xephyr_context->clients. */
         if (event->source_type == EVENT_SOURCE_FOCUS)
             return;
         if (!grab && CheckDeviceGrabs(device, ev, 0))
@@ -1933,7 +1934,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device)
     }
 
     /* Don't deliver focus events (e.g. from KeymapNotify when running
-     * nested) to clients. */
+     * nested) to xephyr_context->clients. */
     if (event->source_type != EVENT_SOURCE_FOCUS) {
         if (grab)
             DeliverGrabbedEvent((InternalEvent *) event, device,
@@ -2177,7 +2178,7 @@ DeliverTouchEvent(DeviceIntPtr dev, TouchPointInfoPtr ti, InternalEvent *ev,
 }
 
 /**
- * Delivers a touch events to all interested clients.  For TouchBegin events,
+ * Delivers a touch events to all interested xephyr_context->clients.  For TouchBegin events,
  * will update ti->listeners, ti->num_listeners, and ti->num_grabs.
  * May also mutate ev (type and flags) upon successful delivery.  If
  * @resource is non-zero, will only attempt delivery to the owner of that
@@ -2277,7 +2278,7 @@ RetrieveGestureDeliveryData(DeviceIntPtr dev, InternalEvent *ev, GestureListener
     }
     else {
         rc = dixLookupResourceByType((void **) win, listener->listener, listener->resource_type,
-                                     serverClient, DixSendAccess);
+                                     xephyr_context->serverClient, DixSendAccess);
         if (rc != Success)
             return FALSE;
 
@@ -2663,7 +2664,7 @@ SelectForWindow(DeviceIntPtr dev, WindowPtr pWin, ClientPtr client,
     check = (mask & exclusivemasks);
     if (wOtherInputMasks(pWin)) {
         if (check & wOtherInputMasks(pWin)->inputEvents[mskidx]) {
-            /* It is illegal for two different clients to select on any of
+            /* It is illegal for two different xephyr_context->clients to select on any of
              * the events for maskcheck. However, it is OK, for some client
              * to continue selecting on one of those events.
              */
@@ -3012,7 +3013,7 @@ ChangeKeyMapping(ClientPtr client,
     keysyms.map = map;
 
     XkbApplyMappingChange(dev, &keysyms, firstKeyCode, keyCodes, NULL,
-                          serverClient);
+                          xephyr_context->serverClient);
 
     return Success;
 }
@@ -3122,7 +3123,7 @@ MaybeSendDeviceMotionNotifyHint(deviceKeyButtonPointer *pEvents, Mask mask)
 {
     DeviceIntPtr dev;
 
-    dixLookupDevice(&dev, pEvents->deviceid & DEVICE_BITS, serverClient,
+    dixLookupDevice(&dev, pEvents->deviceid & DEVICE_BITS, xephyr_context->serverClient,
                     DixReadAccess);
     if (!dev)
         return 0;
@@ -3148,7 +3149,7 @@ CheckDeviceGrabAndHintWindow(WindowPtr pWin, int type,
 {
     DeviceIntPtr dev;
 
-    dixLookupDevice(&dev, xE->deviceid & DEVICE_BITS, serverClient,
+    dixLookupDevice(&dev, xE->deviceid & DEVICE_BITS, xephyr_context->serverClient,
                     DixGrabAccess);
     if (!dev)
         return;
@@ -3174,7 +3175,7 @@ CheckDeviceGrabAndHintWindow(WindowPtr pWin, int type,
         tempGrab->confineTo = NullWindow;
         tempGrab->cursor = NullCursor;
         tempGrab->next = NULL;
-        (*dev->deviceGrab.ActivateGrab) (dev, tempGrab, currentTime, TRUE);
+        (*dev->deviceGrab.ActivateGrab) (dev, tempGrab, xephyr_context->currentTime, TRUE);
         FreeGrab(tempGrab);
     }
 }
@@ -3260,7 +3261,7 @@ ShouldFreeInputMasks(WindowPtr pWin, Bool ignoreSelectedEvents)
 
 /***********************************************************************
  *
- * Walk through the window tree, finding all clients that want to know
+ * Walk through the window tree, finding all xephyr_context->clients that want to know
  * about the Event.
  *
  */
@@ -3281,7 +3282,7 @@ FindInterestedChildren(DeviceIntPtr dev, WindowPtr p1, Mask mask,
 
 /***********************************************************************
  *
- * Send an event to interested clients in all windows on all screens.
+ * Send an event to interested xephyr_context->clients in all windows on all screens.
  *
  */
 
@@ -3291,8 +3292,8 @@ SendEventToAllWindows(DeviceIntPtr dev, Mask mask, xEvent *ev, int count)
     int i;
     WindowPtr pWin, p1;
 
-    for (i = 0; i < screenInfo.numScreens; i++) {
-        pWin = screenInfo.screens[i]->root;
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        pWin = xephyr_context->screenInfo.screens[i]->root;
         if (!pWin)
             continue;
         DeliverEventsToWindow(dev, pWin, ev, count, mask, NullGrab);

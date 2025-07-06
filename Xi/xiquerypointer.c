@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright 2007-2008 Peter Hutterer
  *
@@ -88,9 +89,9 @@ ProcXIQueryPointer(ClientPtr client)
     REQUEST(xXIQueryPointerReq);
     REQUEST_SIZE_MATCH(xXIQueryPointerReq);
 
-    /* Check if client is compliant with XInput 2.2 or later. Earlier clients
+    /* Check if client is compliant with XInput 2.2 or later. Earlier xephyr_context->clients
      * do not know about touches, so we must report emulated button presses. 2.2
-     * and later clients are aware of touches, so we don't include emulated
+     * and later xephyr_context->clients are aware of touches, so we don't include emulated
      * button presses in the reply. */
     xi_client = dixLookupPrivate(&client->devPrivates, XIClientPrivateKey);
     if (version_compare(xi_client->major_version,
@@ -185,11 +186,11 @@ ProcXIQueryPointer(ClientPtr client)
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension) {
-        rep.root_x += double_to_fp1616(screenInfo.screens[0]->x);
-        rep.root_y += double_to_fp1616(screenInfo.screens[0]->y);
+        rep.root_x += double_to_fp1616(xephyr_context->screenInfo.screens[0]->x);
+        rep.root_y += double_to_fp1616(xephyr_context->screenInfo.screens[0]->y);
         if (stuff->win == rep.root) {
-            rep.win_x += double_to_fp1616(screenInfo.screens[0]->x);
-            rep.win_y += double_to_fp1616(screenInfo.screens[0]->y);
+            rep.win_x += double_to_fp1616(xephyr_context->screenInfo.screens[0]->x);
+            rep.win_y += double_to_fp1616(xephyr_context->screenInfo.screens[0]->y);
         }
     }
 #endif

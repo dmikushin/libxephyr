@@ -1,3 +1,5 @@
+#include <string.h>
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1989, 1998  The Open Group
@@ -132,11 +134,11 @@ Bool NoListenAll;               /* Don't establish any listening sockets */
 static Bool RunFromSmartParent; /* send SIGUSR1 to parent process */
 Bool RunFromSigStopParent;      /* send SIGSTOP to our own process; Upstart (or
                                    equivalent) will send SIGCONT back. */
-static char dynamic_display[7]; /* display name */
+static char dynamic_display[7]; /* xephyr_context->display name */
 Bool PartialNetwork;            /* continue even if unable to bind all addrs */
 static Pid_t ParentProcess;
 
-int GrabInProgress = 0;
+// // int GrabInProgress = 0;
 
 static void
 EstablishNewConnections(int curconn, int ready, void *data);
@@ -198,13 +200,13 @@ void
 NotifyParentProcess(void)
 {
 #if !defined(WIN32)
-    if (displayfd >= 0) {
-        if (write(displayfd, display, strlen(display)) != strlen(display))
-            FatalError("Cannot write display number to fd %d\n", displayfd);
-        if (write(displayfd, "\n", 1) != 1)
-            FatalError("Cannot write display number to fd %d\n", displayfd);
-        close(displayfd);
-        displayfd = -1;
+    if (xephyr_context->displayfd >= 0) {
+        if (write(xephyr_context->displayfd, xephyr_context->display, strlen(xephyr_context->display)) != strlen(xephyr_context->display))
+            FatalError("Cannot write xephyr_context->display number to fd %d\n", xephyr_context->displayfd);
+        if (write(xephyr_context->displayfd, "\n", 1) != 1)
+            FatalError("Cannot write xephyr_context->display number to fd %d\n", xephyr_context->displayfd);
+        close(xephyr_context->displayfd);
+        xephyr_context->displayfd = -1;
     }
     if (RunFromSmartParent) {
         if (ParentProcess > 1) {
@@ -235,7 +237,7 @@ TryCreateSocket(int num, int *partial)
 
 /*****************
  * CreateWellKnownSockets
- *    At initialization, create the sockets to listen on for new clients.
+ *    At initialization, create the sockets to listen on for new xephyr_context->clients.
  *****************/
 
 void
@@ -244,19 +246,19 @@ CreateWellKnownSockets(void)
     int i;
     int partial;
 
-    /* display is initialized to "0" by main(). It is then set to the display
+    /* xephyr_context->display is initialized to "0" by main(). It is then set to the xephyr_context->display
      * number if specified on the command line. */
 
     if (NoListenAll) {
         ListenTransCount = 0;
     }
-    else if ((displayfd < 0) || explicit_display) {
-        if (TryCreateSocket(atoi(display), &partial) &&
+    else if ((xephyr_context->displayfd < 0) || xephyr_context->explicit_display) {
+        if (TryCreateSocket(atoi(xephyr_context->display), &partial) &&
             ListenTransCount >= 1)
             if (!PartialNetwork && partial)
                 FatalError ("Failed to establish all listening sockets");
     }
-    else { /* -displayfd and no explicit display number */
+    else { /* -xephyr_context->displayfd and no explicit xephyr_context->display number */
         Bool found = 0;
         for (i = 0; i < 65536 - X_TCP_PORT; i++) {
             if (TryCreateSocket(i, &partial) && !partial) {
@@ -269,7 +271,7 @@ CreateWellKnownSockets(void)
         if (!found)
             FatalError("Failed to find a socket to listen on");
         snprintf(dynamic_display, sizeof(dynamic_display), "%d", i);
-        display = dynamic_display;
+        xephyr_context->display = dynamic_display;
         LogSetDisplay();
     }
 
@@ -297,7 +299,7 @@ CreateWellKnownSockets(void)
 #endif
     OsSignal(SIGINT, GiveUp);
     OsSignal(SIGTERM, GiveUp);
-    ResetHosts(display);
+    ResetHosts(xephyr_context->display);
 
     InitParentProcess();
 
@@ -345,7 +347,7 @@ ResetWellKnownSockets(void)
                     NULL);
 
     ResetAuthorization();
-    ResetHosts(display);
+    ResetHosts(xephyr_context->display);
     /*
      * restart XDMCP
      */
@@ -666,8 +668,8 @@ EstablishNewConnections(int curconn, int ready, void *data)
 
     connect_time = GetTimeInMillis();
     /* kill off stragglers */
-    for (i = 1; i < currentMaxClients; i++) {
-        if ((client = clients[i])) {
+    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
+        if ((client = xephyr_context->clients[i])) {
             oc = (OsCommPtr) (client->osPrivate);
             if ((oc && (oc->conn_time != 0) &&
                  (connect_time - oc->conn_time) >= TimeOutValue) ||
@@ -695,7 +697,7 @@ EstablishNewConnections(int curconn, int ready, void *data)
     return;
 }
 
-#define NOROOM "Maximum number of clients reached"
+#define NOROOM "Maximum number of xephyr_context->clients reached"
 
 /************
  *   ErrorConnMax
@@ -857,8 +859,8 @@ SetNotifyFd(int fd, NotifyFdProcPtr notify, int mask, void *data)
  * OnlyListenToOneClient:
  *    Only accept requests from  one client.  Continue to handle new
  *    connections, but don't take any protocol requests from the new
- *    ones.  Note that if GrabInProgress is set, EstablishNewConnections
- *    needs to put new clients into SavedAllSockets and SavedAllClients.
+ *    ones.  Note that if xephyr_context->GrabInProgress is set, EstablishNewConnections
+ *    needs to put new xephyr_context->clients into SavedAllSockets and SavedAllClients.
  *    Note also that there is no timeout for this in the protocol.
  *    This routine is "undone" by ListenToAllClients()
  *****************/
@@ -872,8 +874,8 @@ OnlyListenToOneClient(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    if (!GrabInProgress) {
-        GrabInProgress = client->index;
+    if (!xephyr_context->GrabInProgress) {
+        xephyr_context->GrabInProgress = client->index;
         set_poll_clients();
     }
 
@@ -888,8 +890,8 @@ OnlyListenToOneClient(ClientPtr client)
 void
 ListenToAllClients(void)
 {
-    if (GrabInProgress) {
-        GrabInProgress = 0;
+    if (xephyr_context->GrabInProgress) {
+        xephyr_context->GrabInProgress = 0;
         set_poll_clients();
     }
 }
@@ -1020,7 +1022,7 @@ ListenOnOpenFD(int fd, int noxauth)
 
     if (!display_env) {
         /* Just some default so things don't break and die. */
-        snprintf(port, sizeof(port), ":%d", atoi(display));
+        snprintf(port, sizeof(port), ":%d", atoi(xephyr_context->display));
     }
 
     /* Make our XtransConnInfo
@@ -1060,7 +1062,7 @@ AddClientOnOpenFD(int fd)
     CARD32 connect_time;
     char port[20];
 
-    snprintf(port, sizeof(port), ":%d", atoi(display));
+    snprintf(port, sizeof(port), ":%d", atoi(xephyr_context->display));
     ciptr = _XSERVTransReopenCOTSServer(5, fd, port);
     if (ciptr == NULL)
         return FALSE;
@@ -1086,10 +1088,10 @@ listen_to_client(ClientPtr client)
     if (oc->flags & OS_COMM_IGNORED)
         return FALSE;
 
-    if (!GrabInProgress)
+    if (!xephyr_context->GrabInProgress)
         return TRUE;
 
-    if (client->index == GrabInProgress)
+    if (client->index == xephyr_context->GrabInProgress)
         return TRUE;
 
     if (oc->flags & OS_COMM_GRAB_IMPERVIOUS)
@@ -1116,8 +1118,8 @@ set_poll_clients(void)
 {
     int i;
 
-    for (i = 1; i < currentMaxClients; i++) {
-        ClientPtr client = clients[i];
+    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
+        ClientPtr client = xephyr_context->clients[i];
         if (client && !client->clientGone)
             set_poll_client(client);
     }

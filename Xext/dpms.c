@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*****************************************************************
 
 Copyright (c) 1996 Digital Equipment Corporation, Maynard, Massachusetts.
@@ -56,12 +57,12 @@ DPMSSupported(void)
     int i;
 
     /* For each screen, check if DPMS is supported */
-    for (i = 0; i < screenInfo.numScreens; i++)
-        if (screenInfo.screens[i]->DPMS != NULL)
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
+        if (xephyr_context->screenInfo.screens[i]->DPMS != NULL)
             return TRUE;
 
-    for (i = 0; i < screenInfo.numGPUScreens; i++)
-        if (screenInfo.gpuscreens[i]->DPMS != NULL)
+    for (i = 0; i < xephyr_context->screenInfo.numGPUScreens; i++)
+        if (xephyr_context->screenInfo.gpuscreens[i]->DPMS != NULL)
             return TRUE;
 
     return FALSE;
@@ -101,13 +102,13 @@ DPMSSet(ClientPtr client, int level)
             return rc;
     }
 
-    for (i = 0; i < screenInfo.numScreens; i++)
-        if (screenInfo.screens[i]->DPMS != NULL)
-            screenInfo.screens[i]->DPMS(screenInfo.screens[i], level);
+    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
+        if (xephyr_context->screenInfo.screens[i]->DPMS != NULL)
+            xephyr_context->screenInfo.screens[i]->DPMS(xephyr_context->screenInfo.screens[i], level);
 
-    for (i = 0; i < screenInfo.numGPUScreens; i++)
-        if (screenInfo.gpuscreens[i]->DPMS != NULL)
-            screenInfo.gpuscreens[i]->DPMS(screenInfo.gpuscreens[i], level);
+    for (i = 0; i < xephyr_context->screenInfo.numGPUScreens; i++)
+        if (xephyr_context->screenInfo.gpuscreens[i]->DPMS != NULL)
+            xephyr_context->screenInfo.gpuscreens[i]->DPMS(xephyr_context->screenInfo.gpuscreens[i], level);
 
     return Success;
 }
@@ -426,7 +427,7 @@ SProcDPMSDispatch(ClientPtr client)
 static void
 DPMSCloseDownExtension(ExtensionEntry *e)
 {
-    DPMSSet(serverClient, DPMSModeOn);
+    DPMSSet(xephyr_context->serverClient, DPMSModeOn);
 }
 
 void
@@ -434,7 +435,7 @@ DPMSExtensionInit(void)
 {
 #define CONDITIONALLY_SET_DPMS_TIMEOUT(_timeout_value_)         \
     if (_timeout_value_ == -1) { /* not yet set from config */  \
-        _timeout_value_ = ScreenSaverTime;                      \
+        _timeout_value_ = xephyr_context->ScreenSaverTime;                      \
     }
 
     CONDITIONALLY_SET_DPMS_TIMEOUT(DPMSStandbyTime)

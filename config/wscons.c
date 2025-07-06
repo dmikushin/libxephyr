@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright (c) 2011 Matthieu Herrb
  *

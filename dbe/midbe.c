@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /******************************************************************************
  *
  * Copyright (c) 1994, 1995  Hewlett-Packard Company
@@ -169,7 +170,7 @@ miDbeAllocBackBufferName(WindowPtr pWin, XID bufId, int swapAction)
         }
 
         /* Security creation/labeling check. */
-        rc = XaceHook(XACE_RESOURCE_ACCESS, serverClient, bufId,
+        rc = XaceHook(XACE_RESOURCE_ACCESS, xephyr_context->serverClient, bufId,
                       dbeDrawableResType, pDbeWindowPriv->pBackBuffer,
                       RT_WINDOW, pWin, DixCreateAccess);
 

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -66,7 +67,7 @@ extern _X_EXPORT DevScreenPrivateKeyRec cursorScreenDevPriv;
 
 #define CursorScreenKey (&cursorScreenDevPriv)
 
-extern _X_EXPORT CursorPtr rootCursor;
+
 
 extern _X_EXPORT int FreeCursor(void *pCurs,
                                 XID cid);

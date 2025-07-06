@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright © 2008,2011 Intel Corporation
  *
@@ -533,7 +534,7 @@ glamor_add_format(ScreenPtr screen, int depth, CARD32 render_format,
  * GL logic ops (non-GXcopy GC ops) what the driver chooses internally
  * doesn't matter as long as it doesn't drop any bits (we expect them
  * to generally expand, if anything).  For Render, we can expect
- * clients to tend to render with PictFormats matching our channel
+ * xephyr_context->clients to tend to render with PictFormats matching our channel
  * layouts here since ultimately X11 pixels tend to end up on the
  * screen.  The render implementation will fall back to fb if the
  * channels don't match.

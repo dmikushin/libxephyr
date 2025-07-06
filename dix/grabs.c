@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
 
 Copyright 1987, 1998  The Open Group
@@ -85,7 +86,7 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
            (grab->grabtype == XI2) ? "xi2" :
            ((grab->grabtype == CORE) ? "core" : "xi1"), dev->name, dev->id);
 
-    client = clients[CLIENT_ID(grab->resource)];
+    client = xephyr_context->clients[CLIENT_ID(grab->resource)];
     if (client) {
         pid_t clientpid = GetClientPid(client);
         const char *cmdname = GetClientCmdName(client);
@@ -178,7 +179,7 @@ UngrabAllDevices(Bool kill_client)
         if (!dev->deviceGrab.grab)
             continue;
         PrintDeviceGrabInfo(dev);
-        client = clients[CLIENT_ID(dev->deviceGrab.grab->resource)];
+        client = xephyr_context->clients[CLIENT_ID(dev->deviceGrab.grab->resource)];
         if (!kill_client || !client || client->clientGone)
             dev->deviceGrab.DeactivateGrab(dev);
         if (kill_client)

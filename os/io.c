@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /***********************************************************
 
 Copyright 1987, 1989, 1998  The Open Group
@@ -168,11 +169,11 @@ static OsCommPtr AvailableInput = (OsCommPtr) NULL;
  *
  *    Note: in order to make the server scheduler (WaitForSomething())
  *    "fair", the ClientsWithInput mask is used.  This mask tells which
- *    clients have FULL requests left in their buffers.  Clients with
+ *    xephyr_context->clients have FULL requests left in their buffers.  Clients with
  *    partial requests require a read.  Basically, client buffers
  *    are drained before select() is called again.  But, we can't keep
  *    reading from a client that is sending buckets of data (or has
- *    a partial request) because others clients need to be scheduled.
+ *    a partial request) because others xephyr_context->clients need to be scheduled.
  *****************************************************************/
 
 static void
@@ -198,7 +199,7 @@ YieldControlDeath(void)
 }
 
 /* If an input buffer was empty, either free it if it is too big or link it
- * into our list of free input buffers.  This means that different clients can
+ * into our list of free input buffers.  This means that different xephyr_context->clients can
  * share the same input buffer (at different times).  This was done to save
  * memory.
  */
@@ -306,7 +307,7 @@ ReadRequestFromClient(ClientPtr client)
          */
 
         oci->lenLastReq = 0;
-        if (needed > maxBigRequestSize << 2) {
+        if (needed > xephyr_context->maxBigRequestSize << 2) {
             /* request is too big for us to handle */
             /*
              * Mark the rest of it as needing to be ignored, and then return
@@ -433,7 +434,7 @@ ReadRequestFromClient(ClientPtr client)
      *  Check to see if client has at least one whole request in the
      *  buffer beyond the request we're returning to the caller.
      *  If there is only a partial request, treat like buffer
-     *  is empty so that select() will be called again and other clients
+     *  is empty so that select() will be called again and other xephyr_context->clients
      *  can get into the queue.
      */
 
@@ -558,7 +559,7 @@ ResetCurrentRequest(ClientPtr client)
 {
     OsCommPtr oc = (OsCommPtr) client->osPrivate;
 
-    /* ignore dying clients */
+    /* ignore dying xephyr_context->clients */
     if (!oc)
         return;
 
@@ -596,7 +597,7 @@ ResetCurrentRequest(ClientPtr client)
 
  /********************
  * FlushAllOutput()
- *    Flush all clients with output.  However, if some client still
+ *    Flush all xephyr_context->clients with output.  However, if some client still
  *    has input in the queue (more requests), then don't flush.  This
  *    will prevent the output queue from being flushed every time around
  *    the round robin queue.  Now, some say that it SHOULD be flushed
@@ -691,7 +692,7 @@ WriteToClient(ClientPtr who, int count, const void *__buf)
 #ifdef DEBUG_COMMUNICATION
     Bool multicount = FALSE;
 #endif
-    if (!count || !who || who == serverClient || who->clientGone)
+    if (!count || !who || who == xephyr_context->serverClient || who->clientGone)
         return 0;
     oc = who->osPrivate;
     oco = oc->output;

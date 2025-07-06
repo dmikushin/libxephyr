@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
  *
@@ -106,10 +107,10 @@ static void
 compCheckBackingStore(WindowPtr pWin)
 {
     if (pWin->backingStore != NotUseful) {
-        compRedirectWindow(serverClient, pWin, CompositeRedirectAutomatic);
+        compRedirectWindow(xephyr_context->serverClient, pWin, CompositeRedirectAutomatic);
     }
     else {
-        compUnredirectWindow(serverClient, pWin,
+        compUnredirectWindow(xephyr_context->serverClient, pWin,
                              CompositeRedirectAutomatic);
     }
 }
@@ -361,7 +362,7 @@ compScreenInit(ScreenPtr pScreen)
         return FALSE;
     }
 
-    if (!disableBackingStore)
+    if (!xephyr_context->disableBackingStore)
         pScreen->backingStoreSupport = WhenMapped;
 
     cs->PositionWindow = pScreen->PositionWindow;

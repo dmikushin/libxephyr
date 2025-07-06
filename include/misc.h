@@ -1,3 +1,4 @@
+/* #include "dix/context.h" - creates circular dependency */
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -413,8 +414,7 @@ typedef struct _CharInfo *CharInfoPtr;  /* also in fonts/include/font.h */
 #define _XTYPEDEF_CHARINFOPTR
 #endif
 
-extern _X_EXPORT unsigned long globalSerialNumber;
-extern _X_EXPORT unsigned long serverGeneration;
+
 
 /* Don't use this directly, use BUG_WARN or BUG_WARN_MSG instead */
 #define __BUG_WARN_MSG(cond, with_msg, ...)                                \

@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 Copyright (c) 1993 by Silicon Graphics Computer Systems, Inc.
 
@@ -408,13 +409,13 @@ _XkbBell(ClientPtr client, DeviceIntPtr dev, WindowPtr pWin,
         oldDuration = k->ctrl.bell_duration;
         if (pitch != 0) {
             if (pitch == -1)
-                k->ctrl.bell_pitch = defaultKeyboardControl.bell_pitch;
+                k->ctrl.bell_pitch = xephyr_context->defaultKeyboardControl.bell_pitch;
             else
                 k->ctrl.bell_pitch = pitch;
         }
         if (duration != 0) {
             if (duration == -1)
-                k->ctrl.bell_duration = defaultKeyboardControl.bell_duration;
+                k->ctrl.bell_duration = xephyr_context->defaultKeyboardControl.bell_duration;
             else
                 k->ctrl.bell_duration = duration;
         }
@@ -440,13 +441,13 @@ _XkbBell(ClientPtr client, DeviceIntPtr dev, WindowPtr pWin,
         oldDuration = b->ctrl.duration;
         if (pitch != 0) {
             if (pitch == -1)
-                b->ctrl.pitch = defaultKeyboardControl.bell_pitch;
+                b->ctrl.pitch = xephyr_context->defaultKeyboardControl.bell_pitch;
             else
                 b->ctrl.pitch = pitch;
         }
         if (duration != 0) {
             if (duration == -1)
-                b->ctrl.duration = defaultKeyboardControl.bell_duration;
+                b->ctrl.duration = xephyr_context->defaultKeyboardControl.bell_duration;
             else
                 b->ctrl.duration = duration;
         }
@@ -1151,7 +1152,7 @@ XkbWriteKeySyms(XkbDescPtr xkb, xkbGetMapReply * rep, char *buf,
 
             swaps(&outMap->nSyms);
             while (nSyms-- > 0) {
-                swapl((int *) buf);
+                swapll((long *) buf);
                 buf += 4;
             }
         }
@@ -4369,7 +4370,7 @@ _XkbSetNames(ClientPtr client, DeviceIntPtr dev, xkbSetNamesReq * stuff)
         nn.changedVirtualMods = stuff->virtualMods;
     }
     if (stuff->which & XkbGroupNamesMask) {
-        tmp = _XkbCopyMaskedAtoms(tmp, names->groups, XkbNumKbdGroups,
+        tmp = (Atom *)_XkbCopyMaskedAtoms((Atom *)tmp, names->groups, XkbNumKbdGroups,
                                   stuff->groupNames);
         nn.changedVirtualMods = stuff->groupNames;
     }

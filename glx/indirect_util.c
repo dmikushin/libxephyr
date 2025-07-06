@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * (C) Copyright IBM Corporation 2005
  * All Rights Reserved.
@@ -108,7 +109,7 @@ __glXGetAnswerBuffer(__GLXclientState * cl, size_t required_size,
  * reply.  The primary difference is whether or not certain fields (e.g.,
  * retval, size, and "pad3") are set.  This function gets around that by
  * always setting all of the fields to "reasonable" values.  This does no
- * harm to clients, but it does make the server-side code much more compact.
+ * harm to xephyr_context->clients, but it does make the server-side code much more compact.
  */
 void
 __glXSendReply(ClientPtr client, const void *data, size_t elements,
@@ -151,7 +152,7 @@ __glXSendReply(ClientPtr client, const void *data, size_t elements,
  * reply.  The primary difference is whether or not certain fields (e.g.,
  * retval, size, and "pad3") are set.  This function gets around that by
  * always setting all of the fields to "reasonable" values.  This does no
- * harm to clients, but it does make the server-side code much more compact.
+ * harm to xephyr_context->clients, but it does make the server-side code much more compact.
  *
  * \warning
  * This function assumes that values stored in \c data will be byte-swapped

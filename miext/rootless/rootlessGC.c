@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Graphics Context support for generic rootless X server
  */

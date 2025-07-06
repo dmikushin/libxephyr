@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright (c) 1987, Oracle and/or its affiliates. All rights reserved.
  *

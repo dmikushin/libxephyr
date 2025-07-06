@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /*
  * Copyright 2008 Red Hat, Inc.
  *
@@ -29,7 +30,7 @@
  * byte-ordering. */
 #define XATOM_FLOAT "FLOAT"
 
-/* STRING. Seat name of this display */
+/* STRING. Seat name of this xephyr_context->display */
 #define SEAT_ATOM_NAME "Xorg_Seat"
 
 /* BOOL. 0 - device disabled, 1 - device enabled */

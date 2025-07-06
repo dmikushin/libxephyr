@@ -1,3 +1,4 @@
+#include "dix/context.h"
 /************************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -300,7 +301,7 @@ GetWindowBytes(void *value, XID id, ResourceSizePtr size)
     ResourceSizeRec pixmapSize = { 0, 0, 0 };
     WindowPtr window = value;
 
-    /* Currently only pixmap bytes are reported to clients. */
+    /* Currently only pixmap bytes are reported to xephyr_context->clients. */
     size->resourceSize = 0;
 
     /* Calculate pixmap reference sizes. */
@@ -340,7 +341,7 @@ FindWindowSubRes(void *value, FindAllRes func, void *cdata)
 {
     WindowPtr window = value;
 
-    /* Currently only pixmap subresources are reported to clients. */
+    /* Currently only pixmap subresources are reported to xephyr_context->clients. */
 
     if (window->backgroundState == BackgroundPixmap)
     {
@@ -373,7 +374,7 @@ GetGcBytes(void *value, XID id, ResourceSizePtr size)
     ResourceSizeRec pixmapSize = { 0, 0, 0 };
     GCPtr gc = value;
 
-    /* Currently only pixmap bytes are reported to clients. */
+    /* Currently only pixmap bytes are reported to xephyr_context->clients. */
     size->resourceSize = 0;
 
     /* Calculate pixmap reference sizes. */
@@ -412,7 +413,7 @@ FindGCSubRes(void *value, FindAllRes func, void *cdata)
 {
     GCPtr gc = value;
 
-    /* Currently only pixmap subresources are reported to clients. */
+    /* Currently only pixmap subresources are reported to xephyr_context->clients. */
 
     if (gc->stipple)
     {
@@ -639,7 +640,7 @@ InitClientResources(ClientPtr client)
 {
     int i, j;
 
-    if (client == serverClient) {
+    if (client == xephyr_context->serverClient) {
         lastResourceType = RT_LASTPREDEF;
         lastResourceClass = RC_LASTPREDEF;
         TypeMask = RC_LASTPREDEF - 1;
@@ -656,10 +657,10 @@ InitClientResources(ClientPtr client)
     clientTable[i].buckets = INITBUCKETS;
     clientTable[i].elements = 0;
     clientTable[i].hashsize = INITHASHSIZE;
-    /* Many IDs allocated from the server client are visible to clients,
+    /* Many IDs allocated from the server client are visible to xephyr_context->clients,
      * so we don't use the SERVER_BIT for them, but we have to start
      * past the magic value constants used in the protocol.  For normal
-     * clients, we can start from zero, with SERVER_BIT set.
+     * xephyr_context->clients, we can start from zero, with SERVER_BIT set.
      */
     clientTable[i].fakeID = client->clientAsMask |
         (client->index ? SERVER_BIT : SERVER_MINID);
@@ -759,7 +760,7 @@ GetXIDList(ClientPtr pClient, unsigned count, XID *pids)
 
     maxid = id | RESOURCE_ID_MASK;
     while ((found < count) && (id <= maxid)) {
-        rc = dixLookupResourceByClass(&val, id, RC_ANY, serverClient,
+        rc = dixLookupResourceByClass(&val, id, RC_ANY, xephyr_context->serverClient,
                                       DixGetAttrAccess);
         if (rc == BadValue) {
             pids[found++] = id;
@@ -789,7 +790,7 @@ FakeClientID(int client)
     if (!id) {
         if (!client)
             FatalError("FakeClientID: server internal ids exhausted\n");
-        MarkClientException(clients[client]);
+        MarkClientException(xephyr_context->clients[client]);
         id = ((Mask) client << CLIENTOFFSET) | (SERVER_BIT * 3);
         maxid = id | RESOURCE_ID_MASK;
     }
@@ -993,7 +994,7 @@ FindClientResourcesByType(ClientPtr client,
     int *eltptr;
 
     if (!client)
-        client = serverClient;
+        client = xephyr_context->serverClient;
 
     resources = clientTable[client->index].resources;
     eltptr = &clientTable[client->index].elements;
@@ -1028,7 +1029,7 @@ FindAllClientResources(ClientPtr client, FindAllRes func, void *cdata)
     int *eltptr;
 
     if (!client)
-        client = serverClient;
+        client = xephyr_context->serverClient;
 
     resources = clientTable[client->index].resources;
     eltptr = &clientTable[client->index].elements;
@@ -1054,7 +1055,7 @@ LookupClientResourceComplex(ClientPtr client,
     int i;
 
     if (!client)
-        client = serverClient;
+        client = xephyr_context->serverClient;
 
     resources = clientTable[client->index].resources;
     for (i = 0; i < clientTable[client->index].buckets; i++) {
@@ -1161,9 +1162,9 @@ FreeAllResources(void)
 {
     int i;
 
-    for (i = currentMaxClients; --i >= 0;) {
+    for (i = xephyr_context->currentMaxClients; --i >= 0;) {
         if (clientTable[i].buckets)
-            FreeClientResources(clients[i]);
+            FreeClientResources(xephyr_context->clients[i]);
     }
 }
 
@@ -1185,7 +1186,7 @@ LegalNewID(XID id, ClientPtr client)
     }
 #endif                          /* PANORAMIX */
     if (client->clientAsMask == (id & ~RESOURCE_ID_MASK)) {
-        rc = dixLookupResourceByClass(&val, id, RC_ANY, serverClient,
+        rc = dixLookupResourceByClass(&val, id, RC_ANY, xephyr_context->serverClient,
                                       DixGetAttrAccess);
         return rc == BadValue;
     }

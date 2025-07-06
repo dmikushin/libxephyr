@@ -82,7 +82,7 @@ if srcs_libc.length() > 0
         srcs_libc,
         include_directories: inc,
         dependencies: [
-            xproto_dep,
+            common_dep,
         ],
     )
 endif
@@ -95,10 +95,10 @@ libxserver_os = static_library('libxserver_os',
     srcs_os,
     include_directories: inc,
     dependencies: [
-        dtrace_dep,
+        # dtrace_dep,
         common_dep,
         dl_dep,
-        sha1_dep,
+        # sha1_dep,
         rpc_dep,
         os_dep,
         dependency('xau')
