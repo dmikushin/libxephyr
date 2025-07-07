@@ -2,6 +2,7 @@
 #ifndef DIX_CONTEXT_H
 #define DIX_CONTEXT_H
 
+#include "dix-config.h"
 #include <X11/X.h>
 #include <X11/Xmd.h>
 #include "dixstruct.h"

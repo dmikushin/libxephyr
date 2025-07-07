@@ -4,431 +4,431 @@
 #define _DIX_CONFIG_H_
 
 /* Support BigRequests extension */
-#undef BIGREQS
+#cmakedefine BIGREQS
 
 /* Builder address */
-#undef BUILDERADDR
+#cmakedefine BUILDERADDR
 
 /* Builder string */
-#undef BUILDERSTRING
+#cmakedefine BUILDERSTRING
 
 /* Default font path */
-#undef COMPILEDDEFAULTFONTPATH
+#cmakedefine COMPILEDDEFAULTFONTPATH
 
 /* Miscellaneous server configuration files path */
-#undef SERVER_MISC_CONFIG_PATH
+#cmakedefine SERVER_MISC_CONFIG_PATH
 
 /* Support Composite Extension */
-#undef COMPOSITE
+#cmakedefine COMPOSITE @COMPOSITE@
 
 /* Support Damage extension */
-#undef DAMAGE
+#cmakedefine DAMAGE @DAMAGE@
 
 /* Use OsVendorVErrorF */
-#undef DDXOSVERRORF
+#cmakedefine DDXOSVERRORF
 
 /* Use ddxBeforeReset */
-#undef DDXBEFORERESET
+#cmakedefine DDXBEFORERESET
 
 /* Build DPMS extension */
-#undef DPMSExtension
+#cmakedefine DPMSExtension
 
 /* Build DRI3 extension */
-#undef DRI3
+#cmakedefine DRI3
 
 /* Build GLX extension */
-#undef GLXEXT
+#cmakedefine GLXEXT
 
 /* Build GLX DRI loader */
-#undef GLX_DRI
+#cmakedefine GLX_DRI
 
 /* Path to DRI drivers */
-#undef DRI_DRIVER_PATH
+#cmakedefine DRI_DRIVER_PATH
 
 /* Support XDM-AUTH*-1 */
-#undef HASXDMAUTH
+#cmakedefine HASXDMAUTH
 
 /* Support SHM */
-#undef HAS_SHM
+#cmakedefine HAS_SHM
 
 /* Has backtrace support */
-#undef HAVE_BACKTRACE
+#cmakedefine HAVE_BACKTRACE
 
 /* Has libunwind support */
-#undef HAVE_LIBUNWIND
+#cmakedefine HAVE_LIBUNWIND
 
 /* Define to 1 if you have the `cbrt' function. */
-#undef HAVE_CBRT
+#cmakedefine HAVE_CBRT
 
 /* Define to 1 if you have the declaration of `program_invocation_short_name', and
    to 0 if you don't. */
-#undef HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
+#cmakedefine HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
 
 /* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
    */
-#undef HAVE_DIRENT_H
+#cmakedefine HAVE_DIRENT_H
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
-#undef HAVE_DLFCN_H
+#cmakedefine HAVE_DLFCN_H
 
 /* Have execinfo.h */
-#undef HAVE_EXECINFO_H
+#cmakedefine HAVE_EXECINFO_H
 
 /* Define to 1 if you have the <fcntl.h> header file. */
-#undef HAVE_FCNTL_H
+#cmakedefine HAVE_FCNTL_H
 
 /* Define to 1 if you have the `getdtablesize' function. */
-#undef HAVE_GETDTABLESIZE
+#cmakedefine HAVE_GETDTABLESIZE
 
 /* Define to 1 if you have the `getifaddrs' function. */
-#undef HAVE_GETIFADDRS
+#cmakedefine HAVE_GETIFADDRS
 
 /* Define to 1 if you have the `getpeereid' function. */
-#undef HAVE_GETPEEREID
+#cmakedefine HAVE_GETPEEREID
 
 /* Define to 1 if you have the `getpeerucred' function. */
-#undef HAVE_GETPEERUCRED
+#cmakedefine HAVE_GETPEERUCRED
 
 /* Define to 1 if you have the `getprogname' function. */
-#undef HAVE_GETPROGNAME
+#cmakedefine HAVE_GETPROGNAME
 
 /* Define to 1 if you have the `getzoneid' function. */
-#undef HAVE_GETZONEID
+#cmakedefine HAVE_GETZONEID
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-#undef HAVE_INTTYPES_H
+#cmakedefine HAVE_INTTYPES_H
 
 /* Have Quartz */
-#undef XQUARTZ
+#cmakedefine XQUARTZ
 
 /* Support application updating through sparkle. */
-#undef XQUARTZ_SPARKLE
+#cmakedefine XQUARTZ_SPARKLE
 
 /* Prefix to use for bundle identifiers */
-#undef BUNDLE_ID_PREFIX
+#cmakedefine BUNDLE_ID_PREFIX
 
 /* Build a standalone xpbproxy */
-#undef STANDALONE_XPBPROXY
+#cmakedefine STANDALONE_XPBPROXY
 
 /* Define to 1 if you have the `bsd' library (-lbsd). */
-#undef HAVE_LIBBSD
+#cmakedefine HAVE_LIBBSD
 
 /* Define to 1 if you have the `m' library (-lm). */
-#undef HAVE_LIBM
+#cmakedefine HAVE_LIBM
 
 /* Define to 1 if you have the <linux/agpgart.h> header file. */
-#undef HAVE_LINUX_AGPGART_H
+#cmakedefine HAVE_LINUX_AGPGART_H
 
 /* Define to 1 if you have the <linux/apm_bios.h> header file. */
-#undef HAVE_LINUX_APM_BIOS_H
+#cmakedefine HAVE_LINUX_APM_BIOS_H
 
 /* Define to 1 if you have the <linux/fb.h> header file. */
-#undef HAVE_LINUX_FB_H
+#cmakedefine HAVE_LINUX_FB_H
 
 /* Define to 1 if you have the `memfd_create' function. */
-#undef HAVE_MEMFD_CREATE
+#cmakedefine HAVE_MEMFD_CREATE
 
 /* Define to 1 if you have the `mkostemp' function. */
-#undef HAVE_MKOSTEMP
+#cmakedefine HAVE_MKOSTEMP
 
 /* Define to 1 if you have the `mmap' function. */
-#undef HAVE_MMAP
+#cmakedefine HAVE_MMAP
 
 /* Define to 1 if you have the function pthread_setname_np(const char*) */
-#undef HAVE_PTHREAD_SETNAME_NP_WITHOUT_TID
+#cmakedefine HAVE_PTHREAD_SETNAME_NP_WITHOUT_TID
 
 /* Define to 1 if you have the function pthread_setname_np(pthread_t, const char*) */
-#undef HAVE_PTHREAD_SETNAME_NP_WITH_TID
+#cmakedefine HAVE_PTHREAD_SETNAME_NP_WITH_TID
 
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
-#undef HAVE_NDIR_H
+#cmakedefine HAVE_NDIR_H
 
 /* Define to 1 if you have the `reallocarray' function. */
-#undef HAVE_REALLOCARRAY
+#cmakedefine HAVE_REALLOCARRAY
 
 /* Define to 1 if you have the `arc4random_buf' function. */
-#undef HAVE_ARC4RANDOM_BUF
+#cmakedefine HAVE_ARC4RANDOM_BUF
 
 /* Define to use libc SHA1 functions */
-#undef HAVE_SHA1_IN_LIBC
+#cmakedefine HAVE_SHA1_IN_LIBC
 
 /* Define to use CommonCrypto SHA1 functions */
-#undef HAVE_SHA1_IN_COMMONCRYPTO
+#cmakedefine HAVE_SHA1_IN_COMMONCRYPTO
 
 /* Define to use CryptoAPI SHA1 functions */
-#undef HAVE_SHA1_IN_CRYPTOAPI
+#cmakedefine HAVE_SHA1_IN_CRYPTOAPI
 
 /* Define to use libmd SHA1 functions */
-#undef HAVE_SHA1_IN_LIBMD
+#cmakedefine HAVE_SHA1_IN_LIBMD
 
 /* Define to use libgcrypt SHA1 functions */
-#undef HAVE_SHA1_IN_LIBGCRYPT
+#cmakedefine HAVE_SHA1_IN_LIBGCRYPT
 
 /* Define to use libnettle SHA1 functions */
-#undef HAVE_SHA1_IN_LIBNETTLE
+#cmakedefine HAVE_SHA1_IN_LIBNETTLE
 
 /* Define to use libsha1 for SHA1 */
-#undef HAVE_SHA1_IN_LIBSHA1
+#cmakedefine HAVE_SHA1_IN_LIBSHA1
 
 /* Define to 1 if you have the `shmctl64' function. */
-#undef HAVE_SHMCTL64
+#cmakedefine HAVE_SHMCTL64
 
 /* Define to 1 if you have the <stdlib.h> header file. */
-#undef HAVE_STDLIB_H
+#cmakedefine HAVE_STDLIB_H
 
 /* Define to 1 if you have the `strcasecmp' function. */
-#undef HAVE_STRCASECMP
+#cmakedefine HAVE_STRCASECMP
 
 /* Define to 1 if you have the `strcasestr' function. */
-#undef HAVE_STRCASESTR
+#cmakedefine HAVE_STRCASESTR
 
 /* Define to 1 if you have the `strncasecmp' function. */
-#undef HAVE_STRNCASECMP
+#cmakedefine HAVE_STRNCASECMP
 
 /* Define to 1 if you have the `strlcat' function. */
-#undef HAVE_STRLCAT
+#cmakedefine HAVE_STRLCAT
 
 /* Define to 1 if you have the `strlcpy' function. */
-#undef HAVE_STRLCPY
+#cmakedefine HAVE_STRLCPY
 
 /* Define to 1 if you have the <strings.h> header file. */
-#undef HAVE_STRINGS_H
+#cmakedefine HAVE_STRINGS_H
 
 /* Define to 1 if you have the <string.h> header file. */
-#undef HAVE_STRING_H
+#cmakedefine HAVE_STRING_H
 
 /* Define to 1 if you have the `strndup' function. */
-#undef HAVE_STRNDUP
+#cmakedefine HAVE_STRNDUP
 
 /* Define to 1 if libsystemd-daemon is available */
-#undef HAVE_SYSTEMD_DAEMON
+#cmakedefine HAVE_SYSTEMD_DAEMON
 
 /* Define to 1 if SYSV IPC is available */
-#undef HAVE_SYSV_IPC
+#cmakedefine HAVE_SYSV_IPC
 
 /* Define to 1 if you have the <sys/agpio.h> header file. */
-#undef HAVE_SYS_AGPIO_H
+#cmakedefine HAVE_SYS_AGPIO_H
 
 /* Define to 1 if you have the <sys/dir.h> header file, and it defines `DIR'.
    */
-#undef HAVE_SYS_DIR_H
+#cmakedefine HAVE_SYS_DIR_H
 
 /* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
    */
-#undef HAVE_SYS_NDIR_H
+#cmakedefine HAVE_SYS_NDIR_H
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
-#undef HAVE_SYS_STAT_H
+#cmakedefine HAVE_SYS_STAT_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
-#undef HAVE_SYS_TYPES_H
+#cmakedefine HAVE_SYS_TYPES_H
 
 /* Define to 1 if you have the <sys/utsname.h> header file. */
-#undef HAVE_SYS_UTSNAME_H
+#cmakedefine HAVE_SYS_UTSNAME_H
 
 /* Define to 1 if you have the `timingsafe_memcmp' function. */
-#undef HAVE_TIMINGSAFE_MEMCMP
+#cmakedefine HAVE_TIMINGSAFE_MEMCMP
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#undef HAVE_UNISTD_H
+#cmakedefine HAVE_UNISTD_H
 
 /* Define to 1 if you have the <fnmatch.h> header file. */
-#undef HAVE_FNMATCH_H
+#cmakedefine HAVE_FNMATCH_H
 
 /* Have /dev/urandom */
-#undef HAVE_URANDOM
+#cmakedefine HAVE_URANDOM
 
 /* Define to 1 if you have the `vasprintf' function. */
-#undef HAVE_VASPRINTF
+#cmakedefine HAVE_VASPRINTF
 
 /* Support IPv6 for TCP connections */
-#undef IPv6
+#cmakedefine IPv6
 
 /* Support os-specific local connections */
-#undef LOCALCONN
+#cmakedefine LOCALCONN
 
 /* Support MIT-SHM Extension */
-#undef MITSHM
+#cmakedefine MITSHM
 
 /* Enable some debugging code */
-#undef DEBUG
+#cmakedefine DEBUG
 
 /* Name of package */
-#undef PACKAGE
+#cmakedefine PACKAGE
 
 /* Internal define for Xinerama */
-#undef PANORAMIX
+#cmakedefine PANORAMIX
 
 /* Support Present extension */
-#undef PRESENT
+#cmakedefine PRESENT
 
 /* Overall prefix */
-#undef PROJECTROOT
+#cmakedefine PROJECTROOT
 
 /* Support RANDR extension */
-#undef RANDR
+#cmakedefine RANDR
 
 /* Support Record extension */
-#undef XRECORD
+#cmakedefine XRECORD
 
 /* Support RENDER extension */
-#undef RENDER
+#cmakedefine RENDER
 
 /* Support X resource extension */
-#undef RES
+#cmakedefine RES
 
 /* Support client ID tracking in X resource extension */
-#undef CLIENTIDS
+#cmakedefine CLIENTIDS
 
 /* Support MIT-SCREEN-SAVER extension */
-#undef SCREENSAVER
+#cmakedefine SCREENSAVER
 
 /* Support Secure RPC ("SUN-DES-1") authentication for X11 clients */
-#undef SECURE_RPC
+#cmakedefine SECURE_RPC
 
 /* Support SHAPE extension */
-#undef SHAPE
+#cmakedefine SHAPE
 
 /* Where to install Xorg.bin and Xorg.wrap */
-#undef SUID_WRAPPER_DIR
+#cmakedefine SUID_WRAPPER_DIR
 
 /* Define to 1 on systems derived from System V Release 4 */
-#undef SVR4
+#cmakedefine SVR4
 
 /* sysconfdir */
-#undef SYSCONFDIR
+#cmakedefine SYSCONFDIR
 
 /* Support TCP socket connections */
-#undef TCPCONN
+#cmakedefine TCPCONN
 
 /* Support UNIX socket connections */
-#undef UNIXCONN
+#cmakedefine UNIXCONN
 
 /* Build X string registry */
-#undef XREGISTRY
+#cmakedefine XREGISTRY
 
 /* Build X-ACE extension */
-#undef XACE
+#cmakedefine XACE
 
 /* Build SELinux extension */
-#undef XSELINUX
+#cmakedefine XSELINUX
 
 /* Support XCMisc extension */
-#undef XCMISC
+#cmakedefine XCMISC
 
 /* Build Security extension */
-#undef XCSECURITY
+#cmakedefine XCSECURITY
 
 /* Support Xdmcp */
-#undef XDMCP
+#cmakedefine XDMCP
 
 /* Build XFree86 BigFont extension */
-#undef XF86BIGFONT
+#cmakedefine XF86BIGFONT
 
 /* Support XFree86 Video Mode extension */
-#undef XF86VIDMODE
+#cmakedefine XF86VIDMODE
 
 /* Support XFixes extension */
-#undef XFIXES
+#cmakedefine XFIXES
 
 /* Build XDGA support */
-#undef XFreeXDGA
+#cmakedefine XFreeXDGA
 
 /* Support Xinerama extension */
-#undef XINERAMA
+#cmakedefine XINERAMA
 
 /* Current Xorg version */
-#undef XORG_VERSION_CURRENT
+#cmakedefine XORG_VERSION_CURRENT
 
 /* Build Xv Extension */
-#undef XvExtension
+#cmakedefine XvExtension
 
 /* Build XvMC Extension */
-#undef XvMCExtension
+#cmakedefine XvMCExtension
 
 /* Support XSync extension */
-#undef XSYNC
+#cmakedefine XSYNC @XSYNC@
 
 /* Support XTest extension */
-#undef XTEST
+#cmakedefine XTEST @XTEST@
 
 /* Support Xv extension */
-#undef XV
+#cmakedefine XV @XV@
 
 /* Support DRI extension */
-#undef XF86DRI
+#cmakedefine XF86DRI @XF86DRI@
 
 /* Build DRI2 extension */
-#undef DRI2
+#cmakedefine DRI2 @DRI2@
 
 /* Build DBE support */
-#undef DBE
+#cmakedefine DBE @DBE@
 
 /* Vendor name */
-#undef XVENDORNAME
+#cmakedefine XVENDORNAME @XVENDORNAME@
 
 /* Number of bits in a file offset, on hosts where this is settable. */
-#undef _FILE_OFFSET_BITS
+#cmakedefine _FILE_OFFSET_BITS
 
 /* Enable GNU and other extensions to the C environment for GLIBC */
-#undef _GNU_SOURCE
+#cmakedefine _GNU_SOURCE
 
 /* Define for large files, on AIX-style hosts. */
-#undef _LARGE_FILES
+#cmakedefine _LARGE_FILES
 
 /* Define to empty if `const' does not conform to ANSI C. */
-#undef const
+#cmakedefine const
 
 /* Define to `int' if <sys/types.h> does not define. */
-#undef pid_t
+#cmakedefine pid_t @pid_t@
 
 /* Build Rootless code */
-#undef ROOTLESS
+#cmakedefine ROOTLESS
 
 /* Define to 1 if unsigned long is 64 bits. */
-#undef _XSERVER64
+#cmakedefine _XSERVER64
 
 /* System is BSD-like */
-#undef CSRG_BASED
+#cmakedefine CSRG_BASED
 
 /* Define to 1 if `struct sockaddr_in' has a `sin_len' member */
-#undef BSD44SOCKETS
+#cmakedefine BSD44SOCKETS
 
 /* Support D-Bus */
-#undef HAVE_DBUS
+#cmakedefine HAVE_DBUS
 
 /* Use libudev for input hotplug */
-#undef CONFIG_UDEV
+#cmakedefine CONFIG_UDEV
 
 /* Use libudev for kms enumeration */
-#undef CONFIG_UDEV_KMS
+#cmakedefine CONFIG_UDEV_KMS
 
 /* Use udev_monitor_filter_add_match_tag() */
-#undef HAVE_UDEV_MONITOR_FILTER_ADD_MATCH_TAG
+#cmakedefine HAVE_UDEV_MONITOR_FILTER_ADD_MATCH_TAG
 
 /* Use udev_enumerate_add_match_tag() */
-#undef HAVE_UDEV_ENUMERATE_ADD_MATCH_TAG
+#cmakedefine HAVE_UDEV_ENUMERATE_ADD_MATCH_TAG
 
 /* Enable D-Bus core */
-#undef NEED_DBUS
+#cmakedefine NEED_DBUS
 
 /* Support HAL for hotplug */
-#undef CONFIG_HAL
+#cmakedefine CONFIG_HAL
 
 /* Enable systemd-logind integration */
-#undef SYSTEMD_LOGIND 1
+#cmakedefine SYSTEMD_LOGIND
 
 /* Have a monotonic clock from clock_gettime() */
-#undef MONOTONIC_CLOCK
+#cmakedefine MONOTONIC_CLOCK
 
 /* Define to 1 if the DTrace Xserver provider probes should be built in */
-#undef XSERVER_DTRACE
+#cmakedefine XSERVER_DTRACE
 
 /* Define to 1 if typeof works with your compiler. */
-#undef HAVE_TYPEOF
+#cmakedefine HAVE_TYPEOF
 
 /* Define to __typeof__ if your compiler spells it that way. */
-#undef typeof
+#cmakedefine typeof
 
 /* Correctly set _XSERVER64 for OSX fat binaries */
 #ifdef __APPLE__
@@ -441,16 +441,16 @@
 #endif
 
 /* Defined if needed to expose struct msghdr.msg_control */
-#undef _XOPEN_SOURCE
+#cmakedefine _XOPEN_SOURCE
 
 /* Have support for X shared memory fence library (xshmfence) */
-#undef HAVE_XSHMFENCE
+#cmakedefine HAVE_XSHMFENCE
 
 /* Use XTrans FD passing support */
-#undef XTRANS_SEND_FDS
+#cmakedefine XTRANS_SEND_FDS
 
 /* Wrap SIGBUS to catch MIT-SHM faults */
-#undef BUSFAULT
+#cmakedefine BUSFAULT
 
 /* Don't let Xdefs.h define 'pointer' */
 #define _XTYPEDEF_POINTER       1
@@ -462,60 +462,61 @@
 #define FONT_PATH_ELEMENT_NAME_CONST    1
 
 /* Build GLAMOR */
-#undef GLAMOR
+#cmakedefine GLAMOR
 
 /* Build glamor's GBM-based EGL support */
-#undef GLAMOR_HAS_GBM
+#cmakedefine GLAMOR_HAS_GBM
 
 /* Build glamor/gbm has linear support */
-#undef GLAMOR_HAS_GBM_LINEAR
+#cmakedefine GLAMOR_HAS_GBM_LINEAR
 
 /* GBM has modifiers support */
-#undef GBM_BO_WITH_MODIFIERS
+#cmakedefine GBM_BO_WITH_MODIFIERS
 
 /* Glamor can use eglQueryDmaBuf* functions */
-#undef GLAMOR_HAS_EGL_QUERY_DMABUF
+#cmakedefine GLAMOR_HAS_EGL_QUERY_DMABUF
 
 /* Glamor can use EGL_MESA_query_driver functions */
-#undef GLAMOR_HAS_EGL_QUERY_DRIVER
+#cmakedefine GLAMOR_HAS_EGL_QUERY_DRIVER
 
 /* byte order */
-#undef X_BYTE_ORDER
+#cmakedefine X_BYTE_ORDER @X_BYTE_ORDER@
 
 /* Listen on TCP socket */
-#undef LISTEN_TCP
+#cmakedefine LISTEN_TCP
 
 /* Listen on Unix socket */
-#undef LISTEN_UNIX
+#cmakedefine LISTEN_UNIX
 
 /* Listen on local socket */
-#undef LISTEN_LOCAL
+#cmakedefine LISTEN_LOCAL
 
 /* Define if no local socket credentials interface exists */
-#undef NO_LOCAL_CLIENT_CRED
+#cmakedefine NO_LOCAL_CLIENT_CRED
 
 /* Have setitimer support */
-#undef HAVE_SETITIMER
+#cmakedefine HAVE_SETITIMER
 
 /* Have posix_fallocate() */
-#undef HAVE_POSIX_FALLOCATE
+#cmakedefine HAVE_POSIX_FALLOCATE
 
 /* Use input thread */
-#undef INPUTTHREAD
+#cmakedefine INPUTTHREAD
 
 /* Have poll() */
-#undef HAVE_POLL
+#cmakedefine HAVE_POLL
 
 /* Have epoll_create1() */
-#undef HAVE_EPOLL_CREATE1
+#cmakedefine HAVE_EPOLL_CREATE1
 
 /* Have <sys/sysmacros.h> header */
-#undef HAVE_SYS_SYSMACROS_H
+#cmakedefine HAVE_SYS_SYSMACROS_H
 
 /* Have sigprocmask */
-#undef HAVE_SIGPROCMASK
+#cmakedefine HAVE_SIGPROCMASK
 
 /* Have isastream */
-#undef HAVE_ISASTREAM
+#cmakedefine HAVE_ISASTREAM
+
 
 #endif /* _DIX_CONFIG_H_ */

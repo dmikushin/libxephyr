@@ -25,8 +25,6 @@
 
 #include <dix-config.h>
 
-#ifdef BUSFAULT
-
 #include <sys/types.h>
 
 typedef void (*busfault_notify_ptr) (void *context);
@@ -42,7 +40,5 @@ busfault_check(void);
 
 Bool
 busfault_init(void);
-
-#endif
 
 #endif /* _BUSFAULT_H_ */

@@ -1,5 +1,5 @@
-#include <string.h>
 #include "dix/context.h"
+#include <string.h>
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group

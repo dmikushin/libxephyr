@@ -407,7 +407,7 @@ config_udev_pre_init(void)
 
 #ifdef HAVE_UDEV_MONITOR_FILTER_ADD_MATCH_TAG
     if (ServerIsNotSeat0())
-        udev_monitor_filter_add_match_tag(udev_monitor, SeatId);
+        udev_monitor_filter_add_match_tag(udev_monitor, xephyr_context->SeatId);
 #endif
     if (udev_monitor_enable_receiving(udev_monitor)) {
         ErrorF("config/udev: failed to bind the udev monitor\n");
@@ -436,7 +436,7 @@ config_udev_init(void)
 
 #ifdef HAVE_UDEV_ENUMERATE_ADD_MATCH_TAG
     if (ServerIsNotSeat0())
-        udev_enumerate_add_match_tag(enumerate, SeatId);
+        udev_enumerate_add_match_tag(enumerate, xephyr_context->SeatId);
 #endif
 
     udev_enumerate_scan_devices(enumerate);
@@ -578,7 +578,7 @@ config_udev_odev_probe(config_odev_probe_proc_ptr probe_callback)
     udev_enumerate_add_match_sysname(enumerate, "card[0-9]*");
 #ifdef HAVE_UDEV_ENUMERATE_ADD_MATCH_TAG
     if (ServerIsNotSeat0())
-        udev_enumerate_add_match_tag(enumerate, SeatId);
+        udev_enumerate_add_match_tag(enumerate, xephyr_context->SeatId);
 #endif
     udev_enumerate_scan_devices(enumerate);
     devices = udev_enumerate_get_list_entry(enumerate);
