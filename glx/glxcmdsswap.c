@@ -37,7 +37,7 @@
 #include "glxserver.h"
 #include "glxutil.h"
 #include <GL/glxtokens.h>
-#include <unpack.h>
+#include "unpack.h"
 #include <pixmapstr.h>
 #include <windowstr.h>
 #include "glxext.h"

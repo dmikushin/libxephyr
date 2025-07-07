@@ -33,7 +33,7 @@
 #include <dix-config.h>
 #endif
 
-#include <glxserver.h>
+#include "glxserver.h"
 #include "unpack.h"
 #include "indirect_size.h"
 #include "indirect_dispatch.h"

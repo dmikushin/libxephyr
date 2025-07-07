@@ -5,6 +5,9 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
+# Enable position independent code for all targets
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # Add compile definitions
 add_definitions(-DHAVE_DIX_CONFIG_H)
 
@@ -43,6 +46,33 @@ pkg_check_modules(EPOXY epoxy)
 pkg_check_modules(GBM gbm)
 pkg_check_modules(HAL hal)
 pkg_check_modules(UDEV libudev)
+pkg_check_modules(XAU REQUIRED xau)
+
+# GLX dependencies
+pkg_check_modules(GLPROTO REQUIRED glproto>=1.4.17)
+pkg_check_modules(GL REQUIRED gl>=1.2)
+
+# Check for DRI and get DRI driver path
+pkg_check_modules(DRI dri)
+if(DRI_FOUND)
+    execute_process(
+        COMMAND ${PKG_CONFIG_EXECUTABLE} --variable=dridriverdir dri
+        OUTPUT_VARIABLE DRI_DRIVER_PATH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    set(DRI_DRIVER_PATH "")
+endif()
+
+# Additional system libraries
+find_library(UNWIND_LIBRARY unwind)
+find_library(BSD_LIBRARY bsd)
+
+# Check for libbsd for timingsafe_memcmp
+# check_library_exists(bsd timingsafe_memcmp "" HAVE_LIBBSD_TIMINGSAFE)
+
+# Disable DRI3 support
+set(DRI3 0)
 
 # XCB dependencies for Xephyr
 pkg_check_modules(XCB REQUIRED xcb)
@@ -271,7 +301,7 @@ set(COMPOSITE 1)
 set(DAMAGE 1)
 set(DBE 1)
 set(DRI2 1)
-set(DRI3 1)
+set(DRI3 0)
 set(GLAMOR 1)
 set(GLXEXT 1)
 set(HAS_SHM 1)
@@ -306,9 +336,9 @@ set(SeatId "seat0")
 set(COMPILEDDEFAULTFONTPATH "/usr/share/fonts/X11/misc/,/usr/share/fonts/X11/TTF/,/usr/share/fonts/X11/OTF/,/usr/share/fonts/X11/Type1/,/usr/share/fonts/X11/100dpi/,/usr/share/fonts/X11/75dpi/")
 
 # Set XKB paths and configuration variables
-set(XKB_DIR "${CMAKE_INSTALL_PREFIX}/share/X11/xkb" CACHE PATH "XKB directory")
+set(XKB_DIR "/usr/share/X11/xkb" CACHE PATH "XKB directory")
 set(XKB_OUTPUT_DIR "${XKB_DIR}/compiled" CACHE PATH "XKB output directory")
-set(XKB_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE PATH "XKB bin directory")
+set(XKB_BIN_DIR "/usr/bin" CACHE PATH "XKB bin directory")
 
 # XKB configuration variables for xkb-config.h
 set(XKB_BASE_DIRECTORY "${XKB_DIR}")
@@ -368,6 +398,7 @@ add_subdirectory(xfixes)
 add_subdirectory(xkb)
 add_subdirectory(Xext)
 add_subdirectory(Xi)
+add_subdirectory(glx)
 add_subdirectory(glamor)
 add_subdirectory(exa)
 add_subdirectory(present)
@@ -391,6 +422,7 @@ add_library(xephyr STATIC
     $<TARGET_OBJECTS:libxserver_render>
     $<TARGET_OBJECTS:libxserver_xfixes>
     $<TARGET_OBJECTS:libxserver_xkb>
+    $<TARGET_OBJECTS:libxserver_xkb_stubs>
     $<TARGET_OBJECTS:libxserver_xext>
     $<TARGET_OBJECTS:libxserver_xi>
     $<TARGET_OBJECTS:libxserver_composite>
@@ -400,6 +432,8 @@ add_library(xephyr STATIC
     $<TARGET_OBJECTS:libxserver_record>
     $<TARGET_OBJECTS:libxserver_config>
     $<TARGET_OBJECTS:libxserver_exa>
+    $<TARGET_OBJECTS:libxserver_glx>
+    $<TARGET_OBJECTS:libglxvnd>
     $<TARGET_OBJECTS:glamor>
     $<TARGET_OBJECTS:glamor_egl_stubs>
     $<TARGET_OBJECTS:kdrive>
@@ -434,9 +468,22 @@ target_link_libraries(xephyr
     ${PIXMAN_LIBRARIES}
     ${XKBFILE_LIBRARIES}
     ${XFONT2_LIBRARIES}
+    ${XAU_LIBRARIES}
+    ${GL_LIBRARIES}
     ${M_LIBRARY}
     ${DL_LIBRARY}
 )
+
+# Add system libraries if found
+if(UNWIND_LIBRARY)
+    target_link_libraries(xephyr ${UNWIND_LIBRARY})
+endif()
+
+if(BSD_LIBRARY)
+    target_link_libraries(xephyr ${BSD_LIBRARY})
+endif()
+
+# GLX is built from sources, no external library needed
 
 # Add optional dependencies
 if(XSHMFENCE_FOUND)
@@ -493,6 +540,8 @@ target_compile_options(xephyr PRIVATE
     ${PIXMAN_CFLAGS}
     ${XKBFILE_CFLAGS}
     ${XFONT2_CFLAGS}
+    ${XAU_CFLAGS}
+    ${GL_CFLAGS}
 )
 
 if(XSHMFENCE_FOUND)

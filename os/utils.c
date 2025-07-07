@@ -188,8 +188,6 @@ Bool noGEExtension = FALSE;
 
 Bool CoreDump;
 
-Bool enableIndirectGLX = FALSE;
-
 #ifdef PANORAMIX
 Bool PanoramiXExtensionDisabledHack = FALSE;
 #endif
@@ -806,9 +804,9 @@ ProcessCommandLine(int argc, char *argv[])
             exit(0);
         }
         else if (strcmp(argv[i], "+iglx") == 0)
-            enableIndirectGLX = TRUE;
+            xephyr_context->enableIndirectGLX = TRUE;
         else if (strcmp(argv[i], "-iglx") == 0)
-            enableIndirectGLX = FALSE;
+            xephyr_context->enableIndirectGLX = FALSE;
         else if ((skip = XkbProcessArguments(argc, argv, i)) != 0) {
             if (skip > 0)
                 i += skip - 1;

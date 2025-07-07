@@ -43,7 +43,7 @@
 #cmakedefine GLX_DRI
 
 /* Path to DRI drivers */
-#cmakedefine DRI_DRIVER_PATH
+#cmakedefine DRI_DRIVER_PATH "@DRI_DRIVER_PATH@"
 
 /* Support XDM-AUTH*-1 */
 #cmakedefine HASXDMAUTH
@@ -260,10 +260,10 @@
 #cmakedefine PANORAMIX
 
 /* Support Present extension */
-#cmakedefine PRESENT
+#cmakedefine PRESENT @PRESENT@
 
 /* Overall prefix */
-#cmakedefine PROJECTROOT
+#cmakedefine PROJECTROOT "@PROJECTROOT@"
 
 /* Support RANDR extension */
 #cmakedefine RANDR

@@ -44,7 +44,7 @@ set(hdrs_vnd
 # GLX is enabled by default for libxephyr
 set(BUILD_GLX ON CACHE BOOL "Build GLX extension")
 set(BUILD_DRI2 ON CACHE BOOL "Build DRI2 extension")
-set(BUILD_DRI3 ON CACHE BOOL "Build DRI3 extension")
+set(BUILD_DRI3 OFF CACHE BOOL "Build DRI3 extension")
 
 # Find required GLX dependencies
 pkg_check_modules(GLPROTO REQUIRED glproto>=1.4.17)

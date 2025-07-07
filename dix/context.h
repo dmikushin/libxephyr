@@ -75,6 +75,9 @@ typedef struct _XephyrContext {
     
     // Seat configuration
     char *SeatId;
+    
+    // GLX configuration
+    Bool enableIndirectGLX;
 } XephyrContext;
 
 extern XephyrContext *xephyr_context;

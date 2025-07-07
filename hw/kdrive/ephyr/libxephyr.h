@@ -1,4 +1,3 @@
-#include "dix/context.h"
 /*
  * libxephyr - Xephyr as a shared library
  * API header for embedding Xephyr X server instances
@@ -18,6 +17,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <X11/X.h>
 
 /* Xephyr server handle */
 typedef struct XephyrServer XephyrServer;
@@ -27,12 +27,12 @@ typedef struct {
     int width;
     int height;
     int depth;
-    Window parent_window;  /* Parent X11 window to embed into */
-    const char* display_name;  /* Display name (e.g., ":1") */
     bool use_glamor;       /* Enable hardware acceleration */
     bool resizable;        /* Allow window resizing */
     bool fullscreen;       /* Start in fullscreen mode */
+    const char* display_name;  /* Display name (e.g., ":1") */
     const char* title;     /* Window title */
+    Window parent_window;  /* Parent X11 window to embed into */
 } XephyrConfig;
 
 /* Error codes */

@@ -74,5 +74,8 @@ void InitGlobals(void)
     
     // Initialize seat configuration  
     xephyr_context->SeatId = NULL;
+    
+    // Initialize GLX configuration
+    xephyr_context->enableIndirectGLX = FALSE;
 
 }

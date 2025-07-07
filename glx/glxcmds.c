@@ -39,7 +39,7 @@
 #include "glxserver.h"
 #include <GL/glxtokens.h>
 #include <X11/extensions/presenttokens.h>
-#include <unpack.h>
+#include "unpack.h"
 #include <pixmapstr.h>
 #include <windowstr.h>
 #include "glxutil.h"
@@ -307,7 +307,7 @@ DoCreateContext(__GLXclientState * cl, GLXContextID gcId,
          * it's a massive attack surface for buffer overflow type
          * errors.
          */
-        if (!enableIndirectGLX) {
+        if (!xephyr_context->enableIndirectGLX) {
             client->errorValue = isDirect;
             return BadValue;
         }

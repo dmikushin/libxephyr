@@ -111,7 +111,7 @@ SOFTWARE.
 static Bool *noTestExtensionsPtr = NULL;
 
 /* List of built-in (statically linked) extensions */
-static const ExtensionModule staticExtensions[] = {
+static ExtensionModule staticExtensions[] = {
     {GEExtensionInit, "Generic Event Extension", &noGEExtension},
     {ShapeExtensionInit, "SHAPE", NULL},
 #ifdef MITSHM
