@@ -40,12 +40,14 @@ struct XephyrServer {
     pthread_cond_t ready_cond;
     int argc;
     char** argv;
+    XephyrContext* context;  /* Per-server isolated context */
 };
 
 /* Global state */
 static bool library_initialized = false;
 static int server_counter = 0;
-static XephyrServer* current_server = NULL;
+/* Thread-local storage for current server */
+static __thread XephyrServer* current_server = NULL;
 
 /* Forward declarations */
 static void* xephyr_server_thread(void* arg);
@@ -127,20 +129,32 @@ XephyrServer* xephyr_server_create(const XephyrConfig* config) {
     fprintf(stderr, "DEBUG: After copy - server->config.width=%d, server->config.height=%d\n", 
             server->config.width, server->config.height);
     
+    /* Initialize isolated context for this server */
+    server->context = calloc(1, sizeof(XephyrContext));
+    if (!server->context) {
+        free(server);
+        return NULL;
+    }
+    
     server->server_pid = -1;
     server->running = false;
     server->ready = false;
     
     /* Initialize synchronization primitives */
     if (pthread_mutex_init(&server->mutex, NULL) != 0) {
+        free(server->context);
         free(server);
         return NULL;
     }
     if (pthread_cond_init(&server->ready_cond, NULL) != 0) {
         pthread_mutex_destroy(&server->mutex);
+        free(server->context);
         free(server);
         return NULL;
     }
+    
+    /* Initialize the server's isolated context */
+    InitGlobalsForContext(server->context);
     
     /* Generate unique xephyr_context->display name if not provided */
     if (!config->display_name) {
@@ -176,6 +190,9 @@ void xephyr_server_destroy(XephyrServer* server) {
     cleanup_argv(server);
     pthread_mutex_destroy(&server->mutex);
     pthread_cond_destroy(&server->ready_cond);
+    if (server->context) {
+        free(server->context);
+    }
     free(server);
 }
 
@@ -233,6 +250,9 @@ static int build_argv(XephyrServer* server) {
         server->argv[server->argc++] = strdup(server->config.title);
     }
     
+    /* Add -ac to disable access control (helps with XCB conflicts) */
+    server->argv[server->argc++] = strdup("-ac");
+    
     /* Terminate argv */
     server->argv[server->argc] = NULL;
     
@@ -266,8 +286,11 @@ static void* xephyr_server_thread(void* arg) {
     /* Mark as running and set as current server */
     pthread_mutex_lock(&server->mutex);
     server->running = true;
-    current_server = server;
     pthread_mutex_unlock(&server->mutex);
+    
+    /* Set thread-local current server and context */
+    current_server = server;
+    SetThreadContext(server->context);
     
     /* Call the actual X server main function directly */
     extern int dix_main(int argc, char *argv[], char *envp[]);
@@ -324,10 +347,16 @@ XephyrError xephyr_server_start(XephyrServer* server) {
     }
     pthread_mutex_unlock(&server->mutex);
     
-    /* Create server thread */
-    if (pthread_create(&server->server_thread, NULL, xephyr_server_thread, server) != 0) {
+    /* Create server thread with detached attribute to avoid conflicts */
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    
+    if (pthread_create(&server->server_thread, &attr, xephyr_server_thread, server) != 0) {
+        pthread_attr_destroy(&attr);
         return XEPHYR_ERROR_SERVER_START;
     }
+    pthread_attr_destroy(&attr);
     
     /* Wait for server to be ready or fail with timeout */
     pthread_mutex_lock(&server->mutex);

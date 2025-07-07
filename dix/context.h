@@ -80,8 +80,15 @@ typedef struct _XephyrContext {
     Bool enableIndirectGLX;
 } XephyrContext;
 
-extern XephyrContext *xephyr_context;
+/* Thread-local context access - each thread can have its own context */
+extern __thread XephyrContext *xephyr_context;
 
-void InitGlobals(void);
+/* Function to set thread-local context */
+void SetThreadContext(XephyrContext* context);
+
+/* Function to get current thread context */
+XephyrContext* GetThreadContext(void);
+
+void InitGlobalsForContext(XephyrContext* context);
 
 #endif /* DIX_CONTEXT_H */

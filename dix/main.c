@@ -129,7 +129,10 @@ dix_main(int argc, char *argv[], char *envp[])
     int i;
     HWEventQueueType alwaysCheckForInput[2];
 
-    InitGlobals();
+    /* Context should already be initialized by API layer */
+    if (!GetThreadContext()) {
+        FatalError("No thread context available - server not properly initialized");
+    }
 
     xephyr_context->display = "0";
 
