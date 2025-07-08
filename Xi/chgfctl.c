@@ -68,7 +68,7 @@ SOFTWARE.
 /***********************************************************************
  *
  * This procedure changes the control attributes for an extension device,
- * for xephyr_context->clients on machines with a different byte ordering than the server.
+ * for context->clients on machines with a different byte ordering than the server.
  *
  */
 
@@ -108,7 +108,7 @@ ChangeKbdFeedback(ClientPtr client, DeviceIntPtr dev, long unsigned int mask,
     if (mask & DvKeyClickPercent) {
         t = f->click;
         if (t == -1)
-            t = xephyr_context->defaultKeyboardControl.click;
+            t = context->defaultKeyboardControl.click;
         else if (t < 0 || t > 100) {
             client->errorValue = t;
             return BadValue;
@@ -119,7 +119,7 @@ ChangeKbdFeedback(ClientPtr client, DeviceIntPtr dev, long unsigned int mask,
     if (mask & DvPercent) {
         t = f->percent;
         if (t == -1)
-            t = xephyr_context->defaultKeyboardControl.bell;
+            t = context->defaultKeyboardControl.bell;
         else if (t < 0 || t > 100) {
             client->errorValue = t;
             return BadValue;
@@ -130,7 +130,7 @@ ChangeKbdFeedback(ClientPtr client, DeviceIntPtr dev, long unsigned int mask,
     if (mask & DvPitch) {
         t = f->pitch;
         if (t == -1)
-            t = xephyr_context->defaultKeyboardControl.bell_pitch;
+            t = context->defaultKeyboardControl.bell_pitch;
         else if (t < 0) {
             client->errorValue = t;
             return BadValue;
@@ -141,7 +141,7 @@ ChangeKbdFeedback(ClientPtr client, DeviceIntPtr dev, long unsigned int mask,
     if (mask & DvDuration) {
         t = f->duration;
         if (t == -1)
-            t = xephyr_context->defaultKeyboardControl.bell_duration;
+            t = context->defaultKeyboardControl.bell_duration;
         else if (t < 0) {
             client->errorValue = t;
             return BadValue;
@@ -183,12 +183,12 @@ ChangeKbdFeedback(ClientPtr client, DeviceIntPtr dev, long unsigned int mask,
         }
         else if (t == AutoRepeatModeDefault) {
             if (key == DO_ALL)
-                kctrl.autoRepeat = xephyr_context->defaultKeyboardControl.autoRepeat;
+                kctrl.autoRepeat = context->defaultKeyboardControl.autoRepeat;
             else
                 kctrl.autoRepeats[inx] &= ~kmask;
             kctrl.autoRepeats[inx] =
                 (kctrl.autoRepeats[inx] & ~kmask) |
-                (xephyr_context->defaultKeyboardControl.autoRepeats[inx] & kmask);
+                (context->defaultKeyboardControl.autoRepeats[inx] & kmask);
         }
         else {
             client->errorValue = t;
@@ -226,7 +226,7 @@ ChangePtrFeedback(ClientPtr client, DeviceIntPtr dev, long unsigned int mask,
 
         accelNum = f->num;
         if (accelNum == -1)
-            pctrl.num = xephyr_context->defaultPointerControl.num;
+            pctrl.num = context->defaultPointerControl.num;
         else if (accelNum < 0) {
             client->errorValue = accelNum;
             return BadValue;
@@ -240,7 +240,7 @@ ChangePtrFeedback(ClientPtr client, DeviceIntPtr dev, long unsigned int mask,
 
         accelDenom = f->denom;
         if (accelDenom == -1)
-            pctrl.den = xephyr_context->defaultPointerControl.den;
+            pctrl.den = context->defaultPointerControl.den;
         else if (accelDenom <= 0) {
             client->errorValue = accelDenom;
             return BadValue;
@@ -254,7 +254,7 @@ ChangePtrFeedback(ClientPtr client, DeviceIntPtr dev, long unsigned int mask,
 
         threshold = f->thresh;
         if (threshold == -1)
-            pctrl.threshold = xephyr_context->defaultPointerControl.threshold;
+            pctrl.threshold = context->defaultPointerControl.threshold;
         else if (threshold < 0) {
             client->errorValue = threshold;
             return BadValue;
@@ -352,7 +352,7 @@ ChangeBellFeedback(ClientPtr client, DeviceIntPtr dev,
     if (mask & DvPercent) {
         t = f->percent;
         if (t == -1)
-            t = xephyr_context->defaultKeyboardControl.bell;
+            t = context->defaultKeyboardControl.bell;
         else if (t < 0 || t > 100) {
             client->errorValue = t;
             return BadValue;
@@ -363,7 +363,7 @@ ChangeBellFeedback(ClientPtr client, DeviceIntPtr dev,
     if (mask & DvPitch) {
         t = f->pitch;
         if (t == -1)
-            t = xephyr_context->defaultKeyboardControl.bell_pitch;
+            t = context->defaultKeyboardControl.bell_pitch;
         else if (t < 0) {
             client->errorValue = t;
             return BadValue;
@@ -374,7 +374,7 @@ ChangeBellFeedback(ClientPtr client, DeviceIntPtr dev,
     if (mask & DvDuration) {
         t = f->duration;
         if (t == -1)
-            t = xephyr_context->defaultKeyboardControl.bell_duration;
+            t = context->defaultKeyboardControl.bell_duration;
         else if (t < 0) {
             client->errorValue = t;
             return BadValue;

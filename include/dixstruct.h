@@ -25,6 +25,8 @@ SOFTWARE.
 #ifndef DIXSTRUCT_H
 #define DIXSTRUCT_H
 
+struct XephyrContext;
+
 #include "client.h"
 #include "dix.h"
 #include "resource.h"
@@ -112,6 +114,7 @@ typedef struct _Client {
     DeviceIntPtr clientPtr;
     ClientIdPtr clientIds;
     int req_fds;
+    struct XephyrContext *context;
 } ClientRec;
 
 static inline void

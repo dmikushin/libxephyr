@@ -68,7 +68,7 @@ SOFTWARE.
 
 /***********************************************************************
  *
- * Handle requests from xephyr_context->clients with a different byte order.
+ * Handle requests from context->clients with a different byte order.
  *
  */
 

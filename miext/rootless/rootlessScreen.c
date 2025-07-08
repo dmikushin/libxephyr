@@ -736,11 +736,11 @@ RootlessUpdateRooted(Bool state)
     int i;
 
     if (!state) {
-        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
-            RootlessDisableRoot(xephyr_context->screenInfo.screens[i]);
+        for (i = 0; i < context->screenInfo.numScreens; i++)
+            RootlessDisableRoot(context->screenInfo.screens[i]);
     }
     else {
-        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
-            RootlessEnableRoot(xephyr_context->screenInfo.screens[i]);
+        for (i = 0; i < context->screenInfo.numScreens; i++)
+            RootlessEnableRoot(context->screenInfo.screens[i]);
     }
 }

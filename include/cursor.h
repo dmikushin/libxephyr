@@ -70,7 +70,8 @@ extern _X_EXPORT DevScreenPrivateKeyRec cursorScreenDevPriv;
 
 
 extern _X_EXPORT int FreeCursor(void *pCurs,
-                                XID cid);
+                                XID cid,
+                                XephyrContext* context);
 
 extern _X_EXPORT CursorPtr RefCursor(CursorPtr /* cursor */);
 extern _X_EXPORT CursorPtr UnrefCursor(CursorPtr /* cursor */);
@@ -105,7 +106,8 @@ extern _X_EXPORT int AllocGlyphCursor(Font /*source */ ,
                                       XID /*cid */ );
 
 extern _X_EXPORT CursorPtr CreateRootCursor(char * /*pfilename */ ,
-                                            unsigned int /*glyph */ );
+                                            unsigned int /*glyph */ ,
+                                            XephyrContext* /*context*/ );
 
 extern _X_EXPORT int ServerBitsFromGlyph(FontPtr /*pfont */ ,
                                          unsigned int /*ch */ ,

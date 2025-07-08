@@ -234,8 +234,8 @@ ShmResetProc(ExtensionEntry * extEntry)
 {
     int i;
 
-    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
-        ShmRegisterFuncs(xephyr_context->screenInfo.screens[i], NULL);
+    for (i = 0; i < context->screenInfo.numScreens; i++)
+        ShmRegisterFuncs(context->screenInfo.screens[i], NULL);
 }
 
 void
@@ -580,7 +580,7 @@ ProcShmPutImage(ClientPtr client)
 
     if ((((stuff->format == ZPixmap) && (stuff->srcX == 0)) ||
          ((stuff->format != ZPixmap) &&
-          (stuff->srcX < xephyr_context->screenInfo.bitmapScanlinePad) &&
+          (stuff->srcX < context->screenInfo.bitmapScanlinePad) &&
           ((stuff->format == XYBitmap) ||
            ((stuff->srcY == 0) &&
             (stuff->srcHeight == stuff->totalHeight))))) &&
@@ -765,8 +765,8 @@ ProcPanoramiXShmPutImage(ClientPtr client)
         stuff->drawable = draw->info[j].id;
         stuff->gc = gc->info[j].id;
         if (isRoot) {
-            stuff->dstX = orig_x - xephyr_context->screenInfo.screens[j]->x;
-            stuff->dstY = orig_y - xephyr_context->screenInfo.screens[j]->y;
+            stuff->dstX = orig_x - context->screenInfo.screens[j]->x;
+            stuff->dstY = orig_y - context->screenInfo.screens[j]->y;
         }
         result = ProcShmPutImage(client);
         if (result != Success)
@@ -828,10 +828,10 @@ ProcPanoramiXShmGetImage(ClientPtr client)
     }
     else {
         if (                    /* check for being onscreen */
-               xephyr_context->screenInfo.screens[0]->x + pDraw->x + x < 0 ||
-               xephyr_context->screenInfo.screens[0]->x + pDraw->x + x + w > PanoramiXPixWidth
-               || xephyr_context->screenInfo.screens[0]->y + pDraw->y + y < 0 ||
-               xephyr_context->screenInfo.screens[0]->y + pDraw->y + y + h > PanoramiXPixHeight
+               context->screenInfo.screens[0]->x + pDraw->x + x < 0 ||
+               context->screenInfo.screens[0]->x + pDraw->x + x + w > PanoramiXPixWidth
+               || context->screenInfo.screens[0]->y + pDraw->y + y < 0 ||
+               context->screenInfo.screens[0]->y + pDraw->y + y + h > PanoramiXPixHeight
                ||
                /* check for being inside of border */
                x < -wBorderWidth((WindowPtr) pDraw) ||
@@ -986,7 +986,7 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
     FOR_NSCREENS(j) {
         ShmScrPrivateRec *screen_priv;
 
-        pScreen = xephyr_context->screenInfo.screens[j];
+        pScreen = context->screenInfo.screens[j];
 
         screen_priv = ShmGetScreenPriv(pScreen);
         pMap = (*screen_priv->shmFuncs->CreatePixmap) (pScreen,
@@ -1547,21 +1547,21 @@ ShmExtensionInit(void)
     sharedPixmaps = xFalse;
     {
         sharedPixmaps = xTrue;
-        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+        for (i = 0; i < context->screenInfo.numScreens; i++) {
             ShmScrPrivateRec *screen_priv =
-                ShmInitScreenPriv(xephyr_context->screenInfo.screens[i]);
+                ShmInitScreenPriv(context->screenInfo.screens[i]);
             if (!screen_priv->shmFuncs)
                 screen_priv->shmFuncs = &miFuncs;
             if (!screen_priv->shmFuncs->CreatePixmap)
                 sharedPixmaps = xFalse;
         }
         if (sharedPixmaps)
-            for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+            for (i = 0; i < context->screenInfo.numScreens; i++) {
                 ShmScrPrivateRec *screen_priv =
-                    ShmGetScreenPriv(xephyr_context->screenInfo.screens[i]);
+                    ShmGetScreenPriv(context->screenInfo.screens[i]);
                 screen_priv->destroyPixmap =
-                    xephyr_context->screenInfo.screens[i]->DestroyPixmap;
-                xephyr_context->screenInfo.screens[i]->DestroyPixmap = ShmDestroyPixmap;
+                    context->screenInfo.screens[i]->DestroyPixmap;
+                context->screenInfo.screens[i]->DestroyPixmap = ShmDestroyPixmap;
             }
     }
     ShmSegType = CreateNewResourceType(ShmDetachSegment, "ShmSeg");

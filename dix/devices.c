@@ -152,8 +152,8 @@ DeviceSetProperty(DeviceIntPtr dev, Atom property, XIPropertyValuePtr prop,
             return BadValue;
 
         /* Don't allow disabling of VCP/VCK or XTest devices */
-        if ((dev == inputInfo.pointer ||
-             dev == inputInfo.keyboard ||
+        if ((dev == dev->context->inputInfo.pointer ||
+             dev == dev->context->inputInfo.keyboard ||
              IsXTestDevice(dev, NULL))
             &&!(*(CARD8 *) prop->data))
             return BadAccess;
@@ -219,11 +219,11 @@ PairDevices(DeviceIntPtr ptr, DeviceIntPtr kbd)
  * Find and return the next unpaired MD pointer device.
  */
 static DeviceIntPtr
-NextFreePointerDevice(void)
+NextFreePointerDevice(XephyrContext* context)
 {
     DeviceIntPtr dev;
 
-    for (dev = inputInfo.devices; dev; dev = dev->next)
+    for (dev = context->inputInfo.devices; dev; dev = dev->next)
         if (IsMaster(dev) &&
             dev->spriteInfo->spriteOwner && !dev->spriteInfo->paired)
             return dev;
@@ -238,7 +238,7 @@ NextFreePointerDevice(void)
  * @return The newly created device.
  */
 DeviceIntPtr
-AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
+AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart, XephyrContext* context)
 {
     DeviceIntPtr dev, *prev;    /* not a typo */
     DeviceIntPtr devtmp;
@@ -249,9 +249,9 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
 
     /* Find next available id, 0 and 1 are reserved */
     memset(devind, 0, sizeof(char) * MAXDEVICES);
-    for (devtmp = inputInfo.devices; devtmp; devtmp = devtmp->next)
+    for (devtmp = context->inputInfo.devices; devtmp; devtmp = devtmp->next)
         devind[devtmp->id]++;
-    for (devtmp = inputInfo.off_devices; devtmp; devtmp = devtmp->next)
+    for (devtmp = context->inputInfo.off_devices; devtmp; devtmp = devtmp->next)
         devind[devtmp->id]++;
     for (devid = 2; devid < MAXDEVICES && devind[devid]; devid++);
 
@@ -268,6 +268,9 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
         return NULL;
     }
 
+    /* Set context from parameter */
+    dev->context = context;
+
     dev->last.scroll = NULL;
     dev->last.touches = NULL;
     dev->id = devid;
@@ -279,7 +282,7 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
 
     /* device grab defaults */
     UpdateCurrentTimeIf();
-    dev->deviceGrab.grabTime = xephyr_context->currentTime;
+    dev->deviceGrab.grabTime = dev->context->currentTime;
     dev->deviceGrab.ActivateGrab = ActivateKeyboardGrab;
     dev->deviceGrab.DeactivateGrab = DeactivateKeyboardGrab;
     dev->deviceGrab.sync.event = calloc(1, sizeof(InternalEvent));
@@ -299,9 +302,9 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
         return NULL;
     }
 
-    inputInfo.numDevices++;
+    context->inputInfo.numDevices++;
 
-    for (prev = &inputInfo.off_devices; *prev; prev = &(*prev)->next);
+    for (prev = &context->inputInfo.off_devices; *prev; prev = &(*prev)->next);
     *prev = dev;
     dev->next = NULL;
 
@@ -331,14 +334,14 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart)
 }
 
 void
-SendDevicePresenceEvent(int deviceid, int type)
+SendDevicePresenceEvent(int deviceid, int type, XephyrContext* context)
 {
-    DeviceIntRec dummyDev = { .id =  XIAllDevices };
+    DeviceIntRec dummyDev = { .id = XIAllDevices, .context = context };
     devicePresenceNotify ev;
 
     UpdateCurrentTimeIf();
     ev.type = DevicePresenceNotify;
-    ev.time = xephyr_context->currentTime.milliseconds;
+    ev.time = context->currentTime.milliseconds;
     ev.devchange = type;
     ev.deviceid = deviceid;
 
@@ -349,7 +352,7 @@ SendDevicePresenceEvent(int deviceid, int type)
 /**
  * Enable the device through the driver, add the device to the device list.
  * Switch device ON through the driver and push it onto the global device
- * list. Initialize the DIX sprite or pair the device. All xephyr_context->clients are
+ * list. Initialize the DIX sprite or pair the device. All context->clients are
  * notified about the device being enabled.
  *
  * A master pointer device needs to be enabled before a master keyboard
@@ -368,19 +371,19 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     BOOL enabled;
     int flags[MAXDEVICES] = { 0 };
 
-    for (prev = &inputInfo.off_devices;
+    for (prev = &dev->context->inputInfo.off_devices;
          *prev && (*prev != dev); prev = &(*prev)->next);
 
     if (!dev->spriteInfo->sprite) {
         if (IsMaster(dev)) {
             /* Sprites appear on first root window, so we can hardcode it */
             if (dev->spriteInfo->spriteOwner) {
-                InitializeSprite(dev, xephyr_context->screenInfo.screens[0]->root);
+                InitializeSprite(dev, dev->context->screenInfo.screens[0]->root);
                 /* mode doesn't matter */
-                EnterWindow(dev, xephyr_context->screenInfo.screens[0]->root, NotifyAncestor);
+                EnterWindow(dev, dev->context->screenInfo.screens[0]->root, NotifyAncestor);
             }
             else {
-                other = NextFreePointerDevice();
+                other = NextFreePointerDevice(dev->context);
                 BUG_RETURN_VAL_MSG(other == NULL, FALSE,
                                    "[dix] cannot find pointer to pair with.\n");
                 PairDevices(other, dev);
@@ -388,8 +391,8 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
         }
         else {
             if (dev->coreEvents)
-                other = (IsPointerDevice(dev)) ? inputInfo.pointer:
-                    inputInfo.keyboard;
+                other = (IsPointerDevice(dev)) ? dev->context->inputInfo.pointer:
+                    dev->context->inputInfo.keyboard;
             else
                 other = NULL;   /* auto-float non-core devices */
             AttachDevice(NULL, dev, other);
@@ -406,7 +409,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     dev->enabled = TRUE;
     *prev = dev->next;
 
-    for (prev = &inputInfo.devices; *prev; prev = &(*prev)->next);
+    for (prev = &dev->context->inputInfo.devices; *prev; prev = &(*prev)->next);
     *prev = dev;
     dev->next = NULL;
     input_unlock();
@@ -415,7 +418,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     XIChangeDeviceProperty(dev, XIGetKnownProperty(XI_PROP_ENABLED),
                            XA_INTEGER, 8, PropModeReplace, 1, &enabled, TRUE);
 
-    SendDevicePresenceEvent(dev->id, DeviceEnabled);
+    SendDevicePresenceEvent(dev->id, DeviceEnabled, dev->context);
     if (sendevent) {
         flags[dev->id] |= XIDeviceEnabled;
         XISendDeviceHierarchyEvent(flags);
@@ -434,7 +437,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
 
 /**
  * Switch a device off through the driver and push it onto the off_devices
- * list. A device will not send events while disabled. All xephyr_context->clients are
+ * list. A device will not send events while disabled. All context->clients are
  * notified about the device being disabled.
  *
  * Master keyboard devices have to be disabled before master pointer devices
@@ -453,7 +456,7 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
     if (!dev->enabled)
         return TRUE;
 
-    for (prev = &inputInfo.devices;
+    for (prev = &dev->context->inputInfo.devices;
          *prev && (*prev != dev); prev = &(*prev)->next);
     if (*prev != dev)
         return FALSE;
@@ -466,7 +469,7 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
 
     /* float attached devices */
     if (IsMaster(dev)) {
-        for (other = inputInfo.devices; other; other = other->next) {
+        for (other = dev->context->inputInfo.devices; other; other = other->next) {
             if (!IsMaster(other) && GetMaster(other, MASTER_ATTACHED) == dev) {
                 AttachDevice(NULL, other, NULL);
                 flags[other->id] |= XISlaveDetached;
@@ -474,14 +477,14 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
         }
     }
     else {
-        for (other = inputInfo.devices; other; other = other->next) {
+        for (other = dev->context->inputInfo.devices; other; other = other->next) {
             if (IsMaster(other) && other->lastSlave == dev)
                 other->lastSlave = NULL;
         }
     }
 
     if (IsMaster(dev) && dev->spriteInfo->sprite) {
-        for (other = inputInfo.devices; other; other = other->next)
+        for (other = dev->context->inputInfo.devices; other; other = other->next)
             if (other->spriteInfo->paired == dev && !other->spriteInfo->spriteOwner)
                 DisableDevice(other, sendevent);
     }
@@ -495,7 +498,7 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
 
     /* now that the device is disabled, we can reset the event reader's
      * last.slave */
-    for (other = inputInfo.devices; other; other = other->next) {
+    for (other = dev->context->inputInfo.devices; other; other = other->next) {
         if (other->last.slave == dev)
             other->last.slave = NULL;
     }
@@ -507,14 +510,14 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
     SetFocusOut(dev);
 
     *prev = dev->next;
-    dev->next = inputInfo.off_devices;
-    inputInfo.off_devices = dev;
+    dev->next = dev->context->inputInfo.off_devices;
+    dev->context->inputInfo.off_devices = dev;
 
     enabled = FALSE;
     XIChangeDeviceProperty(dev, XIGetKnownProperty(XI_PROP_ENABLED),
                            XA_INTEGER, 8, PropModeReplace, 1, &enabled, TRUE);
 
-    SendDevicePresenceEvent(dev->id, DeviceDisabled);
+    SendDevicePresenceEvent(dev->id, DeviceDisabled, dev->context);
     if (sendevent) {
         flags[dev->id] = XIDeviceDisabled;
         XISendDeviceHierarchyEvent(flags);
@@ -526,33 +529,33 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
 }
 
 void
-DisableAllDevices(void)
+DisableAllDevices(XephyrContext* context)
 {
     DeviceIntPtr dev, tmp;
 
     /* Disable slave devices first, excluding XTest devices */
-    nt_list_for_each_entry_safe(dev, tmp, inputInfo.devices, next) {
+    nt_list_for_each_entry_safe(dev, tmp, context->inputInfo.devices, next) {
         if (!IsXTestDevice(dev, NULL) && !IsMaster(dev))
             DisableDevice(dev, FALSE);
     }
     /* Disable XTest devices */
-    nt_list_for_each_entry_safe(dev, tmp, inputInfo.devices, next) {
+    nt_list_for_each_entry_safe(dev, tmp, context->inputInfo.devices, next) {
         if (!IsMaster(dev))
             DisableDevice(dev, FALSE);
     }
     /* master keyboards need to be disabled first */
-    nt_list_for_each_entry_safe(dev, tmp, inputInfo.devices, next) {
+    nt_list_for_each_entry_safe(dev, tmp, context->inputInfo.devices, next) {
         if (dev->enabled && IsMaster(dev) && IsKeyboardDevice(dev))
             DisableDevice(dev, FALSE);
     }
-    nt_list_for_each_entry_safe(dev, tmp, inputInfo.devices, next) {
+    nt_list_for_each_entry_safe(dev, tmp, context->inputInfo.devices, next) {
         if (dev->enabled)
             DisableDevice(dev, FALSE);
     }
 }
 
 /**
- * Initialise a new device through the driver and tell all xephyr_context->clients about the
+ * Initialise a new device through the driver and tell all context->clients about the
  * new device.
  *
  * Must be called before EnableDevice.
@@ -565,7 +568,7 @@ int
 ActivateDevice(DeviceIntPtr dev, BOOL sendevent)
 {
     int ret = Success;
-    ScreenPtr pScreen = xephyr_context->screenInfo.screens[0];
+    ScreenPtr pScreen = dev->context->screenInfo.screens[0];
 
     if (!dev || !dev->deviceProc)
         return BadImplementation;
@@ -582,7 +585,7 @@ ActivateDevice(DeviceIntPtr dev, BOOL sendevent)
         if (!pScreen->DeviceCursorInitialize(dev, pScreen))
             ret = BadAlloc;
 
-    SendDevicePresenceEvent(dev->id, DeviceAdded);
+    SendDevicePresenceEvent(dev->id, DeviceAdded, dev->context);
     if (sendevent) {
         int flags[MAXDEVICES] = { 0 };
         flags[dev->id] = XISlaveAdded;
@@ -649,7 +652,7 @@ CorePointerProc(DeviceIntPtr pDev, int what)
     int i = 0;
     Atom btn_labels[NBUTTONS] = { 0 };
     Atom axes_labels[NAXES] = { 0 };
-    ScreenPtr scr = xephyr_context->screenInfo.screens[0];
+    ScreenPtr scr = screenInfo.screens[0]->context->screenInfo.screens[0];
 
     switch (what) {
     case DEVICE_INIT:
@@ -705,32 +708,32 @@ CorePointerProc(DeviceIntPtr pDev, int what)
  * is no physical device connected.
  */
 void
-InitCoreDevices(void)
+InitCoreDevices(XephyrContext* context)
 {
     int result;
 
-    result = AllocDevicePair(xephyr_context->serverClient, "Virtual core",
-                             &inputInfo.pointer, &inputInfo.keyboard,
+    result = AllocDevicePair(context->serverClient, "Virtual core",
+                             &context->inputInfo.pointer, &context->inputInfo.keyboard,
                              CorePointerProc, CoreKeyboardProc, TRUE);
     if (result != Success) {
         FatalError("Failed to allocate virtual core devices: %d", result);
     }
 
-    result = ActivateDevice(inputInfo.pointer, TRUE);
+    result = ActivateDevice(context->inputInfo.pointer, TRUE);
     if (result != Success) {
         FatalError("Failed to activate virtual core pointer: %d", result);
     }
 
-    result = ActivateDevice(inputInfo.keyboard, TRUE);
+    result = ActivateDevice(context->inputInfo.keyboard, TRUE);
     if (result != Success) {
         FatalError("Failed to activate virtual core keyboard: %d", result);
     }
 
-    if (!EnableDevice(inputInfo.pointer, TRUE)) {
+    if (!EnableDevice(context->inputInfo.pointer, TRUE)) {
          FatalError("Failed to enable virtual core pointer.");
     }
 
-    if (!EnableDevice(inputInfo.keyboard, TRUE)) {
+    if (!EnableDevice(context->inputInfo.keyboard, TRUE)) {
          FatalError("Failed to enable virtual core keyboard.");
     }
 
@@ -750,18 +753,18 @@ InitCoreDevices(void)
  * @return Success or error code on failure.
  */
 int
-InitAndStartDevices(void)
+InitAndStartDevices(XephyrContext* context)
 {
     DeviceIntPtr dev, next;
 
-    for (dev = inputInfo.off_devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.off_devices; dev; dev = dev->next) {
         DebugF("(dix) initialising device %d\n", dev->id);
         if (!dev->inited)
             ActivateDevice(dev, TRUE);
     }
 
     /* enable real devices */
-    for (dev = inputInfo.off_devices; dev; dev = next) {
+    for (dev = context->inputInfo.off_devices; dev; dev = next) {
         DebugF("(dix) enabling device %d\n", dev->id);
         next = dev->next;
         if (dev->inited && dev->startup)
@@ -959,7 +962,7 @@ FreeAllDeviceClasses(ClassesPtr classes)
 static void
 CloseDevice(DeviceIntPtr dev)
 {
-    ScreenPtr screen = xephyr_context->screenInfo.screens[0];
+    ScreenPtr screen = screenInfo.screens[0]->context->screenInfo.screens[0];
     ClassesPtr classes;
     int j;
 
@@ -995,10 +998,13 @@ CloseDevice(DeviceIntPtr dev)
     }
 
     /* a client may have the device set as client pointer */
-    for (j = 0; j < xephyr_context->currentMaxClients; j++) {
-        if (xephyr_context->clients[j] && xephyr_context->clients[j]->clientPtr == dev) {
-            xephyr_context->clients[j]->clientPtr = NULL;
-            xephyr_context->clients[j]->clientPtr = PickPointer(xephyr_context->clients[j]);
+    if (screenInfo.numScreens > 0) {
+        XephyrContext* context = screenInfo.screens[0]->context;
+        for (j = 0; j < context->currentMaxClients; j++) {
+            if (context->clients[j] && context->clients[j]->clientPtr == dev) {
+                context->clients[j]->clientPtr = NULL;
+                context->clients[j]->clientPtr = PickPointer(context->clients[j]);
+            }
         }
     }
 
@@ -1049,7 +1055,7 @@ CloseDeviceList(DeviceIntPtr *listHead)
  * Only useful if you're shutting down the server!
  */
 void
-CloseDownDevices(void)
+CloseDownDevices(XephyrContext* context)
 {
     DeviceIntPtr dev;
 
@@ -1060,22 +1066,22 @@ CloseDownDevices(void)
      * AttachDevice(NULL, dev, NULL). Instead, we have to forcibly set master
      * to NULL and pretend nothing happened.
      */
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (!IsMaster(dev) && !IsFloating(dev))
             dev->master = NULL;
     }
 
-    CloseDeviceList(&inputInfo.devices);
-    CloseDeviceList(&inputInfo.off_devices);
+    CloseDeviceList(&context->inputInfo.devices);
+    CloseDeviceList(&context->inputInfo.off_devices);
 
-    CloseDevice(inputInfo.pointer);
+    CloseDevice(context->inputInfo.pointer);
 
-    CloseDevice(inputInfo.keyboard);
+    CloseDevice(context->inputInfo.keyboard);
 
-    inputInfo.devices = NULL;
-    inputInfo.off_devices = NULL;
-    inputInfo.keyboard = NULL;
-    inputInfo.pointer = NULL;
+    context->inputInfo.devices = NULL;
+    context->inputInfo.off_devices = NULL;
+    context->inputInfo.keyboard = NULL;
+    context->inputInfo.pointer = NULL;
 
     XkbDeleteRulesDflts();
     XkbDeleteRulesUsed();
@@ -1115,7 +1121,7 @@ void
 UndisplayDevices(void)
 {
     DeviceIntPtr dev;
-    ScreenPtr screen = xephyr_context->screenInfo.screens[0];
+    ScreenPtr screen = screenInfo.screens[0]->context->screenInfo.screens[0];
 
     for (dev = inputInfo.devices; dev; dev = dev->next)
         screen->DisplayCursor(dev, screen, NullCursor);
@@ -1139,14 +1145,14 @@ RemoveDevice(DeviceIntPtr dev, BOOL sendevent)
 {
     DeviceIntPtr prev, tmp, next;
     int ret = BadMatch;
-    ScreenPtr screen = xephyr_context->screenInfo.screens[0];
+    ScreenPtr screen = dev->context->screenInfo.screens[0];
     int deviceid;
     int initialized;
     int flags[MAXDEVICES] = { 0 };
 
     DebugF("(dix) removing device %d\n", dev->id);
 
-    if (!dev || dev == inputInfo.keyboard || dev == inputInfo.pointer)
+    if (!dev || dev == dev->context->inputInfo.keyboard || dev == dev->context->inputInfo.pointer)
         return BadImplementation;
 
     initialized = dev->inited;
@@ -1199,8 +1205,8 @@ RemoveDevice(DeviceIntPtr dev, BOOL sendevent)
     input_unlock();
 
     if (ret == Success && initialized) {
-        inputInfo.numDevices--;
-        SendDevicePresenceEvent(deviceid, DeviceRemoved);
+        dev->context->inputInfo.numDevices--;
+        SendDevicePresenceEvent(deviceid, DeviceRemoved, dev->context);
         if (sendevent)
             XISendDeviceHierarchyEvent(flags);
     }
@@ -1209,11 +1215,11 @@ RemoveDevice(DeviceIntPtr dev, BOOL sendevent)
 }
 
 int
-NumMotionEvents(void)
+NumMotionEvents(XephyrContext* context)
 {
     /* only called to fill data in initial connection reply.
      * VCP is ok here, it is the only fixed device we have. */
-    return inputInfo.pointer->valuator->numMotionEvents;
+    return context->inputInfo.pointer->valuator->numMotionEvents;
 }
 
 int
@@ -1224,11 +1230,11 @@ dixLookupDevice(DeviceIntPtr *pDev, int id, ClientPtr client, Mask access_mode)
 
     *pDev = NULL;
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = client->context->inputInfo.devices; dev; dev = dev->next) {
         if (dev->id == id)
             goto found;
     }
-    for (dev = inputInfo.off_devices; dev; dev = dev->next) {
+    for (dev = client->context->inputInfo.off_devices; dev; dev = dev->next) {
         if (dev->id == id)
             goto found;
     }
@@ -1242,11 +1248,11 @@ dixLookupDevice(DeviceIntPtr *pDev, int id, ClientPtr client, Mask access_mode)
 }
 
 void
-QueryMinMaxKeyCodes(KeyCode *minCode, KeyCode *maxCode)
+QueryMinMaxKeyCodes(KeyCode *minCode, KeyCode *maxCode, XephyrContext* context)
 {
-    if (inputInfo.keyboard) {
-        *minCode = inputInfo.keyboard->key->xkbInfo->desc->min_key_code;
-        *maxCode = inputInfo.keyboard->key->xkbInfo->desc->max_key_code;
+    if (context->inputInfo.keyboard) {
+        *minCode = context->inputInfo.keyboard->key->xkbInfo->desc->min_key_code;
+        *maxCode = context->inputInfo.keyboard->key->xkbInfo->desc->max_key_code;
     }
 }
 
@@ -1439,7 +1445,7 @@ InitFocusClassDeviceStruct(DeviceIntPtr dev)
     UpdateCurrentTimeIf();
     focc->win = PointerRootWin;
     focc->revert = None;
-    focc->time = xephyr_context->currentTime;
+    focc->time = screenInfo.screens[0]->context->currentTime;
     focc->trace = (WindowPtr *) NULL;
     focc->traceSize = 0;
     focc->traceGood = 0;
@@ -1459,7 +1465,7 @@ InitPtrFeedbackClassDeviceStruct(DeviceIntPtr dev, PtrCtrlProcPtr controlProc)
     if (!feedc)
         return FALSE;
     feedc->CtrlProc = controlProc;
-    feedc->ctrl = xephyr_context->defaultPointerControl;
+    feedc->ctrl = screenInfo.screens[0]->context->defaultPointerControl;
     feedc->ctrl.id = 0;
     if ((feedc->next = dev->ptrfeed))
         feedc->ctrl.id = dev->ptrfeed->ctrl.id + 1;
@@ -2021,7 +2027,7 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             t = (INT8) *vlist;
             vlist++;
             if (t == -1) {
-                t = xephyr_context->defaultKeyboardControl.click;
+                t = screenInfo.screens[0]->context->defaultKeyboardControl.click;
             }
             else if (t < 0 || t > 100) {
                 client->errorValue = t;
@@ -2033,7 +2039,7 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             t = (INT8) *vlist;
             vlist++;
             if (t == -1) {
-                t = xephyr_context->defaultKeyboardControl.bell;
+                t = screenInfo.screens[0]->context->defaultKeyboardControl.bell;
             }
             else if (t < 0 || t > 100) {
                 client->errorValue = t;
@@ -2045,7 +2051,7 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             t = (INT16) *vlist;
             vlist++;
             if (t == -1) {
-                t = xephyr_context->defaultKeyboardControl.bell_pitch;
+                t = screenInfo.screens[0]->context->defaultKeyboardControl.bell_pitch;
             }
             else if (t < 0) {
                 client->errorValue = t;
@@ -2057,7 +2063,7 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             t = (INT16) *vlist;
             vlist++;
             if (t == -1)
-                t = xephyr_context->defaultKeyboardControl.bell_duration;
+                t = screenInfo.screens[0]->context->defaultKeyboardControl.bell_duration;
             else if (t < 0) {
                 client->errorValue = t;
                 return BadValue;
@@ -2132,11 +2138,11 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             }
             else if (t == AutoRepeatModeDefault) {
                 if (key == DO_ALL)
-                    ctrl.autoRepeat = xephyr_context->defaultKeyboardControl.autoRepeat;
+                    ctrl.autoRepeat = screenInfo.screens[0]->context->defaultKeyboardControl.autoRepeat;
                 else
                     ctrl.autoRepeats[i] =
                         (ctrl.autoRepeats[i] & ~mask) |
-                        (xephyr_context->defaultKeyboardControl.autoRepeats[i] & mask);
+                        (screenInfo.screens[0]->context->defaultKeyboardControl.autoRepeats[i] & mask);
             }
             else {
                 client->errorValue = t;
@@ -2259,7 +2265,7 @@ ProcBell(ClientPtr client)
     else
         newpercent = base - newpercent + stuff->percent;
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = current_context->inputInfo.devices; dev; dev = dev->next) {
         if ((dev == keybd ||
              (!IsMaster(dev) && GetMaster(dev, MASTER_KEYBOARD) == keybd)) &&
             ((dev->kbdfeed && dev->kbdfeed->BellProc) || dev->xkb_interest)) {
@@ -2299,7 +2305,7 @@ ProcChangePointerControl(ClientPtr client)
     }
     if (stuff->doAccel) {
         if (stuff->accelNum == -1) {
-            ctrl.num = xephyr_context->defaultPointerControl.num;
+            ctrl.num = screenInfo.screens[0]->context->defaultPointerControl.num;
         }
         else if (stuff->accelNum < 0) {
             client->errorValue = stuff->accelNum;
@@ -2310,7 +2316,7 @@ ProcChangePointerControl(ClientPtr client)
         }
 
         if (stuff->accelDenum == -1) {
-            ctrl.den = xephyr_context->defaultPointerControl.den;
+            ctrl.den = screenInfo.screens[0]->context->defaultPointerControl.den;
         }
         else if (stuff->accelDenum <= 0) {
             client->errorValue = stuff->accelDenum;
@@ -2322,7 +2328,7 @@ ProcChangePointerControl(ClientPtr client)
     }
     if (stuff->doThresh) {
         if (stuff->threshold == -1) {
-            ctrl.threshold = xephyr_context->defaultPointerControl.threshold;
+            ctrl.threshold = screenInfo.screens[0]->context->defaultPointerControl.threshold;
         }
         else if (stuff->threshold < 0) {
             client->errorValue = stuff->threshold;
@@ -2333,7 +2339,7 @@ ProcChangePointerControl(ClientPtr client)
         }
     }
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = current_context->inputInfo.devices; dev; dev = dev->next) {
         if ((dev == mouse ||
              (!IsMaster(dev) && GetMaster(dev, MASTER_POINTER) == mouse)) &&
             dev->ptrfeed) {
@@ -2343,7 +2349,7 @@ ProcChangePointerControl(ClientPtr client)
         }
     }
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = current_context->inputInfo.devices; dev; dev = dev->next) {
         if ((dev == mouse ||
              (!IsMaster(dev) && GetMaster(dev, MASTER_POINTER) == mouse)) &&
             dev->ptrfeed) {
@@ -2365,7 +2371,7 @@ ProcGetPointerControl(ClientPtr client)
     if (ptr->ptrfeed)
         ctrl = &ptr->ptrfeed->ctrl;
     else
-        ctrl = &xephyr_context->defaultPointerControl;
+        ctrl = &screenInfo.screens[0]->context->defaultPointerControl;
 
     REQUEST_SIZE_MATCH(xReq);
 
@@ -2433,10 +2439,10 @@ ProcGetMotionEvents(ClientPtr client)
     start = ClientTimeToServerTime(stuff->start);
     stop = ClientTimeToServerTime(stuff->stop);
     if ((CompareTimeStamps(start, stop) != LATER) &&
-        (CompareTimeStamps(start, xephyr_context->currentTime) != LATER) &&
+        (CompareTimeStamps(start, screenInfo.screens[0]->context->currentTime) != LATER) &&
         mouse->valuator->numMotionEvents) {
-        if (CompareTimeStamps(stop, xephyr_context->currentTime) == LATER)
-            stop = xephyr_context->currentTime;
+        if (CompareTimeStamps(stop, screenInfo.screens[0]->context->currentTime) == LATER)
+            stop = screenInfo.screens[0]->context->currentTime;
         count = GetMotionHistory(mouse, &coords, start.milliseconds,
                                  stop.milliseconds, pWin->drawable.pScreen,
                                  TRUE);
@@ -2516,7 +2522,7 @@ RecalculateMasterButtons(DeviceIntPtr slave)
     if (!master)
         return;
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = current_context->inputInfo.devices; dev; dev = dev->next) {
         if (IsMaster(dev) ||
             GetMaster(dev, MASTER_ATTACHED) != master || !dev->button)
             continue;
@@ -2644,7 +2650,7 @@ AttachDevice(ClientPtr client, DeviceIntPtr dev, DeviceIntPtr master)
         if (dev->spriteInfo->sprite)
             currentRoot = GetCurrentRootWindow(dev);
         else                    /* new device auto-set to floating */
-            currentRoot = xephyr_context->screenInfo.screens[0]->root;
+            currentRoot = screenInfo.screens[0]->context->screenInfo.screens[0]->root;
 
         /* we need to init a fake sprite */
         screen = currentRoot->drawable.pScreen;
@@ -2850,7 +2856,7 @@ DeliverDeviceClassesChangedEvent(int sourceid, Time time)
     int num_events = 0;
     InternalEvent dcce;
 
-    dixLookupDevice(&dev, sourceid, xephyr_context->serverClient, DixWriteAccess);
+    dixLookupDevice(&dev, sourceid, screenInfo.screens[0]->context->serverClient, DixWriteAccess);
 
     if (!dev)
         return;

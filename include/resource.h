@@ -50,6 +50,8 @@ SOFTWARE.
 #include "misc.h"
 #include "dixaccess.h"
 
+typedef struct _XephyrContext XephyrContext;
+
 /*****************************************************************
  * STUFF FOR RESOURCES
  *****************************************************************/
@@ -110,7 +112,7 @@ extern _X_EXPORT unsigned int ResourceClientBits(void);
 
 #define BAD_RESOURCE 0xe0000000
 
-#define rClient(obj) (xephyr_context->clients[CLIENT_ID((obj)->resource)])
+#define rClient(obj) (context->clients[CLIENT_ID((obj)->resource)])
 
 /* Resource state callback */
 extern _X_EXPORT CallbackListPtr ResourceStateCallback;
@@ -127,7 +129,8 @@ typedef struct {
 } ResourceStateInfoRec;
 
 typedef int (*DeleteType) (void *value,
-                           XID id);
+                           XID id,
+                           XephyrContext* context);
 
 typedef void (*FindResType) (void *value,
                              XID id,

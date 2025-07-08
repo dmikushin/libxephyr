@@ -170,7 +170,7 @@ miDbeAllocBackBufferName(WindowPtr pWin, XID bufId, int swapAction)
         }
 
         /* Security creation/labeling check. */
-        rc = XaceHook(XACE_RESOURCE_ACCESS, xephyr_context->serverClient, bufId,
+        rc = XaceHook(XACE_RESOURCE_ACCESS, context->serverClient, bufId,
                       dbeDrawableResType, pDbeWindowPriv->pBackBuffer,
                       RT_WINDOW, pWin, DixCreateAccess);
 

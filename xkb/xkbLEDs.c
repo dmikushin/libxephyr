@@ -356,7 +356,7 @@ XkbUpdateAllDeviceIndicators(XkbChangesPtr changes, XkbEventCausePtr cause)
          * If 'changes' is non-NULL, this function notes any changes to the
          * keyboard state, controls, or indicator state that result from this
          * attempted change.   If 'changes' is NULL, this function generates
-         * XKB events to report any such changes to interested xephyr_context->clients.
+         * XKB events to report any such changes to interested context->clients.
          *
          * If 'cause' is non-NULL, it specifies the reason for the change,
          * as reported in some XKB events.   If it is NULL, this function

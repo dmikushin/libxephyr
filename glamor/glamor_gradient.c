@@ -861,7 +861,7 @@ glamor_generate_radial_gradient_picture(ScreenPtr screen,
     dst_picture = CreatePicture(0, &pixmap->drawable,
                                 PictureMatchFormat(screen,
                                                    PIXMAN_FORMAT_DEPTH(format),
-                                                   format), 0, 0, xephyr_context->serverClient,
+                                                   format), 0, 0, context->serverClient,
                                 &error);
 
     /* Release the reference, picture will hold the last one. */
@@ -1170,7 +1170,7 @@ glamor_generate_linear_gradient_picture(ScreenPtr screen,
     dst_picture = CreatePicture(0, &pixmap->drawable,
                                 PictureMatchFormat(screen,
                                                    PIXMAN_FORMAT_DEPTH(format),
-                                                   format), 0, 0, xephyr_context->serverClient,
+                                                   format), 0, 0, context->serverClient,
                                 &error);
 
     /* Release the reference, picture will hold the last one. */

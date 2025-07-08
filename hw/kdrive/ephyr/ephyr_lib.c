@@ -59,12 +59,12 @@ InitOutput(ScreenInfo * pScreenInfo, int argc, char **argv)
 }
 
 void
-InitInput(int argc, char **argv)
+InitInput(int argc, char **argv, XephyrContext* context)
 {
     KdKeyboardInfo *ki;
     KdPointerInfo *pi;
 
-    if (!xephyr_context->SeatId) {
+    if (!context->SeatId) {
         KdAddKeyboardDriver(&EphyrKeyboardDriver);
         KdAddPointerDriver(&EphyrMouseDriver);
 
@@ -73,7 +73,7 @@ InitInput(int argc, char **argv)
             if (!ki)
                 FatalError("Couldn't create Xephyr keyboard\n");
             ki->driver = &EphyrKeyboardDriver;
-            KdAddKeyboard(ki);
+            KdAddKeyboard(ki, context);
         }
 
         if (!kdHasPointer) {
@@ -85,7 +85,7 @@ InitInput(int argc, char **argv)
         }
     }
 
-    KdInitInput();
+    KdInitInput(context);
 }
 
 void
@@ -320,7 +320,7 @@ ddxProcessArgument(int argc, char **argv, int i)
         hostx_set_display_name(argv[i]);
     }
     /* Xnest compatibility */
-    else if (!strcmp(argv[i], "-xephyr_context->display")) {
+    else if (!strcmp(argv[i], "-context->display")) {
         hostx_set_display_name(argv[i + 1]);
         return 2;
     }
@@ -351,17 +351,17 @@ ddxProcessArgument(int argc, char **argv, int i)
 }
 
 void
-OsVendorInit(void)
+OsVendorInit(XephyrContext* context)
 {
     EPHYR_DBG("mark");
 
-    if (xephyr_context->SeatId)
+    if (context->SeatId)
         hostx_use_sw_cursor();
 
     if (hostx_want_host_cursor())
         ephyrFuncs.initCursor = &ephyrCursorInit;
 
-    if (xephyr_context->serverGeneration == 1) {
+    if (context->serverGeneration == 1) {
         if (!KdCardInfoLast()) {
             processScreenArg("640x480", NULL);
         }

@@ -329,7 +329,7 @@ __glXDisp_CreateContextAttribsARB(__GLXclientState * cl, GLbyte * pc)
          * it's a massive attack surface for buffer overflow type
          * errors.
          */
-        if (!xephyr_context->enableIndirectGLX) {
+        if (!context->enableIndirectGLX) {
             client->errorValue = req->isDirect;
             return BadValue;
         }

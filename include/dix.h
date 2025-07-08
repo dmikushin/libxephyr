@@ -57,6 +57,8 @@ SOFTWARE.
 #include "events.h"
 #include <X11/extensions/XI.h>
 
+typedef struct _XephyrContext XephyrContext;
+
 #define EARLIER -1
 #define SAMETIME 0
 #define LATER 1
@@ -183,7 +185,7 @@ extern _X_EXPORT void InitClient(ClientPtr client,
                                  int i,
                                  void *ospriv);
 
-extern _X_EXPORT ClientPtr NextAvailableClient(void *ospriv);
+extern _X_EXPORT ClientPtr NextAvailableClient(void *ospriv, XephyrContext* context);
 
 extern _X_EXPORT void SendErrorToClient(ClientPtr /*client */ ,
                                         unsigned int /*majorCode */ ,
@@ -322,7 +324,7 @@ extern _X_EXPORT void
 SetVendorRelease(int release);
 
 int
-dix_main(int argc, char *argv[], char *envp[]);
+dix_main(int argc, char *argv[], char *envp[], XephyrContext* context);
 
 /* events.c */
 

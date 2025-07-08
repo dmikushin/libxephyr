@@ -1374,7 +1374,7 @@ ProcRRSetCrtcConfig(ClientPtr client)
     time = ClientTimeToServerTime(stuff->timestamp);
 
     if (!pScrPriv) {
-        time = xephyr_context->currentTime;
+        time = context->currentTime;
         status = RRSetConfigFailed;
         goto sendReply;
     }
@@ -1415,7 +1415,7 @@ ProcRRSetCrtcConfig(ClientPtr client)
          * Check screen size bounds if the DDX provides a 1.2 interface
          * for setting screen size. Else, assume the CrtcSet sets
          * the size along with the mode. If the driver supports transforms,
-         * then it must allow crtcs to xephyr_context->display a subset of the screen, so
+         * then it must allow crtcs to context->display a subset of the screen, so
          * only do this check for drivers without transform support.
          */
         if (pScrPriv->rrScreenSetSize && !crtc->transforms) {
@@ -1582,7 +1582,7 @@ ProcRRSetPanning(ClientPtr client)
     pScrPriv = rrGetScrPriv(pScreen);
 
     if (!pScrPriv) {
-        time = xephyr_context->currentTime;
+        time = context->currentTime;
         status = RRSetConfigFailed;
         goto sendReply;
     }

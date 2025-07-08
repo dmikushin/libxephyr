@@ -86,7 +86,7 @@ int limitStackSpace = -1;
 int limitNoFile = -1;
 #endif
 
-/* The actual user defined max number of xephyr_context->clients */
+/* The actual user defined max number of context->clients */
 int LimitClients = LIMITCLIENTS;
 
 static OsSigWrapperPtr OsSigWrapper = NULL;
@@ -162,7 +162,7 @@ OsSigHandler(int signo)
 #include "busfault.h"
 
 void
-OsInit(void)
+OsInit(XephyrContext* context)
 {
     static Bool been_here = FALSE;
 #ifndef XQUARTZ
@@ -240,8 +240,8 @@ OsInit(void)
         if (write(2, fname, 0) == -1) {
             FILE *err;
 
-            if (strlen(xephyr_context->display) + strlen(ADMPATH) + 1 < sizeof fname)
-                snprintf(fname, sizeof(fname), ADMPATH, xephyr_context->display);
+            if (strlen(context->display) + strlen(ADMPATH) + 1 < sizeof fname)
+                snprintf(fname, sizeof(fname), ADMPATH, context->display);
             else
                 strcpy(fname, devnull);
             /*
@@ -315,7 +315,7 @@ OsInit(void)
         been_here = TRUE;
     }
     TimerInit();
-    OsVendorInit();
+    OsVendorInit(context);
     OsResetSignals();
     /*
      * No log file by default.  OsVendorInit() should call LogInit() with the

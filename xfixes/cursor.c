@@ -97,7 +97,7 @@ typedef struct _CursorEvent {
 static CursorEventPtr cursorEvents;
 
 /*
- * Each screen has a list of xephyr_context->clients which have requested
+ * Each screen has a list of context->clients which have requested
  * that the cursor be hid, and the number of times each
  * client has requested.
 */
@@ -180,7 +180,7 @@ CursorDisplayCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
                     .subtype = XFixesDisplayCursorNotify,
                     .window = e->pWindow->drawable.id,
                     .cursorSerial = pCursor ? pCursor->serialNumber : 0,
-                    .timestamp = xephyr_context->currentTime.milliseconds,
+                    .timestamp = context->currentTime.milliseconds,
                     .name = pCursor ? pCursor->name : None
                 };
                 WriteEventsToClient(e->pClient, 1, (xEvent *) &ev);
@@ -243,7 +243,7 @@ XFixesSelectCursorInput(ClientPtr pClient, WindowPtr pWindow, CARD32 eventMask)
          * catch window destroy
          */
         rc = dixLookupResourceByType(&val, pWindow->drawable.id,
-                                     CursorWindowType, xephyr_context->serverClient,
+                                     CursorWindowType, context->serverClient,
                                      DixGetAttrAccess);
         if (rc != Success)
             if (!AddResource(pWindow->drawable.id, CursorWindowType,
@@ -284,7 +284,7 @@ GetBit(unsigned char *line, int x)
 {
     unsigned char mask;
 
-    if (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst)
+    if (context->screenInfo.bitmapBitOrder == LSBFirst)
         mask = (1 << (x & 7));
     else
         mask = (0x80 >> (x & 7));
@@ -658,21 +658,21 @@ ReplaceCursor(CursorPtr pCursor, TestCursorFunc testCursor, void *closure)
     rcl.closure = closure;
 
     /* for each client */
-    for (clientIndex = 0; clientIndex < xephyr_context->currentMaxClients; clientIndex++) {
-        if (!xephyr_context->clients[clientIndex])
+    for (clientIndex = 0; clientIndex < context->currentMaxClients; clientIndex++) {
+        if (!context->clients[clientIndex])
             continue;
         for (resIndex = 0; resIndex < ARRAY_SIZE(CursorRestypes); resIndex++) {
             rcl.type = CursorRestypes[resIndex];
             /*
              * This function walks the entire client resource database
              */
-            LookupClientResourceComplex(xephyr_context->clients[clientIndex],
+            LookupClientResourceComplex(context->clients[clientIndex],
                                         rcl.type,
                                         ReplaceCursorLookup, (void *) &rcl);
         }
     }
     /* this "knows" that WindowHasNewCursor doesn't depend on its argument */
-    WindowHasNewCursor(xephyr_context->screenInfo.screens[0]->root);
+    WindowHasNewCursor(context->screenInfo.screens[0]->root);
 }
 
 static Bool
@@ -751,7 +751,7 @@ SProcXFixesChangeCursorByName(ClientPtr client)
 
 /*
  * Routines for manipulating the per-screen hide counts list.
- * This list indicates which xephyr_context->clients have requested cursor hiding
+ * This list indicates which context->clients have requested cursor hiding
  * for that screen.
  */
 
@@ -1072,7 +1072,7 @@ XFixesCursorInit(void)
 {
     int i;
 
-    if (xephyr_context->party_like_its_1989)
+    if (context->party_like_its_1989)
         CursorVisible = EnableCursor;
     else
         CursorVisible = FALSE;
@@ -1080,8 +1080,8 @@ XFixesCursorInit(void)
     if (!dixRegisterPrivateKey(&CursorScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
         return FALSE;
 
-    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
+    for (i = 0; i < context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = context->screenInfo.screens[i];
         CursorScreenPtr cs;
 
         cs = (CursorScreenPtr) calloc(1, sizeof(CursorScreenRec));

@@ -264,7 +264,7 @@ miInitIndexed(ScreenPtr pScreen, PictFormatPtr pFormat)
     /*
      * Build mapping from pixel value to ARGB
      */
-    QueryColors(pColormap, num, pixels, rgb, xephyr_context->serverClient);
+    QueryColors(pColormap, num, pixels, rgb, context->serverClient);
     for (i = 0; i < num; i++) {
         p = pixels[i];
         pFormat->index.pValues[i].pixel = p;

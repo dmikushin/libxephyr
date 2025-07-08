@@ -201,7 +201,7 @@ XkbWriteRulesProp(void)
         ErrorF("[xkb] Internal Error! bad size (%d!=%d) for _XKB_RULES_NAMES\n",
                out, len);
     }
-    dixChangeWindowProperty(xephyr_context->serverClient, xephyr_context->screenInfo.screens[0]->root, name,
+    dixChangeWindowProperty(context->serverClient, context->screenInfo.screens[0]->root, name,
                             XA_STRING, 8, PropModeReplace, len, pval, TRUE);
     free(pval);
     return TRUE;
@@ -628,7 +628,7 @@ InitKeyboardDeviceStructInternal(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
     dev->kbdfeed->BellProc = bell_func;
     dev->kbdfeed->CtrlProc = XkbDDXKeybdCtrlProc;
 
-    dev->kbdfeed->ctrl = xephyr_context->defaultKeyboardControl;
+    dev->kbdfeed->ctrl = context->defaultKeyboardControl;
     if (dev->kbdfeed->ctrl.autoRepeat)
         xkb->ctrls->enabled_ctrls |= XkbRepeatKeysMask;
 

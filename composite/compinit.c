@@ -107,10 +107,10 @@ static void
 compCheckBackingStore(WindowPtr pWin)
 {
     if (pWin->backingStore != NotUseful) {
-        compRedirectWindow(xephyr_context->serverClient, pWin, CompositeRedirectAutomatic);
+        compRedirectWindow(context->serverClient, pWin, CompositeRedirectAutomatic);
     }
     else {
-        compUnredirectWindow(xephyr_context->serverClient, pWin,
+        compUnredirectWindow(context->serverClient, pWin,
                              CompositeRedirectAutomatic);
     }
 }
@@ -362,7 +362,7 @@ compScreenInit(ScreenPtr pScreen)
         return FALSE;
     }
 
-    if (!xephyr_context->disableBackingStore)
+    if (!context->disableBackingStore)
         pScreen->backingStoreSupport = WhenMapped;
 
     cs->PositionWindow = pScreen->PositionWindow;

@@ -192,7 +192,7 @@ ephyrWindowLinear(ScreenPtr pScreen,
 }
 
 /**
- * Figure out xephyr_context->display buffer size. If fakexa is enabled, allocate a larger
+ * Figure out context->display buffer size. If fakexa is enabled, allocate a larger
  * buffer so that fakexa has space to put offscreen pixmaps.
  */
 int
@@ -338,12 +338,13 @@ ephyrInternalDamageRedisplay(ScreenPtr pScreen)
 }
 
 static void
-ephyrXcbProcessEvents(Bool queued_only);
+ephyrXcbProcessEvents(XephyrContext* context, Bool queued_only);
 
 static Bool
 ephyrEventWorkProc(ClientPtr client, void *closure)
 {
-    ephyrXcbProcessEvents(TRUE);
+    XephyrContext* context = (XephyrContext*)closure;
+    ephyrXcbProcessEvents(context, TRUE);
     return TRUE;
 }
 
@@ -542,7 +543,7 @@ ephyrRandRSetConfig(ScreenPtr pScreen,
             ephyr_glamor_create_screen_resources(pScreen);
 #endif
         /* Without shadow fb ( non rotated ) we need
-         * to use damage to efficiently update xephyr_context->display
+         * to use damage to efficiently update context->display
          * via signal regions what to copy from 'fb'.
          */
         if (!ephyrSetInternalDamage(screen->pScreen))
@@ -757,10 +758,9 @@ ephyrCloseScreen(ScreenPtr pScreen)
  * See https://bugs.freedesktop.org/show_bug.cgi?id=3030
  */
 void
-ephyrUpdateModifierState(unsigned int state)
+ephyrUpdateModifierState(XephyrContext* context, unsigned int state)
 {
-
-    DeviceIntPtr pDev = inputInfo.keyboard;
+    DeviceIntPtr pDev = context->inputInfo.keyboard;
     KeyClassPtr keyc = pDev->key;
     int i;
     CARD8 mask;
@@ -826,7 +826,7 @@ ephyrWarpCursor(DeviceIntPtr pDev, ScreenPtr pScreen, int x, int y)
 {
     input_lock();
     ephyrCursorScreen = pScreen;
-    miPointerWarpCursor(inputInfo.pointer, pScreen, x, y);
+    miPointerWarpCursor(pScreen->context->inputInfo.pointer, pScreen, x, y);
 
     input_unlock();
 }
@@ -838,12 +838,12 @@ miPointerScreenFuncRec ephyrPointerScreenFuncs = {
 };
 
 static KdScreenInfo *
-screen_from_window(Window w)
+screen_from_window(XephyrContext* context, Window w)
 {
     int i = 0;
 
-    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
+    for (i = 0; i < context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = context->screenInfo.screens[i];
         KdPrivScreenPtr kdscrpriv = KdGetScreenPriv(pScreen);
         KdScreenInfo *screen = kdscrpriv->screen;
         EphyrScrPriv *scrpriv = screen->driver;
@@ -875,10 +875,10 @@ ephyrProcessErrorEvent(xcb_generic_event_t *xev)
 }
 
 static void
-ephyrProcessExpose(xcb_generic_event_t *xev)
+ephyrProcessExpose(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_expose_event_t *expose = (xcb_expose_event_t *)xev;
-    KdScreenInfo *screen = screen_from_window(expose->window);
+    KdScreenInfo *screen = screen_from_window(context, expose->window);
     EphyrScrPriv *scrpriv = screen->driver;
 
     /* Wait for the last expose event in a series of cliprects
@@ -897,10 +897,10 @@ ephyrProcessExpose(xcb_generic_event_t *xev)
 }
 
 static void
-ephyrProcessMouseMotion(xcb_generic_event_t *xev)
+ephyrProcessMouseMotion(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)xev;
-    KdScreenInfo *screen = screen_from_window(motion->event);
+    KdScreenInfo *screen = screen_from_window(context, motion->event);
 
     if (!ephyrMouse ||
         !((EphyrPointerPrivate *) ephyrMouse->driverPrivate)->enabled) {
@@ -912,7 +912,7 @@ ephyrProcessMouseMotion(xcb_generic_event_t *xev)
         EPHYR_LOG("warping mouse cursor. "
                   "cur_screen:%d, motion_screen:%d\n",
                   ephyrCursorScreen->myNum, screen->pScreen->myNum);
-        ephyrWarpCursor(inputInfo.pointer, screen->pScreen,
+        ephyrWarpCursor(context->inputInfo.pointer, screen->pScreen,
                         motion->event_x, motion->event_y);
     }
     else {
@@ -934,28 +934,28 @@ ephyrProcessMouseMotion(xcb_generic_event_t *xev)
 }
 
 static void
-ephyrProcessButtonPress(xcb_generic_event_t *xev)
+ephyrProcessButtonPress(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_button_press_event_t *button = (xcb_button_press_event_t *)xev;
 
     if (!ephyrMouse ||
         !((EphyrPointerPrivate *) ephyrMouse->driverPrivate)->enabled) {
-        EPHYR_LOG("skipping mouse press:%d\n", screen_from_window(button->event)->pScreen->myNum);
+        EPHYR_LOG("skipping mouse press:%d\n", screen_from_window(context, button->event)->pScreen->myNum);
         return;
     }
 
-    ephyrUpdateModifierState(button->state);
+    ephyrUpdateModifierState(context, button->state);
     /* This is a bit hacky. will break for button 5 ( defined as 0x10 )
      * Check KD_BUTTON defines in kdrive.h
      */
     mouseState |= 1 << (button->detail - 1);
 
-    EPHYR_LOG("enqueuing mouse press:%d\n", screen_from_window(button->event)->pScreen->myNum);
+    EPHYR_LOG("enqueuing mouse press:%d\n", screen_from_window(context, button->event)->pScreen->myNum);
     KdEnqueuePointerEvent(ephyrMouse, mouseState | KD_MOUSE_DELTA, 0, 0, 0);
 }
 
 static void
-ephyrProcessButtonRelease(xcb_generic_event_t *xev)
+ephyrProcessButtonRelease(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_button_press_event_t *button = (xcb_button_press_event_t *)xev;
 
@@ -964,10 +964,10 @@ ephyrProcessButtonRelease(xcb_generic_event_t *xev)
         return;
     }
 
-    ephyrUpdateModifierState(button->state);
+    ephyrUpdateModifierState(context, button->state);
     mouseState &= ~(1 << (button->detail - 1));
 
-    EPHYR_LOG("enqueuing mouse release:%d\n", screen_from_window(button->event)->pScreen->myNum);
+    EPHYR_LOG("enqueuing mouse release:%d\n", screen_from_window(context, button->event)->pScreen->myNum);
     KdEnqueuePointerEvent(ephyrMouse, mouseState | KD_MOUSE_DELTA, 0, 0, 0);
 }
 
@@ -995,7 +995,7 @@ ephyrUpdateGrabModifierState(int state)
 }
 
 static void
-ephyrProcessKeyPress(xcb_generic_event_t *xev)
+ephyrProcessKeyPress(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_key_press_event_t *key = (xcb_key_press_event_t *)xev;
 
@@ -1005,12 +1005,12 @@ ephyrProcessKeyPress(xcb_generic_event_t *xev)
     }
 
     ephyrUpdateGrabModifierState(key->state);
-    ephyrUpdateModifierState(key->state);
+    ephyrUpdateModifierState(context, key->state);
     KdEnqueueKeyboardEvent(ephyrKbd, key->detail, FALSE);
 }
 
 static void
-ephyrProcessKeyRelease(xcb_generic_event_t *xev)
+ephyrProcessKeyRelease(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_connection_t *conn = hostx_get_xcbconn();
     xcb_key_release_event_t *key = (xcb_key_release_event_t *)xev;
@@ -1028,7 +1028,7 @@ ephyrProcessKeyRelease(xcb_generic_event_t *xev)
         ((xcb_key_symbols_get_keysym(keysyms, key->detail, 0) == XK_Control_L
           || xcb_key_symbols_get_keysym(keysyms, key->detail, 0) == XK_Control_R)
          && (key->state & XCB_MOD_MASK_SHIFT)))) {
-        KdScreenInfo *screen = screen_from_window(key->event);
+        KdScreenInfo *screen = screen_from_window(context, key->event);
         EphyrScrPriv *scrpriv = screen->driver;
 
         if (grabbed_screen != -1) {
@@ -1089,16 +1089,16 @@ ephyrProcessKeyRelease(xcb_generic_event_t *xev)
      * better to just block shift+ctrls getting to kdrive all
      * together.
      */
-    ephyrUpdateModifierState(key->state);
+    ephyrUpdateModifierState(context, key->state);
     KdEnqueueKeyboardEvent(ephyrKbd, key->detail, TRUE);
 }
 
 static void
-ephyrProcessConfigureNotify(xcb_generic_event_t *xev)
+ephyrProcessConfigureNotify(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_configure_notify_event_t *configure =
         (xcb_configure_notify_event_t *)xev;
-    KdScreenInfo *screen = screen_from_window(configure->window);
+    KdScreenInfo *screen = screen_from_window(context, configure->window);
     EphyrScrPriv *scrpriv = screen->driver;
 
     if (!scrpriv ||
@@ -1112,7 +1112,7 @@ ephyrProcessConfigureNotify(xcb_generic_event_t *xev)
 }
 
 static void
-ephyrXcbProcessEvents(Bool queued_only)
+ephyrXcbProcessEvents(XephyrContext* context, Bool queued_only)
 {
     xcb_connection_t *conn = hostx_get_xcbconn();
     xcb_generic_event_t *expose = NULL, *configure = NULL;
@@ -1145,23 +1145,23 @@ ephyrXcbProcessEvents(Bool queued_only)
             break;
 
         case XCB_MOTION_NOTIFY:
-            ephyrProcessMouseMotion(xev);
+            ephyrProcessMouseMotion(context, xev);
             break;
 
         case XCB_KEY_PRESS:
-            ephyrProcessKeyPress(xev);
+            ephyrProcessKeyPress(context, xev);
             break;
 
         case XCB_KEY_RELEASE:
-            ephyrProcessKeyRelease(xev);
+            ephyrProcessKeyRelease(context, xev);
             break;
 
         case XCB_BUTTON_PRESS:
-            ephyrProcessButtonPress(xev);
+            ephyrProcessButtonPress(context, xev);
             break;
 
         case XCB_BUTTON_RELEASE:
-            ephyrProcessButtonRelease(xev);
+            ephyrProcessButtonRelease(context, xev);
             break;
 
         case XCB_CONFIGURE_NOTIFY:
@@ -1180,12 +1180,12 @@ ephyrXcbProcessEvents(Bool queued_only)
     }
 
     if (configure) {
-        ephyrProcessConfigureNotify(configure);
+        ephyrProcessConfigureNotify(context, configure);
         free(configure);
     }
 
     if (expose) {
-        ephyrProcessExpose(expose);
+        ephyrProcessExpose(context, expose);
         free(expose);
     }
 }
@@ -1193,7 +1193,8 @@ ephyrXcbProcessEvents(Bool queued_only)
 static void
 ephyrXcbNotify(int fd, int ready, void *data)
 {
-    ephyrXcbProcessEvents(FALSE);
+    XephyrContext* context = (XephyrContext*)data;
+    ephyrXcbProcessEvents(context, FALSE);
 }
 
 void
@@ -1319,7 +1320,7 @@ KdPointerDriver EphyrMouseDriver = {
 /* Keyboard */
 
 static Status
-EphyrKeyboardInit(KdKeyboardInfo * ki)
+EphyrKeyboardInit(KdKeyboardInfo * ki, XephyrContext* context)
 {
     KeySymsRec keySyms;
     CARD8 modmap[MAP_LENGTH];
@@ -1332,7 +1333,7 @@ EphyrKeyboardInit(KdKeyboardInfo * ki)
         XkbApplyMappingChange(ki->dixdev, &keySyms,
                               keySyms.minKeyCode,
                               keySyms.maxKeyCode - keySyms.minKeyCode + 1,
-                              modmap, xephyr_context->serverClient);
+                              modmap, context->serverClient);
         XkbDDXChangeControls(ki->dixdev, &controls, &controls);
         free(keySyms.map);
     }

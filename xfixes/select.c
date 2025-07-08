@@ -86,7 +86,7 @@ XFixesSelectionCallback(CallbackListPtr *callbacks, void *data, void *args)
                 .owner = (subtype == XFixesSetSelectionOwnerNotify) ?
                             selection->window : 0,
                 .selection = e->selection,
-                .timestamp = xephyr_context->currentTime.milliseconds,
+                .timestamp = context->currentTime.milliseconds,
                 .selectionTimestamp = selection->lastTimeChanged.milliseconds
             };
             WriteEventsToClient(e->pClient, 1, (xEvent *) &ev);
@@ -157,7 +157,7 @@ XFixesSelectSelectionInput(ClientPtr pClient,
          * catch window destroy
          */
         rc = dixLookupResourceByType(&val, pWindow->drawable.id,
-                                     SelectionWindowType, xephyr_context->serverClient,
+                                     SelectionWindowType, context->serverClient,
                                      DixGetAttrAccess);
         if (rc != Success)
             if (!AddResource(pWindow->drawable.id, SelectionWindowType,

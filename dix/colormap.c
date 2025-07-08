@@ -157,7 +157,8 @@ static int FreeCo(ColormapPtr /*pmap */ ,
                   int /*color */ ,
                   int /*npixIn */ ,
                   Pixel * /*ppixIn */ ,
-                  Pixel         /*mask */
+                  Pixel         /*mask */ ,
+                  XephyrContext* /*context */
     );
 
 static int TellNoMap(WindowPtr /*pwin */ ,
@@ -224,7 +225,7 @@ typedef struct _colorResource {
 
 /* Invariants:
  * refcnt == 0 means entry is empty
- * refcnt > 0 means entry is useable by many xephyr_context->clients, so it can't be changed
+ * refcnt > 0 means entry is useable by many context->clients, so it can't be changed
  * refcnt == AllocPrivate means entry owned by one client only
  * fShared should only be set if refcnt == AllocPrivate, and only in red map
  */
@@ -237,7 +238,7 @@ typedef struct _colorResource {
  */
 int
 CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
-               ColormapPtr *ppcmap, int alloc, int client)
+               ColormapPtr *ppcmap, int alloc, int client, XephyrContext* context)
 {
     int class, size;
     unsigned long sizebytes;
@@ -377,7 +378,7 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
     /*
      * Security creation/labeling check
      */
-    i = XaceHook(XACE_RESOURCE_ACCESS, xephyr_context->clients[client], mid, RT_COLORMAP,
+    i = XaceHook(XACE_RESOURCE_ACCESS, context->clients[client], mid, RT_COLORMAP,
                  pmap, RT_NONE, NULL, DixCreateAccess);
     if (i != Success) {
         FreeResource(mid, RT_NONE);
@@ -401,7 +402,7 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
  * \param value  must conform to DeleteType
  */
 int
-FreeColormap(void *value, XID mid)
+FreeColormap(void *value, XID mid, XephyrContext* context)
 {
     int i;
     EntryPtr pent;
@@ -527,7 +528,7 @@ TellGainedMap(WindowPtr pwin, void *value)
 }
 
 int
-CopyColormapAndFree(Colormap mid, ColormapPtr pSrc, int client)
+CopyColormapAndFree(Colormap mid, ColormapPtr pSrc, int client, XephyrContext* context)
 {
     ColormapPtr pmap = (ColormapPtr) NULL;
     int result, alloc, size;
@@ -543,7 +544,7 @@ CopyColormapAndFree(Colormap mid, ColormapPtr pSrc, int client)
     size = pVisual->ColormapEntries;
 
     /* If the create returns non-0, it failed */
-    result = CreateColormap(mid, pScreen, pVisual, &pmap, alloc, client);
+    result = CreateColormap(mid, pScreen, pVisual, &pmap, alloc, client, context);
     if (result != Success)
         return result;
     if (alloc == AllocAll) {
@@ -925,7 +926,7 @@ FindColor(ColormapPtr pmap, EntryPtr pentFirst, int size, xrgb * prgb,
 int
 AllocColor(ColormapPtr pmap,
            unsigned short *pred, unsigned short *pgreen, unsigned short *pblue,
-           Pixel * pPix, int client)
+           Pixel * pPix, int client, XephyrContext* context)
 {
     Pixel pixR, pixG, pixB;
     int entries;
@@ -1018,7 +1019,7 @@ AllocColor(ColormapPtr pmap,
 
             dixLookupResourceByType((void **) &prootmap,
                                     pmap->pScreen->defColormap, RT_COLORMAP,
-                                    xephyr_context->clients[client], DixReadAccess);
+                                    context->clients[client], DixReadAccess);
 
             if (pmap->class == prootmap->class)
                 FindColorInRootCmap(prootmap, prootmap->red, entries, &rgb,
@@ -1036,7 +1037,7 @@ AllocColor(ColormapPtr pmap,
 
             dixLookupResourceByType((void **) &prootmap,
                                     pmap->pScreen->defColormap, RT_COLORMAP,
-                                    xephyr_context->clients[client], DixReadAccess);
+                                    context->clients[client], DixReadAccess);
 
             if (pmap->class == prootmap->class) {
                 pixR = (*pPix & pVisual->redMask) >> pVisual->offsetRed;
@@ -1059,14 +1060,14 @@ AllocColor(ColormapPtr pmap,
         pixG = (*pPix & pVisual->greenMask) >> pVisual->offsetGreen;
         if (FindColor(pmap, pmap->green, NUMGREEN(pVisual), &rgb, &pixG,
                       GREENMAP, client, GreenComp) != Success) {
-            (void) FreeCo(pmap, client, REDMAP, 1, &pixR, (Pixel) 0);
+            (void) FreeCo(pmap, client, REDMAP, 1, &pixR, (Pixel) 0, context);
             return BadAlloc;
         }
         pixB = (*pPix & pVisual->blueMask) >> pVisual->offsetBlue;
         if (FindColor(pmap, pmap->blue, NUMBLUE(pVisual), &rgb, &pixB, BLUEMAP,
                       client, BlueComp) != Success) {
-            (void) FreeCo(pmap, client, GREENMAP, 1, &pixG, (Pixel) 0);
-            (void) FreeCo(pmap, client, REDMAP, 1, &pixR, (Pixel) 0);
+            (void) FreeCo(pmap, client, GREENMAP, 1, &pixG, (Pixel) 0, context);
+            (void) FreeCo(pmap, client, REDMAP, 1, &pixR, (Pixel) 0, context);
             return BadAlloc;
         }
         *pPix = pixR | pixG | pixB | ALPHAMASK(pVisual);
@@ -1083,7 +1084,7 @@ AllocColor(ColormapPtr pmap,
 
         pcr = malloc(sizeof(colorResource));
         if (!pcr) {
-            (void) FreeColors(pmap, client, 1, pPix, (Pixel) 0);
+            (void) FreeColors(pmap, client, 1, pPix, (Pixel) 0, context);
             return BadAlloc;
         }
         pcr->mid = pmap->mid;
@@ -1467,13 +1468,13 @@ FreePixels(ColormapPtr pmap, int client)
  *  \unused fakeid
  */
 int
-FreeClientPixels(void *value, XID fakeid)
+FreeClientPixels(void *value, XID fakeid, XephyrContext* context)
 {
     void *pmap;
     colorResource *pcr = value;
     int rc;
 
-    rc = dixLookupResourceByType(&pmap, pcr->mid, RT_COLORMAP, xephyr_context->serverClient,
+    rc = dixLookupResourceByType(&pmap, pcr->mid, RT_COLORMAP, context->serverClient,
                                  DixRemoveAccess);
     if (rc == Success)
         FreePixels((ColormapPtr) pmap, pcr->client);
@@ -1548,7 +1549,7 @@ AllocColorCells(int client, ColormapPtr pmap, int colors, int planes,
 int
 AllocColorPlanes(int client, ColormapPtr pmap, int colors,
                  int r, int g, int b, Bool contig, Pixel * pixels,
-                 Pixel * prmask, Pixel * pgmask, Pixel * pbmask)
+                 Pixel * prmask, Pixel * pgmask, Pixel * pbmask, XephyrContext* context)
 {
     int ok;
     Pixel mask, *ppixFirst;
@@ -1606,7 +1607,7 @@ AllocColorPlanes(int client, ColormapPtr pmap, int colors,
             /* set up the shared color cells */
             if (!AllocShared(pmap, pixels, colors, r, g, b,
                              *prmask, *pgmask, *pbmask, ppixFirst)) {
-                (void) FreeColors(pmap, client, colors, pixels, mask);
+                (void) FreeColors(pmap, client, colors, pixels, mask, context);
                 ok = BadAlloc;
             }
         }
@@ -2062,7 +2063,7 @@ AllocShared(ColormapPtr pmap, Pixel * ppix, int c, int r, int g, int b,
  * Free colors and/or cells (probably slow for large numbers)
  */
 int
-FreeColors(ColormapPtr pmap, int client, int count, Pixel * pixels, Pixel mask)
+FreeColors(ColormapPtr pmap, int client, int count, Pixel * pixels, Pixel mask, XephyrContext* context)
 {
     int rval, result, class;
     Pixel rmask;
@@ -2073,24 +2074,24 @@ FreeColors(ColormapPtr pmap, int client, int count, Pixel * pixels, Pixel mask)
     if ((class | DynamicClass) == DirectColor) {
         rmask = mask & RGBMASK(pmap->pVisual);
         result = FreeCo(pmap, client, REDMAP, count, pixels,
-                        mask & pmap->pVisual->redMask);
+                        mask & pmap->pVisual->redMask, context);
         /* If any of the three calls fails, we must report that, if more
          * than one fails, it's ok that we report the last one */
         rval = FreeCo(pmap, client, GREENMAP, count, pixels,
-                      mask & pmap->pVisual->greenMask);
+                      mask & pmap->pVisual->greenMask, context);
         if (rval != Success)
             result = rval;
         rval = FreeCo(pmap, client, BLUEMAP, count, pixels,
-                      mask & pmap->pVisual->blueMask);
+                      mask & pmap->pVisual->blueMask, context);
         if (rval != Success)
             result = rval;
     }
     else {
         rmask = mask & ((((Pixel) 1) << pmap->pVisual->nplanes) - 1);
-        result = FreeCo(pmap, client, PSEUDOMAP, count, pixels, rmask);
+        result = FreeCo(pmap, client, PSEUDOMAP, count, pixels, rmask, context);
     }
     if ((mask != rmask) && count) {
-        xephyr_context->clients[client]->errorValue = *pixels | mask;
+        context->clients[client]->errorValue = *pixels | mask;
         result = BadValue;
     }
     /* XXX should worry about removing any RT_CMAPENTRY resource */
@@ -2110,7 +2111,7 @@ FreeColors(ColormapPtr pmap, int client, int count, Pixel * pixels, Pixel mask)
  */
 static int
 FreeCo(ColormapPtr pmap, int client, int color, int npixIn, Pixel * ppixIn,
-       Pixel mask)
+       Pixel mask, XephyrContext* context)
 {
     Pixel *ppixClient, pixTest;
     int npixClient, npixNew, npix;
@@ -2168,7 +2169,7 @@ FreeCo(ColormapPtr pmap, int client, int color, int npixIn, Pixel * ppixIn,
         for (pptr = ppixIn, n = npixIn; --n >= 0; pptr++) {
             pixTest = ((*pptr | bits) & cmask) >> offset;
             if ((pixTest >= numents) || (*pptr & rgbbad)) {
-                xephyr_context->clients[client]->errorValue = *pptr | bits;
+                context->clients[client]->errorValue = *pptr | bits;
                 errVal = BadValue;
                 continue;
             }
@@ -2540,7 +2541,7 @@ ResizeVisualArray(ScreenPtr pScreen, int new_visual_count, DepthPtr depth)
 
     cdata.visuals = visuals;
     cdata.pScreen = pScreen;
-    FindClientResourcesByType(xephyr_context->serverClient, RT_COLORMAP,
+    FindClientResourcesByType(pScreen->context->serverClient, RT_COLORMAP,
                               _colormap_find_resource, &cdata);
 
     pScreen->visuals = visuals;

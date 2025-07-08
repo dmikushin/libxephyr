@@ -195,7 +195,7 @@ static void XdmcpSocketNotify(int fd, int ready, void *data);
 static CARD32 XdmcpTimerNotify(OsTimerPtr timer, CARD32 time, void *arg);
 
 /*
- * Register the Manufacturer xephyr_context->display ID
+ * Register the Manufacturer context->display ID
  */
 
 static ARRAY8 ManufacturerDisplayID;
@@ -229,11 +229,11 @@ XdmcpUseMsg(void)
     ErrorF
         ("-from local-address    specify the local address to connect from\n");
     ErrorF("-once                  Terminate server after one session\n");
-    ErrorF("-class xephyr_context->display-class   specify xephyr_context->display class to send in manage\n");
+    ErrorF("-class context->display-class   specify context->display class to send in manage\n");
 #ifdef HASXDMAUTH
     ErrorF("-cookie xdm-auth-bits  specify the magic cookie for XDMCP\n");
 #endif
-    ErrorF("-displayID xephyr_context->display-id  manufacturer xephyr_context->display ID for request\n");
+    ErrorF("-displayID context->display-id  manufacturer context->display ID for request\n");
 }
 
 static void
@@ -439,7 +439,7 @@ XdmcpSetAuthentication(const ARRAY8Ptr name)
 }
 
 /*
- * Register the host address for the xephyr_context->display
+ * Register the host address for the context->display
  */
 
 static ARRAY16 ConnectionTypes;
@@ -452,10 +452,10 @@ XdmcpRegisterConnection(int type, const char *address, int addrlen)
     int i;
     CARD8 *newAddress;
 
-    if (xdmcpGeneration != xephyr_context->serverGeneration) {
+    if (xdmcpGeneration != context->serverGeneration) {
         XdmcpDisposeARRAY16(&ConnectionTypes);
         XdmcpDisposeARRAYofARRAY8(&ConnectionAddresses);
-        xdmcpGeneration = xephyr_context->serverGeneration;
+        xdmcpGeneration = context->serverGeneration;
     }
     if (xdm_from != NULL) {     /* Only register the requested address */
         const void *regAddr = address;
@@ -590,7 +590,7 @@ xdmcp_start(void)
 }
 
 /*
- * initialize XDMCP; create the socket, compute the xephyr_context->display
+ * initialize XDMCP; create the socket, compute the context->display
  * number, set up the state machine
  */
 
@@ -607,7 +607,7 @@ XdmcpInit(void)
         XdmcpRegisterDisplayClass(defaultDisplayClass,
                                   strlen(defaultDisplayClass));
         AccessUsingXdmcp();
-        DisplayNumber = (CARD16) atoi(xephyr_context->display);
+        DisplayNumber = (CARD16) atoi(context->display);
         xdmcp_start();
     }
 }
@@ -1098,7 +1098,7 @@ send_request_msg(void)
     header.version = XDM_PROTOCOL_VERSION;
     header.opcode = (CARD16) REQUEST;
 
-    length = 2;                 /* xephyr_context->display number */
+    length = 2;                 /* context->display number */
     length += 1 + 2 * ConnectionTypes.length;   /* connection types */
     length += 1;                /* connection addresses */
     for (i = 0; i < ConnectionAddresses.length; i++)
@@ -1114,7 +1114,7 @@ send_request_msg(void)
     length += 1;                /* authorization names */
     for (i = 0; i < AuthorizationNames.length; i++)
         length += 2 + AuthorizationNames.data[i].length;
-    length += 2 + ManufacturerDisplayID.length; /* xephyr_context->display ID */
+    length += 2 + ManufacturerDisplayID.length; /* context->display ID */
     header.length = length;
 
     if (!XdmcpWriteHeader(&buffer, &header)) {

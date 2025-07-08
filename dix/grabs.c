@@ -86,7 +86,7 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
            (grab->grabtype == XI2) ? "xi2" :
            ((grab->grabtype == CORE) ? "core" : "xi1"), dev->name, dev->id);
 
-    client = xephyr_context->clients[CLIENT_ID(grab->resource)];
+    client = context->clients[CLIENT_ID(grab->resource)];
     if (client) {
         pid_t clientpid = GetClientPid(client);
         const char *cmdname = GetClientCmdName(client);
@@ -179,7 +179,7 @@ UngrabAllDevices(Bool kill_client)
         if (!dev->deviceGrab.grab)
             continue;
         PrintDeviceGrabInfo(dev);
-        client = xephyr_context->clients[CLIENT_ID(dev->deviceGrab.grab->resource)];
+        client = context->clients[CLIENT_ID(dev->deviceGrab.grab->resource)];
         if (!kill_client || !client || client->clientGone)
             dev->deviceGrab.DeactivateGrab(dev);
         if (kill_client)
@@ -317,7 +317,7 @@ CopyGrab(GrabPtr dst, const GrabPtr src)
 }
 
 int
-DeletePassiveGrab(void *value, XID id)
+DeletePassiveGrab(void *value, XID id, XephyrContext* context)
 {
     GrabPtr g, prev;
     GrabPtr pGrab = (GrabPtr) value;

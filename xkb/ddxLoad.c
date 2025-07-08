@@ -116,7 +116,7 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata)
     const char *xkmfile = "-";
 #endif
 
-    snprintf(keymap, sizeof(keymap), "server-%s", xephyr_context->display);
+    snprintf(keymap, sizeof(keymap), "server-%s", context->display);
 
     OutputDirectory(xkm_output_dir, sizeof(xkm_output_dir));
 

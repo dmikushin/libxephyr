@@ -233,10 +233,11 @@ typedef struct {
 } KdKeySymModsRec;
 
 typedef struct _KdKeyboardInfo KdKeyboardInfo;
+typedef struct _XephyrContext XephyrContext;
 
 typedef struct _KdKeyboardDriver {
     const char *name;
-    Bool (*Init) (KdKeyboardInfo *);
+    Bool (*Init) (KdKeyboardInfo *, XephyrContext*);
     Bool (*Enable) (KdKeyboardInfo *);
     void (*Leds) (KdKeyboardInfo *, int);
     void (*Bell) (KdKeyboardInfo *, int, int, int);
@@ -276,7 +277,7 @@ void KdRemoveKeyboardDriver(KdKeyboardDriver * driver);
 KdKeyboardInfo *KdNewKeyboard(void);
 void KdFreeKeyboard(KdKeyboardInfo * ki);
 int KdAddConfigKeyboard(char *pointer);
-int KdAddKeyboard(KdKeyboardInfo * ki);
+int KdAddKeyboard(KdKeyboardInfo * ki, XephyrContext* context);
 void KdRemoveKeyboard(KdKeyboardInfo * ki);
 
 typedef struct _KdPointerMatrix {
@@ -376,7 +377,7 @@ void
 
 /* kinput.c */
 void
- KdInitInput(void);
+ KdInitInput(XephyrContext* context);
 void
  KdCloseInput(void);
 

@@ -92,10 +92,10 @@ GlxMappingReset(void)
 {
     int i;
 
-    for (i=0; i<xephyr_context->screenInfo.numScreens; i++) {
-        GlxScreenPriv *priv = xglvGetScreenPrivate(xephyr_context->screenInfo.screens[i]);
+    for (i=0; i<context->screenInfo.numScreens; i++) {
+        GlxScreenPriv *priv = xglvGetScreenPrivate(context->screenInfo.screens[i]);
         if (priv != NULL) {
-            xglvSetScreenPrivate(xephyr_context->screenInfo.screens[i], NULL);
+            xglvSetScreenPrivate(context->screenInfo.screens[i], NULL);
             free(priv);
         }
     }
@@ -106,8 +106,8 @@ GlxMappingInit(void)
 {
     int i;
 
-    for (i=0; i<xephyr_context->screenInfo.numScreens; i++) {
-        if (GlxGetScreen(xephyr_context->screenInfo.screens[i]) == NULL) {
+    for (i=0; i<context->screenInfo.numScreens; i++) {
+        if (GlxGetScreen(context->screenInfo.screens[i]) == NULL) {
             GlxMappingReset();
             return FALSE;
         }
@@ -141,14 +141,14 @@ GlxGetClientData(ClientPtr client)
     GlxClientPriv *cl = xglvGetClientPrivate(client);
     if (cl == NULL) {
         cl = calloc(1, sizeof(GlxClientPriv)
-                + xephyr_context->screenInfo.numScreens * sizeof(GlxServerVendor *));
+                + context->screenInfo.numScreens * sizeof(GlxServerVendor *));
         if (cl != NULL) {
             int i;
 
             cl->vendors = (GlxServerVendor **) (cl + 1);
-            for (i=0; i<xephyr_context->screenInfo.numScreens; i++)
+            for (i=0; i<context->screenInfo.numScreens; i++)
             {
-                cl->vendors[i] = GlxGetVendorForScreen(NULL, xephyr_context->screenInfo.screens[i]);
+                cl->vendors[i] = GlxGetVendorForScreen(NULL, context->screenInfo.screens[i]);
             }
 
             xglvSetClientPrivate(client, cl);
@@ -245,8 +245,8 @@ GlxExtensionInit(void)
     CallCallbacks(&vndInitCallbackListPtr, extEntry);
 
     /* We'd better have found at least one vendor */
-    for (int i = 0; i < xephyr_context->screenInfo.numScreens; i++)
-        if (GlxGetVendorForScreen(xephyr_context->serverClient, xephyr_context->screenInfo.screens[i]))
+    for (int i = 0; i < context->screenInfo.numScreens; i++)
+        if (GlxGetVendorForScreen(context->serverClient, context->screenInfo.screens[i]))
             return;
     extEntry->base = 0;
 }

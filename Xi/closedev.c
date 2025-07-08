@@ -154,8 +154,8 @@ ProcXCloseDevice(ClientPtr client)
      * and selected by this client.
      * Delete passive grabs from all windows for this device.      */
 
-    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
-        pWin = xephyr_context->screenInfo.screens[i]->root;
+    for (i = 0; i < context->screenInfo.numScreens; i++) {
+        pWin = context->screenInfo.screens[i]->root;
         DeleteDeviceEvents(d, pWin, client);
         p1 = pWin->firstChild;
         DeleteEventsFromChildren(d, p1, client);

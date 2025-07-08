@@ -93,8 +93,8 @@ enum ScrollType {
  * This struct stores the core event mask for each client except the client
  * that created the window.
  *
- * Each window that has events selected from other xephyr_context->clients has at least one of
- * these masks. If multiple xephyr_context->clients selected for events on the same window,
+ * Each window that has events selected from other context->clients has at least one of
+ * these masks. If multiple context->clients selected for events on the same window,
  * these masks are in a linked list.
  *
  * The event mask for the client that created the window is stored in
@@ -141,16 +141,16 @@ typedef struct _InputClients {
  */
 typedef struct _OtherInputMasks {
     /**
-     * Bitwise OR of all masks by all xephyr_context->clients and the window's parent's masks.
+     * Bitwise OR of all masks by all context->clients and the window's parent's masks.
      */
     Mask deliverableEvents[EMASKSIZE];
     /**
-     * Bitwise OR of all masks by all xephyr_context->clients on this window.
+     * Bitwise OR of all masks by all context->clients on this window.
      */
     Mask inputEvents[EMASKSIZE];
     /** The do-not-propagate masks for each device. */
     Mask dontPropagateMask[EMASKSIZE];
-    /** The xephyr_context->clients that selected for events */
+    /** The context->clients that selected for events */
     InputClientsPtr inputClients;
     /* XI2 event masks. One per device, each bit is a mask of (1 << type) */
     struct _XI2Mask *xi2mask;
@@ -485,7 +485,7 @@ typedef struct _XIPropertyValue {
 typedef struct _XIProperty {
     struct _XIProperty *next;
     Atom propertyName;
-    BOOL deletable;             /* xephyr_context->clients can delete this prop? */
+    BOOL deletable;             /* context->clients can delete this prop? */
     XIPropertyValueRec value;
 } XIPropertyRec;
 
@@ -631,6 +631,9 @@ typedef struct _DeviceIntRec {
     int xtest_master_id;
 
     struct _SyncCounter *idle_counter;
+    
+    /* Context for Xephyr server instance */
+    struct _XephyrContext *context;
 } DeviceIntRec;
 
 typedef struct {
@@ -643,7 +646,8 @@ typedef struct {
     DeviceIntPtr all_master_devices;
 } InputInfo;
 
-extern _X_EXPORT InputInfo inputInfo;
+/* DO NOT USE - inputInfo is now part of XephyrContext */
+/* extern _X_EXPORT InputInfo inputInfo; */
 
 /* for keeping the events for devices grabbed synchronously */
 typedef struct _QdEvent *QdEventPtr;

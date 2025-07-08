@@ -59,9 +59,9 @@ SOFTWARE.
 #include "dixstruct.h"
 #include "os.h"
 /* Original global: 
-   ScreenInfo xephyr_context->screenInfo; */
+   ScreenInfo screenInfo.screens[0]->context->screenInfo; */
 
-/* KeybdCtrl xephyr_context->defaultKeyboardControl = {
+/* KeybdCtrl context->defaultKeyboardControl = {
     DEFAULT_KEYBOARD_CLICK,
     DEFAULT_BELL,
     DEFAULT_BELL_PITCH,
@@ -72,50 +72,50 @@ SOFTWARE.
     0
 }; */
 
-/* PtrCtrl xephyr_context->defaultPointerControl = {
+/* PtrCtrl context->defaultPointerControl = {
     DEFAULT_PTR_NUMERATOR,
     DEFAULT_PTR_DENOMINATOR,
     DEFAULT_PTR_THRESHOLD,
     0
 }; */
 /* Original global: */
-/* ClientPtr xephyr_context->clients[MAXCLIENTS]; */
-/* Original global: ClientPtr xephyr_context->serverClient; */
-/* Original global: int xephyr_context->currentMaxClients; */          /* current size of xephyr_context->clients array */
-/* Original global: long xephyr_context->maxBigRequestSize = MAX_BIG_REQUEST_SIZE; */
+/* ClientPtr context->clients[MAXCLIENTS]; */
+/* Original global: ClientPtr context->serverClient; */
+/* Original global: int context->currentMaxClients; */          /* current size of context->clients array */
+/* Original global: long context->maxBigRequestSize = MAX_BIG_REQUEST_SIZE; */
 /* Original global:  */
-/* unsigned long xephyr_context->globalSerialNumber = 0; */
-/* Original global: unsigned long xephyr_context->serverGeneration = 0; */
+/* unsigned long context->globalSerialNumber = 0; */
+/* Original global: unsigned long context->serverGeneration = 0; */
 
 /* these next four are initialized in main.c */
-/* Original global: CARD32 xephyr_context->ScreenSaverTime; */
-/* Original global: CARD32 xephyr_context->ScreenSaverInterval; */
-/* Original global: int xephyr_context->ScreenSaverBlanking; */
-/* Original global: int xephyr_context->ScreenSaverAllowExposures; */
+/* Original global: CARD32 context->ScreenSaverTime; */
+/* Original global: CARD32 context->ScreenSaverInterval; */
+/* Original global: int context->ScreenSaverBlanking; */
+/* Original global: int context->ScreenSaverAllowExposures; */
 
 /* default time of 10 minutes */
-/* Original global: CARD32 xephyr_context->defaultScreenSaverTime = (10 * (60 * 1000)); */
-/* Original global: CARD32 xephyr_context->defaultScreenSaverInterval = (10 * (60 * 1000)); */
-/* Original global: int xephyr_context->defaultScreenSaverBlanking = PreferBlanking; */
-/* Original global: int xephyr_context->defaultScreenSaverAllowExposures = AllowExposures; */
+/* Original global: CARD32 context->defaultScreenSaverTime = (10 * (60 * 1000)); */
+/* Original global: CARD32 context->defaultScreenSaverInterval = (10 * (60 * 1000)); */
+/* Original global: int context->defaultScreenSaverBlanking = PreferBlanking; */
+/* Original global: int context->defaultScreenSaverAllowExposures = AllowExposures; */
 
 #ifdef SCREENSAVER
-/* Original global: Bool xephyr_context->screenSaverSuspended = FALSE; */
+/* Original global: Bool context->screenSaverSuspended = FALSE; */
 #endif
 /* Original global: */
-/* const char *xephyr_context->defaultFontPath = COMPILEDDEFAULTFONTPATH; */
-/* Original global: FontPtr xephyr_context->defaultFont; */            /* not declared in dix.h to avoid including font.h in
+/* const char *context->defaultFontPath = COMPILEDDEFAULTFONTPATH; */
+/* Original global: FontPtr context->defaultFont; */            /* not declared in dix.h to avoid including font.h in
                                    every compilation of dix code */
-/* Original global: CursorPtr xephyr_context->rootCursor; */
-/* Original global: Bool xephyr_context->party_like_its_1989 = FALSE; */
-/* Original global: Bool xephyr_context->whiteRoot = FALSE; */
+/* Original global: CursorPtr context->rootCursor; */
+/* Original global: Bool context->party_like_its_1989 = FALSE; */
+/* Original global: Bool context->whiteRoot = FALSE; */
 /* Original global: */
-/* TimeStamp xephyr_context->currentTime; */
+/* TimeStamp screenInfo.screens[0]->context->currentTime; */
 /* Original global: */
-/* int xephyr_context->defaultColorVisualClass = -1; */
-/* Original global: int xephyr_context->monitorResolution = 0; */
+/* int context->defaultColorVisualClass = -1; */
+/* Original global: int context->monitorResolution = 0; */
 /* Original global: */
-/* const char *xephyr_context->display; */
-/* Original global: int xephyr_context->displayfd = -1; */
-/* Original global: Bool xephyr_context->explicit_display = FALSE; */
-/* Original global: char *xephyr_context->ConnectionInfo; */
+/* const char *context->display; */
+/* Original global: int context->displayfd = -1; */
+/* Original global: Bool context->explicit_display = FALSE; */
+/* Original global: char *context->ConnectionInfo; */

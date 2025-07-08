@@ -89,7 +89,7 @@ ProcRRGetProviders (ClientPtr client)
             .type = X_Reply,
             .sequenceNumber = client->sequence,
             .length = 0,
-            .timestamp = xephyr_context->currentTime.milliseconds,
+            .timestamp = context->currentTime.milliseconds,
             .nProviders = 0
         };
         extra = NULL;

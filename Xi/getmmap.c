@@ -65,7 +65,7 @@ SOFTWARE.
 /***********************************************************************
  *
  * This procedure gets the modifier mapping for an extension device,
- * for xephyr_context->clients on machines with a different byte ordering than the server.
+ * for context->clients on machines with a different byte ordering than the server.
  *
  */
 

@@ -207,9 +207,9 @@ static Bool NewHost(int /*family */ ,
                     int /* addingLocalHosts */ );
 
 /* XFree86 bug #156: To keep track of which hosts were explicitly requested in
-   /etc/X<xephyr_context->display>.hosts, we've added a requested field to the HOST struct,
+   /etc/X<context->display>.hosts, we've added a requested field to the HOST struct,
    and a LocalHostRequested variable.  These default to FALSE, but are set
-   to TRUE in ResetHosts when reading in /etc/X<xephyr_context->display>.hosts.  They are
+   to TRUE in ResetHosts when reading in /etc/X<context->display>.hosts.  They are
    checked in DisableLocalHost(), which is called to disable the default
    local host entries when stronger authentication is turned on. */
 
@@ -952,7 +952,7 @@ ResetHosts(const char *display)
     int len;
 
     siTypesInitialize();
-    AccessEnabled = !xephyr_context->defeatAccessControl;
+    AccessEnabled = !context->defeatAccessControl;
     LocalHostEnabled = FALSE;
     while ((host = validhosts) != 0) {
         validhosts = host->next;
@@ -966,11 +966,11 @@ ResetHosts(const char *display)
 #endif
 #define ETC_HOST_SUFFIX ".hosts"
     fnamelen = strlen(ETC_HOST_PREFIX) + strlen(ETC_HOST_SUFFIX) +
-        strlen(xephyr_context->display) + 1;
+        strlen(context->display) + 1;
     if (fnamelen > sizeof(fname))
-        FatalError("Display name `%s' is too long\n", xephyr_context->display);
+        FatalError("Display name `%s' is too long\n", context->display);
     snprintf(fname, sizeof(fname), ETC_HOST_PREFIX "%s" ETC_HOST_SUFFIX,
-             xephyr_context->display);
+             context->display);
 
     if ((fd = fopen(fname, "r")) != 0) {
         while (fgets(ohostname, sizeof(ohostname), fd)) {
@@ -1279,7 +1279,7 @@ AuthorizedClient(ClientPtr client)
 {
     int rc;
 
-    if (!client || xephyr_context->defeatAccessControl)
+    if (!client || context->defeatAccessControl)
         return Success;
 
     /* untrusted clients can't change host access */

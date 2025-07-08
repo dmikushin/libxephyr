@@ -229,7 +229,7 @@ OsSignal(int sig, OsSigHandlerPtr handler)
  * Explicit support for a server lock file like the ones used for UUCP.
  * For architectures with virtual terminals that can run more than one
  * server at a time.  This keeps the servers from stomping on each other
- * if the user forgets to give them different xephyr_context->display numbers.
+ * if the user forgets to give them different context->display numbers.
  */
 #define LOCK_DIR "/tmp"
 #define LOCK_TMP_PREFIX "/.tX"
@@ -273,7 +273,7 @@ LockServer(void)
     /*
      * Path names
      */
-    snprintf(port, sizeof(port), "%d", atoi(xephyr_context->display));
+    snprintf(port, sizeof(port), "%d", atoi(context->display));
     len = strlen(LOCK_PREFIX) > strlen(LOCK_TMP_PREFIX) ? strlen(LOCK_PREFIX) :
         strlen(LOCK_TMP_PREFIX);
     len += strlen(tmppath) + strlen(port) + strlen(LOCK_SUFFIX) + 1;
@@ -370,7 +370,7 @@ LockServer(void)
                  */
                 unlink(tmp);
                 FatalError
-                    ("Server is already active for xephyr_context->display %s\n%s %s\n%s\n",
+                    ("Server is already active for context->display %s\n%s %s\n%s\n",
                      port, "\tIf this server is no longer running, remove",
                      LockFile, "\tand start again.");
             }
@@ -514,7 +514,7 @@ GetTimeInMicros(void)
 void
 UseMsg(void)
 {
-    ErrorF("use: X [:<xephyr_context->display>] [option]\n");
+    ErrorF("use: X [:<context->display>] [option]\n");
     ErrorF("-a #                   default pointer acceleration (factor)\n");
     ErrorF("-ac                    disable access control restrictions\n");
     ErrorF("-audit int             set audit trail level\n");
@@ -527,7 +527,7 @@ UseMsg(void)
     ErrorF("-cc int                default color visual class\n");
     ErrorF("-nocursor              disable the cursor\n");
     ErrorF("-core                  generate core dump on fatal error\n");
-    ErrorF("-xephyr_context->displayfd fd          file descriptor to write xephyr_context->display number to when ready to connect\n");
+    ErrorF("-context->displayfd fd          file descriptor to write context->display number to when ready to connect\n");
     ErrorF("-dpi int               screen resolution in dots per inch\n");
 #ifdef DPMSExtension
     ErrorF("-dpms                  disables VESA DPMS monitor control\n");
@@ -553,7 +553,7 @@ UseMsg(void)
 #ifdef LOCK_SERVER
     ErrorF("-nolock                disable the locking mechanism\n");
 #endif
-    ErrorF("-maxclients n          set maximum number of xephyr_context->clients (power of two)\n");
+    ErrorF("-maxclients n          set maximum number of context->clients (power of two)\n");
     ErrorF("-nolisten string       don't listen on protocol\n");
     ErrorF("-listen string         listen on protocol\n");
     ErrorF("-noreset               don't reset after last client exists\n");
@@ -595,9 +595,9 @@ UseMsg(void)
 }
 
 /*  This function performs a rudimentary sanity check
- *  on the xephyr_context->display name passed in on the command-line,
+ *  on the context->display name passed in on the command-line,
  *  since this string is used to generate filenames.
- *  It is especially important that the xephyr_context->display name
+ *  It is especially important that the context->display name
  *  not contain a "/" and not start with a "-".
  *                                            --kvajk
  */
@@ -619,7 +619,7 @@ VerifyDisplayName(const char *d)
     if (strchr(d, '/') != (char *) 0)
         return 0;               /*  very important!!!  */
 
-    /* Since we run atoi() on the xephyr_context->display later, only allow
+    /* Since we run atoi() on the context->display later, only allow
        for digits, or exception of :0.0 and similar (two decimal points max)
        */
     for (i = 0; i < strlen(d); i++) {
@@ -667,12 +667,12 @@ ProcessCommandLine(int argc, char *argv[])
 {
     int i, skip;
 
-    xephyr_context->defaultKeyboardControl.autoRepeat = TRUE;
+    context->defaultKeyboardControl.autoRepeat = TRUE;
 
 #ifdef NO_PART_NET
     PartialNetwork = FALSE;
 #else
-    xephyr_context->PartialNetwork = TRUE;
+    context->PartialNetwork = TRUE;
 #endif
 
     for (i = 0; defaultNoListenList[i] != NULL; i++) {
@@ -687,24 +687,24 @@ ProcessCommandLine(int argc, char *argv[])
             i += (skip - 1);
         }
         else if (argv[i][0] == ':') {
-            /* initialize xephyr_context->display */
-            xephyr_context->display = argv[i];
-            xephyr_context->explicit_display = TRUE;
-            xephyr_context->display++;
-            if (!VerifyDisplayName(xephyr_context->display)) {
-                ErrorF("Bad xephyr_context->display name: %s\n", xephyr_context->display);
+            /* initialize context->display */
+            context->display = argv[i];
+            context->explicit_display = TRUE;
+            context->display++;
+            if (!VerifyDisplayName(context->display)) {
+                ErrorF("Bad context->display name: %s\n", context->display);
                 UseMsg();
-                FatalError("Bad xephyr_context->display name, exiting: %s\n", xephyr_context->display);
+                FatalError("Bad context->display name, exiting: %s\n", context->display);
             }
         }
         else if (strcmp(argv[i], "-a") == 0) {
             if (++i < argc)
-                xephyr_context->defaultPointerControl.num = atoi(argv[i]);
+                context->defaultPointerControl.num = atoi(argv[i]);
             else
                 UseMsg();
         }
         else if (strcmp(argv[i], "-ac") == 0) {
-            xephyr_context->defeatAccessControl = TRUE;
+            context->defeatAccessControl = TRUE;
         }
         else if (strcmp(argv[i], "-audit") == 0) {
             if (++i < argc)
@@ -720,21 +720,21 @@ ProcessCommandLine(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-br") == 0);  /* default */
         else if (strcmp(argv[i], "+bs") == 0)
-            xephyr_context->enableBackingStore = TRUE;
+            context->enableBackingStore = TRUE;
         else if (strcmp(argv[i], "-bs") == 0)
-            xephyr_context->disableBackingStore = TRUE;
+            context->disableBackingStore = TRUE;
         else if (strcmp(argv[i], "c") == 0) {
             if (++i < argc)
-                xephyr_context->defaultKeyboardControl.click = atoi(argv[i]);
+                context->defaultKeyboardControl.click = atoi(argv[i]);
             else
                 UseMsg();
         }
         else if (strcmp(argv[i], "-c") == 0) {
-            xephyr_context->defaultKeyboardControl.click = 0;
+            context->defaultKeyboardControl.click = 0;
         }
         else if (strcmp(argv[i], "-cc") == 0) {
             if (++i < argc)
-                xephyr_context->defaultColorVisualClass = atoi(argv[i]);
+                context->defaultColorVisualClass = atoi(argv[i]);
             else
                 UseMsg();
         }
@@ -753,13 +753,13 @@ ProcessCommandLine(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-dpi") == 0) {
             if (++i < argc)
-                xephyr_context->monitorResolution = atoi(argv[i]);
+                context->monitorResolution = atoi(argv[i]);
             else
                 UseMsg();
         }
-        else if (strcmp(argv[i], "-xephyr_context->displayfd") == 0) {
+        else if (strcmp(argv[i], "-context->displayfd") == 0) {
             if (++i < argc) {
-                xephyr_context->displayfd = atoi(argv[i]);
+                context->displayfd = atoi(argv[i]);
 #ifdef LOCK_SERVER
                 nolock = TRUE;
 #endif
@@ -779,7 +779,7 @@ ProcessCommandLine(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-f") == 0) {
             if (++i < argc)
-                xephyr_context->defaultKeyboardControl.bell = atoi(argv[i]);
+                context->defaultKeyboardControl.bell = atoi(argv[i]);
             else
                 UseMsg();
         }
@@ -794,7 +794,7 @@ ProcessCommandLine(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-fp") == 0) {
             if (++i < argc) {
-                xephyr_context->defaultFontPath = argv[i];
+                context->defaultFontPath = argv[i];
             }
             else
                 UseMsg();
@@ -804,9 +804,9 @@ ProcessCommandLine(int argc, char *argv[])
             exit(0);
         }
         else if (strcmp(argv[i], "+iglx") == 0)
-            xephyr_context->enableIndirectGLX = TRUE;
+            context->enableIndirectGLX = TRUE;
         else if (strcmp(argv[i], "-iglx") == 0)
-            xephyr_context->enableIndirectGLX = FALSE;
+            context->enableIndirectGLX = FALSE;
         else if ((skip = XkbProcessArguments(argc, argv, i)) != 0) {
             if (skip > 0)
                 i += skip - 1;
@@ -816,9 +816,9 @@ ProcessCommandLine(int argc, char *argv[])
 #ifdef RLIMIT_DATA
         else if (strcmp(argv[i], "-ld") == 0) {
             if (++i < argc) {
-                xephyr_context->limitDataSpace = atoi(argv[i]);
-                if (xephyr_context->limitDataSpace > 0)
-                    xephyr_context->limitDataSpace *= 1024;
+                context->limitDataSpace = atoi(argv[i]);
+                if (context->limitDataSpace > 0)
+                    context->limitDataSpace *= 1024;
             }
             else
                 UseMsg();
@@ -827,7 +827,7 @@ ProcessCommandLine(int argc, char *argv[])
 #ifdef RLIMIT_NOFILE
         else if (strcmp(argv[i], "-lf") == 0) {
             if (++i < argc)
-                xephyr_context->limitNoFile = atoi(argv[i]);
+                context->limitNoFile = atoi(argv[i]);
             else
                 UseMsg();
         }
@@ -835,9 +835,9 @@ ProcessCommandLine(int argc, char *argv[])
 #ifdef RLIMIT_STACK
         else if (strcmp(argv[i], "-ls") == 0) {
             if (++i < argc) {
-                xephyr_context->limitStackSpace = atoi(argv[i]);
-                if (xephyr_context->limitStackSpace > 0)
-                    xephyr_context->limitStackSpace *= 1024;
+                context->limitStackSpace = atoi(argv[i]);
+                if (context->limitStackSpace > 0)
+                    context->limitStackSpace *= 1024;
             }
             else
                 UseMsg();
@@ -895,7 +895,7 @@ ProcessCommandLine(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-p") == 0) {
             if (++i < argc)
-                xephyr_context->defaultScreenSaverInterval = ((CARD32) atoi(argv[i])) *
+                context->defaultScreenSaverInterval = ((CARD32) atoi(argv[i])) *
                     MILLI_PER_MIN;
             else
                 UseMsg();
@@ -904,18 +904,18 @@ ProcessCommandLine(int argc, char *argv[])
             dispatchException = DE_TERMINATE;
         }
         else if (strcmp(argv[i], "-pn") == 0)
-            xephyr_context->PartialNetwork = TRUE;
+            context->PartialNetwork = TRUE;
         else if (strcmp(argv[i], "-nopn") == 0)
-            xephyr_context->PartialNetwork = FALSE;
+            context->PartialNetwork = FALSE;
         else if (strcmp(argv[i], "r") == 0)
-            xephyr_context->defaultKeyboardControl.autoRepeat = TRUE;
+            context->defaultKeyboardControl.autoRepeat = TRUE;
         else if (strcmp(argv[i], "-r") == 0)
-            xephyr_context->defaultKeyboardControl.autoRepeat = FALSE;
+            context->defaultKeyboardControl.autoRepeat = FALSE;
         else if (strcmp(argv[i], "-retro") == 0)
-            xephyr_context->party_like_its_1989 = TRUE;
+            context->party_like_its_1989 = TRUE;
         else if (strcmp(argv[i], "-s") == 0) {
             if (++i < argc)
-                xephyr_context->defaultScreenSaverTime = ((CARD32) atoi(argv[i])) *
+                context->defaultScreenSaverTime = ((CARD32) atoi(argv[i])) *
                     MILLI_PER_MIN;
             else
                 UseMsg();
@@ -928,7 +928,7 @@ ProcessCommandLine(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-t") == 0) {
             if (++i < argc)
-                xephyr_context->defaultPointerControl.threshold = atoi(argv[i]);
+                context->defaultPointerControl.threshold = atoi(argv[i]);
             else
                 UseMsg();
         }
@@ -940,18 +940,18 @@ ProcessCommandLine(int argc, char *argv[])
             terminateDelay = max(0, terminateDelay);
         }
         else if (strcmp(argv[i], "-tst") == 0) {
-            xephyr_context->noTestExtensions = TRUE;
+            context->noTestExtensions = TRUE;
         }
         else if (strcmp(argv[i], "v") == 0)
-            xephyr_context->defaultScreenSaverBlanking = PreferBlanking;
+            context->defaultScreenSaverBlanking = PreferBlanking;
         else if (strcmp(argv[i], "-v") == 0)
-            xephyr_context->defaultScreenSaverBlanking = DontPreferBlanking;
+            context->defaultScreenSaverBlanking = DontPreferBlanking;
         else if (strcmp(argv[i], "-wr") == 0)
-            xephyr_context->whiteRoot = TRUE;
+            context->whiteRoot = TRUE;
         else if (strcmp(argv[i], "-background") == 0) {
             if (++i < argc) {
                 if (!strcmp(argv[i], "none"))
-                    xephyr_context->bgNoneRoot = TRUE;
+                    context->bgNoneRoot = TRUE;
                 else
                     UseMsg();
             }
@@ -962,7 +962,7 @@ ProcessCommandLine(int argc, char *argv[])
 
                 /* Request size > 128MB does not make much sense... */
                 if (reqSizeArg > 0L && reqSizeArg < 128L) {
-                    xephyr_context->maxBigRequestSize = (reqSizeArg * 1048576L) - 1L;
+                    context->maxBigRequestSize = (reqSizeArg * 1048576L) - 1L;
                 }
                 else {
                     UseMsg();
@@ -1029,7 +1029,7 @@ ProcessCommandLine(int argc, char *argv[])
                 UseMsg();
         }
         else if (strcmp(argv[i], "-sigstop") == 0) {
-            xephyr_context->RunFromSigStopParent = TRUE;
+            context->RunFromSigStopParent = TRUE;
         }
         else if (strcmp(argv[i], "+extension") == 0) {
             if (++i < argc) {
@@ -2169,7 +2169,7 @@ FormatUInt64Hex(uint64_t num, char *string)
 #if !defined(WIN32) || defined(__CYGWIN__)
 /* Move a file descriptor out of the way of our select mask; this
  * is useful for file descriptors which will never appear in the
- * select mask to avoid reducing the number of xephyr_context->clients that can
+ * select mask to avoid reducing the number of context->clients that can
  * connect to the server
  */
 int

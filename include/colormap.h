@@ -47,9 +47,13 @@ SOFTWARE.
 #ifndef CMAP_H
 #define CMAP_H 1
 
+typedef struct _XephyrContext XephyrContext;
+
 #include <X11/Xproto.h>
 #include "screenint.h"
 #include "window.h"
+
+typedef struct _XephyrContext XephyrContext;
 
 /* these follow X.h's AllocNone and AllocAll */
 #define CM_PSCREEN 2
@@ -80,10 +84,12 @@ extern _X_EXPORT int CreateColormap(Colormap /*mid */ ,
                                     VisualPtr /*pVisual */ ,
                                     ColormapPtr * /*ppcmap */ ,
                                     int /*alloc */ ,
-                                    int /*client */ );
+                                    int /*client */ ,
+                                    XephyrContext* /*context*/ );
 
 extern _X_EXPORT int FreeColormap(void *pmap,
-                                  XID mid);
+                                  XID mid,
+                                  XephyrContext* context);
 
 extern _X_EXPORT int TellLostMap(WindowPtr pwin,
                                  void *value);
@@ -93,14 +99,16 @@ extern _X_EXPORT int TellGainedMap(WindowPtr pwin,
 
 extern _X_EXPORT int CopyColormapAndFree(Colormap /*mid */ ,
                                          ColormapPtr /*pSrc */ ,
-                                         int /*client */ );
+                                         int /*client */ ,
+                                         XephyrContext* /*context*/ );
 
 extern _X_EXPORT int AllocColor(ColormapPtr /*pmap */ ,
                                 unsigned short * /*pred */ ,
                                 unsigned short * /*pgreen */ ,
                                 unsigned short * /*pblue */ ,
                                 Pixel * /*pPix */ ,
-                                int /*client */ );
+                                int /*client */ ,
+                                XephyrContext* /*context*/ );
 
 extern _X_EXPORT void FakeAllocColor(ColormapPtr /*pmap */ ,
                                      xColorItem * /*item */ );
@@ -115,7 +123,8 @@ extern _X_EXPORT int QueryColors(ColormapPtr /*pmap */ ,
                                  ClientPtr client);
 
 extern _X_EXPORT int FreeClientPixels(void *pcr,
-                                      XID fakeid);
+                                      XID fakeid,
+                                      XephyrContext* context);
 
 extern _X_EXPORT int AllocColorCells(int /*client */ ,
                                      ColormapPtr /*pmap */ ,
@@ -135,13 +144,15 @@ extern _X_EXPORT int AllocColorPlanes(int /*client */ ,
                                       Pixel * /*pixels */ ,
                                       Pixel * /*prmask */ ,
                                       Pixel * /*pgmask */ ,
-                                      Pixel * /*pbmask */ );
+                                      Pixel * /*pbmask */ ,
+                                      XephyrContext* /*context*/ );
 
 extern _X_EXPORT int FreeColors(ColormapPtr /*pmap */ ,
                                 int /*client */ ,
                                 int /*count */ ,
                                 Pixel * /*pixels */ ,
-                                Pixel /*mask */ );
+                                Pixel /*mask */ ,
+                                XephyrContext* /*context*/ );
 
 extern _X_EXPORT int StoreColors(ColormapPtr /*pmap */ ,
                                  int /*count */ ,

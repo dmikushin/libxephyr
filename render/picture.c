@@ -423,7 +423,7 @@ PictureInitIndexedFormat(ScreenPtr pScreen, PictFormatPtr format)
     if (format->index.vid == pScreen->rootVisual) {
         dixLookupResourceByType((void **) &format->index.pColormap,
                                 pScreen->defColormap, RT_COLORMAP,
-                                xephyr_context->serverClient, DixGetAttrAccess);
+                                context->serverClient, DixGetAttrAccess);
     }
     else {
         VisualPtr pVisual = PictureFindVisual(pScreen, format->index.vid);
@@ -460,10 +460,10 @@ PictureFinishInit(void)
 {
     int s;
 
-    for (s = 0; s < xephyr_context->screenInfo.numScreens; s++) {
-        if (!PictureInitIndexedFormats(xephyr_context->screenInfo.screens[s]))
+    for (s = 0; s < context->screenInfo.numScreens; s++) {
+        if (!PictureInitIndexedFormats(context->screenInfo.screens[s]))
             return FALSE;
-        (void) AnimCurInit(xephyr_context->screenInfo.screens[s]);
+        (void) AnimCurInit(context->screenInfo.screens[s]);
     }
 
     return TRUE;
@@ -581,7 +581,7 @@ GetPictureBytes(void *value, XID id, ResourceSizePtr size)
 {
     PicturePtr picture = value;
 
-    /* Currently only pixmap bytes are reported to xephyr_context->clients. */
+    /* Currently only pixmap bytes are reported to context->clients. */
     size->resourceSize = 0;
 
     size->refCnt = picture->refcnt;
@@ -611,7 +611,7 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
     int n;
     CARD32 type, a, r, g, b;
 
-    if (PictureGeneration != xephyr_context->serverGeneration) {
+    if (PictureGeneration != context->serverGeneration) {
         PictureType = CreateNewResourceType(FreePicture, "PICTURE");
         if (!PictureType)
             return FALSE;
@@ -622,7 +622,7 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
         GlyphSetType = CreateNewResourceType(FreeGlyphSet, "GLYPHSET");
         if (!GlyphSetType)
             return FALSE;
-        PictureGeneration = xephyr_context->serverGeneration;
+        PictureGeneration = context->serverGeneration;
     }
     if (!dixRegisterPrivateKey(&PictureScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
         return FALSE;

@@ -77,8 +77,9 @@ SOFTWARE.
 
 #define MAX_SERIAL_NUM     (1L<<28)
 
-#define NEXT_SERIAL_NUMBER ((++xephyr_context->globalSerialNumber) > MAX_SERIAL_NUM ? \
-	    (xephyr_context->globalSerialNumber  = 1): xephyr_context->globalSerialNumber)
+#define NEXT_SERIAL_NUMBER ((screenInfo.numScreens > 0) ? \
+    ((++(screenInfo.screens[0]->context->globalSerialNumber)) > MAX_SERIAL_NUM ? \
+	    (screenInfo.screens[0]->context->globalSerialNumber  = 1): screenInfo.screens[0]->context->globalSerialNumber) : 1)
 
 typedef struct _GCInterest *GCInterestPtr;
 typedef struct _GC *GCPtr;

@@ -534,8 +534,8 @@ CompositeExtensionInit(void)
     /* Assume initialization is going to fail */
     noCompositeExtension = TRUE;
 
-    for (s = 0; s < xephyr_context->screenInfo.numScreens; s++) {
-        ScreenPtr pScreen = xephyr_context->screenInfo.screens[s];
+    for (s = 0; s < context->screenInfo.numScreens; s++) {
+        ScreenPtr pScreen = context->screenInfo.screens[s];
         VisualPtr vis;
 
         /* Composite on 8bpp pseudocolor root windows appears to fail, so
@@ -574,8 +574,8 @@ CompositeExtensionInit(void)
                                sizeof(CompositeClientRec)))
         return;
 
-    for (s = 0; s < xephyr_context->screenInfo.numScreens; s++)
-        if (!compScreenInit(xephyr_context->screenInfo.screens[s]))
+    for (s = 0; s < context->screenInfo.numScreens; s++)
+        if (!compScreenInit(context->screenInfo.screens[s]))
             return;
 
     extEntry = AddExtension(COMPOSITE_NAME, 0, 0,
@@ -786,7 +786,7 @@ PanoramiXCompositeGetOverlayWindow(ClientPtr client)
         return rc;
     }
 
-    cs = GetCompScreen(xephyr_context->screenInfo.screens[0]);
+    cs = GetCompScreen(context->screenInfo.screens[0]);
     if (!cs->pOverlayWin) {
         if (!(overlayWin = malloc(sizeof(PanoramiXRes))))
             return BadAlloc;
@@ -839,14 +839,14 @@ PanoramiXCompositeGetOverlayWindow(ClientPtr client)
 
     if (overlayWin) {
         FOR_NSCREENS(i) {
-            cs = GetCompScreen(xephyr_context->screenInfo.screens[i]);
+            cs = GetCompScreen(context->screenInfo.screens[i]);
             overlayWin->info[i].id = cs->pOverlayWin->drawable.id;
         }
 
         AddResource(overlayWin->info[0].id, XRT_WINDOW, overlayWin);
     }
 
-    cs = GetCompScreen(xephyr_context->screenInfo.screens[0]);
+    cs = GetCompScreen(context->screenInfo.screens[0]);
 
     rep = (xCompositeGetOverlayWindowReply) {
         .type = X_Reply,

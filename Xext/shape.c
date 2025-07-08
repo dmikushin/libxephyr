@@ -74,7 +74,7 @@ static int ShapeEventBase = 0;
 static RESTYPE ClientType, ShapeEventType;      /* resource types for event masks */
 
 /*
- * each window has a list of xephyr_context->clients requesting
+ * each window has a list of context->clients requesting
  * ShapeNotify events.  Each client has a resource
  * for each window it selects ShapeNotify input for,
  * this resource is used to delete the ShapeNotifyRec
@@ -697,7 +697,7 @@ ShapeFreeClient(void *data, XID id)
     pShapeEvent = (ShapeEventPtr) data;
     pWin = pShapeEvent->window;
     rc = dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                                 ShapeEventType, xephyr_context->serverClient, DixReadAccess);
+                                 ShapeEventType, context->serverClient, DixReadAccess);
     if (rc == Success) {
         pPrev = 0;
         for (pCur = *pHead; pCur && pCur != pShapeEvent; pCur = pCur->next)
@@ -775,7 +775,7 @@ ProcShapeSelectInput(ClientPtr client)
             return BadAlloc;
         /*
          * create a resource to contain a void *to the list
-         * of xephyr_context->clients selecting input.  This must be indirect as
+         * of context->clients selecting input.  This must be indirect as
          * the list may be arbitrarily rearranged which cannot be
          * done through the resource database.
          */
@@ -833,7 +833,7 @@ SendShapeNotify(WindowPtr pWin, int which)
     int rc;
 
     rc = dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                                 ShapeEventType, xephyr_context->serverClient, DixReadAccess);
+                                 ShapeEventType, context->serverClient, DixReadAccess);
     if (rc != Success)
         return;
     switch (which) {
@@ -892,7 +892,7 @@ SendShapeNotify(WindowPtr pWin, int which)
             .y = extents.y1,
             .width = extents.x2 - extents.x1,
             .height = extents.y2 - extents.y1,
-            .time = xephyr_context->currentTime.milliseconds,
+            .time = context->currentTime.milliseconds,
             .shaped = shaped
         };
         WriteEventsToClient(pShapeEvent->client, 1, (xEvent *) &se);

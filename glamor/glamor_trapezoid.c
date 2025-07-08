@@ -65,7 +65,7 @@ glamor_create_mask_picture(ScreenPtr screen,
     if (!pixmap)
         return 0;
     picture = CreatePicture(0, &pixmap->drawable, pict_format,
-                            0, 0, xephyr_context->serverClient, &error);
+                            0, 0, context->serverClient, &error);
     glamor_destroy_pixmap(pixmap);
     return picture;
 }

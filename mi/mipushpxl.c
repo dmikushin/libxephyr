@@ -108,12 +108,12 @@ miPushPixels(GCPtr pGC, PixmapPtr pBitMap, DrawablePtr pDrawable,
 #if 1
     MiBits startmask;
 
-    if (xephyr_context->screenInfo.bitmapBitOrder == IMAGE_BYTE_ORDER)
-        if (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst)
+    if (context->screenInfo.bitmapBitOrder == IMAGE_BYTE_ORDER)
+        if (context->screenInfo.bitmapBitOrder == LSBFirst)
             startmask = (MiBits) (-1) ^ LONG2CHARSSAMEORDER((MiBits) (-1) << 1);
         else
             startmask = (MiBits) (-1) ^ LONG2CHARSSAMEORDER((MiBits) (-1) >> 1);
-    else if (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst)
+    else if (context->screenInfo.bitmapBitOrder == LSBFirst)
         startmask = (MiBits) (-1) ^ LONG2CHARSDIFFORDER((MiBits) (-1) << 1);
     else
         startmask = (MiBits) (-1) ^ LONG2CHARSDIFFORDER((MiBits) (-1) >> 1);
@@ -167,14 +167,14 @@ miPushPixels(GCPtr pGC, PixmapPtr pBitMap, DrawablePtr pDrawable,
                 }
 #if 1
                 /* This is not quite right, but it'll do for now */
-                if (xephyr_context->screenInfo.bitmapBitOrder == IMAGE_BYTE_ORDER)
-                    if (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst)
+                if (context->screenInfo.bitmapBitOrder == IMAGE_BYTE_ORDER)
+                    if (context->screenInfo.bitmapBitOrder == LSBFirst)
                         msk =
                             LONG2CHARSSAMEORDER(LONG2CHARSSAMEORDER(msk) << 1);
                     else
                         msk =
                             LONG2CHARSSAMEORDER(LONG2CHARSSAMEORDER(msk) >> 1);
-                else if (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst)
+                else if (context->screenInfo.bitmapBitOrder == LSBFirst)
                     msk = LONG2CHARSDIFFORDER(LONG2CHARSDIFFORDER(msk) << 1);
                 else
                     msk = LONG2CHARSDIFFORDER(LONG2CHARSDIFFORDER(msk) >> 1);
@@ -217,14 +217,14 @@ miPushPixels(GCPtr pGC, PixmapPtr pBitMap, DrawablePtr pDrawable,
                 }
 #if 1
                 /* This is not quite right, but it'll do for now */
-                if (xephyr_context->screenInfo.bitmapBitOrder == IMAGE_BYTE_ORDER)
-                    if (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst)
+                if (context->screenInfo.bitmapBitOrder == IMAGE_BYTE_ORDER)
+                    if (context->screenInfo.bitmapBitOrder == LSBFirst)
                         msk =
                             LONG2CHARSSAMEORDER(LONG2CHARSSAMEORDER(msk) << 1);
                     else
                         msk =
                             LONG2CHARSSAMEORDER(LONG2CHARSSAMEORDER(msk) >> 1);
-                else if (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst)
+                else if (context->screenInfo.bitmapBitOrder == LSBFirst)
                     msk = LONG2CHARSDIFFORDER(LONG2CHARSDIFFORDER(msk) << 1);
                 else
                     msk = LONG2CHARSDIFFORDER(LONG2CHARSDIFFORDER(msk) >> 1);

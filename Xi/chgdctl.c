@@ -68,7 +68,7 @@ SOFTWARE.
 /***********************************************************************
  *
  * This procedure changes the control attributes for an extension device,
- * for xephyr_context->clients on machines with a different byte ordering than the server.
+ * for context->clients on machines with a different byte ordering than the server.
  *
  */
 
@@ -227,7 +227,7 @@ ProcXChangeDeviceControl(ClientPtr client)
     if (ret == Success) {
         devicePresenceNotify dpn = {
             .type = DevicePresenceNotify,
-            .time = xephyr_context->currentTime.milliseconds,
+            .time = context->currentTime.milliseconds,
             .devchange = DeviceControlChanged,
             .deviceid = dev->id,
             .control = stuff->control

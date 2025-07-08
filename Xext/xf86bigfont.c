@@ -1,7 +1,7 @@
 #include "dix/context.h"
 /*
- * BIGFONT extension for sharing font metrics between xephyr_context->clients (if possible)
- * and for transmitting font metrics to xephyr_context->clients in a compressed form.
+ * BIGFONT extension for sharing font metrics between context->clients (if possible)
+ * and for transmitting font metrics to context->clients in a compressed form.
  *
  * Copyright (c) 1999-2000  Bruno Haible
  * Copyright (c) 1999-2000  The XFree86 Project, Inc.
@@ -10,7 +10,7 @@
 /* THIS IS NOT AN X CONSORTIUM STANDARD */
 
 /*
- * Big fonts suffer from the following: All xephyr_context->clients that have opened a
+ * Big fonts suffer from the following: All context->clients that have opened a
  * font can access the complete glyph metrics array (the XFontStruct member
  * `per_char') directly, without going through a macro. Moreover these
  * glyph metrics are ink metrics, i.e. are not redundant even for a
@@ -19,8 +19,8 @@
  * Problems: 1. It eats a lot of memory in each client. 2. All this glyph
  * metrics data is piped through the socket when the font is opened.
  *
- * This extension addresses these two problems for local xephyr_context->clients, by using
- * shared memory. It also addresses the second problem for non-local xephyr_context->clients,
+ * This extension addresses these two problems for local context->clients, by using
+ * shared memory. It also addresses the second problem for non-local context->clients,
  * by compressing the data before transmit by a factor of nearly 6.
  *
  * If you use this extension, your OS ought to nicely support shared memory.
@@ -76,7 +76,7 @@ static void XF86BigfontResetProc(ExtensionEntry *       /* extEntry */
 
 #ifdef HAS_SHM
 
-/* A random signature, transmitted to the xephyr_context->clients so they can verify that the
+/* A random signature, transmitted to the context->clients so they can verify that the
    shared memory segment they are attaching to was really established by the
    X server they are talking to. */
 static CARD32 signature;
@@ -132,7 +132,7 @@ CheckForShmSyscall(void)
 #ifdef __linux__
 /* On Linux, shared memory marked as "removed" can still be attached.
    Nice feature, because the kernel will automatically free the associated
-   storage when the server and all xephyr_context->clients are gone. */
+   storage when the server and all context->clients are gone. */
 #define EARLY_REMOVE
 #endif
 
@@ -698,7 +698,7 @@ XFree86BigfontExtensionInit(void)
 #ifdef HAS_SHM
 #ifdef MUST_CHECK_FOR_SHM_SYSCALL
         /*
-         * Note: Local-xephyr_context->clients will not be optimized without shared memory
+         * Note: Local-context->clients will not be optimized without shared memory
          * support. Remote-client optimization does not depend on shared
          * memory support.  Thus, the extension is still registered even
          * when shared memory support is not functional.

@@ -418,7 +418,7 @@ SyncInitTrigger(ClientPtr client, SyncTrigger * pTrigger, XID syncObject,
 
 /*  AlarmNotify events happen in response to actions taken on an Alarm or
  *  the counter used by the alarm.  AlarmNotify may be sent to multiple
- *  xephyr_context->clients.  The alarm maintains a list of xephyr_context->clients interested in events.
+ *  context->clients.  The alarm maintains a list of context->clients interested in events.
  */
 static void
 SyncSendAlarmNotifyEvents(SyncAlarm * pAlarm)
@@ -441,7 +441,7 @@ SyncSendAlarmNotifyEvents(SyncAlarm * pAlarm)
         .alarm = pAlarm->alarm_id,
         .alarm_value_hi = pTrigger->test_value >> 32,
         .alarm_value_lo = pTrigger->test_value,
-        .time = xephyr_context->currentTime.milliseconds,
+        .time = context->currentTime.milliseconds,
         .state = pAlarm->state
     };
 
@@ -458,7 +458,7 @@ SyncSendAlarmNotifyEvents(SyncAlarm * pAlarm)
     if (pAlarm->events)
         WriteEventsToClient(pAlarm->client, 1, (xEvent *) &ane);
 
-    /* send to other interested xephyr_context->clients */
+    /* send to other interested context->clients */
     for (pcl = pAlarm->pEventClients; pcl; pcl = pcl->next)
         WriteEventsToClient(pcl->client, 1, (xEvent *) &ane);
 }
@@ -498,7 +498,7 @@ SyncSendCounterNotifyEvents(ClientPtr client, SyncAwait ** ppAwait,
             pev->counter_value_hi = 0;
         }
 
-        pev->time = xephyr_context->currentTime.milliseconds;
+        pev->time = context->currentTime.milliseconds;
         pev->count = num_events - i - 1;        /* events remaining */
         pev->destroyed = pTrigger->pSync->beingDestroyed;
     }
@@ -2485,8 +2485,8 @@ SyncExtensionInit(void)
     ExtensionEntry *extEntry;
     int s;
 
-    for (s = 0; s < xephyr_context->screenInfo.numScreens; s++)
-        miSyncSetup(xephyr_context->screenInfo.screens[s]);
+    for (s = 0; s < context->screenInfo.numScreens; s++)
+        miSyncSetup(context->screenInfo.screens[s]);
 
     RTCounter = CreateNewResourceType(FreeCounter, "SyncCounter");
     xorg_list_init(&SysCounterList);

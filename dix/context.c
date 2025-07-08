@@ -2,10 +2,6 @@
 #include "dixstruct.h"
 #include "os.h"
 
-/* Thread-local storage for current context */
-__thread XephyrContext *xephyr_context = NULL;
-
-
 void InitGlobalsForContext(XephyrContext* context)
 {
     if (!context)
@@ -77,12 +73,3 @@ void InitGlobalsForContext(XephyrContext* context)
     context->enableIndirectGLX = FALSE;
 }
 
-void SetThreadContext(XephyrContext* context)
-{
-    xephyr_context = context;
-}
-
-XephyrContext* GetThreadContext(void)
-{
-    return xephyr_context;
-}

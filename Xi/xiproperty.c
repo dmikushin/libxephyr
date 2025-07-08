@@ -191,7 +191,7 @@ send_property_event(DeviceIntPtr dev, Atom property, int what)
         .deviceid = dev->id,
         .state = state,
         .atom = property,
-        .time = xephyr_context->currentTime.milliseconds
+        .time = context->currentTime.milliseconds
     };
     xXIPropertyEvent xi2 = {
         .type = GenericEvent,
@@ -199,7 +199,7 @@ send_property_event(DeviceIntPtr dev, Atom property, int what)
         .length = 0,
         .evtype = XI_PropertyEvent,
         .deviceid = dev->id,
-        .time = xephyr_context->currentTime.milliseconds,
+        .time = context->currentTime.milliseconds,
         .property = property,
         .what = what
     };

@@ -127,15 +127,15 @@ ClientTimeToServerTime(CARD32 c)
     TimeStamp ts;
 
     if (c == CurrentTime)
-        return xephyr_context->currentTime;
-    ts.months = xephyr_context->currentTime.months;
+        return screenInfo.screens[0]->context->currentTime;
+    ts.months = screenInfo.screens[0]->context->currentTime.months;
     ts.milliseconds = c;
-    if (c > xephyr_context->currentTime.milliseconds) {
-        if (((unsigned long) c - xephyr_context->currentTime.milliseconds) > HALFMONTH)
+    if (c > screenInfo.screens[0]->context->currentTime.milliseconds) {
+        if (((unsigned long) c - screenInfo.screens[0]->context->currentTime.milliseconds) > HALFMONTH)
             ts.months -= 1;
     }
-    else if (c < xephyr_context->currentTime.milliseconds) {
-        if (((unsigned long) xephyr_context->currentTime.milliseconds - c) > HALFMONTH)
+    else if (c < screenInfo.screens[0]->context->currentTime.milliseconds) {
+        if (((unsigned long) screenInfo.screens[0]->context->currentTime.milliseconds - c) > HALFMONTH)
             ts.months += 1;
     }
     return ts;
@@ -265,18 +265,18 @@ dixLookupClient(ClientPtr *pClient, XID rid, ClientPtr client, Mask access)
     void *pRes;
     int rc = BadValue, clientIndex = CLIENT_ID(rid);
 
-    if (!clientIndex || !xephyr_context->clients[clientIndex] || (rid & SERVER_BIT))
+    if (!clientIndex || !screenInfo.screens[0]->context->clients[clientIndex] || (rid & SERVER_BIT))
         goto bad;
 
     rc = dixLookupResourceByClass(&pRes, rid, RC_ANY, client, DixGetAttrAccess);
     if (rc != Success)
         goto bad;
 
-    rc = XaceHook(XACE_CLIENT_ACCESS, client, xephyr_context->clients[clientIndex], access);
+    rc = XaceHook(XACE_CLIENT_ACCESS, client, screenInfo.screens[0]->context->clients[clientIndex], access);
     if (rc != Success)
         goto bad;
 
-    *pClient = xephyr_context->clients[clientIndex];
+    *pClient = screenInfo.screens[0]->context->clients[clientIndex];
     return Success;
  bad:
     if (client)
@@ -342,8 +342,8 @@ DeleteWindowFromAnySaveSet(WindowPtr pWin)
     int i;
     ClientPtr client;
 
-    for (i = 0; i < xephyr_context->currentMaxClients; i++) {
-        client = xephyr_context->clients[i];
+    for (i = 0; i < screenInfo.screens[0]->context->currentMaxClients; i++) {
+        client = screenInfo.screens[0]->context->clients[i];
         if (client && client->numSaved)
             (void) AlterSaveSetForClient(client, pWin, SetModeDelete, FALSE,
                                          TRUE);
@@ -388,11 +388,11 @@ BlockHandler(void *pTimeout)
         if (!handlers[i].deleted)
             (*handlers[i].BlockHandler) (handlers[i].blockData, pTimeout);
 
-    for (i = 0; i < xephyr_context->screenInfo.numGPUScreens; i++)
-        (*xephyr_context->screenInfo.gpuscreens[i]->BlockHandler) (xephyr_context->screenInfo.gpuscreens[i], pTimeout);
+    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numGPUScreens; i++)
+        (*screenInfo.screens[0]->context->screenInfo.gpuscreens[i]->BlockHandler) (screenInfo.screens[0]->context->screenInfo.gpuscreens[i], pTimeout);
 
-    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
-        (*xephyr_context->screenInfo.screens[i]->BlockHandler) (xephyr_context->screenInfo.screens[i], pTimeout);
+    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++)
+        (*screenInfo.screens[0]->context->screenInfo.screens[i]->BlockHandler) (screenInfo.screens[0]->context->screenInfo.screens[i], pTimeout);
 
     if (handlerDeleted) {
         for (i = 0; i < numHandlers;)
@@ -419,10 +419,10 @@ WakeupHandler(int result)
     int i, j;
 
     ++inHandler;
-    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
-        (*xephyr_context->screenInfo.screens[i]->WakeupHandler) (xephyr_context->screenInfo.screens[i], result);
-    for (i = 0; i < xephyr_context->screenInfo.numGPUScreens; i++)
-        (*xephyr_context->screenInfo.gpuscreens[i]->WakeupHandler) (xephyr_context->screenInfo.gpuscreens[i], result);
+    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++)
+        (*screenInfo.screens[0]->context->screenInfo.screens[i]->WakeupHandler) (screenInfo.screens[0]->context->screenInfo.screens[i], result);
+    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numGPUScreens; i++)
+        (*screenInfo.screens[0]->context->screenInfo.gpuscreens[i]->WakeupHandler) (screenInfo.screens[0]->context->screenInfo.gpuscreens[i], result);
     for (i = numHandlers - 1; i >= 0; i--)
         if (!handlers[i].deleted)
             (*handlers[i].WakeupHandler) (handlers[i].blockData, result);
@@ -585,7 +585,7 @@ QueueWorkProc(Bool (*function) (ClientPtr pClient, void *closure),
 }
 
 /*
- * Manage a queue of sleeping xephyr_context->clients, awakening them
+ * Manage a queue of sleeping screenInfo.screens[0]->context->clients, awakening them
  * when requested, by using the OS functions IgnoreClient
  * and AttendClient.  Note that this *ignores* the troubles
  * with request data interleaving itself with events, but

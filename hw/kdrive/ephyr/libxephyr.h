@@ -64,7 +64,7 @@ void xephyr_server_destroy(XephyrServer* server);
 /* Get the embedded window ID */
 Window xephyr_server_get_window(XephyrServer* server);
 
-/* Get the xephyr_context->display name */
+/* Get the context->display name */
 const char* xephyr_server_get_display(XephyrServer* server);
 
 /* Check if server is running */

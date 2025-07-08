@@ -122,7 +122,7 @@ deliverPropertyNotifyEvent(WindowPtr pWin, int state, PropertyPtr pProp)
         .u.property.window = pWin->drawable.id,
         .u.property.state = state,
         .u.property.atom = pProp->propertyName,
-        .u.property.time = xephyr_context->currentTime.milliseconds,
+        .u.property.time = screenInfo.screens[0]->context->currentTime.milliseconds,
     };
     event.u.u.type = PropertyNotify;
 

@@ -409,13 +409,13 @@ _XkbBell(ClientPtr client, DeviceIntPtr dev, WindowPtr pWin,
         oldDuration = k->ctrl.bell_duration;
         if (pitch != 0) {
             if (pitch == -1)
-                k->ctrl.bell_pitch = xephyr_context->defaultKeyboardControl.bell_pitch;
+                k->ctrl.bell_pitch = context->defaultKeyboardControl.bell_pitch;
             else
                 k->ctrl.bell_pitch = pitch;
         }
         if (duration != 0) {
             if (duration == -1)
-                k->ctrl.bell_duration = xephyr_context->defaultKeyboardControl.bell_duration;
+                k->ctrl.bell_duration = context->defaultKeyboardControl.bell_duration;
             else
                 k->ctrl.bell_duration = duration;
         }
@@ -441,13 +441,13 @@ _XkbBell(ClientPtr client, DeviceIntPtr dev, WindowPtr pWin,
         oldDuration = b->ctrl.duration;
         if (pitch != 0) {
             if (pitch == -1)
-                b->ctrl.pitch = xephyr_context->defaultKeyboardControl.bell_pitch;
+                b->ctrl.pitch = context->defaultKeyboardControl.bell_pitch;
             else
                 b->ctrl.pitch = pitch;
         }
         if (duration != 0) {
             if (duration == -1)
-                b->ctrl.duration = xephyr_context->defaultKeyboardControl.bell_duration;
+                b->ctrl.duration = context->defaultKeyboardControl.bell_duration;
             else
                 b->ctrl.duration = duration;
         }

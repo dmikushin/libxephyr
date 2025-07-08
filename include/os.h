@@ -1,4 +1,7 @@
 #include "dix/context.h"
+
+typedef struct _XephyrContext XephyrContext;
+
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -174,7 +177,7 @@ extern _X_EXPORT void MakeClientGrabPervious(ClientPtr /*client */ );
 
 extern _X_EXPORT void ListenOnOpenFD(int /* fd */ , int /* noxauth */ );
 
-extern _X_EXPORT Bool AddClientOnOpenFD(int /* fd */ );
+extern _X_EXPORT Bool AddClientOnOpenFD(int /* fd */ , XephyrContext* /* context */ );
 
 #ifdef MONOTONIC_CLOCK
 extern void ForceClockId(clockid_t /* forced_clockid */);
@@ -317,7 +320,7 @@ OsLookupColor(int /*screen */ ,
               unsigned short * /*pblue */ );
 
 extern _X_EXPORT void
-OsInit(void);
+OsInit(XephyrContext* context);
 
 extern _X_EXPORT void
 OsCleanup(Bool);
@@ -327,7 +330,7 @@ OsVendorFatalError(const char *f, va_list args)
 _X_ATTRIBUTE_PRINTF(1, 0);
 
 extern _X_EXPORT void
-OsVendorInit(void);
+OsVendorInit(XephyrContext* context);
 
 extern _X_EXPORT void
 OsBlockSignals(void);

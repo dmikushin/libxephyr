@@ -137,15 +137,15 @@ SetDefaultFont(const char *defaultfontname)
     XID fid;
 
     fid = FakeClientID(0);
-    err = OpenFont(xephyr_context->serverClient, fid, FontLoadAll | FontOpenSync,
+    err = OpenFont(screenInfo.screens[0]->context->serverClient, fid, FontLoadAll | FontOpenSync,
                    (unsigned) strlen(defaultfontname), defaultfontname);
     if (err != Success)
         return FALSE;
-    err = dixLookupResourceByType((void **) &pf, fid, RT_FONT, xephyr_context->serverClient,
+    err = dixLookupResourceByType((void **) &pf, fid, RT_FONT, screenInfo.screens[0]->context->serverClient,
                                   DixReadAccess);
     if (err != Success)
         return FALSE;
-    xephyr_context->defaultFont = pf;
+    screenInfo.screens[0]->context->defaultFont = pf;
     return TRUE;
 }
 
@@ -246,9 +246,9 @@ doOpenFont(ClientPtr client, OFclosurePtr c)
      * Decide at runtime what FontFormat to use.
      */
     Mask FontFormat =
-        ((xephyr_context->screenInfo.imageByteOrder == LSBFirst) ?
+        ((screenInfo.screens[0]->context->screenInfo.imageByteOrder == LSBFirst) ?
          BitmapFormatByteOrderLSB : BitmapFormatByteOrderMSB) |
-        ((xephyr_context->screenInfo.bitmapBitOrder == LSBFirst) ?
+        ((screenInfo.screens[0]->context->screenInfo.bitmapBitOrder == LSBFirst) ?
          BitmapFormatBitOrderLSB : BitmapFormatBitOrderMSB) |
         BitmapFormatImageRectMin |
 #if GLYPHPADBYTES == 1
@@ -338,8 +338,8 @@ doOpenFont(ClientPtr client, OFclosurePtr c)
     pfont->refcnt++;
     if (pfont->refcnt == 1) {
         UseFPE(pfont->fpe);
-        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
-            pScr = xephyr_context->screenInfo.screens[i];
+        for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++) {
+            pScr = screenInfo.screens[0]->context->screenInfo.screens[i];
             if (pScr->RealizeFont) {
                 if (!(*pScr->RealizeFont) (pScr, pfont)) {
                     CloseFont(pfont, (Font) 0);
@@ -357,7 +357,7 @@ doOpenFont(ClientPtr client, OFclosurePtr c)
         xfont2_cache_font_pattern(patternCache, c->origFontName, c->origFontNameLen,
                                   pfont);
  bail:
-    if (err != Successful && c->client != xephyr_context->serverClient) {
+    if (err != Successful && c->client != screenInfo.screens[0]->context->serverClient) {
         SendErrorToClient(c->client, X_OpenFont, 0,
                           c->fontid, FontToXError(err));
     }
@@ -467,13 +467,13 @@ CloseFont(void *value, XID fid)
          * since the last reference is gone, ask each screen to free any
          * storage it may have allocated locally for it.
          */
-        for (nscr = 0; nscr < xephyr_context->screenInfo.numScreens; nscr++) {
-            pscr = xephyr_context->screenInfo.screens[nscr];
+        for (nscr = 0; nscr < screenInfo.screens[0]->context->screenInfo.numScreens; nscr++) {
+            pscr = screenInfo.screens[0]->context->screenInfo.screens[nscr];
             if (pscr->UnrealizeFont)
                 (*pscr->UnrealizeFont) (pscr, pfont);
         }
-        if (pfont == xephyr_context->defaultFont)
-            xephyr_context->defaultFont = NULL;
+        if (pfont == screenInfo.screens[0]->context->defaultFont)
+            screenInfo.screens[0]->context->defaultFont = NULL;
 #ifdef XF86BIGFONT
         XF86BigfontFreeFontShm(pfont);
 #endif
@@ -1328,7 +1328,7 @@ doPolyText(ClientPtr client, PTclosurePtr c)
 
     if (c->err != Success)
         err = c->err;
-    if (err != Success && c->client != xephyr_context->serverClient) {
+    if (err != Success && c->client != screenInfo.screens[0]->context->serverClient) {
 #ifdef PANORAMIX
         if (noPanoramiXExtension || !c->pGC->pScreen->myNum)
 #endif
@@ -1477,7 +1477,7 @@ doImageText(ClientPtr client, ITclosurePtr c)
 
  bail:
 
-    if (err != Success && c->client != xephyr_context->serverClient) {
+    if (err != Success && c->client != screenInfo.screens[0]->context->serverClient) {
         SendErrorToClient(c->client, c->reqType, 0, 0, err);
     }
     if (ClientIsAsleep(client)) {
@@ -1681,7 +1681,7 @@ SetFontPath(ClientPtr client, int npaths, unsigned char *paths)
         return err;
 
     if (npaths == 0) {
-        if (SetDefaultFontPath(xephyr_context->defaultFontPath) != Success)
+        if (SetDefaultFontPath(screenInfo.screens[0]->context->defaultFontPath) != Success)
             return BadValue;
     }
     else {
@@ -1825,13 +1825,13 @@ register_fpe_funcs(const xfont2_fpe_funcs_rec *funcs)
 static unsigned long
 get_server_generation(void)
 {
-    return xephyr_context->serverGeneration;
+    return screenInfo.screens[0]->context->serverGeneration;
 }
 
 static void *
 get_server_client(void)
 {
-    return xephyr_context->serverClient;
+    return screenInfo.screens[0]->context->serverClient;
 }
 
 static int
@@ -1846,7 +1846,7 @@ get_client_resolutions(int *num)
     static struct _FontResolution res;
     ScreenPtr pScreen;
 
-    pScreen = xephyr_context->screenInfo.screens[0];
+    pScreen = screenInfo.screens[0]->context->screenInfo.screens[0];
     res.x_resolution = (pScreen->width * 25.4) / pScreen->mmWidth;
     /*
      * XXX - we'll want this as long as bitmap instances are prevalent
@@ -1888,7 +1888,7 @@ find_old_font(XID id)
 {
     void *pFont;
 
-    dixLookupResourceByType(&pFont, id, RT_NONE, xephyr_context->serverClient, DixReadAccess);
+    dixLookupResourceByType(&pFont, id, RT_NONE, screenInfo.screens[0]->context->serverClient, DixReadAccess);
     return (FontPtr) pFont;
 }
 
@@ -1987,8 +1987,8 @@ static int
 _init_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handler)
 {
     /* if server has reset, make sure the b&w handlers are reinstalled */
-    if (last_server_gen < xephyr_context->serverGeneration) {
-        last_server_gen = xephyr_context->serverGeneration;
+    if (last_server_gen < screenInfo.screens[0]->context->serverGeneration) {
+        last_server_gen = screenInfo.screens[0]->context->serverGeneration;
         fs_handlers_installed = 0;
     }
     if (fs_handlers_installed == 0) {

@@ -120,8 +120,8 @@ static int
 server_has_depth(int depth)
 {
     int i;
-    for (i = 0; i < xephyr_context->screenInfo.numPixmapFormats; i++)
-        if (xephyr_context->screenInfo.formats[i].depth == depth)
+    for (i = 0; i < context->screenInfo.numPixmapFormats; i++)
+        if (context->screenInfo.formats[i].depth == depth)
             return 1;
     return 0;
 }

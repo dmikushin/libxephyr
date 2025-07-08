@@ -26,11 +26,11 @@
 /**
  * @file
  *
- * This file contains functionality for identifying xephyr_context->clients by various
+ * This file contains functionality for identifying context->clients by various
  * means. The primary purpose of identification is to simply aid in
- * finding out which xephyr_context->clients are using X server and how they are using
+ * finding out which context->clients are using X server and how they are using
  * it. For example, it's often necessary to monitor what requests
- * xephyr_context->clients are executing (to spot bad behaviour) and how they are
+ * context->clients are executing (to spot bad behaviour) and how they are
  * allocating resources in X server (to spot excessive resource
  * usage).
  *
@@ -38,10 +38,10 @@
  * used for client identification, when a client connects to the
  * server. The information is freed when the client disconnects. The
  * allocated information is just a collection of various IDs, such as
- * PID and process name for local xephyr_context->clients, that are likely to be
+ * PID and process name for local context->clients, that are likely to be
  * useful in analyzing X server usage.
  *
- * Users of the framework can query ID information about xephyr_context->clients at
+ * Users of the framework can query ID information about context->clients at
  * any time. To avoid repeated polling of IDs the users can also
  * subscribe for notifications about the availability of ID
  * information. IDs have been allocated before ClientStateCallback is
@@ -95,7 +95,7 @@ DetermineClientPid(struct _Client * client)
     if (client == NullClient)
         return pid;
 
-    if (client == xephyr_context->serverClient)
+    if (client == context->serverClient)
         return getpid();
 
     if (GetLocalClientCreds(client, &lcc) != -1) {
@@ -337,7 +337,7 @@ ReleaseClientIds(struct _Client *client)
  * @return Cached client PID. Error (-1) if called:
  *         - before ClientStateInitial client state notification
  *         - after ClientStateGone client state notification
- *         - for remote xephyr_context->clients
+ *         - for remote context->clients
  *
  * @see DetermineClientPid
  */
@@ -362,7 +362,7 @@ GetClientPid(struct _Client *client)
  * @return Cached client command name. Error (NULL) if called:
  *         - before ClientStateInitial client state notification
  *         - after ClientStateGone client state notification
- *         - for remote xephyr_context->clients
+ *         - for remote context->clients
  *         - on OS that doesn't support mapping of PID to command line
  *
  * @see DetermineClientCmd
@@ -388,7 +388,7 @@ GetClientCmdName(struct _Client *client)
  * @return Cached client command arguments. Error (NULL) if called:
  *         - before ClientStateInitial client state notification
  *         - after ClientStateGone client state notification
- *         - for remote xephyr_context->clients
+ *         - for remote context->clients
  *         - on OS that doesn't support mapping of PID to command line
  *
  * @see DetermineClientCmd

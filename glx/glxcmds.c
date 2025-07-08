@@ -59,12 +59,12 @@ validGlxScreen(ClientPtr client, int screen, __GLXscreen ** pGlxScreen,
     /*
      ** Check if screen exists.
      */
-    if (screen < 0 || screen >= xephyr_context->screenInfo.numScreens) {
+    if (screen < 0 || screen >= context->screenInfo.numScreens) {
         client->errorValue = screen;
         *err = BadValue;
         return FALSE;
     }
-    *pGlxScreen = glxGetScreen(xephyr_context->screenInfo.screens[screen]);
+    *pGlxScreen = glxGetScreen(context->screenInfo.screens[screen]);
 
     return TRUE;
 }
@@ -250,10 +250,10 @@ DoCreateContext(__GLXclientState * cl, GLXContextID gcId,
     int err;
 
     /*
-     ** Find the xephyr_context->display list space that we want to share.
+     ** Find the context->display list space that we want to share.
      **
      ** NOTE: In a multithreaded X server, we would need to keep a reference
-     ** count for each xephyr_context->display list so that if one client destroyed a list that
+     ** count for each context->display list so that if one client destroyed a list that
      ** another client was using, the list would not really be freed until it
      ** was no longer in use.  Since this sample implementation has no support
      ** for multithreaded servers, we don't do this.
@@ -282,7 +282,7 @@ DoCreateContext(__GLXclientState * cl, GLXContextID gcId,
         else if (!shareglxc->isDirect) {
             /*
              ** Create an indirect context regardless of what the client asked
-             ** for; this way we can share xephyr_context->display list space with shareList.
+             ** for; this way we can share context->display list space with shareList.
              */
             isDirect = GL_FALSE;
         }
@@ -307,7 +307,7 @@ DoCreateContext(__GLXclientState * cl, GLXContextID gcId,
          * it's a massive attack surface for buffer overflow type
          * errors.
          */
-        if (!xephyr_context->enableIndirectGLX) {
+        if (!context->enableIndirectGLX) {
             client->errorValue = isDirect;
             return BadValue;
         }
@@ -743,7 +743,7 @@ __glXDisp_QueryVersion(__GLXclientState * cl, GLbyte * pc)
 
     /*
      ** Server should take into consideration the version numbers sent by the
-     ** client if it wants to work with older xephyr_context->clients; however, in this
+     ** client if it wants to work with older context->clients; however, in this
      ** implementation the server just returns its version number.
      */
     reply = (xGLXQueryVersionReply) {
@@ -2507,7 +2507,7 @@ void
 __glXsendSwapEvent(__GLXdrawable *drawable, int type, CARD64 ust,
                    CARD64 msc, CARD32 sbc)
 {
-    ClientPtr client = xephyr_context->clients[CLIENT_ID(drawable->drawId)];
+    ClientPtr client = context->clients[CLIENT_ID(drawable->drawId)];
 
     xGLXBufferSwapComplete2 wire =  {
         .type = __glXEventBase + GLX_BufferSwapComplete
@@ -2543,7 +2543,7 @@ __glXpresentCompleteNotify(WindowPtr window, CARD8 present_kind, CARD8 present_m
         return;
 
     rc = dixLookupResourceByType((void **) &drawable, window->drawable.id,
-                                 __glXDrawableRes, xephyr_context->serverClient, DixGetAttrAccess);
+                                 __glXDrawableRes, context->serverClient, DixGetAttrAccess);
 
     if (rc != Success)
         return;

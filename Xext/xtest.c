@@ -328,7 +328,7 @@ ProcXTestFakeInput(ClientPtr client)
         TimeStamp activateTime;
         CARD32 ms;
 
-        activateTime = xephyr_context->currentTime;
+        activateTime = context->currentTime;
         ms = activateTime.milliseconds + ev->u.keyButtonPointer.time;
         if (ms < activateTime.milliseconds)
             activateTime.months++;
@@ -407,7 +407,7 @@ ProcXTestFakeInput(ClientPtr client)
         break;
     }
     if (screenIsSaved == SCREEN_SAVER_ON)
-        dixSaveScreens(xephyr_context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
+        dixSaveScreens(context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
 
     switch (type) {
     case MotionNotify:
@@ -565,7 +565,7 @@ SProcXTestDispatch(ClientPtr client)
 void
 InitXTestDevices(void)
 {
-    if (AllocXTestDevice(xephyr_context->serverClient, "Virtual core",
+    if (AllocXTestDevice(context->serverClient, "Virtual core",
                          &xtestpointer, &xtestkeyboard,
                          inputInfo.pointer, inputInfo.keyboard) != Success)
          FatalError("Failed to allocate XTest devices");

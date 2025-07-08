@@ -49,12 +49,16 @@ SOFTWARE.
 #define INPUT_H
 
 #include "misc.h"
+
+typedef struct _XephyrContext XephyrContext;
 #include "screenint.h"
 #include <X11/Xmd.h>
 #include <X11/Xproto.h>
 #include <stdint.h>
 #include "window.h"             /* for WindowPtr */
 #include "xkbrules.h"
+
+typedef struct _XephyrContext XephyrContext;
 #include "events.h"
 #include "list.h"
 #include "os.h"
@@ -268,7 +272,7 @@ typedef struct _InputAttributes {
 #define ATTR_KEY (1<<6)
 #define ATTR_TABLET_PAD (1<<7)
 
-/* Key/Button has been run through all input processing and events sent to xephyr_context->clients. */
+/* Key/Button has been run through all input processing and events sent to context->clients. */
 #define KEY_PROCESSED 1
 #define BUTTON_PROCESSED 1
 /* Key/Button has not been fully processed, no events have been sent. */
@@ -282,12 +286,13 @@ extern _X_EXPORT void set_button_down(DeviceIntPtr pDev, int button, int type);
 extern _X_EXPORT void set_button_up(DeviceIntPtr pDev, int button, int type);
 extern _X_EXPORT int button_is_down(DeviceIntPtr pDev, int button, int type);
 
-extern void InitCoreDevices(void);
+extern void InitCoreDevices(XephyrContext* context);
 extern void InitXTestDevices(void);
 
 extern _X_EXPORT DeviceIntPtr AddInputDevice(ClientPtr /*client */ ,
                                              DeviceProc /*deviceProc */ ,
-                                             Bool /*autoStart */ );
+                                             Bool /*autoStart */ ,
+                                             XephyrContext* /*context*/ );
 
 extern _X_EXPORT Bool EnableDevice(DeviceIntPtr /*device */ ,
                                    BOOL /* sendevent */ );
@@ -297,10 +302,10 @@ extern _X_EXPORT Bool ActivateDevice(DeviceIntPtr /*device */ ,
 
 extern _X_EXPORT Bool DisableDevice(DeviceIntPtr /*device */ ,
                                     BOOL /* sendevent */ );
-extern void DisableAllDevices(void);
-extern int InitAndStartDevices(void);
+extern void DisableAllDevices(XephyrContext* context);
+extern int InitAndStartDevices(XephyrContext* context);
 
-extern void CloseDownDevices(void);
+extern void CloseDownDevices(XephyrContext* context);
 extern void AbortDevices(void);
 
 extern void UndisplayDevices(void);
@@ -308,7 +313,7 @@ extern void UndisplayDevices(void);
 extern _X_EXPORT int RemoveDevice(DeviceIntPtr /*dev */ ,
                                   BOOL /* sendevent */ );
 
-extern _X_EXPORT int NumMotionEvents(void);
+extern _X_EXPORT int NumMotionEvents(XephyrContext* context);
 
 extern _X_EXPORT int dixLookupDevice(DeviceIntPtr * /* dev */ ,
                                      int /* id */ ,
@@ -316,7 +321,8 @@ extern _X_EXPORT int dixLookupDevice(DeviceIntPtr * /* dev */ ,
                                      Mask /* access_mode */ );
 
 extern _X_EXPORT void QueryMinMaxKeyCodes(KeyCode * /*minCode */ ,
-                                          KeyCode * /*maxCode */ );
+                                          KeyCode * /*maxCode */ ,
+                                          XephyrContext* /*context*/ );
 
 extern _X_EXPORT Bool InitButtonClassDeviceStruct(DeviceIntPtr /*device */ ,
                                                   int /*numButtons */ ,
@@ -449,7 +455,8 @@ extern void ProcessKeyboardEvent(InternalEvent * /*ev */ ,
 extern _X_EXPORT void ProcessInputEvents(void);
 
 extern _X_EXPORT void InitInput(int /*argc */ ,
-                                char ** /*argv */ );
+                                char ** /*argv */ ,
+                                XephyrContext* /*context*/ );
 extern _X_EXPORT void CloseInput(void);
 
 extern _X_EXPORT int GetMaximumEventsNum(void);
@@ -584,7 +591,7 @@ extern int AllocXTestDevice(ClientPtr client, const char *name,
                             DeviceIntPtr master_ptr, DeviceIntPtr master_keybd);
 extern BOOL IsXTestDevice(DeviceIntPtr dev, DeviceIntPtr master);
 extern DeviceIntPtr GetXTestDevice(DeviceIntPtr master);
-extern void SendDevicePresenceEvent(int deviceid, int type);
+extern void SendDevicePresenceEvent(int deviceid, int type, XephyrContext* context);
 extern void DeliverDeviceClassesChangedEvent(int sourceid, Time time);
 extern _X_EXPORT InputAttributes *DuplicateInputAttributes(InputAttributes *
                                                            attrs);

@@ -338,13 +338,13 @@ miGetPlane(DrawablePtr pDraw, int planeNum,     /* number of the bitPlane */
 #endif
 #else
                 /* XXX assuming byte order == LSBFirst */
-                if (xephyr_context->screenInfo.bitmapBitOrder == LSBFirst)
+                if (context->screenInfo.bitmapBitOrder == LSBFirst)
                     bit <<= k;
                 else
-                    bit <<= ((xephyr_context->screenInfo.bitmapScanlineUnit - 1) -
-                             (k % xephyr_context->screenInfo.bitmapScanlineUnit)) +
-                        ((k / xephyr_context->screenInfo.bitmapScanlineUnit) *
-                         xephyr_context->screenInfo.bitmapScanlineUnit);
+                    bit <<= ((context->screenInfo.bitmapScanlineUnit - 1) -
+                             (k % context->screenInfo.bitmapScanlineUnit)) +
+                        ((k / context->screenInfo.bitmapScanlineUnit) *
+                         context->screenInfo.bitmapScanlineUnit);
 #endif
                 *pOut |= (OUT_TYPE) bit;
                 k++;

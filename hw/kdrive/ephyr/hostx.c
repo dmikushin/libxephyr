@@ -549,7 +549,7 @@ hostx_init(void)
 #endif
         HostX.conn = xcb_connect(NULL, &HostX.screen);
     if (!HostX.conn || xcb_connection_has_error(HostX.conn)) {
-        fprintf(stderr, "\nXephyr cannot open host xephyr_context->display. Is DISPLAY set?\n");
+        fprintf(stderr, "\nXephyr cannot open host context->display. Is DISPLAY set?\n");
         exit(1);
     }
 

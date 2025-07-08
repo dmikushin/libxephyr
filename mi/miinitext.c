@@ -253,7 +253,7 @@ UpdateExtensionPointers(void)
 
     /* Set up runtime pointers for context-based flags */
     if (!noTestExtensionsPtr && xephyr_context) {
-        noTestExtensionsPtr = &xephyr_context->noTestExtensions;
+        noTestExtensionsPtr = &context->noTestExtensions;
     }
 
     /* Update extension module pointers to use context-based flags */

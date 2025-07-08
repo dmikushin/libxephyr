@@ -1068,7 +1068,7 @@ _XkbFilterDeviceBtn(XkbSrvInfoPtr xkbi,
         DeviceIntPtr dev;
         int button;
 
-        _XkbLookupButtonDevice(&dev, pAction->devbtn.device, xephyr_context->serverClient,
+        _XkbLookupButtonDevice(&dev, pAction->devbtn.device, context->serverClient,
                                DixUnknownAccess, &button);
         if (!dev || !dev->public.on)
             return 1;
@@ -1113,7 +1113,7 @@ _XkbFilterDeviceBtn(XkbSrvInfoPtr xkbi,
 
         filter->active = 0;
         _XkbLookupButtonDevice(&dev, filter->upAction.devbtn.device,
-                               xephyr_context->serverClient, DixUnknownAccess, &button);
+                               context->serverClient, DixUnknownAccess, &button);
         if (!dev || !dev->public.on)
             return 1;
 

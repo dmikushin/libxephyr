@@ -8,6 +8,7 @@
 #include "dixstruct.h"
 #include "scrnintstr.h"
 #include "input.h"
+#include "inputstr.h"
 #include "client.h"
 #include <X11/fonts/font.h>
 #include "cursor.h"
@@ -15,6 +16,7 @@
 
 typedef struct _XephyrContext {
     ScreenInfo screenInfo;
+    InputInfo inputInfo;
     KeybdCtrl defaultKeyboardControl;
     PtrCtrl defaultPointerControl;
     ClientPtr clients[MAXCLIENTS];
@@ -80,15 +82,10 @@ typedef struct _XephyrContext {
     Bool enableIndirectGLX;
 } XephyrContext;
 
-/* Thread-local context access - each thread can have its own context */
-extern __thread XephyrContext *xephyr_context;
-
-/* Function to set thread-local context */
-void SetThreadContext(XephyrContext* context);
-
-/* Function to get current thread context */
-XephyrContext* GetThreadContext(void);
 
 void InitGlobalsForContext(XephyrContext* context);
+
+/* Main function with context parameter */
+int dix_main(int argc, char *argv[], char *envp[], XephyrContext* context);
 
 #endif /* DIX_CONTEXT_H */

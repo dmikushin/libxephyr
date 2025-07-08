@@ -141,7 +141,7 @@ typedef struct _Window {
     RegionRec borderSize;
     DDXPointRec origin;         /* position relative to parent */
     unsigned short borderWidth;
-    unsigned short deliverableEvents;   /* all masks from all xephyr_context->clients */
+    unsigned short deliverableEvents;   /* all masks from all context->clients */
     Mask eventMask;             /* mask from the creating client */
     PixUnion background;
     PixUnion border;
@@ -196,7 +196,7 @@ extern _X_EXPORT Mask DontPropagateMasks[];
 #define wBoundingShape(w)	wUseDefault(w, boundingShape, NULL)
 #define wClipShape(w)		wUseDefault(w, clipShape, NULL)
 #define wInputShape(w)          wUseDefault(w, inputShape, NULL)
-#define wClient(w)		(xephyr_context->clients[CLIENT_ID((w)->drawable.id)])
+#define wClient(w)		(context->clients[CLIENT_ID((w)->drawable.id)])
 #define wBorderWidth(w)		((int) (w)->borderWidth)
 
 /* true when w needs a border drawn. */

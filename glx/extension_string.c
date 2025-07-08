@@ -181,6 +181,6 @@ __glXInitExtensionEnableBits(unsigned char *enable_bits)
         }
     }
 
-    if (xephyr_context->enableIndirectGLX)
+    if (context->enableIndirectGLX)
         __glXEnableExtension(enable_bits, "GLX_EXT_import_context");
 }

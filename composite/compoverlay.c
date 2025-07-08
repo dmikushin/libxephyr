@@ -71,7 +71,7 @@ compFreeOverlayClient(CompOverlayClientPtr pOcToDel)
         }
     }
 
-    /* Destroy overlay window when there are no more xephyr_context->clients using it */
+    /* Destroy overlay window when there are no more context->clients using it */
     if (cs->pOverlayClients == NULL)
         compDestroyOverlayWindow(pScreen);
 }
@@ -149,14 +149,14 @@ compCreateOverlayWindow(ScreenPtr pScreen)
         CreateWindow(cs->overlayWid, pRoot, x, y, w, h, 0,
                      InputOutput, CWBackPixmap | CWOverrideRedirect, &attrs[0],
                      pRoot->drawable.depth,
-                     xephyr_context->serverClient, pScreen->rootVisual, &result);
+                     context->serverClient, pScreen->rootVisual, &result);
     if (pWin == NULL)
         return FALSE;
 
     if (!AddResource(pWin->drawable.id, RT_WINDOW, (void *) pWin))
         return FALSE;
 
-    MapWindow(pWin, xephyr_context->serverClient);
+    MapWindow(pWin, context->serverClient);
 
     return TRUE;
 }

@@ -70,7 +70,7 @@ extern int lastEvent;           /* Defined in extension.c */
 
 /***********************************************************************
  *
- * Handle requests from xephyr_context->clients with a different byte order than us.
+ * Handle requests from context->clients with a different byte order than us.
  *
  */
 

@@ -149,14 +149,14 @@ check_timers(void)
 /*****************
  * WaitForSomething:
  *     Make the server suspend until there is
- *	1. data from xephyr_context->clients or
+ *	1. data from context->clients or
  *	2. input events available or
  *	3. ddx notices something of interest (graphics
  *	   queue ready, etc.) or
- *	4. xephyr_context->clients that have buffered replies/events are ready
+ *	4. context->clients that have buffered replies/events are ready
  *
  *     If the time between INPUT events is
- *     greater than xephyr_context->ScreenSaverTime, the xephyr_context->display is turned off (or
+ *     greater than context->ScreenSaverTime, the context->display is turned off (or
  *     saved, depending on the hardware).  So, WaitForSomething()
  *     has to handle this also (that's why the select() has a timeout.
  *     For more info on ClientsWithInput, see ReadRequestFromClient().
@@ -403,7 +403,7 @@ TimerInit(void)
 
 #define DPMS_CHECK_MODE(mode,time)\
     if (time > 0 && DPMSPowerLevel < mode && timeout >= time)\
-	DPMSSet(xephyr_context->serverClient, mode);
+	DPMSSet(context->serverClient, mode);
 
 #define DPMS_CHECK_TIMEOUT(time)\
     if (time > 0 && (time - timeout) > 0)\
@@ -459,21 +459,21 @@ ScreenSaverTimeoutExpire(OsTimerPtr timer, CARD32 now, void *arg)
         return nextTimeout;
 #endif                          /* DPMSExtension */
 
-    if (!xephyr_context->ScreenSaverTime)
+    if (!context->ScreenSaverTime)
         return nextTimeout;
 
-    if (timeout < xephyr_context->ScreenSaverTime) {
+    if (timeout < context->ScreenSaverTime) {
         return nextTimeout > 0 ?
-            min(xephyr_context->ScreenSaverTime - timeout, nextTimeout) :
-            xephyr_context->ScreenSaverTime - timeout;
+            min(context->ScreenSaverTime - timeout, nextTimeout) :
+            context->ScreenSaverTime - timeout;
     }
 
     ResetOsBuffers();           /* not ideal, but better than nothing */
-    dixSaveScreens(xephyr_context->serverClient, SCREEN_SAVER_ON, ScreenSaverActive);
+    dixSaveScreens(context->serverClient, SCREEN_SAVER_ON, ScreenSaverActive);
 
-    if (xephyr_context->ScreenSaverInterval > 0) {
+    if (context->ScreenSaverInterval > 0) {
         nextTimeout = nextTimeout > 0 ?
-            min(xephyr_context->ScreenSaverInterval, nextTimeout) : xephyr_context->ScreenSaverInterval;
+            min(context->ScreenSaverInterval, nextTimeout) : context->ScreenSaverInterval;
     }
 
     return nextTimeout;
@@ -512,12 +512,12 @@ SetScreenSaverTimer(void)
     }
 #endif
 
-    if (xephyr_context->ScreenSaverTime > 0) {
-        timeout = timeout > 0 ? min(xephyr_context->ScreenSaverTime, timeout) : xephyr_context->ScreenSaverTime;
+    if (context->ScreenSaverTime > 0) {
+        timeout = timeout > 0 ? min(context->ScreenSaverTime, timeout) : context->ScreenSaverTime;
     }
 
 #ifdef SCREENSAVER
-    if (timeout && !xephyr_context->screenSaverSuspended) {
+    if (timeout && !context->screenSaverSuspended) {
 #else
     if (timeout) {
 #endif

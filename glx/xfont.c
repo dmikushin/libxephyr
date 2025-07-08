@@ -101,7 +101,7 @@ __glXMakeBitmapFromGlyph(FontPtr font, CharInfoPtr pci)
 
 /*
 ** Create a GL bitmap for each character in the X font.  The bitmap is stored
-** in a xephyr_context->display list.
+** in a context->display list.
 */
 
 static int
@@ -127,7 +127,7 @@ MakeBitmapsFromFont(FontPtr pFont, int first, int count, int list_base)
                               &nglyphs, &pci);
 
         /*
-         ** Define a xephyr_context->display list containing just a glBitmap() call.
+         ** Define a context->display list containing just a glBitmap() call.
          */
         glNewList(list_base + i, GL_COMPILE);
         if (nglyphs) {
@@ -162,7 +162,7 @@ __glXDisp_UseXFont(__GLXclientState * cl, GLbyte * pc)
     glGetIntegerv(GL_LIST_INDEX, (GLint *) &currentListIndex);
     if (currentListIndex != 0) {
         /*
-         ** A xephyr_context->display list is currently being made.  It is an error
+         ** A context->display list is currently being made.  It is an error
          ** to try to make a font during another lists construction.
          */
         client->errorValue = cx->id;

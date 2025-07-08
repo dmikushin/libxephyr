@@ -86,7 +86,7 @@ static int
 SELinuxDoCheck(SELinuxSubjectRec * subj, SELinuxObjectRec * obj,
                security_class_t class, Mask mode, SELinuxAuditRec * auditdata)
 {
-    /* xephyr_context->serverClient requests OK */
+    /* context->serverClient requests OK */
     if (subj->privileged)
         return Success;
 
@@ -126,7 +126,7 @@ SELinuxLabelClient(ClientPtr client)
         ctx = SELinuxDefaultClientLabel();
     }
 
-    /* For local xephyr_context->clients, try and determine the executable name */
+    /* For local context->clients, try and determine the executable name */
     if (XaceIsLocal(client)) {
         /* Get cached command name if CLIENTIDS is enabled. */
         const char *cmdname = GetClientCmdName(client);
@@ -173,34 +173,34 @@ SELinuxLabelInitial(void)
     char *ctx;
     void *unused;
 
-    /* Do the xephyr_context->serverClient */
-    subj = dixLookupPrivate(&xephyr_context->serverClient->devPrivates, subjectKey);
-    obj = dixLookupPrivate(&xephyr_context->serverClient->devPrivates, objectKey);
+    /* Do the context->serverClient */
+    subj = dixLookupPrivate(&context->serverClient->devPrivates, subjectKey);
+    obj = dixLookupPrivate(&context->serverClient->devPrivates, objectKey);
     subj->privileged = 1;
 
-    /* Use the context of the X server process for the xephyr_context->serverClient */
+    /* Use the context of the X server process for the context->serverClient */
     if (getcon_raw(&ctx) < 0)
         FatalError("SELinux: couldn't get context of X server process\n");
 
     /* Get a SID from the context */
     if (avc_context_to_sid_raw(ctx, &subj->sid) < 0)
-        FatalError("SELinux: xephyr_context->serverClient: context_to_sid(%s) failed\n", ctx);
+        FatalError("SELinux: context->serverClient: context_to_sid(%s) failed\n", ctx);
 
     obj->sid = subj->sid;
     freecon(ctx);
 
-    srec.client = xephyr_context->serverClient;
+    srec.client = context->serverClient;
     srec.access_mode = DixCreateAccess;
     srec.status = Success;
 
-    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
+    for (i = 0; i < context->screenInfo.numScreens; i++) {
         /* Do the screen object */
-        srec.screen = xephyr_context->screenInfo.screens[i];
+        srec.screen = context->screenInfo.screens[i];
         SELinuxScreen(NULL, NULL, &srec);
 
         /* Do the default colormap */
-        dixLookupResourceByType(&unused, xephyr_context->screenInfo.screens[i]->defColormap,
-                                RT_COLORMAP, xephyr_context->serverClient, DixCreateAccess);
+        dixLookupResourceByType(&unused, context->screenInfo.screens[i]->defColormap,
+                                RT_COLORMAP, context->serverClient, DixCreateAccess);
     }
 }
 
@@ -463,7 +463,7 @@ SELinuxExtension(CallbackListPtr *pcbl, void *unused, void *calldata)
     if (obj->sid == NULL) {
         security_id_t sid;
 
-        serv = dixLookupPrivate(&xephyr_context->serverClient->devPrivates, subjectKey);
+        serv = dixLookupPrivate(&context->serverClient->devPrivates, subjectKey);
         rc = SELinuxExtensionToSID(rec->ext->name, &sid);
         if (rc != Success) {
             rec->status = rc;
@@ -630,7 +630,7 @@ SELinuxResource(CallbackListPtr *pcbl, void *unused, void *calldata)
     if (offset < 0) {
         /* No: use the SID of the owning client */
         class = SECCLASS_X_RESOURCE;
-        privatePtr = &xephyr_context->clients[CLIENT_ID(rec->id)]->devPrivates;
+        privatePtr = &context->clients[CLIENT_ID(rec->id)]->devPrivates;
         obj = dixLookupPrivate(privatePtr, objectKey);
     }
     else {
@@ -730,7 +730,7 @@ SELinuxServer(CallbackListPtr *pcbl, void *unused, void *calldata)
     int rc;
 
     subj = dixLookupPrivate(&rec->client->devPrivates, subjectKey);
-    obj = dixLookupPrivate(&xephyr_context->serverClient->devPrivates, objectKey);
+    obj = dixLookupPrivate(&context->serverClient->devPrivates, objectKey);
 
     rc = SELinuxDoCheck(subj, obj, SECCLASS_X_SERVER, rec->access_mode,
                         &auditdata);
@@ -779,7 +779,7 @@ SELinuxResourceState(CallbackListPtr *pcbl, void *unused, void *calldata)
 
         if (rc < 0)
             FatalError("SELinux: Failed to get security context!\n");
-        rc = dixChangeWindowProperty(xephyr_context->serverClient,
+        rc = dixChangeWindowProperty(context->serverClient,
                                      pWin, atom_client_ctx, XA_STRING, 8,
                                      PropModeReplace, strlen(ctx), ctx, FALSE);
         if (rc != Success)
@@ -797,7 +797,7 @@ SELinuxResourceState(CallbackListPtr *pcbl, void *unused, void *calldata)
 
         if (rc < 0)
             FatalError("SELinux: Failed to get security context!\n");
-        rc = dixChangeWindowProperty(xephyr_context->serverClient,
+        rc = dixChangeWindowProperty(context->serverClient,
                                      pWin, atom_ctx, XA_STRING, 8,
                                      PropModeReplace, strlen(ctx), ctx, FALSE);
         if (rc != Success)

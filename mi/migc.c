@@ -120,7 +120,7 @@ miComputeCompositeClip(GCPtr pGC, DrawablePtr pDrawable)
          * if there is no client clip, we can get by with just keeping the
          * pointer we got, and remembering whether or not should destroy (or
          * maybe re-use) it later.  this way, we avoid unnecessary copying of
-         * regions.  (this wins especially if many xephyr_context->clients clip by children
+         * regions.  (this wins especially if many context->clients clip by children
          * and have no client clip.)
          */
         if (!pGC->clientClip) {

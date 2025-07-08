@@ -58,7 +58,7 @@ static void cleanup_argv(XephyrServer* server);
 static const char* error_strings[] = {
     "Success",
     "Invalid configuration",
-    "Failed to open xephyr_context->display",
+    "Failed to open context->display",
     "Failed to create window",
     "Failed to start server",
     "Failed to stop server",
@@ -156,7 +156,7 @@ XephyrServer* xephyr_server_create(const XephyrConfig* config) {
     /* Initialize the server's isolated context */
     InitGlobalsForContext(server->context);
     
-    /* Generate unique xephyr_context->display name if not provided */
+    /* Generate unique context->display name if not provided */
     if (!config->display_name) {
         snprintf(server->display_name, sizeof(server->display_name), ":%d", 100 + server_counter++);
     } else {
@@ -288,12 +288,11 @@ static void* xephyr_server_thread(void* arg) {
     server->running = true;
     pthread_mutex_unlock(&server->mutex);
     
-    /* Set thread-local current server and context */
+    /* Set thread-local current server */
     current_server = server;
-    SetThreadContext(server->context);
     
     /* Call the actual X server main function directly */
-    extern int dix_main(int argc, char *argv[], char *envp[]);
+    /* Declaration is in dix/main.c */
     extern char **environ;
     
     /* Debug: print arguments */
@@ -305,7 +304,7 @@ static void* xephyr_server_thread(void* arg) {
     fflush(stderr);
     
     /* Call real X server - this blocks until server exits */
-    int result = dix_main(server->argc, server->argv, environ);
+    int result = dix_main(server->argc, server->argv, environ, server->context);
     
     /* Server finished - signal waiting thread */
     pthread_mutex_lock(&server->mutex);

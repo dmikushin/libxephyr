@@ -663,6 +663,9 @@ typedef struct _Screen {
     ReplaceScanoutPixmapProcPtr ReplaceScanoutPixmap;
     XYToWindowProcPtr XYToWindow;
     DPMSProcPtr DPMS;
+    
+    /* Context for Xephyr server instance */
+    struct _XephyrContext *context;
 } ScreenRec;
 
 static inline RegionPtr
@@ -687,7 +690,5 @@ typedef struct _ScreenInfo {
     int width;                  /* total width of all screens together */
     int height;                 /* total height of all screens together */
 } ScreenInfo;
-
-extern _X_EXPORT ScreenInfo screenInfo;
 
 #endif                          /* SCREENINTSTRUCT_H */

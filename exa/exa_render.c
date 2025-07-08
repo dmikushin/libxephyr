@@ -1097,7 +1097,7 @@ exaCreateAlphaPicture(ScreenPtr pScreen,
     exaPixmapDirty(pPixmap, 0, 0, width, height);
     FreeScratchGC(pGC);
     pPicture = CreatePicture(0, &pPixmap->drawable, pPictFormat,
-                             0, 0, xephyr_context->serverClient, &error);
+                             0, 0, context->serverClient, &error);
     (*pScreen->DestroyPixmap) (pPixmap);
     return pPicture;
 }

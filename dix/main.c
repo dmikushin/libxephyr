@@ -124,17 +124,18 @@ extern void Dispatch(void);
 CallbackListPtr RootWindowFinalizeCallback = NULL;
 
 int
-dix_main(int argc, char *argv[], char *envp[])
+dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 {
     int i;
     HWEventQueueType alwaysCheckForInput[2];
 
-    /* Context should already be initialized by API layer */
-    if (!GetThreadContext()) {
-        FatalError("No thread context available - server not properly initialized");
+    /* Context should be provided by caller */
+    if (!context) {
+        FatalError("No context provided - server not properly initialized");
     }
+    
 
-    xephyr_context->display = "0";
+    context->display = "0";
 
     InitRegions();
 
@@ -147,28 +148,29 @@ dix_main(int argc, char *argv[], char *envp[])
     alwaysCheckForInput[0] = 0;
     alwaysCheckForInput[1] = 1;
     while (1) {
-        xephyr_context->serverGeneration++;
-        xephyr_context->ScreenSaverTime = xephyr_context->defaultScreenSaverTime;
-        xephyr_context->ScreenSaverInterval = xephyr_context->defaultScreenSaverInterval;
-        xephyr_context->ScreenSaverBlanking = xephyr_context->defaultScreenSaverBlanking;
-        xephyr_context->ScreenSaverAllowExposures = xephyr_context->defaultScreenSaverAllowExposures;
+        context->serverGeneration++;
+        context->ScreenSaverTime = context->defaultScreenSaverTime;
+        context->ScreenSaverInterval = context->defaultScreenSaverInterval;
+        context->ScreenSaverBlanking = context->defaultScreenSaverBlanking;
+        context->ScreenSaverAllowExposures = context->defaultScreenSaverAllowExposures;
 
         InitBlockAndWakeupHandlers();
         /* Perform any operating system dependent initializations you'd like */
-        OsInit();
-        if (xephyr_context->serverGeneration == 1) {
+        OsInit(context);
+        if (context->serverGeneration == 1) {
             CreateWellKnownSockets();
             for (i = 1; i < LimitClients; i++)
-                xephyr_context->clients[i] = NullClient;
-            xephyr_context->serverClient = calloc(sizeof(ClientRec), 1);
-            if (!xephyr_context->serverClient)
+                context->clients[i] = NullClient;
+            context->serverClient = calloc(sizeof(ClientRec), 1);
+            if (!context->serverClient)
                 FatalError("couldn't create server client");
-            InitClient(xephyr_context->serverClient, 0, (void *) NULL);
+            InitClient(context->serverClient, 0, (void *) NULL);
+            context->serverClient->context = context;
         }
         else
             ResetWellKnownSockets();
-        xephyr_context->clients[0] = xephyr_context->serverClient;
-        xephyr_context->currentMaxClients = 1;
+        context->clients[0] = context->serverClient;
+        context->currentMaxClients = 1;
 
         /* clear any existing selections */
         InitSelections();
@@ -179,14 +181,14 @@ dix_main(int argc, char *argv[], char *envp[])
         /* Initialize server client devPrivates, to be reallocated as
          * more client privates are registered
          */
-        if (!dixAllocatePrivates(&xephyr_context->serverClient->devPrivates, PRIVATE_CLIENT))
+        if (!dixAllocatePrivates(&context->serverClient->devPrivates, PRIVATE_CLIENT))
             FatalError("failed to create server client privates");
 
-        if (!InitClientResources(xephyr_context->serverClient)) /* for root resources */
+        if (!InitClientResources(context->serverClient)) /* for root resources */
             FatalError("couldn't init server resources");
 
         SetInputCheck(&alwaysCheckForInput[0], &alwaysCheckForInput[1]);
-        xephyr_context->screenInfo.numScreens = 0;
+        screenInfo.screens[0]->context->screenInfo.numScreens = 0;
 
         InitAtoms();
         InitEvents();
@@ -194,14 +196,14 @@ dix_main(int argc, char *argv[], char *envp[])
         dixResetRegistry();
         InitFonts();
         InitCallbackManager();
-        InitOutput(&xephyr_context->screenInfo, argc, argv);
+        InitOutput(&screenInfo.screens[0]->context->screenInfo, argc, argv);
 
-        if (xephyr_context->screenInfo.numScreens < 1)
+        if (screenInfo.screens[0]->context->screenInfo.numScreens < 1)
             FatalError("no screens found");
         InitExtensions(argc, argv);
 
-        for (i = 0; i < xephyr_context->screenInfo.numGPUScreens; i++) {
-            ScreenPtr pScreen = xephyr_context->screenInfo.gpuscreens[i];
+        for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numGPUScreens; i++) {
+            ScreenPtr pScreen = screenInfo.screens[0]->context->screenInfo.gpuscreens[i];
             if (!CreateScratchPixmapsForScreen(pScreen))
                 FatalError("failed to create scratch pixmaps");
             if (pScreen->CreateScreenResources &&
@@ -209,8 +211,8 @@ dix_main(int argc, char *argv[], char *envp[])
                 FatalError("failed to create screen resources");
         }
 
-        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
-            ScreenPtr pScreen = xephyr_context->screenInfo.screens[i];
+        for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++) {
+            ScreenPtr pScreen = screenInfo.screens[0]->context->screenInfo.screens[i];
 
             if (!CreateScratchPixmapsForScreen(pScreen))
                 FatalError("failed to create scratch pixmaps");
@@ -226,15 +228,15 @@ dix_main(int argc, char *argv[], char *envp[])
             CallCallbacks(&RootWindowFinalizeCallback, pScreen);
         }
 
-        if (SetDefaultFontPath(xephyr_context->defaultFontPath) != Success) {
+        if (SetDefaultFontPath(context->defaultFontPath) != Success) {
             ErrorF("[dix] failed to set default font path '%s'",
-                   xephyr_context->defaultFontPath);
+                   context->defaultFontPath);
         }
         if (!SetDefaultFont("fixed")) {
             FatalError("could not open default font");
         }
 
-        if (!(xephyr_context->rootCursor = CreateRootCursor(NULL, 0))) {
+        if (!(context->rootCursor = CreateRootCursor(NULL, 0, context))) {
             FatalError("could not open default cursor font");
         }
 
@@ -246,15 +248,15 @@ dix_main(int argc, char *argv[], char *envp[])
             PanoramiXConsolidate();
 #endif
 
-        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
-            InitRootWindow(xephyr_context->screenInfo.screens[i]->root);
+        for (i = 0; i < context->screenInfo.numScreens; i++)
+            InitRootWindow(context->screenInfo.screens[i]->root);
 
-        InitCoreDevices();
-        InitInput(argc, argv);
-        InitAndStartDevices();
-        ReserveClientIds(xephyr_context->serverClient);
+        InitCoreDevices(context);
+        InitInput(argc, argv, context);
+        InitAndStartDevices(context);
+        ReserveClientIds(context->serverClient);
 
-        dixSaveScreens(xephyr_context->serverClient, SCREEN_SAVER_FORCER, ScreenSaverReset);
+        dixSaveScreens(context->serverClient, SCREEN_SAVER_FORCER, ScreenSaverReset);
 
         dixCloseRegistry();
 
@@ -289,7 +291,7 @@ dix_main(int argc, char *argv[], char *envp[])
 
         /* Now free up whatever must be freed */
         if (screenIsSaved == SCREEN_SAVER_ON)
-            dixSaveScreens(xephyr_context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
+            dixSaveScreens(context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
         FreeScreenSaverTimer();
         CloseDownExtensions();
 
@@ -309,37 +311,37 @@ dix_main(int argc, char *argv[], char *envp[])
 
         InputThreadFini();
 
-        for (i = 0; i < xephyr_context->screenInfo.numScreens; i++)
-            xephyr_context->screenInfo.screens[i]->root = NullWindow;
+        for (i = 0; i < context->screenInfo.numScreens; i++)
+            context->screenInfo.screens[i]->root = NullWindow;
 
-        CloseDownDevices();
+        CloseDownDevices(context);
 
         CloseDownEvents();
 
-        for (i = xephyr_context->screenInfo.numGPUScreens - 1; i >= 0; i--) {
-            ScreenPtr pScreen = xephyr_context->screenInfo.gpuscreens[i];
+        for (i = context->screenInfo.numGPUScreens - 1; i >= 0; i--) {
+            ScreenPtr pScreen = context->screenInfo.gpuscreens[i];
             FreeScratchPixmapsForScreen(pScreen);
             dixFreeScreenSpecificPrivates(pScreen);
             (*pScreen->CloseScreen) (pScreen);
             dixFreePrivates(pScreen->devPrivates, PRIVATE_SCREEN);
             free(pScreen);
-            xephyr_context->screenInfo.numGPUScreens = i;
+            screenInfo.screens[0]->context->screenInfo.numGPUScreens = i;
         }
 
-        for (i = xephyr_context->screenInfo.numScreens - 1; i >= 0; i--) {
-            FreeScratchPixmapsForScreen(xephyr_context->screenInfo.screens[i]);
+        for (i = screenInfo.screens[0]->context->screenInfo.numScreens - 1; i >= 0; i--) {
+            FreeScratchPixmapsForScreen(screenInfo.screens[0]->context->screenInfo.screens[i]);
             FreeGCperDepth(i);
             FreeDefaultStipple(i);
-            dixFreeScreenSpecificPrivates(xephyr_context->screenInfo.screens[i]);
-            (*xephyr_context->screenInfo.screens[i]->CloseScreen) (xephyr_context->screenInfo.screens[i]);
-            dixFreePrivates(xephyr_context->screenInfo.screens[i]->devPrivates, PRIVATE_SCREEN);
-            free(xephyr_context->screenInfo.screens[i]);
-            xephyr_context->screenInfo.numScreens = i;
+            dixFreeScreenSpecificPrivates(screenInfo.screens[0]->context->screenInfo.screens[i]);
+            (*screenInfo.screens[0]->context->screenInfo.screens[i]->CloseScreen) (screenInfo.screens[0]->context->screenInfo.screens[i]);
+            dixFreePrivates(screenInfo.screens[0]->context->screenInfo.screens[i]->devPrivates, PRIVATE_SCREEN);
+            free(screenInfo.screens[0]->context->screenInfo.screens[i]);
+            screenInfo.screens[0]->context->screenInfo.numScreens = i;
         }
 
-        ReleaseClientIds(xephyr_context->serverClient);
-        dixFreePrivates(xephyr_context->serverClient->devPrivates, PRIVATE_CLIENT);
-        xephyr_context->serverClient->devPrivates = NULL;
+        ReleaseClientIds(context->serverClient);
+        dixFreePrivates(context->serverClient->devPrivates, PRIVATE_CLIENT);
+        context->serverClient->devPrivates = NULL;
 
 	dixFreeRegistry();
 
@@ -364,8 +366,8 @@ dix_main(int argc, char *argv[], char *envp[])
             break;
         }
 
-        free(xephyr_context->ConnectionInfo);
-        xephyr_context->ConnectionInfo = NULL;
+        free(context->ConnectionInfo);
+        context->ConnectionInfo = NULL;
     }
     return 0;
 }

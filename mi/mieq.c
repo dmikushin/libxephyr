@@ -552,13 +552,13 @@ mieqProcessInputEvents(void)
         master = (dev) ? GetMaster(dev, MASTER_ATTACHED) : NULL;
 
         if (screenIsSaved == SCREEN_SAVER_ON)
-            dixSaveScreens(xephyr_context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
+            dixSaveScreens(context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
 #ifdef DPMSExtension
         else if (DPMSPowerLevel != DPMSModeOn)
             SetScreenSaverTimer();
 
         if (DPMSPowerLevel != DPMSModeOn)
-            DPMSSet(xephyr_context->serverClient, DPMSModeOn);
+            DPMSSet(context->serverClient, DPMSModeOn);
 #endif
 
         mieqProcessDeviceEvent(dev, &event, screen);

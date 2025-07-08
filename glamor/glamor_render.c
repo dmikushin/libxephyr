@@ -1375,7 +1375,7 @@ glamor_convert_gradient_picture(ScreenPtr screen,
         return NULL;
 
     dst = CreatePicture(0,
-                        &pixmap->drawable, pFormat, 0, 0, xephyr_context->serverClient, &error);
+                        &pixmap->drawable, pFormat, 0, 0, context->serverClient, &error);
     glamor_destroy_pixmap(pixmap);
     if (!dst)
         return NULL;

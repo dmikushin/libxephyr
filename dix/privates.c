@@ -216,12 +216,12 @@ fixupScreens(FixupFunc fixup, unsigned bytes)
 {
     int s;
 
-    for (s = 0; s < xephyr_context->screenInfo.numScreens; s++)
-        if (!fixupOneScreen (xephyr_context->screenInfo.screens[s], fixup, bytes))
+    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numScreens; s++)
+        if (!fixupOneScreen (screenInfo.screens[0]->context->screenInfo.screens[s], fixup, bytes))
             return FALSE;
 
-    for (s = 0; s < xephyr_context->screenInfo.numGPUScreens; s++)
-        if (!fixupOneScreen (xephyr_context->screenInfo.gpuscreens[s], fixup, bytes))
+    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numGPUScreens; s++)
+        if (!fixupOneScreen (screenInfo.screens[0]->context->screenInfo.gpuscreens[s], fixup, bytes))
             return FALSE;
     return TRUE;
 }
@@ -229,8 +229,8 @@ fixupScreens(FixupFunc fixup, unsigned bytes)
 static Bool
 fixupServerClient(FixupFunc fixup, unsigned bytes)
 {
-    if (xephyr_context->serverClient)
-        return fixup(&xephyr_context->serverClient->devPrivates, global_keys[PRIVATE_CLIENT].offset,
+    if (context->serverClient)
+        return fixup(&context->serverClient->devPrivates, global_keys[PRIVATE_CLIENT].offset,
                      bytes);
     return TRUE;
 }
@@ -254,14 +254,14 @@ fixupDefaultColormaps(FixupFunc fixup, unsigned bytes)
 {
     int s;
 
-    for (s = 0; s < xephyr_context->screenInfo.numScreens; s++) {
+    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numScreens; s++) {
         ColormapPtr cmap;
 
         dixLookupResourceByType((void **) &cmap,
-                                xephyr_context->screenInfo.screens[s]->defColormap, RT_COLORMAP,
-                                xephyr_context->serverClient, DixCreateAccess);
+                                screenInfo.screens[0]->context->screenInfo.screens[s]->defColormap, RT_COLORMAP,
+                                context->serverClient, DixCreateAccess);
         if (cmap &&
-            !fixup(&cmap->devPrivates, xephyr_context->screenInfo.screens[s]->screenSpecificPrivates[PRIVATE_COLORMAP].offset, bytes))
+            !fixup(&cmap->devPrivates, screenInfo.screens[0]->context->screenInfo.screens[s]->screenSpecificPrivates[PRIVATE_COLORMAP].offset, bytes))
             return FALSE;
     }
     return TRUE;
@@ -309,13 +309,13 @@ grow_screen_specific_set(DevPrivateType type, unsigned bytes)
     int s;
 
     /* Update offsets for all screen-specific keys */
-    for (s = 0; s < xephyr_context->screenInfo.numScreens; s++) {
-        ScreenPtr       pScreen = xephyr_context->screenInfo.screens[s];
+    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numScreens; s++) {
+        ScreenPtr       pScreen = screenInfo.screens[0]->context->screenInfo.screens[s];
 
         grow_private_set(&pScreen->screenSpecificPrivates[type], bytes);
     }
-    for (s = 0; s < xephyr_context->screenInfo.numGPUScreens; s++) {
-        ScreenPtr       pScreen = xephyr_context->screenInfo.gpuscreens[s];
+    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numGPUScreens; s++) {
+        ScreenPtr       pScreen = screenInfo.screens[0]->context->screenInfo.gpuscreens[s];
 
         grow_private_set(&pScreen->screenSpecificPrivates[type], bytes);
     }
@@ -498,7 +498,7 @@ _dixAllocateObjectWithPrivates(unsigned baseSize, unsigned clear,
 
 /*
  * Allocate privates separately from containing object.
- * Used for xephyr_context->clients and screens.
+ * Used for context->clients and screens.
  */
 Bool
 dixAllocatePrivates(PrivatePtr *privates, DevPrivateType type)

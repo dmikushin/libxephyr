@@ -27,7 +27,7 @@ static CARD16
  RR10CurrentSizeID(ScreenPtr pScreen);
 
 /*
- * Edit connection information block so that new xephyr_context->clients
+ * Edit connection information block so that new context->clients
  * see the current screen size on connect
  */
 static void
@@ -42,16 +42,16 @@ RREditConnectionInfo(ScreenPtr pScreen)
     int screen = 0;
     int d;
 
-    if (xephyr_context->ConnectionInfo == NULL)
+    if (context->ConnectionInfo == NULL)
         return;
 
-    connSetup = (xConnSetup *) xephyr_context->ConnectionInfo;
+    connSetup = (xConnSetup *) context->ConnectionInfo;
     vendor = (char *) connSetup + sizeof(xConnSetup);
     formats = (xPixmapFormat *) ((char *) vendor +
                                  pad_to_int32(connSetup->nbytesVendor));
     root = (xWindowRoot *) ((char *) formats +
                             sizeof(xPixmapFormat) *
-                            xephyr_context->screenInfo.numPixmapFormats);
+                            context->screenInfo.numPixmapFormats);
     while (screen != pScreen->myNum) {
         depth = (xDepth *) ((char *) root + sizeof(xWindowRoot));
         for (d = 0; d < root->nDepths; d++) {
@@ -518,8 +518,8 @@ rrGetScreenResources(ClientPtr client, Bool query)
             .type = X_Reply,
             .sequenceNumber = client->sequence,
             .length = 0,
-            .timestamp = xephyr_context->currentTime.milliseconds,
-            .configTimestamp = xephyr_context->currentTime.milliseconds,
+            .timestamp = context->currentTime.milliseconds,
+            .configTimestamp = context->currentTime.milliseconds,
             .nCrtcs = 0,
             .nOutputs = 0,
             .nModes = 0,
@@ -786,8 +786,8 @@ ProcRRGetScreenInfo(ClientPtr client)
             .sequenceNumber = client->sequence,
             .length = 0,
             .root = pWin->drawable.pScreen->root->drawable.id,
-            .timestamp = xephyr_context->currentTime.milliseconds,
-            .configTimestamp = xephyr_context->currentTime.milliseconds,
+            .timestamp = context->currentTime.milliseconds,
+            .configTimestamp = context->currentTime.milliseconds,
             .nSizes = 0,
             .sizeID = 0,
             .rotation = RR_Rotate_0,
@@ -944,7 +944,7 @@ ProcRRSetScreenConfig(ClientPtr client)
     time = ClientTimeToServerTime(stuff->timestamp);
 
     if (!pScrPriv) {
-        time = xephyr_context->currentTime;
+        time = context->currentTime;
         status = RRSetConfigFailed;
         goto sendReply;
     }
@@ -953,7 +953,7 @@ ProcRRSetScreenConfig(ClientPtr client)
 
     output = RRFirstOutput(pScreen);
     if (!output) {
-        time = xephyr_context->currentTime;
+        time = context->currentTime;
         status = RRSetConfigFailed;
         goto sendReply;
     }

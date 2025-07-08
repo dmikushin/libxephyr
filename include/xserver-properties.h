@@ -30,7 +30,7 @@
  * byte-ordering. */
 #define XATOM_FLOAT "FLOAT"
 
-/* STRING. Seat name of this xephyr_context->display */
+/* STRING. Seat name of this context->display */
 #define SEAT_ATOM_NAME "Xorg_Seat"
 
 /* BOOL. 0 - device disabled, 1 - device enabled */

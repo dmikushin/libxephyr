@@ -27,6 +27,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define DIXGRABS_H 1
 
 struct _GrabParameters;
+typedef struct _XephyrContext XephyrContext;
 
 extern void PrintDeviceGrabInfo(DeviceIntPtr dev);
 extern void UngrabAllDevices(Bool kill_client);
@@ -48,7 +49,8 @@ extern GrabPtr CreateGrab(int /* client */ ,
                           CursorPtr /* cursor */ );
 
 extern _X_EXPORT int DeletePassiveGrab(void *value,
-                                       XID id);
+                                       XID id,
+                                       XephyrContext* context);
 
 extern _X_EXPORT Bool GrabMatchesSecond(GrabPtr /* pFirstGrab */ ,
                                         GrabPtr /* pSecondGrab */ ,

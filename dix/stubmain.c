@@ -24,7 +24,7 @@ DEALINGS IN THE SOFTWARE.
 
 ******************************************************************/
 
-int dix_main(int argc, char *argv[], char *envp[]);
+int dix_main(int argc, char *argv[], char *envp[], XephyrContext* context);
 
 /*
   A default implementation of main, which can be overridden by the DDX
@@ -32,5 +32,15 @@ int dix_main(int argc, char *argv[], char *envp[]);
 int
 main(int argc, char *argv[], char *envp[])
 {
-    return dix_main(argc, argv, envp);
+    /* For standalone usage, create a context */
+    XephyrContext* context = calloc(1, sizeof(XephyrContext));
+    if (!context) {
+        return 1;
+    }
+    InitGlobalsForContext(context);
+    
+    int result = dix_main(argc, argv, envp, context);
+    
+    free(context);
+    return result;
 }

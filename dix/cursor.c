@@ -103,7 +103,7 @@ FreeCursorBits(CursorBitsPtr bits)
  *  \param value must conform to DeleteType
  */
 int
-FreeCursor(void *value, XID cid)
+FreeCursor(void *value, XID cid, XephyrContext* context)
 {
     int nscr;
     CursorPtr pCurs = (CursorPtr) value;
@@ -118,9 +118,11 @@ FreeCursor(void *value, XID cid)
 
     BUG_WARN(CursorRefCount(pCurs) < 0);
 
-    for (nscr = 0; nscr < xephyr_context->screenInfo.numScreens; nscr++) {
-        pscr = xephyr_context->screenInfo.screens[nscr];
-        (void) (*pscr->UnrealizeCursor) (pDev, pscr, pCurs);
+    if (context && context->screenInfo.numScreens > 0) {
+        for (nscr = 0; nscr < context->screenInfo.numScreens; nscr++) {
+            pscr = context->screenInfo.screens[nscr];
+            (void) (*pscr->UnrealizeCursor) (pDev, pscr, pCurs);
+        }
     }
     FreeCursorBits(pCurs->bits);
     dixFiniPrivates(pCurs, PRIVATE_CURSOR);
@@ -152,7 +154,7 @@ CursorRefCount(const CursorPtr cursor)
 
 
 /*
- * We check for empty cursors so that we won't have to xephyr_context->display them
+ * We check for empty cursors so that we won't have to context->display them
  */
 static void
 CheckForEmptyMask(CursorBitsPtr bits)
@@ -183,15 +185,16 @@ CheckForEmptyMask(CursorBitsPtr bits)
  * failed for a device on a given screen.
  */
 static int
-RealizeCursorAllScreens(CursorPtr pCurs)
+RealizeCursorAllScreens(CursorPtr pCurs, XephyrContext* context)
 {
     DeviceIntPtr pDev;
     ScreenPtr pscr;
     int nscr;
 
-    for (nscr = 0; nscr < xephyr_context->screenInfo.numScreens; nscr++) {
-        pscr = xephyr_context->screenInfo.screens[nscr];
-        for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+    if (context && context->screenInfo.numScreens > 0) {
+        for (nscr = 0; nscr < context->screenInfo.numScreens; nscr++) {
+            pscr = context->screenInfo.screens[nscr];
+        for (pDev = context->inputInfo.devices; pDev; pDev = pDev->next) {
             if (DevHasCursor(pDev)) {
                 if (!(*pscr->RealizeCursor) (pDev, pscr, pCurs)) {
                     /* Realize failed for device pDev on screen pscr.
@@ -200,7 +203,7 @@ RealizeCursorAllScreens(CursorPtr pCurs)
                      * current screen and then all devices on previous
                      * screens.
                      */
-                    DeviceIntPtr pDevIt = inputInfo.devices;    /*dev iterator */
+                    DeviceIntPtr pDevIt = context->inputInfo.devices;    /*dev iterator */
 
                     while (pDevIt && pDevIt != pDev) {
                         if (DevHasCursor(pDevIt))
@@ -208,9 +211,9 @@ RealizeCursorAllScreens(CursorPtr pCurs)
                         pDevIt = pDevIt->next;
                     }
                     while (--nscr >= 0) {
-                        pscr = xephyr_context->screenInfo.screens[nscr];
+                        pscr = context->screenInfo.screens[nscr];
                         /* now unrealize all devices on previous screens */
-                        pDevIt = inputInfo.devices;
+                        pDevIt = context->inputInfo.devices;
                         while (pDevIt) {
                             if (DevHasCursor(pDevIt))
                                 (*pscr->UnrealizeCursor) (pDevIt, pscr, pCurs);
@@ -222,6 +225,7 @@ RealizeCursorAllScreens(CursorPtr pCurs)
                 }
             }
         }
+    }
     }
 
     return Success;
@@ -284,7 +288,7 @@ AllocARGBCursor(unsigned char *psrcbits, unsigned char *pmaskbits,
     if (rc != Success)
         goto error;
 
-    rc = RealizeCursorAllScreens(pCurs);
+    rc = RealizeCursorAllScreens(pCurs, client->context);
     if (rc != Success)
         goto error;
 
@@ -464,7 +468,7 @@ AllocGlyphCursor(Font source, unsigned sourceChar, Font mask, unsigned maskChar,
     if (rc != Success)
         goto error;
 
-    rc = RealizeCursorAllScreens(pCurs);
+    rc = RealizeCursorAllScreens(pCurs, client->context);
     if (rc != Success)
         goto error;
 
@@ -489,7 +493,7 @@ AllocGlyphCursor(Font source, unsigned sourceChar, Font mask, unsigned maskChar,
  *************************************************************/
 
 CursorPtr
-CreateRootCursor(char *unused1, unsigned int unused2)
+CreateRootCursor(char *unused1, unsigned int unused2, XephyrContext* context)
 {
     CursorPtr curs;
     FontPtr cursorfont;
@@ -497,18 +501,22 @@ CreateRootCursor(char *unused1, unsigned int unused2)
     XID fontID;
     const char defaultCursorFont[] = "cursor";
 
+    if (!context) {
+        return NullCursor;
+    }
+
     fontID = FakeClientID(0);
-    err = OpenFont(xephyr_context->serverClient, fontID, FontLoadAll | FontOpenSync,
+    err = OpenFont(context->serverClient, fontID, FontLoadAll | FontOpenSync,
                    (unsigned) strlen(defaultCursorFont), defaultCursorFont);
     if (err != Success)
         return NullCursor;
 
     err = dixLookupResourceByType((void **) &cursorfont, fontID, RT_FONT,
-                                  xephyr_context->serverClient, DixReadAccess);
+                                  context->serverClient, DixReadAccess);
     if (err != Success)
         return NullCursor;
     if (AllocGlyphCursor(fontID, 0, fontID, 1, 0, 0, 0, ~0, ~0, ~0,
-                         &curs, xephyr_context->serverClient, (XID) 0) != Success)
+                         &curs, context->serverClient, (XID) 0) != Success)
         return NullCursor;
 
     if (!AddResource(FakeClientID(0), RT_CURSOR, (void *) curs))

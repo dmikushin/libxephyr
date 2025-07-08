@@ -98,7 +98,7 @@ typedef union {
  *  protocol selections passed in a single CreateContext or RegisterClients.
  *  Generally, a context will have one of these from the create and an
  *  additional one for each RegisterClients.  RCAPs are freed when all their
- *  xephyr_context->clients are unregistered.
+ *  context->clients are unregistered.
  */
 
 typedef struct _RecordClientsAndProtocolRec {
@@ -111,8 +111,8 @@ typedef struct _RecordClientsAndProtocolRec {
     RecordSetPtr pDeviceEventSet;       /* device events to record */
     RecordSetPtr pDeliveredEventSet;    /* delivered events to record */
     RecordSetPtr pErrorSet;     /* errors to record */
-    XID *pClientIDs;            /* array of xephyr_context->clients to record */
-    short numClients;           /* number of xephyr_context->clients in pClientIDs */
+    XID *pClientIDs;            /* array of context->clients to record */
+    short numClients;           /* number of context->clients in pClientIDs */
     short sizeClients;          /* size of pClientIDs array */
     unsigned int clientStarted:1;       /* record new client connections? */
     unsigned int clientDied:1;  /* record client disconnections? */
@@ -563,7 +563,7 @@ RecordARequest(ClientPtr client)
  *	nulldata is NULL.
  *	calldata is a pointer to a ReplyInfoRec (include/os.h)
  *	  which provides information about replies that are being sent
- *	  to xephyr_context->clients.
+ *	  to context->clients.
  *
  * Returns: nothing.
  *
@@ -646,7 +646,7 @@ RecordAReply(CallbackListPtr *pcbl, void *nulldata, void *calldata)
  *	nulldata is NULL.
  *	calldata is a pointer to a EventInfoRec (include/dix.h)
  *	  which provides information about events that are being sent
- *	  to xephyr_context->clients.
+ *	  to context->clients.
  *
  * Returns: nothing.
  *
@@ -726,9 +726,9 @@ RecordSendProtocolEvents(RecordClientsAndProtocolPtr pRCAP,
 
                 memcpy(&shiftedEvent, pev, sizeof(xEvent));
                 shiftedEvent.u.keyButtonPointer.rootX +=
-                    xephyr_context->screenInfo.screens[scr]->x - xephyr_context->screenInfo.screens[0]->x;
+                    context->screenInfo.screens[scr]->x - context->screenInfo.screens[0]->x;
                 shiftedEvent.u.keyButtonPointer.rootY +=
-                    xephyr_context->screenInfo.screens[scr]->y - xephyr_context->screenInfo.screens[0]->y;
+                    context->screenInfo.screens[scr]->y - context->screenInfo.screens[0]->y;
                 pEvToRecord = &shiftedEvent;
             }
 #endif                          /* PANORAMIX */
@@ -808,7 +808,7 @@ RecordADeviceEvent(CallbackListPtr *pcbl, void *nulldata, void *calldata)
  *
  * Side Effects:
  *	All buffered reply data of all enabled contexts is written to
- *	the recording xephyr_context->clients.
+ *	the recording context->clients.
  */
 static void
 RecordFlushAllContexts(CallbackListPtr *pcbl,
@@ -840,7 +840,7 @@ RecordFlushAllContexts(CallbackListPtr *pcbl,
  *
  * Side Effects:
  *	Recording hooks needed by RCAP are installed.
- *	If oneclient is zero, recording hooks needed for all xephyr_context->clients and
+ *	If oneclient is zero, recording hooks needed for all context->clients and
  *	protocol on the RCAP are installed.  If oneclient is non-zero,
  *	only those hooks needed for the specified client are installed.
  *	
@@ -864,7 +864,7 @@ RecordInstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient)
             if (pRCAP->pRequestMajorOpSet) {
                 RecordSetIteratePtr pIter = NULL;
                 RecordSetInterval interval;
-                ClientPtr pClient = xephyr_context->clients[CLIENT_ID(client)];
+                ClientPtr pClient = context->clients[CLIENT_ID(client)];
 
                 if (pClient && !RecordClientPrivate(pClient)) {
                     RecordClientPrivatePtr pClientPriv;
@@ -925,7 +925,7 @@ RecordInstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient)
  *
  * Side Effects:
  *	Recording hooks needed by RCAP may be uninstalled.
- *	If oneclient is zero, recording hooks needed for all xephyr_context->clients and
+ *	If oneclient is zero, recording hooks needed for all context->clients and
  *	protocol on the RCAP may be uninstalled.  If oneclient is non-zero,
  *	only those hooks needed for the specified client may be uninstalled.
  *	
@@ -947,7 +947,7 @@ RecordUninstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient)
     while (client) {
         if (client != XRecordFutureClients) {
             if (pRCAP->pRequestMajorOpSet) {
-                ClientPtr pClient = xephyr_context->clients[CLIENT_ID(client)];
+                ClientPtr pClient = context->clients[CLIENT_ID(client)];
                 int c;
                 Bool otherRCAPwantsProcVector = FALSE;
                 RecordClientPrivatePtr pClientPriv = NULL;
@@ -988,7 +988,7 @@ RecordUninstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient)
                     free(pClientPriv);
                 }
             }                   /* end if this RCAP specifies any requests */
-        }                       /* end if not future xephyr_context->clients */
+        }                       /* end if not future context->clients */
         if (oneclient)
             client = 0;
         else
@@ -1033,7 +1033,7 @@ RecordDeleteClientFromRCAP(RecordClientsAndProtocolPtr pRCAP, int position)
         RecordUninstallHooks(pRCAP, pRCAP->pClientIDs[position]);
     if (position != pRCAP->numClients - 1)
         pRCAP->pClientIDs[position] = pRCAP->pClientIDs[pRCAP->numClients - 1];
-    if (--pRCAP->numClients == 0) {     /* no more xephyr_context->clients; remove RCAP from context's list */
+    if (--pRCAP->numClients == 0) {     /* no more context->clients; remove RCAP from context's list */
         RecordContextPtr pContext = pRCAP->pContext;
 
         if (pContext->pRecordingClient)
@@ -1068,7 +1068,7 @@ RecordDeleteClientFromRCAP(RecordClientsAndProtocolPtr pRCAP, int position)
  *	is enabled.  The designated client will be added to the
  *	pRCAP->pClientIDs array, which may be realloced.
  *	pRCAP->clientIDsSeparatelyAllocated may be set to 1 if there
- *	is no more room to hold xephyr_context->clients internal to the RCAP.
+ *	is no more room to hold context->clients internal to the RCAP.
  */
 static void
 RecordAddClientToRCAP(RecordClientsAndProtocolPtr pRCAP, XID clientspec)
@@ -1153,9 +1153,9 @@ RecordSanityCheckClientSpecifiers(ClientPtr client, XID *clientspecs,
         if (errorspec && (CLIENT_BITS(clientspecs[i]) == errorspec))
             return BadMatch;
         clientIndex = CLIENT_ID(clientspecs[i]);
-        if (clientIndex && xephyr_context->clients[clientIndex] &&
-            xephyr_context->clients[clientIndex]->clientState == ClientStateRunning) {
-            if (clientspecs[i] == xephyr_context->clients[clientIndex]->clientAsMask)
+        if (clientIndex && context->clients[clientIndex] &&
+            context->clients[clientIndex]->clientState == ClientStateRunning) {
+            if (clientspecs[i] == context->clients[clientIndex]->clientAsMask)
                 continue;
             rc = dixLookupResourceByClass(&value, clientspecs[i], RC_ANY,
                                           client, DixGetAttrAccess);
@@ -1184,9 +1184,9 @@ RecordSanityCheckClientSpecifiers(ClientPtr client, XID *clientspecs,
  *	  - all but the client id bits of resource IDs are stripped off.
  *	  - duplicates removed.
  *	  - XRecordAllClients expanded to a list of all currently connected
- *	    xephyr_context->clients + XRecordFutureClients - excludespec (if non-zero)
+ *	    context->clients + XRecordFutureClients - excludespec (if non-zero)
  *	  - XRecordCurrentClients expanded to a list of all currently
- *	    connected xephyr_context->clients - excludespec (if non-zero)
+ *	    connected context->clients - excludespec (if non-zero)
  *	The returned array may be the passed array modified in place, or
  *	it may be an malloc'ed array.  The caller should keep a pointer to the
  *	original array and free the returned array if it is different.
@@ -1218,12 +1218,12 @@ RecordCanonicalizeClientSpecifiers(XID *pClientspecs, int *pNumClientspecs,
     for (i = 0; i < numClients; i++) {
         if (pClientspecs[i] == XRecordAllClients || pClientspecs[i] == XRecordCurrentClients) { /* expand All/Current */
             int j, nc;
-            XID *pCanon = xallocarray(xephyr_context->currentMaxClients + 1, sizeof(XID));
+            XID *pCanon = xallocarray(context->currentMaxClients + 1, sizeof(XID));
 
             if (!pCanon)
                 return NULL;
-            for (nc = 0, j = 1; j < xephyr_context->currentMaxClients; j++) {
-                ClientPtr client = xephyr_context->clients[j];
+            for (nc = 0, j = 1; j < context->currentMaxClients; j++) {
+                ClientPtr client = context->clients[j];
 
                 if (client != NullClient &&
                     client->clientState == ClientStateRunning &&
@@ -1512,7 +1512,7 @@ RecordConvertRangesToIntervals(SetInfoPtr psi,
 /* RecordRegisterClients
  *
  * Arguments:
- *	pContext is the context on which to register the xephyr_context->clients.
+ *	pContext is the context on which to register the context->clients.
  *	client is the client that issued the RecordCreateContext or
  *	  RecordRegisterClients request.
  *	stuff is a pointer to the request.
@@ -1523,11 +1523,11 @@ RecordConvertRangesToIntervals(SetInfoPtr psi,
  *
  * Side Effects:
  *	If different element headers are specified, the context is flushed.
- *	If any of the specified xephyr_context->clients are already registered on the
+ *	If any of the specified context->clients are already registered on the
  *	context, they are first unregistered.  A new RCAP is created to
- *	hold the specified protocol and xephyr_context->clients, and it is linked onto the
+ *	hold the specified protocol and context->clients, and it is linked onto the
  *	context.  If the context is enabled, appropriate hooks are installed
- *	to record the new xephyr_context->clients and protocol.
+ *	to record the new context->clients and protocol.
  */
 static int
 RecordRegisterClients(RecordContextPtr pContext, ClientPtr client,
@@ -1568,7 +1568,7 @@ RecordRegisterClients(RecordContextPtr pContext, ClientPtr client,
 
     nClients = stuff->nClients;
     if (!nClients)
-        /* if empty xephyr_context->clients list, we're done. */
+        /* if empty context->clients list, we're done. */
         return Success;
 
     recordingClient = pContext->pRecordingClient ?
@@ -2217,7 +2217,7 @@ ProcRecordGetContext(ClientPtr client)
         }
     }
 
-    /* calculate number of xephyr_context->clients and reply length */
+    /* calculate number of context->clients and reply length */
 
     nClients = 0;
     length = 0;
@@ -2421,7 +2421,7 @@ RecordDeleteContext(void *value, XID id)
 
     RecordDisableContext(pContext);
 
-    /*  Remove all the xephyr_context->clients from all the RCAPs.
+    /*  Remove all the context->clients from all the RCAPs.
      *  As a result, the RCAPs will be freed.
      */
 

@@ -187,7 +187,7 @@ void
 #endif
 
 void
- ephyrUpdateModifierState(unsigned int state);
+ ephyrUpdateModifierState(XephyrContext* context, unsigned int state);
 
 extern KdPointerDriver EphyrMouseDriver;
 

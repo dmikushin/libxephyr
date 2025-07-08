@@ -500,7 +500,7 @@ NewGCObject(ScreenPtr pScreen, int depth)
     pGC->dashOffset = 0;
 
     /* use the default font and stipple */
-    pGC->font = xephyr_context->defaultFont;
+    pGC->font = context->defaultFont;
     if (pGC->font)              /* necessary, because open of default font could fail */
         pGC->font->refcnt++;
     pGC->stipple = pGC->pScreen->defaultStipple;
@@ -764,7 +764,7 @@ CopyGC(GC * pgcSrc, GC * pgcDst, BITS32 mask)
  *  \param value  must conform to DeleteType
  */
 int
-FreeGC(void *value, XID gid)
+FreeGC(void *value, XID gid, XephyrContext* context)
 {
     GCPtr pGC = (GCPtr) value;
 
@@ -821,7 +821,7 @@ FreeGCperDepth(int screenNum)
     ScreenPtr pScreen;
     GCPtr *ppGC;
 
-    pScreen = xephyr_context->screenInfo.screens[screenNum];
+    pScreen = screenInfo.screens[0]->context->screenInfo.screens[screenNum];
     ppGC = pScreen->GCperDepth;
 
     for (i = 0; i <= pScreen->numDepths; i++) {
@@ -838,7 +838,7 @@ CreateGCperDepth(int screenNum)
     DepthPtr pDepth;
     GCPtr *ppGC;
 
-    pScreen = xephyr_context->screenInfo.screens[screenNum];
+    pScreen = screenInfo.screens[0]->context->screenInfo.screens[screenNum];
     ppGC = pScreen->GCperDepth;
     /* do depth 1 separately because it's not included in list */
     if (!(ppGC[0] = CreateScratchGC(pScreen, 1)))
@@ -867,7 +867,7 @@ CreateDefaultStipple(int screenNum)
     CARD16 w, h;
     GCPtr pgcScratch;
 
-    pScreen = xephyr_context->screenInfo.screens[screenNum];
+    pScreen = screenInfo.screens[0]->context->screenInfo.screens[screenNum];
 
     w = 16;
     h = 16;
@@ -899,7 +899,7 @@ CreateDefaultStipple(int screenNum)
 void
 FreeDefaultStipple(int screenNum)
 {
-    ScreenPtr pScreen = xephyr_context->screenInfo.screens[screenNum];
+    ScreenPtr pScreen = screenInfo.screens[0]->context->screenInfo.screens[screenNum];
 
     (*pScreen->DestroyPixmap) (pScreen->defaultStipple);
 }

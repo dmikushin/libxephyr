@@ -194,7 +194,7 @@ exaRealizeGlyphCaches(ScreenPtr pScreen, unsigned int format)
 
     component_alpha = NeedsComponent(pPictFormat->format);
     pPicture = CreatePicture(0, &pPixmap->drawable, pPictFormat,
-                             CPComponentAlpha, &component_alpha, xephyr_context->serverClient,
+                             CPComponentAlpha, &component_alpha, context->serverClient,
                              &error);
 
     (*pScreen->DestroyPixmap) (pPixmap);        /* picture holds a refcount */
@@ -724,7 +724,7 @@ exaGlyphs(CARD8 op,
         component_alpha = NeedsComponent(maskFormat->format);
         pMask = CreatePicture(0, &pMaskPixmap->drawable,
                               maskFormat, CPComponentAlpha, &component_alpha,
-                              xephyr_context->serverClient, &error);
+                              context->serverClient, &error);
         if (!pMask ||
             (!component_alpha && pExaScr->info->CheckComposite &&
              !(*pExaScr->info->CheckComposite) (PictOpAdd, pSrc, NULL, pMask)))
@@ -752,7 +752,7 @@ exaGlyphs(CARD8 op,
                 return;
 
             pMask = CreatePicture(0, &pMaskPixmap->drawable, maskFormat, 0, 0,
-                                  xephyr_context->serverClient, &error);
+                                  context->serverClient, &error);
             if (!pMask) {
                 (*pScreen->DestroyPixmap) (pMaskPixmap);
                 return;

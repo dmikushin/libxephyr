@@ -548,7 +548,7 @@ KdKeyboardProc(DeviceIntPtr pDevice, int onoff)
             return BadImplementation;
         }
 
-        if ((*ki->driver->Init) (ki) != Success) {
+        if ((*ki->driver->Init) (ki, pDevice->context) != Success) {
             return !Success;
         }
 
@@ -723,14 +723,17 @@ KdAddConfigKeyboard(char *keyboard)
 }
 
 int
-KdAddKeyboard(KdKeyboardInfo * ki)
+KdAddKeyboard(KdKeyboardInfo * ki, XephyrContext* context)
 {
     KdKeyboardInfo **prev;
 
     if (!ki)
         return !Success;
 
-    ki->dixdev = AddInputDevice(xephyr_context->serverClient, KdKeyboardProc, TRUE);
+    ki->dixdev = AddInputDevice(context->serverClient, KdKeyboardProc, TRUE, context);
+    if (ki->dixdev) {
+        ki->dixdev->context = context;
+    }
     if (!ki->dixdev) {
         ErrorF("Couldn't register keyboard device %s\n",
                ki->name ? ki->name : "(unnamed)");
@@ -797,7 +800,7 @@ KdAddPointer(KdPointerInfo * pi)
     pi->mouseState = start;
     pi->eventHeld = FALSE;
 
-    pi->dixdev = AddInputDevice(xephyr_context->serverClient, KdPointerProc, TRUE);
+    pi->dixdev = AddInputDevice(context->serverClient, KdPointerProc, TRUE, context);
     if (!pi->dixdev) {
         ErrorF("Couldn't add pointer device %s\n",
                pi->name ? pi->name : "(unnamed)");
@@ -1115,7 +1118,7 @@ KdParsePointer(const char *arg)
 }
 
 void
-KdInitInput(void)
+KdInitInput(XephyrContext* context)
 {
     KdPointerInfo *pi;
     KdKeyboardInfo *ki;
@@ -1137,7 +1140,7 @@ KdInitInput(void)
         ki = KdParseKeyboard(dev->line);
         if (!ki)
             ErrorF("Failed to parse keyboard\n");
-        if (KdAddKeyboard(ki) != Success)
+        if (KdAddKeyboard(ki, context) != Success)
             ErrorF("Failed to add keyboard!\n");
     }
 
@@ -1797,7 +1800,7 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
     int n_best_x, n_best_y;
     CARD32 ms;
 
-    if (kdDisableZaphod || xephyr_context->screenInfo.numScreens <= 1)
+    if (kdDisableZaphod || context->screenInfo.numScreens <= 1)
         return FALSE;
 
     if (0 <= *x && *x < pScreen->width && 0 <= *y && *y < pScreen->height)
@@ -1812,8 +1815,8 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
     best_x = 32767;
     n_best_y = -1;
     best_y = 32767;
-    for (n = 0; n < xephyr_context->screenInfo.numScreens; n++) {
-        pNewScreen = xephyr_context->screenInfo.screens[n];
+    for (n = 0; n < context->screenInfo.numScreens; n++) {
+        pNewScreen = context->screenInfo.screens[n];
         if (pNewScreen == pScreen)
             continue;
         dx = KdScreenOrigin(pNewScreen)->x - KdScreenOrigin(pScreen)->x;
@@ -1847,7 +1850,7 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
         n_best_x = n_best_y;
     if (n_best_x == -1)
         return FALSE;
-    pNewScreen = xephyr_context->screenInfo.screens[n_best_x];
+    pNewScreen = context->screenInfo.screens[n_best_x];
 
     if (*x < 0)
         *x += pNewScreen->width;

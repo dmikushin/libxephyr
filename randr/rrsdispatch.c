@@ -639,7 +639,7 @@ SProcRRFreeLease(ClientPtr client) {
 
 int (*SProcRandrVector[RRNumberRequests]) (ClientPtr) = {
     SProcRRQueryVersion,        /* 0 */
-/* we skip 1 to make old xephyr_context->clients fail pretty immediately */
+/* we skip 1 to make old context->clients fail pretty immediately */
         NULL,                   /* 1 SProcRandrOldGetScreenInfo */
 /* V1.0 apps share the same set screen config request id */
         SProcRRSetScreenConfig, /* 2 */

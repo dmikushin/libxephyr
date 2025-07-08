@@ -68,7 +68,7 @@ Bool touchEmulatePointer = TRUE;
  * Check which devices need a bigger touch event queue and grow their
  * last.touches by half its current size.
  *
- * @param client Always the xephyr_context->serverClient
+ * @param client Always the context->serverClient
  * @param closure Always NULL
  *
  * @return Always True. If we fail to grow we probably will topple over soon
@@ -223,9 +223,9 @@ TouchInitTouchPoint(TouchClassPtr t, ValuatorClassPtr v, int index)
         return FALSE;
     }
     ti->sprite.spriteTraceSize = 32;
-    ti->sprite.spriteTrace[0] = xephyr_context->screenInfo.screens[0]->root;
-    ti->sprite.hot.pScreen = xephyr_context->screenInfo.screens[0];
-    ti->sprite.hotPhys.pScreen = xephyr_context->screenInfo.screens[0];
+    ti->sprite.spriteTrace[0] = screenInfo.screens[0]->context->screenInfo.screens[0]->root;
+    ti->sprite.hot.pScreen = screenInfo.screens[0]->context->screenInfo.screens[0];
+    ti->sprite.hotPhys.pScreen = screenInfo.screens[0]->context->screenInfo.screens[0];
 
     ti->client_id = -1;
 
@@ -852,7 +852,7 @@ TouchSetupListeners(DeviceIntPtr dev, TouchPointInfoPtr ti, InternalEvent *ev)
     if (ev->any.type != ET_TouchBegin)
         return;
 
-    /* First, find all grabbing xephyr_context->clients from the root window down
+    /* First, find all grabbing context->clients from the root window down
      * to the deepest child window. */
     for (i = 0; i < sprite->spriteTraceGood; i++) {
         win = sprite->spriteTrace[i];
@@ -1040,7 +1040,7 @@ TouchEndPhysicallyActiveTouches(DeviceIntPtr dev)
  * @param flags Internal event flags. The called does not need to provide
  *        TOUCH_CLIENT_ID and TOUCH_POINTER_EMULATED, this function will ensure
  *        they are set appropriately.
- * @param resource The client resource to deliver to, or 0 for all xephyr_context->clients.
+ * @param resource The client resource to deliver to, or 0 for all context->clients.
  */
 void
 TouchEmitTouchEnd(DeviceIntPtr dev, TouchPointInfoPtr ti, int flags, XID resource)

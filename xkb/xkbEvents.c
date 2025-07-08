@@ -46,10 +46,10 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 /*
  * This function sends out two kinds of notification:
- *   - Core mapping notify events sent to xephyr_context->clients for whom kbd is the
+ *   - Core mapping notify events sent to context->clients for whom kbd is the
  *     current core ('picked') keyboard _and_ have not explicitly
  *     selected for XKB mapping notify events;
- *   - Xi mapping events, sent unconditionally to all xephyr_context->clients who have
+ *   - Xi mapping events, sent unconditionally to all context->clients who have
  *     explicitly selected for them (including those who have explicitly
  *     selected for XKB mapping notify events!).
  */
@@ -77,26 +77,26 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
     if (!keymap_changed && !modmap_changed)
         return;
 
-    /* 0 is xephyr_context->serverClient. */
-    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
-        if (!xephyr_context->clients[i] || xephyr_context->clients[i]->clientState != ClientStateRunning)
+    /* 0 is context->serverClient. */
+    for (i = 1; i < context->currentMaxClients; i++) {
+        if (!context->clients[i] || context->clients[i]->clientState != ClientStateRunning)
             continue;
 
-        /* XKB allows xephyr_context->clients to restrict the MappingNotify events sent to
+        /* XKB allows context->clients to restrict the MappingNotify events sent to
          * them.  This was broken for three years.  Sorry. */
         if (xkb_event == XkbMapNotify &&
-            (xephyr_context->clients[i]->xkbClientFlags & _XkbClientInitialized) &&
-            !(xephyr_context->clients[i]->mapNotifyMask & changed))
+            (context->clients[i]->xkbClientFlags & _XkbClientInitialized) &&
+            !(context->clients[i]->mapNotifyMask & changed))
             continue;
         /* Emulate previous server behaviour: any client which has activated
          * XKB will not receive core events emulated from a NewKeyboardNotify
          * at all. */
         if (xkb_event == XkbNewKeyboardNotify &&
-            (xephyr_context->clients[i]->xkbClientFlags & _XkbClientInitialized))
+            (context->clients[i]->xkbClientFlags & _XkbClientInitialized))
             continue;
 
-        /* Don't send core events to xephyr_context->clients who don't know about us. */
-        if (!XIShouldNotify(xephyr_context->clients[i], kbd))
+        /* Don't send core events to context->clients who don't know about us. */
+        if (!XIShouldNotify(context->clients[i], kbd))
             continue;
 
         if (keymap_changed) {
@@ -105,17 +105,17 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
 
             /* Clip the keycode range to what the client knows about, so it
              * doesn't freak out. */
-            if (first_key >= xephyr_context->clients[i]->minKC)
+            if (first_key >= context->clients[i]->minKC)
                 core_mn.u.mappingNotify.firstKeyCode = first_key;
             else
-                core_mn.u.mappingNotify.firstKeyCode = xephyr_context->clients[i]->minKC;
-            if (first_key + num_keys - 1 <= xephyr_context->clients[i]->maxKC)
+                core_mn.u.mappingNotify.firstKeyCode = context->clients[i]->minKC;
+            if (first_key + num_keys - 1 <= context->clients[i]->maxKC)
                 core_mn.u.mappingNotify.count = num_keys;
             else
-                core_mn.u.mappingNotify.count = xephyr_context->clients[i]->maxKC -
-                    xephyr_context->clients[i]->minKC + 1;
+                core_mn.u.mappingNotify.count = context->clients[i]->maxKC -
+                    context->clients[i]->minKC + 1;
 
-            WriteEventsToClient(xephyr_context->clients[i], 1, &core_mn);
+            WriteEventsToClient(context->clients[i], 1, &core_mn);
         }
         if (modmap_changed) {
             xEvent core_mn = {
@@ -124,7 +124,7 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
                 .u.mappingNotify.count = 0
             };
             core_mn.u.u.type = MappingNotify;
-            WriteEventsToClient(xephyr_context->clients[i], 1, &core_mn);
+            WriteEventsToClient(context->clients[i], 1, &core_mn);
         }
     }
 
@@ -169,26 +169,26 @@ XkbSendNewKeyboardNotify(DeviceIntPtr kbd, xkbNewKeyboardNotify * pNKN)
     pNKN->type = XkbEventCode + XkbEventBase;
     pNKN->xkbType = XkbNewKeyboardNotify;
 
-    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
-        if (!xephyr_context->clients[i] || xephyr_context->clients[i]->clientState != ClientStateRunning)
+    for (i = 1; i < context->currentMaxClients; i++) {
+        if (!context->clients[i] || context->clients[i]->clientState != ClientStateRunning)
             continue;
 
-        if (!(xephyr_context->clients[i]->newKeyboardNotifyMask & changed))
+        if (!(context->clients[i]->newKeyboardNotifyMask & changed))
             continue;
 
-        pNKN->sequenceNumber = xephyr_context->clients[i]->sequence;
+        pNKN->sequenceNumber = context->clients[i]->sequence;
         pNKN->time = time;
         pNKN->changed = changed;
-        if (xephyr_context->clients[i]->swapped) {
+        if (context->clients[i]->swapped) {
             swaps(&pNKN->sequenceNumber);
             swapl(&pNKN->time);
             swaps(&pNKN->changed);
         }
-        WriteToClient(xephyr_context->clients[i], sizeof(xEvent), pNKN);
+        WriteToClient(context->clients[i], sizeof(xEvent), pNKN);
 
         if (changed & XkbNKN_KeycodesMask) {
-            xephyr_context->clients[i]->minKC = pNKN->minKeyCode;
-            xephyr_context->clients[i]->maxKC = pNKN->maxKeyCode;
+            context->clients[i]->minKC = pNKN->minKeyCode;
+            context->clients[i]->maxKC = pNKN->maxKeyCode;
         }
     }
 
@@ -260,7 +260,7 @@ XkbSendStateNotify(DeviceIntPtr kbd, xkbStateNotify * pSN)
 /***====================================================================***/
 
 /*
- * This function sends out XKB mapping notify events to xephyr_context->clients which
+ * This function sends out XKB mapping notify events to context->clients which
  * have explicitly selected for them.  Core and Xi events are handled by
  * XkbSendLegacyMapNotify. */
 void
@@ -277,24 +277,24 @@ XkbSendMapNotify(DeviceIntPtr kbd, xkbMapNotify * pMN)
     pMN->xkbType = XkbMapNotify;
     pMN->deviceID = kbd->id;
 
-    /* 0 is xephyr_context->serverClient. */
-    for (i = 1; i < xephyr_context->currentMaxClients; i++) {
-        if (!xephyr_context->clients[i] || xephyr_context->clients[i]->clientState != ClientStateRunning)
+    /* 0 is context->serverClient. */
+    for (i = 1; i < context->currentMaxClients; i++) {
+        if (!context->clients[i] || context->clients[i]->clientState != ClientStateRunning)
             continue;
 
-        if (!(xephyr_context->clients[i]->mapNotifyMask & changed))
+        if (!(context->clients[i]->mapNotifyMask & changed))
             continue;
 
         pMN->time = time;
-        pMN->sequenceNumber = xephyr_context->clients[i]->sequence;
+        pMN->sequenceNumber = context->clients[i]->sequence;
         pMN->changed = changed;
 
-        if (xephyr_context->clients[i]->swapped) {
+        if (context->clients[i]->swapped) {
             swaps(&pMN->sequenceNumber);
             swapl(&pMN->time);
             swaps(&pMN->changed);
         }
-        WriteToClient(xephyr_context->clients[i], sizeof(xEvent), pMN);
+        WriteToClient(context->clients[i], sizeof(xEvent), pMN);
     }
 
     XkbSendLegacyMapNotify(kbd, XkbMapNotify, changed, pMN->firstKeySym,

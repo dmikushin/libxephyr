@@ -45,7 +45,7 @@ RRDeliverLeaseEvent(ClientPtr client, WindowPtr window)
             xRRLeaseNotifyEvent le = (xRRLeaseNotifyEvent) {
                 .type = RRNotify + RREventBase,
                 .subCode = RRNotify_Lease,
-                .timestamp = xephyr_context->currentTime.milliseconds,
+                .timestamp = context->currentTime.milliseconds,
                 .window = window->drawable.id,
                 .lease = lease->id,
                 .created = lease->state == RRLeaseCreating,
@@ -143,7 +143,7 @@ RROutputIsLeased(RROutputPtr output)
 void
 RRLeaseTerminated(RRLeasePtr lease)
 {
-    /* Notify xephyr_context->clients with events, but only if this isn't during lease creation */
+    /* Notify context->clients with events, but only if this isn't during lease creation */
     if (lease->state == RRLeaseRunning)
         RRLeaseChangeState(lease, RRLeaseTerminating, RRLeaseTerminating);
 

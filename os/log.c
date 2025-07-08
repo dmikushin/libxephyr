@@ -237,8 +237,8 @@ LogFilePrep(const char *fname, const char *backup, const char *idstring)
  * NULL arguments) when logging to a file is not wanted.  It must always be
  * called, otherwise log messages will continue to accumulate in a buffer.
  *
- * %s, if present in the fname or backup strings, is expanded to the xephyr_context->display
- * string (or to a string containing the pid if the xephyr_context->display is not yet set).
+ * %s, if present in the fname or backup strings, is expanded to the context->display
+ * string (or to a string containing the pid if the context->display is not yet set).
  */
 
 static char *saved_log_fname;
@@ -251,7 +251,7 @@ LogInit(const char *fname, const char *backup)
     char *logFileName = NULL;
 
     if (fname && *fname) {
-        if (xephyr_context->displayfd != -1) {
+        if (context->displayfd != -1) {
             /* Display isn't set yet, so we can't use it in filenames yet. */
             char pidstring[32];
             snprintf(pidstring, sizeof(pidstring), "pid-%ld",
@@ -259,14 +259,14 @@ LogInit(const char *fname, const char *backup)
             logFileName = LogFilePrep(fname, backup, pidstring);
             saved_log_tempname = logFileName;
 
-            /* Save the patterns for use when the xephyr_context->display is named. */
+            /* Save the patterns for use when the context->display is named. */
             saved_log_fname = strdup(fname);
             if (backup == NULL)
                 saved_log_backup = NULL;
             else
                 saved_log_backup = strdup(backup);
         } else
-            logFileName = LogFilePrep(fname, backup, xephyr_context->display);
+            logFileName = LogFilePrep(fname, backup, context->display);
         if ((logFile = fopen(logFileName, "w")) == NULL)
             FatalError("Cannot open log file \"%s\"\n", logFileName);
         setvbuf(logFile, NULL, _IONBF, 0);
@@ -303,7 +303,7 @@ LogSetDisplay(void)
     if (saved_log_fname && strstr(saved_log_fname, "%s")) {
         char *logFileName;
 
-        logFileName = LogFilePrep(saved_log_fname, saved_log_backup, xephyr_context->display);
+        logFileName = LogFilePrep(saved_log_fname, saved_log_backup, context->display);
 
         if (rename(saved_log_tempname, logFileName) == 0) {
             LogMessageVerb(X_PROBED, 0,
@@ -595,7 +595,7 @@ pnprintf(char *string, int size, const char *f, ...)
 
 /* This function does the actual log message writes. It must be signal safe.
  * When attempting to call non-signal-safe functions, guard them with a check
- * of the xephyr_context->inSignalContext global variable. */
+ * of the context->inSignalContext global variable. */
 static void
 LogSWrite(int verb, const char *buf, size_t len, Bool end_line)
 {
@@ -606,14 +606,14 @@ LogSWrite(int verb, const char *buf, size_t len, Bool end_line)
         ret = write(2, buf, len);
 
     if (verb < 0 || logFileVerbosity >= verb) {
-        if (xephyr_context->inSignalContext && logFileFd >= 0) {
+        if (context->inSignalContext && logFileFd >= 0) {
             ret = write(logFileFd, buf, len);
 #ifndef WIN32
             if (logFlush && logSync)
                 fsync(logFileFd);
 #endif
         }
-        else if (!xephyr_context->inSignalContext && logFile) {
+        else if (!context->inSignalContext && logFile) {
             if (newline)
                 fprintf(logFile, "[%10.3f] ", GetTimeInMillis() / 1000.0);
             newline = end_line;
@@ -626,7 +626,7 @@ LogSWrite(int verb, const char *buf, size_t len, Bool end_line)
 #endif
             }
         }
-        else if (!xephyr_context->inSignalContext && needBuffer) {
+        else if (!context->inSignalContext && needBuffer) {
             if (len > bufferUnused) {
                 bufferSize += 1024;
                 bufferUnused += 1024;
@@ -712,7 +712,7 @@ LogVMessageVerb(MessageType type, int verb, const char *format, va_list args)
     Bool newline;
     size_t len = 0;
 
-    if (xephyr_context->inSignalContext) {
+    if (context->inSignalContext) {
         LogVMessageVerbSigSafe(type, verb, format, args);
         return;
     }
@@ -814,7 +814,7 @@ LogVHdrMessageVerb(MessageType type, int verb, const char *msg_format,
     if (!type_str)
         return;
 
-    if (xephyr_context->inSignalContext) {
+    if (context->inSignalContext) {
         vprintf_func = vpnprintf;
         printf_func = pnprintf;
     } else {

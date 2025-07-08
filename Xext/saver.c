@@ -93,7 +93,7 @@ static RESTYPE SuspendType;     /* resource type for suspension records */
 
 typedef struct _ScreenSaverSuspension *ScreenSaverSuspensionPtr;
 
-/* List of xephyr_context->clients that are suspending the screensaver. */
+/* List of context->clients that are suspending the screensaver. */
 static ScreenSaverSuspensionPtr suspendingClients = NULL;
 
 /*
@@ -112,7 +112,7 @@ typedef struct _ScreenSaverSuspension {
 static int ScreenSaverFreeSuspend(void *value, XID id);
 
 /*
- * each screen has a list of xephyr_context->clients requesting
+ * each screen has a list of context->clients requesting
  * ScreenSaverNotify events.  Each client has a resource
  * for each screen it selects ScreenSaverNotify input for,
  * this resource is used to delete the ScreenSaverNotifyRec
@@ -345,8 +345,8 @@ ScreenSaverFreeAttr(void *value, XID id)
     FreeScreenAttr(pOldAttr);
     pPriv->attr = NULL;
     if (pPriv->hasWindow) {
-        dixSaveScreens(xephyr_context->serverClient, SCREEN_SAVER_FORCER, ScreenSaverReset);
-        dixSaveScreens(xephyr_context->serverClient, SCREEN_SAVER_FORCER, ScreenSaverActive);
+        dixSaveScreens(context->serverClient, SCREEN_SAVER_FORCER, ScreenSaverReset);
+        dixSaveScreens(context->serverClient, SCREEN_SAVER_FORCER, ScreenSaverActive);
     }
     CheckScreenPrivate(pScreen);
     return TRUE;
@@ -368,8 +368,8 @@ ScreenSaverFreeSuspend(void *value, XID id)
     }
 
     /* Re-enable the screensaver if this was the last client suspending it. */
-    if (xephyr_context->screenSaverSuspended && suspendingClients == NULL) {
-        xephyr_context->screenSaverSuspended = FALSE;
+    if (context->screenSaverSuspended && suspendingClients == NULL) {
+        context->screenSaverSuspended = FALSE;
 
         /* The screensaver could be active, since suspending it (by design)
            doesn't prevent it from being forceably activated */
@@ -382,7 +382,7 @@ ScreenSaverFreeSuspend(void *value, XID id)
             DeviceIntPtr dev;
             UpdateCurrentTimeIf();
             nt_list_for_each_entry(dev, inputInfo.devices, next)
-                NoticeTime(dev, xephyr_context->currentTime);
+                NoticeTime(dev, context->currentTime);
             SetScreenSaverTimer();
         }
     }
@@ -402,13 +402,13 @@ SendScreenSaverNotify(ScreenPtr pScreen, int state, Bool forced)
     mask = ScreenSaverNotifyMask;
     if (state == ScreenSaverCycle)
         mask = ScreenSaverCycleMask;
-    pScreen = xephyr_context->screenInfo.screens[pScreen->myNum];
+    pScreen = context->screenInfo.screens[pScreen->myNum];
     pPriv = GetScreenPrivate(pScreen);
     if (!pPriv)
         return;
     if (pPriv->attr)
         kind = ScreenSaverExternal;
-    else if (xephyr_context->ScreenSaverBlanking != DontPreferBlanking)
+    else if (context->ScreenSaverBlanking != DontPreferBlanking)
         kind = ScreenSaverBlanked;
     else
         kind = ScreenSaverInternal;
@@ -417,7 +417,7 @@ SendScreenSaverNotify(ScreenPtr pScreen, int state, Bool forced)
             xScreenSaverNotifyEvent ev = {
                 .type = ScreenSaverNotify + ScreenSaverEventBase,
                 .state = state,
-                .timestamp = xephyr_context->currentTime.milliseconds,
+                .timestamp = context->currentTime.milliseconds,
                 .root = pScreen->root->drawable.id,
                 .window = pScreen->screensaver.wid,
                 .kind = kind,
@@ -451,7 +451,7 @@ UninstallSaverColormap(ScreenPtr pScreen)
 
     if (pPriv && pPriv->installedMap != None) {
         rc = dixLookupResourceByType((void **) &pCmap, pPriv->installedMap,
-                                     RT_COLORMAP, xephyr_context->serverClient,
+                                     RT_COLORMAP, context->serverClient,
                                      DixUninstallAccess);
         if (rc == Success)
             (*pCmap->pScreen->UninstallColormap) (pCmap);
@@ -488,14 +488,14 @@ CreateSaverWindow(ScreenPtr pScreen)
 
     pPriv->installedMap = None;
 
-    if (xephyr_context->GrabInProgress && xephyr_context->GrabInProgress != pAttr->client->index)
+    if (context->GrabInProgress && context->GrabInProgress != pAttr->client->index)
         return FALSE;
 
     pWin = CreateWindow(pSaver->wid, pScreen->root,
                         pAttr->x, pAttr->y, pAttr->width, pAttr->height,
                         pAttr->borderWidth, pAttr->class,
                         pAttr->mask, (XID *) pAttr->values,
-                        pAttr->depth, xephyr_context->serverClient, pAttr->visual, &result);
+                        pAttr->depth, context->serverClient, pAttr->visual, &result);
     if (!pWin)
         return FALSE;
 
@@ -535,9 +535,9 @@ CreateSaverWindow(ScreenPtr pScreen)
 
     if (pAttr->colormap != None)
         (void) ChangeWindowAttributes(pWin, CWColormap, &pAttr->colormap,
-                                      xephyr_context->serverClient);
+                                      context->serverClient);
 
-    MapWindow(pWin, xephyr_context->serverClient);
+    MapWindow(pWin, context->serverClient);
 
     pPriv->hasWindow = TRUE;
     pSaver->pWindow = pWin;
@@ -548,7 +548,7 @@ CreateSaverWindow(ScreenPtr pScreen)
         return TRUE;
 
     result = dixLookupResourceByType((void **) &pCmap, wantMap, RT_COLORMAP,
-                                     xephyr_context->serverClient, DixInstallAccess);
+                                     context->serverClient, DixInstallAccess);
     if (result != Success)
         return TRUE;
 
@@ -665,18 +665,18 @@ ProcScreenSaverQueryInfo(ClientPtr client)
     };
     if (screenIsSaved != SCREEN_SAVER_OFF) {
         rep.state = ScreenSaverOn;
-        if (xephyr_context->ScreenSaverTime)
-            rep.tilOrSince = lastInput - xephyr_context->ScreenSaverTime;
+        if (context->ScreenSaverTime)
+            rep.tilOrSince = lastInput - context->ScreenSaverTime;
         else
             rep.tilOrSince = 0;
     }
     else {
-        if (xephyr_context->ScreenSaverTime) {
+        if (context->ScreenSaverTime) {
             rep.state = ScreenSaverOff;
-            if (xephyr_context->ScreenSaverTime < lastInput)
+            if (context->ScreenSaverTime < lastInput)
                 rep.tilOrSince = 0;
             else
-                rep.tilOrSince = xephyr_context->ScreenSaverTime - lastInput;
+                rep.tilOrSince = context->ScreenSaverTime - lastInput;
         }
         else {
             rep.state = ScreenSaverDisabled;
@@ -687,7 +687,7 @@ ProcScreenSaverQueryInfo(ClientPtr client)
     rep.eventMask = getEventMask(pDraw->pScreen, client);
     if (pPriv && pPriv->attr)
         rep.kind = ScreenSaverExternal;
-    else if (xephyr_context->ScreenSaverBlanking != DontPreferBlanking)
+    else if (context->ScreenSaverBlanking != DontPreferBlanking)
         rep.kind = ScreenSaverBlanked;
     else
         rep.kind = ScreenSaverInternal;
@@ -1263,8 +1263,8 @@ ProcScreenSaverSuspend(ClientPtr client)
     }
 
     *prev = this;
-    if (!xephyr_context->screenSaverSuspended) {
-        xephyr_context->screenSaverSuspended = TRUE;
+    if (!context->screenSaverSuspended) {
+        context->screenSaverSuspended = TRUE;
         FreeScreenSaverTimer();
     }
 
@@ -1388,8 +1388,8 @@ ScreenSaverExtensionInit(void)
     SaverEventType = CreateNewResourceType(ScreenSaverFreeEvents, "SaverEvent");
     SuspendType = CreateNewResourceType(ScreenSaverFreeSuspend, "SaverSuspend");
 
-    for (i = 0; i < xephyr_context->screenInfo.numScreens; i++) {
-        pScreen = xephyr_context->screenInfo.screens[i];
+    for (i = 0; i < context->screenInfo.numScreens; i++) {
+        pScreen = context->screenInfo.screens[i];
         SetScreenPrivate(pScreen, NULL);
     }
     if (AttrType && SaverEventType && SuspendType &&

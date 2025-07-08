@@ -151,7 +151,7 @@ LoadAuthorization(void)
 #ifdef XDMCP
 /*
  * XdmcpInit calls this function to discover all authorization
- * schemes supported by the xephyr_context->display
+ * schemes supported by the context->display
  */
 void
 RegisterAuthorizations(void)

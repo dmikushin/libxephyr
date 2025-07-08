@@ -32,7 +32,7 @@ DeliverPropertyEvent(WindowPtr pWin, void *value)
     RREventPtr *pHead, pRREvent;
 
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            RREventType, xephyr_context->serverClient, DixReadAccess);
+                            RREventType, context->serverClient, DixReadAccess);
     if (!pHead)
         return WT_WALKCHILDREN;
 
@@ -72,7 +72,7 @@ RRDeleteProperty(RRProviderRec * provider, RRPropertyRec * prop)
         .provider = provider->id,
         .state = PropertyDelete,
         .atom = prop->propertyName,
-        .timestamp = xephyr_context->currentTime.milliseconds
+        .timestamp = context->currentTime.milliseconds
     };
 
     RRDeliverPropertyEvent(provider->pScreen, (xEvent *) &event);
@@ -245,7 +245,7 @@ RRChangeProviderProperty(RRProviderPtr provider, Atom property, Atom type,
             .provider = provider->id,
             .state = PropertyNewValue,
             .atom = prop->propertyName,
-            .timestamp = xephyr_context->currentTime.milliseconds
+            .timestamp = context->currentTime.milliseconds
         };
         RRDeliverPropertyEvent(provider->pScreen, (xEvent *) &event);
     }
@@ -693,7 +693,7 @@ ProcRRGetProviderProperty(ClientPtr client)
             .provider = provider->id,
             .state = PropertyDelete,
             .atom = prop->propertyName,
-            .timestamp = xephyr_context->currentTime.milliseconds
+            .timestamp = context->currentTime.milliseconds
         };
         RRDeliverPropertyEvent(provider->pScreen, (xEvent *) &event);
     }
