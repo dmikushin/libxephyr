@@ -103,8 +103,9 @@ typedef struct _ShmScrPrivateRec {
 } ShmScrPrivateRec;
 
 static PixmapPtr fbShmCreatePixmap(XSHM_CREATE_PIXMAP_ARGS);
-static int ShmDetachSegment(void *value, XID shmseg);
+static int ShmDetachSegment(void *value, XID shmseg, XephyrContext* context);
 static void ShmResetProc(ExtensionEntry *extEntry);
+static XephyrContext* shm_context = NULL;
 static void SShmCompletionEvent(xShmCompletionEvent *from,
                                 xShmCompletionEvent *to);
 
@@ -220,11 +221,11 @@ ShmInitScreenPriv(ScreenPtr pScreen)
 }
 
 static Bool
-ShmRegisterPrivates(void)
+ShmRegisterPrivates(XephyrContext* context)
 {
-    if (!dixRegisterPrivateKey(&shmScrPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&shmScrPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
-    if (!dixRegisterPrivateKey(&shmPixmapPrivateKeyRec, PRIVATE_PIXMAP, 0))
+    if (!dixRegisterPrivateKey(&shmPixmapPrivateKeyRec, PRIVATE_PIXMAP, 0, context))
         return FALSE;
     return TRUE;
 }
@@ -234,14 +235,14 @@ ShmResetProc(ExtensionEntry * extEntry)
 {
     int i;
 
-    for (i = 0; i < context->screenInfo.numScreens; i++)
-        ShmRegisterFuncs(context->screenInfo.screens[i], NULL);
+    for (i = 0; i < shm_context->screenInfo.numScreens; i++)
+        ShmRegisterFuncs(shm_context->screenInfo.screens[i], NULL);
 }
 
 void
 ShmRegisterFuncs(ScreenPtr pScreen, ShmFuncsPtr funcs)
 {
-    if (!ShmRegisterPrivates())
+    if (!ShmRegisterPrivates(shm_context))
         return;
     ShmInitScreenPriv(pScreen)->shmFuncs = funcs;
 }
@@ -263,7 +264,7 @@ ShmDestroyPixmap(PixmapPtr pPixmap)
     pScreen->DestroyPixmap = ShmDestroyPixmap;
 
     if (shmdesc)
-	ShmDetachSegment(shmdesc, 0);
+	ShmDetachSegment(shmdesc, 0, pScreen->context);
 
     return ret;
 }
@@ -423,14 +424,15 @@ ProcShmAttach(ClientPtr client)
         shmdesc->next = Shmsegs;
         Shmsegs = shmdesc;
     }
-    if (!AddResource(stuff->shmseg, ShmSegType, (void *) shmdesc))
+    if (!AddResource(stuff->shmseg, ShmSegType, (void *) shmdesc, client->context))
         return BadAlloc;
     return Success;
 }
 
  /*ARGSUSED*/ static int
 ShmDetachSegment(void *value, /* must conform to DeleteType */
-                 XID unused)
+                 XID unused,
+                 XephyrContext* context)
 {
     ShmDescPtr shmdesc = (ShmDescPtr) value;
     ShmDescPtr *prev;
@@ -460,7 +462,7 @@ ProcShmDetach(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xShmDetachReq);
     VERIFY_SHMSEG(stuff->shmseg, shmdesc, client);
-    FreeResource(stuff->shmseg, RT_NONE);
+    FreeResource(stuff->shmseg, RT_NONE, client->context);
     return Success;
 }
 
@@ -580,7 +582,7 @@ ProcShmPutImage(ClientPtr client)
 
     if ((((stuff->format == ZPixmap) && (stuff->srcX == 0)) ||
          ((stuff->format != ZPixmap) &&
-          (stuff->srcX < context->screenInfo.bitmapScanlinePad) &&
+          (stuff->srcX < client->context->screenInfo.bitmapScanlinePad) &&
           ((stuff->format == XYBitmap) ||
            ((stuff->srcY == 0) &&
             (stuff->srcHeight == stuff->totalHeight))))) &&
@@ -765,8 +767,8 @@ ProcPanoramiXShmPutImage(ClientPtr client)
         stuff->drawable = draw->info[j].id;
         stuff->gc = gc->info[j].id;
         if (isRoot) {
-            stuff->dstX = orig_x - context->screenInfo.screens[j]->x;
-            stuff->dstY = orig_y - context->screenInfo.screens[j]->y;
+            stuff->dstX = orig_x - client->context->screenInfo.screens[j]->x;
+            stuff->dstY = orig_y - client->context->screenInfo.screens[j]->y;
         }
         result = ProcShmPutImage(client);
         if (result != Success)
@@ -828,10 +830,10 @@ ProcPanoramiXShmGetImage(ClientPtr client)
     }
     else {
         if (                    /* check for being onscreen */
-               context->screenInfo.screens[0]->x + pDraw->x + x < 0 ||
-               context->screenInfo.screens[0]->x + pDraw->x + x + w > PanoramiXPixWidth
-               || context->screenInfo.screens[0]->y + pDraw->y + y < 0 ||
-               context->screenInfo.screens[0]->y + pDraw->y + y + h > PanoramiXPixHeight
+               client->context->screenInfo.screens[0]->x + pDraw->x + x < 0 ||
+               client->context->screenInfo.screens[0]->x + pDraw->x + x + w > PanoramiXPixWidth
+               || client->context->screenInfo.screens[0]->y + pDraw->y + y < 0 ||
+               client->context->screenInfo.screens[0]->y + pDraw->y + y + h > PanoramiXPixHeight
                ||
                /* check for being inside of border */
                x < -wBorderWidth((WindowPtr) pDraw) ||
@@ -889,7 +891,7 @@ ProcPanoramiXShmGetImage(ClientPtr client)
     else if (format == ZPixmap) {
         XineramaGetImageData(drawables, x, y, w, h, format, planemask,
                              shmdesc->addr + stuff->offset,
-                             widthBytesLine, isRoot);
+                             widthBytesLine, isRoot, client->context);
     }
     else {
 
@@ -898,7 +900,7 @@ ProcPanoramiXShmGetImage(ClientPtr client)
             if (planemask & plane) {
                 XineramaGetImageData(drawables, x, y, w, h,
                                      format, plane, shmdesc->addr + length,
-                                     widthBytesLine, isRoot);
+                                     widthBytesLine, isRoot, client->context);
                 length += lenPer;
             }
         }
@@ -986,7 +988,7 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
     FOR_NSCREENS(j) {
         ShmScrPrivateRec *screen_priv;
 
-        pScreen = context->screenInfo.screens[j];
+        pScreen = client->context->screenInfo.screens[j];
 
         screen_priv = ShmGetScreenPriv(pScreen);
         pMap = (*screen_priv->shmFuncs->CreatePixmap) (pScreen,
@@ -1005,9 +1007,9 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
             }
             dixSetPrivate(&pMap->devPrivates, shmPixmapPrivateKey, shmdesc);
             shmdesc->refcnt++;
-            pMap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+            pMap->drawable.serialNumber = client->context->globalSerialNumber++;
             pMap->drawable.id = newPix->info[j].id;
-            if (!AddResource(newPix->info[j].id, RT_PIXMAP, (void *) pMap)) {
+            if (!AddResource(newPix->info[j].id, RT_PIXMAP, (void *) pMap, client->context)) {
                 result = BadAlloc;
                 break;
             }
@@ -1020,11 +1022,11 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
 
     if (result != Success) {
         while (j--)
-            FreeResource(newPix->info[j].id, RT_NONE);
+            FreeResource(newPix->info[j].id, RT_NONE, client->context);
         free(newPix);
     }
     else
-        AddResource(stuff->pid, XRT_PIXMAP, newPix);
+        AddResource(stuff->pid, XRT_PIXMAP, newPix, client->context);
 
     return result;
 }
@@ -1120,9 +1122,9 @@ ProcShmCreatePixmap(ClientPtr client)
         }
         dixSetPrivate(&pMap->devPrivates, shmPixmapPrivateKey, shmdesc);
         shmdesc->refcnt++;
-        pMap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+        pMap->drawable.serialNumber = client->context->globalSerialNumber++;
         pMap->drawable.id = stuff->pid;
-        if (AddResource(stuff->pid, RT_PIXMAP, (void *) pMap)) {
+        if (AddResource(stuff->pid, RT_PIXMAP, (void *) pMap, client->context)) {
             return Success;
         }
     }
@@ -1199,7 +1201,7 @@ ProcShmAttachFd(ClientPtr client)
     shmdesc->next = Shmsegs;
     Shmsegs = shmdesc;
 
-    if (!AddResource(stuff->shmseg, ShmSegType, (void *) shmdesc))
+    if (!AddResource(stuff->shmseg, ShmSegType, (void *) shmdesc, client->context))
         return BadAlloc;
     return Success;
 }
@@ -1316,7 +1318,7 @@ ProcShmCreateSegment(ClientPtr client)
     shmdesc->next = Shmsegs;
     Shmsegs = shmdesc;
 
-    if (!AddResource(stuff->shmseg, ShmSegType, (void *) shmdesc)) {
+    if (!AddResource(stuff->shmseg, ShmSegType, (void *) shmdesc, client->context)) {
         close(fd);
         return BadAlloc;
     }
@@ -1529,10 +1531,12 @@ SProcShmDispatch(ClientPtr client)
 }
 
 void
-ShmExtensionInit(void)
+ShmExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
     int i;
+    
+    shm_context = context;
 
 #ifdef MUST_CHECK_FOR_SHM_SYSCALL
     if (!CheckForShmSyscall()) {
@@ -1541,7 +1545,7 @@ ShmExtensionInit(void)
     }
 #endif
 
-    if (!ShmRegisterPrivates())
+    if (!ShmRegisterPrivates(shm_context))
         return;
 
     sharedPixmaps = xFalse;

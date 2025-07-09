@@ -345,15 +345,15 @@ updateSlaveDeviceCoords(DeviceIntPtr master, DeviceIntPtr pDev)
         pDev->last.valuators[0] = rescaleValuatorAxis(pDev->last.valuators[0],
                                                       NULL,
                                                       pDev->valuator->axes + 0,
-                                                      screenInfo.screens[0]->context->screenInfo.x,
-                                                      screenInfo.screens[0]->context->screenInfo.width);
+                                                      pDev->context->screenInfo.x,
+                                                      pDev->context->screenInfo.width);
     }
     if (pDev->valuator->numAxes > 1) {
         pDev->last.valuators[1] = rescaleValuatorAxis(pDev->last.valuators[1],
                                                       NULL,
                                                       pDev->valuator->axes + 1,
-                                                      screenInfo.screens[0]->context->screenInfo.y,
-                                                      screenInfo.screens[0]->context->screenInfo.height);
+                                                      pDev->context->screenInfo.y,
+                                                      pDev->context->screenInfo.height);
     }
 
     /* other axes are left as-is */
@@ -762,7 +762,7 @@ scale_for_device_resolution(DeviceIntPtr dev, ValuatorMask *mask)
     int xrange = v->axes[0].max_value - v->axes[0].min_value + 1;
     int yrange = v->axes[1].max_value - v->axes[1].min_value + 1;
 
-    double screen_ratio = 1.0 * screenInfo.screens[0]->context->screenInfo.width/screenInfo.screens[0]->context->screenInfo.height;
+    double screen_ratio = 1.0 * dev->context->screenInfo.width/dev->context->screenInfo.height;
     double device_ratio = 1.0 * xrange/yrange;
     double resolution_ratio = 1.0;
     double ratio;
@@ -854,7 +854,7 @@ scale_from_screen(DeviceIntPtr dev, ValuatorMask *mask, int flags)
             scaled += scr->x;
         scaled = rescaleValuatorAxis(scaled,
                                      NULL, dev->valuator->axes + 0,
-                                     screenInfo.screens[0]->context->screenInfo.x, screenInfo.screens[0]->context->screenInfo.width);
+                                     dev->context->screenInfo.x, dev->context->screenInfo.width);
         valuator_mask_set_double(mask, 0, scaled);
     }
     if (valuator_mask_isset(mask, 1)) {
@@ -863,7 +863,7 @@ scale_from_screen(DeviceIntPtr dev, ValuatorMask *mask, int flags)
             scaled += scr->y;
         scaled = rescaleValuatorAxis(scaled,
                                      NULL, dev->valuator->axes + 1,
-                                     screenInfo.screens[0]->context->screenInfo.y, screenInfo.screens[0]->context->screenInfo.height);
+                                     dev->context->screenInfo.y, dev->context->screenInfo.height);
         valuator_mask_set_double(mask, 1, scaled);
     }
 }
@@ -908,9 +908,9 @@ scale_to_desktop(DeviceIntPtr dev, ValuatorMask *mask,
 
     /* scale x&y to desktop coordinates */
     *screenx = rescaleValuatorAxis(x, dev->valuator->axes + 0, NULL,
-                                   screenInfo.screens[0]->context->screenInfo.x, screenInfo.screens[0]->context->screenInfo.width);
+                                   dev->context->screenInfo.x, dev->context->screenInfo.width);
     *screeny = rescaleValuatorAxis(y, dev->valuator->axes + 1, NULL,
-                                   screenInfo.screens[0]->context->screenInfo.y, screenInfo.screens[0]->context->screenInfo.height);
+                                   dev->context->screenInfo.y, dev->context->screenInfo.height);
 
     *devx = x;
     *devy = y;
@@ -967,11 +967,11 @@ positionSprite(DeviceIntPtr dev, int mode, ValuatorMask *mask,
      */
     if (tmpx != *screenx)
         *devx = rescaleValuatorAxis(*screenx, NULL, dev->valuator->axes + 0,
-                                    screenInfo.screens[0]->context->screenInfo.x, screenInfo.screens[0]->context->screenInfo.width);
+                                    dev->context->screenInfo.x, dev->context->screenInfo.width);
 
     if (tmpy != *screeny)
         *devy = rescaleValuatorAxis(*screeny, NULL, dev->valuator->axes + 1,
-                                    screenInfo.screens[0]->context->screenInfo.y, screenInfo.screens[0]->context->screenInfo.height);
+                                    dev->context->screenInfo.y, dev->context->screenInfo.height);
 
     /* Recalculate the per-screen device coordinates */
     if (valuator_mask_isset(mask, 0)) {
@@ -1302,7 +1302,7 @@ QueuePointerEvents(DeviceIntPtr device, int type,
  * We use several different coordinate systems and need to switch between
  * the three in fill_pointer_events, positionSprite and
  * miPointerSetPosition. "desktop" refers to the width/height of all
- * screenInfo.screens[0]->context->screenInfo.screens[n]->width/height added up. "screen" is ScreenRec, not
+ * context->screenInfo.screens[n]->width/height added up. "screen" is ScreenRec, not
  * output.
  *
  * Coordinate systems:
@@ -2087,8 +2087,8 @@ PostSyntheticMotion(DeviceIntPtr pDev,
        will translate from sprite screen to screen 0 upon reentry
        to the DIX layer. */
     if (!noPanoramiXExtension) {
-        x += screenInfo.screens[0]->context->screenInfo.screens[0]->x - screenInfo.screens[0]->context->screenInfo.screens[screen]->x;
-        y += screenInfo.screens[0]->context->screenInfo.screens[0]->y - screenInfo.screens[0]->context->screenInfo.screens[screen]->y;
+        x += pDev->context->screenInfo.screens[0]->x - pDev->context->screenInfo.screens[screen]->x;
+        y += pDev->context->screenInfo.screens[0]->y - pDev->context->screenInfo.screens[screen]->y;
     }
 #endif
 

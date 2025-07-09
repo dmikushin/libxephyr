@@ -2080,7 +2080,7 @@ XkbGetEffectiveGroup(XkbSrvInfoPtr xkbi, XkbStatePtr xkbState, CARD8 keycode)
 void
 XkbMergeLockedPtrBtns(DeviceIntPtr master)
 {
-    DeviceIntPtr d = inputInfo.devices;
+    DeviceIntPtr d = master->context->inputInfo.devices;
     XkbSrvInfoPtr xkbi = NULL;
 
     if (!IsMaster(master))

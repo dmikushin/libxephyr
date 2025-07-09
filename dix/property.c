@@ -117,12 +117,12 @@ deliverPropertyNotifyEvent(WindowPtr pWin, int state, PropertyPtr pProp)
         .prop = pProp,
         .state = state
     };
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(pWin->drawable.pScreen->context);
     event = (xEvent) {
         .u.property.window = pWin->drawable.id,
         .u.property.state = state,
         .u.property.atom = pProp->propertyName,
-        .u.property.time = screenInfo.screens[0]->context->currentTime.milliseconds,
+        .u.property.time = pWin->drawable.pScreen->context->currentTime.milliseconds,
     };
     event.u.u.type = PropertyNotify;
 
@@ -142,7 +142,7 @@ ProcRotateProperties(ClientPtr client)
     PropertyPtr pProp, saved;
 
     REQUEST_FIXED_SIZE(xRotatePropertiesReq, stuff->nAtoms << 2);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     rc = dixLookupWindow(&pWin, stuff->window, client, DixSetPropAccess);
     if (rc != Success || stuff->nAtoms <= 0)
         return rc;
@@ -211,7 +211,7 @@ ProcChangeProperty(ClientPtr client)
     REQUEST(xChangePropertyReq);
 
     REQUEST_AT_LEAST_SIZE(xChangePropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     format = stuff->format;
     mode = stuff->mode;
     if ((mode != PropModeReplace) && (mode != PropModeAppend) &&
@@ -455,7 +455,7 @@ ProcGetProperty(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xGetPropertyReq);
     if (stuff->delete) {
-        UpdateCurrentTime();
+        UpdateCurrentTime(client->context);
         win_mode |= DixSetPropAccess;
         prop_mode |= DixDestroyAccess;
     }
@@ -623,7 +623,7 @@ ProcDeleteProperty(ClientPtr client)
     int result;
 
     REQUEST_SIZE_MATCH(xDeletePropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     result = dixLookupWindow(&pWin, stuff->window, client, DixSetPropAccess);
     if (result != Success)
         return result;

@@ -76,7 +76,7 @@ RRCrtcCreate(ScreenPtr pScreen, void *devPrivate)
     crtc = calloc(1, sizeof(RRCrtcRec));
     if (!crtc)
         return NULL;
-    crtc->id = FakeClientID(0);
+    crtc->id = FakeClientID(0, pScreen->context);
     crtc->pScreen = pScreen;
     crtc->mode = NULL;
     crtc->x = 0;
@@ -95,7 +95,7 @@ RRCrtcCreate(ScreenPtr pScreen, void *devPrivate)
     pixman_f_transform_init_identity(&crtc->f_transform);
     pixman_f_transform_init_identity(&crtc->f_inverse);
 
-    if (!AddResource(crtc->id, RRCrtcType, (void *) crtc))
+    if (!AddResource(crtc->id, RRCrtcType, (void *) crtc, pScreen->context))
         return NULL;
 
     /* attach the screen and crtc together */
@@ -866,7 +866,7 @@ RRCrtcPendingTransform(RRCrtcPtr crtc)
 void
 RRCrtcDestroy(RRCrtcPtr crtc)
 {
-    FreeResource(crtc->id, 0);
+    FreeResource(crtc->id, 0, crtc->pScreen->context);
 }
 
 static int

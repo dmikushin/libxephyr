@@ -10,7 +10,7 @@
 #include "dixstruct.h"
 
 extern int DPMSSet(ClientPtr client, int level);
-extern Bool DPMSSupported(void);
+extern Bool DPMSSupported(XephyrContext* context);
 
 extern CARD32 DPMSStandbyTime;
 extern CARD32 DPMSSuspendTime;

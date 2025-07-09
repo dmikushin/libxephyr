@@ -43,7 +43,7 @@
 #define GESTURE_HISTORY_SIZE 100
 
 Bool
-GestureInitGestureInfo(GestureInfoPtr gi)
+GestureInitGestureInfo(GestureInfoPtr gi, XephyrContext* context)
 {
     memset(gi, 0, sizeof(*gi));
 
@@ -52,9 +52,9 @@ GestureInitGestureInfo(GestureInfoPtr gi)
         return FALSE;
     }
     gi->sprite.spriteTraceSize = 32;
-    gi->sprite.spriteTrace[0] = screenInfo.screens[0]->context->screenInfo.screens[0]->root;
-    gi->sprite.hot.pScreen = screenInfo.screens[0]->context->screenInfo.screens[0];
-    gi->sprite.hotPhys.pScreen = screenInfo.screens[0]->context->screenInfo.screens[0];
+    gi->sprite.spriteTrace[0] = context->screenInfo.screens[0]->root;
+    gi->sprite.hot.pScreen = context->screenInfo.screens[0];
+    gi->sprite.hotPhys.pScreen = context->screenInfo.screens[0];
 
     return TRUE;
 }
@@ -106,11 +106,11 @@ GestureBeginGesture(DeviceIntPtr dev, InternalEvent *ev)
  * related to that gesture have been sent and finalised.
  */
 void
-GestureEndGesture(GestureInfoPtr gi)
+GestureEndGesture(GestureInfoPtr gi, XephyrContext* context)
 {
     if (gi->has_listener) {
         if (gi->listener.grab) {
-            FreeGrab(gi->listener.grab);
+            FreeGrab(gi->listener.grab, context);
             gi->listener.grab = NULL;
         }
         gi->listener.listener = 0;
@@ -288,7 +288,7 @@ GestureSetupListener(DeviceIntPtr dev, GestureInfoPtr gi, InternalEvent *ev)
 /* As gesture grabs don't turn into active grabs with their own resources, we
  * need to walk all the gestures and remove this grab from listener */
 void
-GestureListenerGone(XID resource)
+GestureListenerGone(XID resource, XephyrContext* context)
 {
     GestureInfoPtr gi;
     DeviceIntPtr dev;
@@ -297,7 +297,7 @@ GestureListenerGone(XID resource)
     if (!events)
         FatalError("GestureListenerGone: couldn't allocate events\n");
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (!dev->gesture)
             continue;
 
@@ -306,7 +306,7 @@ GestureListenerGone(XID resource)
             continue;
 
         if (CLIENT_BITS(gi->listener.listener) == resource)
-            GestureEndGesture(gi);
+            GestureEndGesture(gi, context);
     }
 
     FreeEventList(events, GetMaximumEventsNum());
@@ -356,7 +356,7 @@ GestureEmitGestureEndToOwner(DeviceIntPtr dev, GestureInfoPtr gi)
     if (dev->deviceGrab.sync.frozen)
         return;
 
-    DeliverDeviceClassesChangedEvent(gi->sourceid, GetTimeInMillis());
+    DeliverDeviceClassesChangedEvent(gi->sourceid, GetTimeInMillis(), dev->context);
     InitGestureEvent(&event, dev, GetTimeInMillis(), GestureTypeToEnd(gi->type),
                      0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     DeliverGestureEventToOwner(dev, gi, &event);

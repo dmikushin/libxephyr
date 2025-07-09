@@ -396,14 +396,14 @@ RRFreeClient(void *data, XID id)
 }
 
  /*ARGSUSED*/ static int
-RRFreeEvents(void *data, XID id)
+RRFreeEvents(void *data, XID id, XephyrContext* context)
 {
     RREventPtr *pHead, pCur, pNext;
 
     pHead = (RREventPtr *) data;
     for (pCur = *pHead; pCur; pCur = pNext) {
         pNext = pCur->next;
-        FreeResource(pCur->clientResource, RRClientType);
+        FreeResource(pCur->clientResource, RRClientType, context);
         free((void *) pCur);
     }
     free((void *) pHead);

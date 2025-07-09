@@ -441,7 +441,7 @@ __glXDisp_DestroyContext(__GLXclientState * cl, GLbyte * pc)
 
     glxc->idExists = GL_FALSE;
     if (glxc->currentClient) {
-        XID ghost = FakeClientID(glxc->currentClient->index);
+        XID ghost = FakeClientID(glxc->currentClient->index, glxc->currentClient->context);
 
         if (!AddResource(ghost, __glXContextRes, glxc))
             return BadAlloc;

@@ -53,7 +53,7 @@ present_free_events(WindowPtr window)
         return;
 
     while ((event = window_priv->events))
-        FreeResource(event->id, RT_NONE);
+        FreeResource(event->id, RT_NONE, window->drawable.pScreen->context);
 }
 
 static void
@@ -224,7 +224,7 @@ present_select_input(ClientPtr client, XID eid, WindowPtr window, CARD32 mask)
         if (mask)
             event->mask = mask;
         else
-            FreeResource(eid, RT_NONE);
+            FreeResource(eid, RT_NONE, client->context);
         return Success;
     }
     if (ret != BadValue)

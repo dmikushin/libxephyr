@@ -130,22 +130,22 @@ GetGlyphs(FontPtr font, unsigned long count, unsigned char *chars,
  * adding RT_FONT prevents conflict with default cursor font
  */
 Bool
-SetDefaultFont(const char *defaultfontname)
+SetDefaultFont(const char *defaultfontname, XephyrContext* context)
 {
     int err;
     FontPtr pf;
     XID fid;
 
-    fid = FakeClientID(0);
-    err = OpenFont(screenInfo.screens[0]->context->serverClient, fid, FontLoadAll | FontOpenSync,
+    fid = FakeClientID(0, context);
+    err = OpenFont(context->serverClient, fid, FontLoadAll | FontOpenSync,
                    (unsigned) strlen(defaultfontname), defaultfontname);
     if (err != Success)
         return FALSE;
-    err = dixLookupResourceByType((void **) &pf, fid, RT_FONT, screenInfo.screens[0]->context->serverClient,
+    err = dixLookupResourceByType((void **) &pf, fid, RT_FONT, context->serverClient,
                                   DixReadAccess);
     if (err != Success)
         return FALSE;
-    screenInfo.screens[0]->context->defaultFont = pf;
+    context->defaultFont = pf;
     return TRUE;
 }
 
@@ -246,9 +246,9 @@ doOpenFont(ClientPtr client, OFclosurePtr c)
      * Decide at runtime what FontFormat to use.
      */
     Mask FontFormat =
-        ((screenInfo.screens[0]->context->screenInfo.imageByteOrder == LSBFirst) ?
+        ((client->context->screenInfo.imageByteOrder == LSBFirst) ?
          BitmapFormatByteOrderLSB : BitmapFormatByteOrderMSB) |
-        ((screenInfo.screens[0]->context->screenInfo.bitmapBitOrder == LSBFirst) ?
+        ((client->context->screenInfo.bitmapBitOrder == LSBFirst) ?
          BitmapFormatBitOrderLSB : BitmapFormatBitOrderMSB) |
         BitmapFormatImageRectMin |
 #if GLYPHPADBYTES == 1
@@ -338,18 +338,18 @@ doOpenFont(ClientPtr client, OFclosurePtr c)
     pfont->refcnt++;
     if (pfont->refcnt == 1) {
         UseFPE(pfont->fpe);
-        for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++) {
-            pScr = screenInfo.screens[0]->context->screenInfo.screens[i];
+        for (i = 0; i < client->context->screenInfo.numScreens; i++) {
+            pScr = client->context->screenInfo.screens[i];
             if (pScr->RealizeFont) {
                 if (!(*pScr->RealizeFont) (pScr, pfont)) {
-                    CloseFont(pfont, (Font) 0);
+                    CloseFont(pfont, (Font) 0, client->context);
                     err = AllocError;
                     goto bail;
                 }
             }
         }
     }
-    if (!AddResource(c->fontid, RT_FONT, (void *) pfont)) {
+    if (!AddResource(c->fontid, RT_FONT, (void *) pfont, client->context)) {
         err = AllocError;
         goto bail;
     }
@@ -357,7 +357,7 @@ doOpenFont(ClientPtr client, OFclosurePtr c)
         xfont2_cache_font_pattern(patternCache, c->origFontName, c->origFontNameLen,
                                   pfont);
  bail:
-    if (err != Successful && c->client != screenInfo.screens[0]->context->serverClient) {
+    if (err != Successful && c->client != c->client->context->serverClient) {
         SendErrorToClient(c->client, X_OpenFont, 0,
                           c->fontid, FontToXError(err));
     }
@@ -402,7 +402,7 @@ OpenFont(ClientPtr client, XID fid, Mask flags, unsigned lenfname,
 
         cached = xfont2_find_cached_font_pattern(patternCache, pfontname, lenfname);
         if (cached && cached->info.cachable) {
-            if (!AddResource(fid, RT_FONT, (void *) cached))
+            if (!AddResource(fid, RT_FONT, (void *) cached, client->context))
                 return BadAlloc;
             cached->refcnt++;
             return Success;
@@ -451,7 +451,7 @@ OpenFont(ClientPtr client, XID fid, Mask flags, unsigned lenfname,
  *  \param value must conform to DeleteType
  */
 int
-CloseFont(void *value, XID fid)
+CloseFont(void *value, XID fid, XephyrContext* context)
 {
     int nscr;
     ScreenPtr pscr;
@@ -467,13 +467,13 @@ CloseFont(void *value, XID fid)
          * since the last reference is gone, ask each screen to free any
          * storage it may have allocated locally for it.
          */
-        for (nscr = 0; nscr < screenInfo.screens[0]->context->screenInfo.numScreens; nscr++) {
-            pscr = screenInfo.screens[0]->context->screenInfo.screens[nscr];
+        for (nscr = 0; nscr < context->screenInfo.numScreens; nscr++) {
+            pscr = context->screenInfo.screens[nscr];
             if (pscr->UnrealizeFont)
                 (*pscr->UnrealizeFont) (pscr, pfont);
         }
-        if (pfont == screenInfo.screens[0]->context->defaultFont)
-            screenInfo.screens[0]->context->defaultFont = NULL;
+        if (pfont == context->defaultFont)
+            context->defaultFont = NULL;
 #ifdef XF86BIGFONT
         XF86BigfontFreeFontShm(pfont);
 #endif
@@ -1182,7 +1182,7 @@ doPolyText(ClientPtr client, PTclosurePtr c)
 
                 /* Undo the refcnt++ we performed when going to sleep */
                 if (client_state == SLEEPING)
-                    (void) CloseFont(c->pGC->font, (Font) 0);
+                    (void) CloseFont(c->pGC->font, (Font) 0, c->client->context);
             }
             c->pElt += FontShiftSize;
         }
@@ -1328,7 +1328,7 @@ doPolyText(ClientPtr client, PTclosurePtr c)
 
     if (c->err != Success)
         err = c->err;
-    if (err != Success && c->client != screenInfo.screens[0]->context->serverClient) {
+    if (err != Success && c->client != c->client->context->serverClient) {
 #ifdef PANORAMIX
         if (noPanoramiXExtension || !c->pGC->pScreen->myNum)
 #endif
@@ -1339,7 +1339,7 @@ doPolyText(ClientPtr client, PTclosurePtr c)
         ChangeGC(NullClient, c->pGC, clearGCmask, clearGC);
 
         /* Unreference the font from the scratch GC */
-        CloseFont(c->pGC->font, (Font) 0);
+        CloseFont(c->pGC->font, (Font) 0, c->client->context);
         c->pGC->font = NullFont;
 
         FreeScratchGC(c->pGC);
@@ -1477,7 +1477,7 @@ doImageText(ClientPtr client, ITclosurePtr c)
 
  bail:
 
-    if (err != Success && c->client != screenInfo.screens[0]->context->serverClient) {
+    if (err != Success && c->client != c->client->context->serverClient) {
         SendErrorToClient(c->client, c->reqType, 0, 0, err);
     }
     if (ClientIsAsleep(client)) {
@@ -1485,7 +1485,7 @@ doImageText(ClientPtr client, ITclosurePtr c)
         ChangeGC(NullClient, c->pGC, clearGCmask, clearGC);
 
         /* Unreference the font from the scratch GC */
-        CloseFont(c->pGC->font, (Font) 0);
+        CloseFont(c->pGC->font, (Font) 0, c->client->context);
         c->pGC->font = NullFont;
 
         FreeScratchGC(c->pGC);
@@ -1681,7 +1681,7 @@ SetFontPath(ClientPtr client, int npaths, unsigned char *paths)
         return err;
 
     if (npaths == 0) {
-        if (SetDefaultFontPath(screenInfo.screens[0]->context->defaultFontPath) != Success)
+        if (SetDefaultFontPath(client->context->defaultFontPath) != Success)
             return BadValue;
     }
     else {
@@ -1825,13 +1825,15 @@ register_fpe_funcs(const xfont2_fpe_funcs_rec *funcs)
 static unsigned long
 get_server_generation(void)
 {
-    return screenInfo.screens[0]->context->serverGeneration;
+    extern XephyrContext* xephyr_context;
+    return xephyr_context->serverGeneration;
 }
 
 static void *
 get_server_client(void)
 {
-    return screenInfo.screens[0]->context->serverClient;
+    extern XephyrContext* xephyr_context;
+    return xephyr_context->serverClient;
 }
 
 static int
@@ -1846,7 +1848,8 @@ get_client_resolutions(int *num)
     static struct _FontResolution res;
     ScreenPtr pScreen;
 
-    pScreen = screenInfo.screens[0]->context->screenInfo.screens[0];
+    extern XephyrContext* xephyr_context;
+    pScreen = xephyr_context->screenInfo.screens[0];
     res.x_resolution = (pScreen->width * 25.4) / pScreen->mmWidth;
     /*
      * XXX - we'll want this as long as bitmap instances are prevalent
@@ -1888,26 +1891,30 @@ find_old_font(XID id)
 {
     void *pFont;
 
-    dixLookupResourceByType(&pFont, id, RT_NONE, screenInfo.screens[0]->context->serverClient, DixReadAccess);
+    extern XephyrContext* xephyr_context;
+    dixLookupResourceByType(&pFont, id, RT_NONE, xephyr_context->serverClient, DixReadAccess);
     return (FontPtr) pFont;
 }
 
 static Font
 get_new_font_client_id(void)
 {
-    return FakeClientID(0);
+    extern XephyrContext* xephyr_context;
+    return FakeClientID(0, xephyr_context);
 }
 
 static int
 store_font_Client_font(FontPtr pfont, Font id)
 {
-    return AddResource(id, RT_NONE, (void *) pfont);
+    extern XephyrContext* xephyr_context;
+    return AddResource(id, RT_NONE, (void *) pfont, xephyr_context);
 }
 
 static void
 delete_font_client_id(Font id)
 {
-    FreeResource(id, RT_NONE);
+    extern XephyrContext* xephyr_context;
+    FreeResource(id, RT_NONE, xephyr_context);
 }
 
 static int
@@ -1987,8 +1994,9 @@ static int
 _init_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handler)
 {
     /* if server has reset, make sure the b&w handlers are reinstalled */
-    if (last_server_gen < screenInfo.screens[0]->context->serverGeneration) {
-        last_server_gen = screenInfo.screens[0]->context->serverGeneration;
+    extern XephyrContext* xephyr_context;
+    if (last_server_gen < xephyr_context->serverGeneration) {
+        last_server_gen = xephyr_context->serverGeneration;
         fs_handlers_installed = 0;
     }
     if (fs_handlers_installed == 0) {

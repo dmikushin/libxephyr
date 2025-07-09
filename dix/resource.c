@@ -166,6 +166,13 @@ typedef struct _Resource {
     void *value;
 } ResourceRec, *ResourcePtr;
 
+ClientPtr
+rClient(void* obj, XephyrContext* context)
+{
+    ResourcePtr res = (ResourcePtr)obj;
+    return context->clients[CLIENT_ID(res->id)];
+}
+
 typedef struct _ClientResource {
     ResourcePtr *resources;
     int elements;
@@ -640,7 +647,7 @@ InitClientResources(ClientPtr client)
 {
     int i, j;
 
-    if (client == context->serverClient) {
+    if (client == client->context->serverClient) {
         lastResourceType = RT_LASTPREDEF;
         lastResourceClass = RC_LASTPREDEF;
         TypeMask = RC_LASTPREDEF - 1;
@@ -760,7 +767,7 @@ GetXIDList(ClientPtr pClient, unsigned count, XID *pids)
 
     maxid = id | RESOURCE_ID_MASK;
     while ((found < count) && (id <= maxid)) {
-        rc = dixLookupResourceByClass(&val, id, RC_ANY, context->serverClient,
+        rc = dixLookupResourceByClass(&val, id, RC_ANY, pClient->context->serverClient,
                                       DixGetAttrAccess);
         if (rc == BadValue) {
             pids[found++] = id;
@@ -779,7 +786,7 @@ GetXIDList(ClientPtr pClient, unsigned count, XID *pids)
  */
 
 XID
-FakeClientID(int client)
+FakeClientID(int client, XephyrContext* context)
 {
     XID id, maxid;
 
@@ -800,7 +807,7 @@ FakeClientID(int client)
 }
 
 Bool
-AddResource(XID id, RESTYPE type, void *value)
+AddResource(XID id, RESTYPE type, void *value, XephyrContext* context)
 {
     int client;
     ClientResourceRec *rrec;
@@ -821,7 +828,7 @@ AddResource(XID id, RESTYPE type, void *value)
     head = &rrec->resources[HashResourceID(id, clientTable[client].hashsize)];
     res = malloc(sizeof(ResourceRec));
     if (!res) {
-        (*resourceTypes[type & TypeMask].deleteFunc) (value, id);
+        (*resourceTypes[type & TypeMask].deleteFunc) (value, id, context);
         return FALSE;
     }
     res->next = *head;
@@ -878,18 +885,18 @@ RebuildTable(int client)
 }
 
 static void
-doFreeResource(ResourcePtr res, Bool skip)
+doFreeResource(ResourcePtr res, Bool skip, XephyrContext* context)
 {
     CallResourceStateCallback(ResourceStateFreeing, res);
 
     if (!skip)
-        resourceTypes[res->type & TypeMask].deleteFunc(res->value, res->id);
+        resourceTypes[res->type & TypeMask].deleteFunc(res->value, res->id, context);
 
     free(res);
 }
 
 void
-FreeResource(XID id, RESTYPE skipDeleteFuncType)
+FreeResource(XID id, RESTYPE skipDeleteFuncType, XephyrContext* context)
 {
     int cid;
     ResourcePtr res;
@@ -913,7 +920,7 @@ FreeResource(XID id, RESTYPE skipDeleteFuncType)
                 *prev = res->next;
                 elements = --*eltptr;
 
-                doFreeResource(res, rtype == skipDeleteFuncType);
+                doFreeResource(res, rtype == skipDeleteFuncType, context);
 
                 if (*eltptr != elements)
                     prev = head;        /* prev may no longer be valid */
@@ -925,7 +932,7 @@ FreeResource(XID id, RESTYPE skipDeleteFuncType)
 }
 
 void
-FreeResourceByType(XID id, RESTYPE type, Bool skipFree)
+FreeResourceByType(XID id, RESTYPE type, Bool skipFree, XephyrContext* context)
 {
     int cid;
     ResourcePtr res;
@@ -944,7 +951,7 @@ FreeResourceByType(XID id, RESTYPE type, Bool skipFree)
                 *prev = res->next;
                 clientTable[cid].elements--;
 
-                doFreeResource(res, skipFree);
+                doFreeResource(res, skipFree, context);
 
                 break;
             }
@@ -986,7 +993,7 @@ ChangeResourceValue(XID id, RESTYPE rtype, void *value)
 
 void
 FindClientResourcesByType(ClientPtr client,
-                          RESTYPE type, FindResType func, void *cdata)
+                          RESTYPE type, FindResType func, void *cdata, XephyrContext* context)
 {
     ResourcePtr *resources;
     ResourcePtr this, next;
@@ -1021,7 +1028,7 @@ void FindSubResources(void *resource,
 }
 
 void
-FindAllClientResources(ClientPtr client, FindAllRes func, void *cdata)
+FindAllClientResources(ClientPtr client, FindAllRes func, void *cdata, XephyrContext* context)
 {
     ResourcePtr *resources;
     ResourcePtr this, next;
@@ -1047,7 +1054,8 @@ FindAllClientResources(ClientPtr client, FindAllRes func, void *cdata)
 void *
 LookupClientResourceComplex(ClientPtr client,
                             RESTYPE type,
-                            FindComplexResType func, void *cdata)
+                            FindComplexResType func, void *cdata,
+                            XephyrContext* context)
 {
     ResourcePtr *resources;
     ResourcePtr this, next;
@@ -1100,7 +1108,7 @@ FreeClientNeverRetainResources(ClientPtr client)
                 clientTable[client->index].elements--;
                 elements = *eltptr;
 
-                doFreeResource(this, FALSE);
+                doFreeResource(this, FALSE, client->context);
 
                 if (*eltptr != elements)
                     prev = &resources[j];       /* prev may no longer be valid */
@@ -1149,7 +1157,7 @@ FreeClientResources(ClientPtr client)
             *head = this->next;
             clientTable[client->index].elements--;
 
-            doFreeResource(this, FALSE);
+            doFreeResource(this, FALSE, client->context);
         }
     }
     free(clientTable[client->index].resources);
@@ -1158,7 +1166,7 @@ FreeClientResources(ClientPtr client)
 }
 
 void
-FreeAllResources(void)
+FreeAllResources(XephyrContext* context)
 {
     int i;
 
@@ -1186,7 +1194,7 @@ LegalNewID(XID id, ClientPtr client)
     }
 #endif                          /* PANORAMIX */
     if (client->clientAsMask == (id & ~RESOURCE_ID_MASK)) {
-        rc = dixLookupResourceByClass(&val, id, RC_ANY, context->serverClient,
+        rc = dixLookupResourceByClass(&val, id, RC_ANY, client->context->serverClient,
                                       DixGetAttrAccess);
         return rc == BadValue;
     }

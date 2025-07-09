@@ -250,7 +250,7 @@ XkbUpdateLedAutoState(DeviceIntPtr dev,
     if (dev->key && dev->key->xkbInfo)
         kbd = dev;
     else
-        kbd = inputInfo.keyboard;
+        kbd = dev->context->inputInfo.keyboard;
 
     state = &kbd->key->xkbInfo->state;
     ctrls = kbd->key->xkbInfo->desc->ctrls;
@@ -306,12 +306,12 @@ XkbUpdateLedAutoState(DeviceIntPtr dev,
 }
 
 void
-XkbUpdateAllDeviceIndicators(XkbChangesPtr changes, XkbEventCausePtr cause)
+XkbUpdateAllDeviceIndicators(XkbChangesPtr changes, XkbEventCausePtr cause, XephyrContext* context)
 {
     DeviceIntPtr edev;
     XkbSrvLedInfoPtr sli;
 
-    for (edev = inputInfo.devices; edev != NULL; edev = edev->next) {
+    for (edev = context->inputInfo.devices; edev != NULL; edev = edev->next) {
         if (edev->kbdfeed) {
             KbdFeedbackPtr kf;
 
@@ -392,7 +392,7 @@ XkbSetIndicators(DeviceIntPtr dev,
         affect |= side_affected;
     }
     if (changes.state_changes || changes.ctrls.enabled_ctrls_changes)
-        XkbUpdateAllDeviceIndicators(NULL, cause);
+        XkbUpdateAllDeviceIndicators(NULL, cause, dev->context);
 
     XkbFlushLedEvents(dev, dev, sli, &ed, &changes, cause);
     return;
@@ -430,7 +430,7 @@ XkbUpdateIndicators(DeviceIntPtr dev,
     sli = XkbFindSrvLedInfo(dev, XkbDfltXIClass, XkbDfltXIId, 0);
     XkbUpdateLedAutoState(dev, sli, update, NULL, changes, cause);
     if (check_edevs)
-        XkbUpdateAllDeviceIndicators(changes, cause);
+        XkbUpdateAllDeviceIndicators(changes, cause, dev->context);
     return;
 }
 
@@ -795,7 +795,7 @@ XkbApplyLedNameChanges(DeviceIntPtr dev,
     if (dev->key && dev->key->xkbInfo)
         kbd = dev;
     else
-        kbd = inputInfo.keyboard;
+        kbd = dev->context->inputInfo.keyboard;
 
     if (ed == NULL) {
         ed = &my_ed;
@@ -875,7 +875,7 @@ XkbApplyLedMapChanges(DeviceIntPtr dev,
     if (dev->key && dev->key->xkbInfo)
         kbd = dev;
     else
-        kbd = inputInfo.keyboard;
+        kbd = dev->context->inputInfo.keyboard;
 
     if (ed == NULL) {
         ed = &my_ed;
@@ -938,7 +938,7 @@ XkbApplyLedStateChanges(DeviceIntPtr dev,
     if (dev->key && dev->key->xkbInfo)
         kbd = dev;
     else
-        kbd = inputInfo.keyboard;
+        kbd = dev->context->inputInfo.keyboard;
     xkbi = kbd->key->xkbInfo;
 
     if (changes == NULL) {
@@ -1001,6 +1001,6 @@ XkbApplyLedStateChanges(DeviceIntPtr dev,
     if (changes || ed)
         XkbFlushLedEvents(dev, kbd, sli, ed, changes, cause);
     if (kb_changed)
-        XkbUpdateAllDeviceIndicators(NULL, cause);
+        XkbUpdateAllDeviceIndicators(NULL, cause, dev->context);
     return;
 }

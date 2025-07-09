@@ -30,10 +30,10 @@ struct _GrabParameters;
 typedef struct _XephyrContext XephyrContext;
 
 extern void PrintDeviceGrabInfo(DeviceIntPtr dev);
-extern void UngrabAllDevices(Bool kill_client);
+extern void UngrabAllDevices(Bool kill_client, XephyrContext* context);
 
 extern GrabPtr AllocGrab(const GrabPtr src);
-extern void FreeGrab(GrabPtr grab);
+extern void FreeGrab(GrabPtr grab, XephyrContext* context);
 extern Bool CopyGrab(GrabPtr dst, const GrabPtr src);
 
 extern GrabPtr CreateGrab(int /* client */ ,
@@ -57,7 +57,8 @@ extern _X_EXPORT Bool GrabMatchesSecond(GrabPtr /* pFirstGrab */ ,
                                         Bool /*ignoreDevice */ );
 
 extern _X_EXPORT int AddPassiveGrabToList(ClientPtr /* client */ ,
-                                          GrabPtr /* pGrab */ );
+                                          GrabPtr /* pGrab */ ,
+                                          XephyrContext* /* context */ );
 
 extern _X_EXPORT Bool DeletePassiveGrabFromList(GrabPtr /* pMinuendGrab */ );
 

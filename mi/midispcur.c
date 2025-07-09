@@ -170,7 +170,7 @@ miDCMakePicture(PicturePtr * ppPicture, DrawablePtr pDraw, WindowPtr pWin)
         return 0;
     pPicture = CreatePicture(0, pDraw, pFormat,
                              CPSubwindowMode, &subwindow_mode,
-                             context->serverClient, &error);
+                             pWin->drawable.pScreen->context->serverClient, &error);
     *ppPicture = pPicture;
     return pPicture;
 }
@@ -214,7 +214,7 @@ miDCRealize(ScreenPtr pScreen, CursorPtr pCursor)
                                0, ZPixmap, (char *) pCursor->bits->argb);
         FreeScratchGC(pGC);
         pPicture = CreatePicture(0, &pPixmap->drawable,
-                                 pFormat, 0, 0, context->serverClient, &error);
+                                 pFormat, 0, 0, pScreen->context->serverClient, &error);
         (*pScreen->DestroyPixmap) (pPixmap);
         if (!pPicture)
             return FALSE;
@@ -344,7 +344,7 @@ miDCMakeGC(WindowPtr pWin)
     gcvals[1] = FALSE;
     pGC = CreateGC((DrawablePtr) pWin,
                    GCSubwindowMode | GCGraphicsExposures, gcvals, &status,
-                   (XID) 0, context->serverClient);
+                   (XID) 0, pWin->drawable.pScreen->context->serverClient);
     return pGC;
 }
 
@@ -446,8 +446,8 @@ miDCDeviceInitialize(DeviceIntPtr pDev, ScreenPtr pScreen)
     if (!DevHasCursor(pDev))
         return TRUE;
 
-    for (i = 0; i < context->screenInfo.numScreens; i++) {
-        pScreen = context->screenInfo.screens[i];
+    for (i = 0; i < pDev->context->screenInfo.numScreens; i++) {
+        pScreen = pDev->context->screenInfo.screens[i];
 
         pBuffer = calloc(1, sizeof(miDCBufferRec));
         if (!pBuffer)
@@ -495,8 +495,8 @@ miDCDeviceCleanup(DeviceIntPtr pDev, ScreenPtr pScreen)
     int i;
 
     if (DevHasCursor(pDev)) {
-        for (i = 0; i < context->screenInfo.numScreens; i++) {
-            pScreen = context->screenInfo.screens[i];
+        for (i = 0; i < pDev->context->screenInfo.numScreens; i++) {
+            pScreen = pDev->context->screenInfo.screens[i];
 
             pBuffer = miGetDCDevice(pDev, pScreen);
 

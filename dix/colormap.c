@@ -372,7 +372,7 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
     }
     pmap->flags |= BeingCreated;
 
-    if (!AddResource(mid, RT_COLORMAP, (void *) pmap))
+    if (!AddResource(mid, RT_COLORMAP, (void *) pmap, context))
         return BadAlloc;
 
     /*
@@ -381,7 +381,7 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
     i = XaceHook(XACE_RESOURCE_ACCESS, context->clients[client], mid, RT_COLORMAP,
                  pmap, RT_NONE, NULL, DixCreateAccess);
     if (i != Success) {
-        FreeResource(mid, RT_NONE);
+        FreeResource(mid, RT_NONE, context);
         return i;
     }
 
@@ -389,7 +389,7 @@ CreateColormap(Colormap mid, ScreenPtr pScreen, VisualPtr pVisual,
      * this is it.  In specific, if this is a Static colormap, this is the
      * time to fill in the colormap's values */
     if (!(*pScreen->CreateColormap) (pmap)) {
-        FreeResource(mid, RT_NONE);
+        FreeResource(mid, RT_NONE, context);
         return BadAlloc;
     }
     pmap->flags &= ~BeingCreated;
@@ -1089,7 +1089,7 @@ AllocColor(ColormapPtr pmap,
         }
         pcr->mid = pmap->mid;
         pcr->client = client;
-        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (void *) pcr))
+        if (!AddResource(FakeClientID(client, context), RT_CMAPENTRY, (void *) pcr, context))
             return BadAlloc;
     }
     return Success;
@@ -1484,7 +1484,7 @@ FreeClientPixels(void *value, XID fakeid, XephyrContext* context)
 
 int
 AllocColorCells(int client, ColormapPtr pmap, int colors, int planes,
-                Bool contig, Pixel * ppix, Pixel * masks)
+                Bool contig, Pixel * ppix, Pixel * masks, XephyrContext* context)
 {
     Pixel rmask, gmask, bmask, *ppixFirst, r, g, b;
     int n, class;
@@ -1537,7 +1537,7 @@ AllocColorCells(int client, ColormapPtr pmap, int colors, int planes,
     if ((ok == Success) && pcr) {
         pcr->mid = pmap->mid;
         pcr->client = client;
-        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (void *) pcr))
+        if (!AddResource(FakeClientID(client, context), RT_CMAPENTRY, (void *) pcr, context))
             ok = BadAlloc;
     }
     else
@@ -1619,7 +1619,7 @@ AllocColorPlanes(int client, ColormapPtr pmap, int colors,
     if ((ok == Success) && pcr) {
         pcr->mid = pmap->mid;
         pcr->client = client;
-        if (!AddResource(FakeClientID(client), RT_CMAPENTRY, (void *) pcr))
+        if (!AddResource(FakeClientID(client, context), RT_CMAPENTRY, (void *) pcr, context))
             ok = BadAlloc;
     }
     else
@@ -2542,12 +2542,12 @@ ResizeVisualArray(ScreenPtr pScreen, int new_visual_count, DepthPtr depth)
     cdata.visuals = visuals;
     cdata.pScreen = pScreen;
     FindClientResourcesByType(pScreen->context->serverClient, RT_COLORMAP,
-                              _colormap_find_resource, &cdata);
+                              _colormap_find_resource, &cdata, pScreen->context);
 
     pScreen->visuals = visuals;
 
     for (i = 0; i < new_visual_count; i++) {
-        vid = FakeClientID(0);
+        vid = FakeClientID(0, pScreen->context);
         pScreen->visuals[first_new_visual + i].vid = vid;
         vids[first_new_vid + i] = vid;
     }

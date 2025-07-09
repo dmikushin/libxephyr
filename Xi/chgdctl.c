@@ -227,7 +227,7 @@ ProcXChangeDeviceControl(ClientPtr client)
     if (ret == Success) {
         devicePresenceNotify dpn = {
             .type = DevicePresenceNotify,
-            .time = context->currentTime.milliseconds,
+            .time = client->context->currentTime.milliseconds,
             .devchange = DeviceControlChanged,
             .deviceid = dev->id,
             .control = stuff->control

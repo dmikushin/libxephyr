@@ -311,7 +311,7 @@ OsInit(XephyrContext* context)
             }
         }
 #endif
-        LockServer();
+        LockServer(context);
         been_here = TRUE;
     }
     TimerInit();
@@ -321,7 +321,7 @@ OsInit(XephyrContext* context)
      * No log file by default.  OsVendorInit() should call LogInit() with the
      * log file name if logging to a file is desired.
      */
-    LogInit(NULL, NULL);
+    LogInit(NULL, NULL, context);
     SmartScheduleInit();
 }
 

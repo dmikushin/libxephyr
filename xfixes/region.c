@@ -36,7 +36,7 @@
 RESTYPE RegionResType;
 
 static int
-RegionResFree(void *data, XID id)
+RegionResFree(void *data, XID id, XephyrContext* context)
 {
     RegionPtr pRegion = (RegionPtr) data;
 
@@ -60,7 +60,7 @@ XFixesRegionCopy(RegionPtr pRegion)
 }
 
 Bool
-XFixesRegionInit(void)
+XFixesRegionInit(XephyrContext* context)
 {
     RegionResType = CreateNewResourceType(RegionResFree, "XFixesRegion");
 
@@ -86,7 +86,7 @@ ProcXFixesCreateRegion(ClientPtr client)
     pRegion = RegionFromRects(things, (xRectangle *) (stuff + 1), CT_UNSORTED);
     if (!pRegion)
         return BadAlloc;
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion))
+    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -130,7 +130,7 @@ ProcXFixesCreateRegionFromBitmap(ClientPtr client)
     if (!pRegion)
         return BadAlloc;
 
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion))
+    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -189,7 +189,7 @@ ProcXFixesCreateRegionFromWindow(ClientPtr client)
         pRegion = XFixesRegionCopy(pRegion);
     if (!pRegion)
         return BadAlloc;
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion))
+    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -232,7 +232,7 @@ ProcXFixesCreateRegionFromGC(ClientPtr client)
         return BadMatch;
     }
 
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion))
+    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -274,7 +274,7 @@ ProcXFixesCreateRegionFromPicture(ClientPtr client)
         return BadMatch;
     }
 
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion))
+    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -300,7 +300,7 @@ ProcXFixesDestroyRegion(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXFixesDestroyRegionReq);
     VERIFY_REGION(pRegion, stuff->region, client, DixWriteAccess);
-    FreeResource(stuff->region, RT_NONE);
+    FreeResource(stuff->region, RT_NONE, client->context);
     return Success;
 }
 
@@ -867,7 +867,7 @@ PanoramiXFixesSetWindowShapeRegion(ClientPtr client)
         VERIFY_REGION_OR_NONE(reg, stuff->region, client, DixReadAccess);
 
     FOR_NSCREENS_FORWARD(j) {
-        ScreenPtr screen = context->screenInfo.screens[j];
+        ScreenPtr screen = client->context->screenInfo.screens[j];
         stuff->dest = win->info[j].id;
 
         if (reg)
@@ -907,7 +907,7 @@ PanoramiXFixesSetPictureClipRegion(ClientPtr client)
         VERIFY_REGION_OR_NONE(reg, stuff->region, client, DixReadAccess);
 
     FOR_NSCREENS_BACKWARD(j) {
-        ScreenPtr screen = context->screenInfo.screens[j];
+        ScreenPtr screen = client->context->screenInfo.screens[j];
         stuff->picture = pict->info[j].id;
 
         if (reg)

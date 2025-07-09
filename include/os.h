@@ -106,7 +106,7 @@ extern _X_EXPORT void (*OsVendorVErrorFProc) (const char *,
 _X_ATTRIBUTE_PRINTF(1, 0);
 #endif
 
-extern _X_EXPORT Bool WaitForSomething(Bool clients_are_ready);
+extern _X_EXPORT Bool WaitForSomething(Bool clients_are_ready, XephyrContext* context);
 
 extern _X_EXPORT int ReadRequestFromClient(ClientPtr /*client */ );
 
@@ -211,7 +211,7 @@ extern _X_EXPORT void TimerCheck(void);
 extern _X_EXPORT void TimerCancel(OsTimerPtr /* pTimer */ );
 extern _X_EXPORT void TimerFree(OsTimerPtr /* pTimer */ );
 
-extern _X_EXPORT void SetScreenSaverTimer(void);
+extern _X_EXPORT void SetScreenSaverTimer(XephyrContext* context);
 extern _X_EXPORT void FreeScreenSaverTimer(void);
 
 extern _X_EXPORT void AutoResetServer(int /*sig */ );

@@ -289,7 +289,7 @@ fbOverlayFinishScreenInit(ScreenPtr pScreen,
 
     if (!fbInitVisuals(&visuals, &depths, &nvisuals, &ndepths, &depth1,
                        &defaultVisual, ((unsigned long) 1 << (bpp1 - 1)) |
-                       ((unsigned long) 1 << (bpp2 - 1)), 8)) {
+                       ((unsigned long) 1 << (bpp2 - 1)), 8, pScreen->context)) {
         free(pScrPriv);
         return FALSE;
     }

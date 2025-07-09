@@ -665,7 +665,7 @@ typedef struct _Screen {
     DPMSProcPtr DPMS;
     
     /* Context for Xephyr server instance */
-    struct _XephyrContext *context;
+    XephyrContext *context;
 } ScreenRec;
 
 static inline RegionPtr

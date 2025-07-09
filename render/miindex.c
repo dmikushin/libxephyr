@@ -149,14 +149,14 @@ miBuildRenderColormap(ColormapPtr pColormap, Pixel * pixels, int *nump)
                 green = (g * 65535 + (cube - 1) / 2) / (cube - 1);
                 blue = (b * 65535 + (cube - 1) / 2) / (cube - 1);
                 if (AllocColor(pColormap, &red, &green,
-                               &blue, &pixel, 0) != Success)
+                               &blue, &pixel, 0, pColormap->pScreen->context) != Success)
                     return FALSE;
                 used[pixel] = TRUE;
             }
     for (g = 0; g < gray; g++) {
         pixel = 0;
         red = green = blue = (g * 65535 + (gray - 1) / 2) / (gray - 1);
-        if (AllocColor(pColormap, &red, &green, &blue, &pixel, 0) != Success)
+        if (AllocColor(pColormap, &red, &green, &blue, &pixel, 0, pColormap->pScreen->context) != Success)
             return FALSE;
         used[pixel] = TRUE;
     }
@@ -264,7 +264,7 @@ miInitIndexed(ScreenPtr pScreen, PictFormatPtr pFormat)
     /*
      * Build mapping from pixel value to ARGB
      */
-    QueryColors(pColormap, num, pixels, rgb, context->serverClient);
+    QueryColors(pColormap, num, pixels, rgb, pScreen->context->serverClient);
     for (i = 0; i < num; i++) {
         p = pixels[i];
         pFormat->index.pValues[i].pixel = p;

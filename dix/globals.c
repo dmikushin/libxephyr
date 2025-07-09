@@ -59,7 +59,7 @@ SOFTWARE.
 #include "dixstruct.h"
 #include "os.h"
 /* Original global: 
-   ScreenInfo screenInfo.screens[0]->context->screenInfo; */
+   ScreenInfo context->screenInfo; */
 
 /* KeybdCtrl context->defaultKeyboardControl = {
     DEFAULT_KEYBOARD_CLICK,
@@ -110,7 +110,7 @@ SOFTWARE.
 /* Original global: Bool context->party_like_its_1989 = FALSE; */
 /* Original global: Bool context->whiteRoot = FALSE; */
 /* Original global: */
-/* TimeStamp screenInfo.screens[0]->context->currentTime; */
+/* TimeStamp context->currentTime; */
 /* Original global: */
 /* int context->defaultColorVisualClass = -1; */
 /* Original global: int context->monitorResolution = 0; */

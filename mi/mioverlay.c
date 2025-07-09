@@ -527,7 +527,7 @@ miOverlayComputeClips(WindowPtr pParent,
                         RegionTranslate(&tChild->clipList, dx, dy);
 
                         tChild->pWin->drawable.serialNumber =
-                            NEXT_SERIAL_NUMBER;
+                            NextSerialNumber(pScreen->context);
                         if (pScreen->ClipNotify)
                             (*pScreen->ClipNotify) (tChild->pWin, dx, dy);
                     }
@@ -639,7 +639,7 @@ miOverlayComputeClips(WindowPtr pParent,
         *universe = tmp;
     }
 
-    pParent->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+    pParent->drawable.serialNumber = NextSerialNumber(pScreen->context);
 
     if (pScreen->ClipNotify)
         (*pScreen->ClipNotify) (pParent, dx, dy);
@@ -807,7 +807,7 @@ miOverlayValidateTree(WindowPtr pParent, WindowPtr pChild,      /* first child e
     case VTMap:
         RegionCopy(&tParent->clipList, &totalClip);
         if (!((*pPriv->InOverlay) (newParent)))
-            newParent->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+            newParent->drawable.serialNumber = NextSerialNumber(pScreen->context);
         break;
     }
 
@@ -973,7 +973,7 @@ miOverlayMoveWindow(WindowPtr pWin,
             (*pScreen->PostValidateTree) (pWin->parent, NullWindow, kind);
     }
     if (pWin->realized)
-        WindowsRestructured();
+        WindowsRestructured(pWin->drawable.pScreen->context);
 }
 
 #ifndef RECTLIMIT
@@ -1426,7 +1426,7 @@ miOverlayResizeWindow(WindowPtr pWin,
             (*pScreen->PostValidateTree) (pWin->parent, pFirstChange, VTOther);
     }
     if (pWin->realized)
-        WindowsRestructured();
+        WindowsRestructured(pWin->drawable.pScreen->context);
 }
 
 static void
@@ -1474,7 +1474,7 @@ miOverlaySetShape(WindowPtr pWin, int kind)
         }
     }
     if (pWin->realized)
-        WindowsRestructured();
+        WindowsRestructured(pWin->drawable.pScreen->context);
     CheckCursorConfinement(pWin);
 }
 
@@ -1526,7 +1526,7 @@ miOverlayChangeBorderWidth(WindowPtr pWin, unsigned int width)
             (*pScreen->PostValidateTree) (pWin->parent, pWin, VTOther);
     }
     if (pWin->realized)
-        WindowsRestructured();
+        WindowsRestructured(pWin->drawable.pScreen->context);
 }
 
 /*  We need this as an addition since the xf86 common code doesn't

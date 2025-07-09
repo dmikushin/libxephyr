@@ -78,25 +78,25 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
         return;
 
     /* 0 is context->serverClient. */
-    for (i = 1; i < context->currentMaxClients; i++) {
-        if (!context->clients[i] || context->clients[i]->clientState != ClientStateRunning)
+    for (i = 1; i < kbd->context->currentMaxClients; i++) {
+        if (!kbd->context->clients[i] || kbd->context->clients[i]->clientState != ClientStateRunning)
             continue;
 
         /* XKB allows context->clients to restrict the MappingNotify events sent to
          * them.  This was broken for three years.  Sorry. */
         if (xkb_event == XkbMapNotify &&
-            (context->clients[i]->xkbClientFlags & _XkbClientInitialized) &&
-            !(context->clients[i]->mapNotifyMask & changed))
+            (kbd->context->clients[i]->xkbClientFlags & _XkbClientInitialized) &&
+            !(kbd->context->clients[i]->mapNotifyMask & changed))
             continue;
         /* Emulate previous server behaviour: any client which has activated
          * XKB will not receive core events emulated from a NewKeyboardNotify
          * at all. */
         if (xkb_event == XkbNewKeyboardNotify &&
-            (context->clients[i]->xkbClientFlags & _XkbClientInitialized))
+            (kbd->context->clients[i]->xkbClientFlags & _XkbClientInitialized))
             continue;
 
         /* Don't send core events to context->clients who don't know about us. */
-        if (!XIShouldNotify(context->clients[i], kbd))
+        if (!XIShouldNotify(kbd->context->clients[i], kbd))
             continue;
 
         if (keymap_changed) {
@@ -105,17 +105,17 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
 
             /* Clip the keycode range to what the client knows about, so it
              * doesn't freak out. */
-            if (first_key >= context->clients[i]->minKC)
+            if (first_key >= kbd->context->clients[i]->minKC)
                 core_mn.u.mappingNotify.firstKeyCode = first_key;
             else
-                core_mn.u.mappingNotify.firstKeyCode = context->clients[i]->minKC;
-            if (first_key + num_keys - 1 <= context->clients[i]->maxKC)
+                core_mn.u.mappingNotify.firstKeyCode = kbd->context->clients[i]->minKC;
+            if (first_key + num_keys - 1 <= kbd->context->clients[i]->maxKC)
                 core_mn.u.mappingNotify.count = num_keys;
             else
-                core_mn.u.mappingNotify.count = context->clients[i]->maxKC -
-                    context->clients[i]->minKC + 1;
+                core_mn.u.mappingNotify.count = kbd->context->clients[i]->maxKC -
+                    kbd->context->clients[i]->minKC + 1;
 
-            WriteEventsToClient(context->clients[i], 1, &core_mn);
+            WriteEventsToClient(kbd->context->clients[i], 1, &core_mn);
         }
         if (modmap_changed) {
             xEvent core_mn = {
@@ -124,7 +124,7 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
                 .u.mappingNotify.count = 0
             };
             core_mn.u.u.type = MappingNotify;
-            WriteEventsToClient(context->clients[i], 1, &core_mn);
+            WriteEventsToClient(kbd->context->clients[i], 1, &core_mn);
         }
     }
 
@@ -169,26 +169,26 @@ XkbSendNewKeyboardNotify(DeviceIntPtr kbd, xkbNewKeyboardNotify * pNKN)
     pNKN->type = XkbEventCode + XkbEventBase;
     pNKN->xkbType = XkbNewKeyboardNotify;
 
-    for (i = 1; i < context->currentMaxClients; i++) {
-        if (!context->clients[i] || context->clients[i]->clientState != ClientStateRunning)
+    for (i = 1; i < kbd->context->currentMaxClients; i++) {
+        if (!kbd->context->clients[i] || kbd->context->clients[i]->clientState != ClientStateRunning)
             continue;
 
-        if (!(context->clients[i]->newKeyboardNotifyMask & changed))
+        if (!(kbd->context->clients[i]->newKeyboardNotifyMask & changed))
             continue;
 
-        pNKN->sequenceNumber = context->clients[i]->sequence;
+        pNKN->sequenceNumber = kbd->context->clients[i]->sequence;
         pNKN->time = time;
         pNKN->changed = changed;
-        if (context->clients[i]->swapped) {
+        if (kbd->context->clients[i]->swapped) {
             swaps(&pNKN->sequenceNumber);
             swapl(&pNKN->time);
             swaps(&pNKN->changed);
         }
-        WriteToClient(context->clients[i], sizeof(xEvent), pNKN);
+        WriteToClient(kbd->context->clients[i], sizeof(xEvent), pNKN);
 
         if (changed & XkbNKN_KeycodesMask) {
-            context->clients[i]->minKC = pNKN->minKeyCode;
-            context->clients[i]->maxKC = pNKN->maxKeyCode;
+            kbd->context->clients[i]->minKC = pNKN->minKeyCode;
+            kbd->context->clients[i]->maxKC = pNKN->maxKeyCode;
         }
     }
 
@@ -278,23 +278,23 @@ XkbSendMapNotify(DeviceIntPtr kbd, xkbMapNotify * pMN)
     pMN->deviceID = kbd->id;
 
     /* 0 is context->serverClient. */
-    for (i = 1; i < context->currentMaxClients; i++) {
-        if (!context->clients[i] || context->clients[i]->clientState != ClientStateRunning)
+    for (i = 1; i < kbd->context->currentMaxClients; i++) {
+        if (!kbd->context->clients[i] || kbd->context->clients[i]->clientState != ClientStateRunning)
             continue;
 
-        if (!(context->clients[i]->mapNotifyMask & changed))
+        if (!(kbd->context->clients[i]->mapNotifyMask & changed))
             continue;
 
         pMN->time = time;
-        pMN->sequenceNumber = context->clients[i]->sequence;
+        pMN->sequenceNumber = kbd->context->clients[i]->sequence;
         pMN->changed = changed;
 
-        if (context->clients[i]->swapped) {
+        if (kbd->context->clients[i]->swapped) {
             swaps(&pMN->sequenceNumber);
             swapl(&pMN->time);
             swaps(&pMN->changed);
         }
-        WriteToClient(context->clients[i], sizeof(xEvent), pMN);
+        WriteToClient(kbd->context->clients[i], sizeof(xEvent), pMN);
     }
 
     XkbSendLegacyMapNotify(kbd, XkbMapNotify, changed, pMN->firstKeySym,
@@ -901,7 +901,7 @@ XkbFilterEvents(ClientPtr client, int nEvents, xEvent *xE)
     CARD8 type = xE[0].u.u.type;
 
     if (xE->u.u.type & EXTENSION_EVENT_BASE)
-        dev = XIGetDevice(xE);
+        dev = XIGetDevice(xE, client->context);
 
     if (!dev)
         dev = PickKeyboard(client);

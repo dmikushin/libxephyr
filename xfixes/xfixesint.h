@@ -89,11 +89,11 @@ void
 SXFixesSelectionNotifyEvent(xXFixesSelectionNotifyEvent * from,
                             xXFixesSelectionNotifyEvent * to);
 Bool
- XFixesSelectionInit(void);
+ XFixesSelectionInit(XephyrContext* context);
 
 /* Cursor notification */
 Bool
- XFixesCursorInit(void);
+ XFixesCursorInit(XephyrContext* context);
 
 int
  ProcXFixesSelectCursorInput(ClientPtr client);
@@ -148,7 +148,7 @@ int
 
 /* Region objects (Version 2* */
 Bool
- XFixesRegionInit(void);
+ XFixesRegionInit(XephyrContext* context);
 
 int
  ProcXFixesCreateRegion(ClientPtr client);
@@ -292,7 +292,7 @@ int
 /* Version 6 */
 
 Bool
- XFixesClientDisconnectInit(void);
+ XFixesClientDisconnectInit(XephyrContext* context);
 
 int
  ProcXFixesSetClientDisconnectMode(ClientPtr client);

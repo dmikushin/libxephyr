@@ -159,11 +159,11 @@ CallbackListPtr ServerGrabCallback = NULL;
 HWEventQueuePtr checkForInput[2];
 int connBlockScreenStart;
 
-static void KillAllClients(void);
+static void KillAllClients(XephyrContext* context);
 
 static int nextFreeClientID;    /* always MIN free client ID */
 
-static int nClients;            /* number of authorized screenInfo.screens[0]->context->clients */
+static int nClients;            /* number of authorized xephyr_context->clients */
 
 CallbackListPtr ClientStateCallback;
 OsTimerPtr dispatchExceptionTimer;
@@ -204,35 +204,35 @@ SetInputCheck(HWEventQueuePtr c0, HWEventQueuePtr c1)
 }
 
 void
-UpdateCurrentTime(void)
+UpdateCurrentTime(XephyrContext* context)
 {
     TimeStamp systime;
 
     /* To avoid time running backwards, we must call GetTimeInMillis before
      * calling ProcessInputEvents.
      */
-    systime.months = screenInfo.screens[0]->context->currentTime.months;
+    systime.months = context->currentTime.months;
     systime.milliseconds = GetTimeInMillis();
-    if (systime.milliseconds < screenInfo.screens[0]->context->currentTime.milliseconds)
+    if (systime.milliseconds < context->currentTime.milliseconds)
         systime.months++;
     if (InputCheckPending())
         ProcessInputEvents();
-    if (CompareTimeStamps(systime, screenInfo.screens[0]->context->currentTime) == LATER)
-        screenInfo.screens[0]->context->currentTime = systime;
+    if (CompareTimeStamps(systime, context->currentTime) == LATER)
+        context->currentTime = systime;
 }
 
 /* Like UpdateCurrentTime, but can't call ProcessInputEvents */
 void
-UpdateCurrentTimeIf(void)
+UpdateCurrentTimeIf(XephyrContext* context)
 {
     TimeStamp systime;
 
-    systime.months = screenInfo.screens[0]->context->currentTime.months;
+    systime.months = context->currentTime.months;
     systime.milliseconds = GetTimeInMillis();
-    if (systime.milliseconds < screenInfo.screens[0]->context->currentTime.milliseconds)
+    if (systime.milliseconds < context->currentTime.milliseconds)
         systime.months++;
-    if (CompareTimeStamps(systime, screenInfo.screens[0]->context->currentTime) == LATER)
-        screenInfo.screens[0]->context->currentTime = systime;
+    if (CompareTimeStamps(systime, context->currentTime) == LATER)
+        context->currentTime = systime;
 }
 
 #undef SMART_DEBUG
@@ -257,7 +257,7 @@ static int SmartLastIndex[SMART_MAX_PRIORITY - SMART_MIN_PRIORITY + 1];
 long SmartLastPrint;
 #endif
 
-void Dispatch(void);
+void Dispatch(XephyrContext* context);
 
 static struct xorg_list ready_clients;
 static struct xorg_list saved_ready_clients;
@@ -341,7 +341,7 @@ SmartScheduleClient(void)
     xorg_list_for_each_entry(pClient, &ready_clients, ready) {
         nready++;
 
-        /* Praise screenInfo.screens[0]->context->clients which haven't run in a while */
+        /* Praise xephyr_context->clients which haven't run in a while */
         if ((now - pClient->smart_stop_tick) >= idle) {
             if (pClient->smart_priority < 0)
                 pClient->smart_priority++;
@@ -439,18 +439,18 @@ SetDispatchExceptionTimer(void)
 }
 
 static Bool
-ShouldDisconnectRemainingClients(void)
+ShouldDisconnectRemainingClients(XephyrContext* context)
 {
     int i;
 
-    for (i = 1; i < screenInfo.screens[0]->context->currentMaxClients; i++) {
-        if (screenInfo.screens[0]->context->clients[i]) {
-            if (!XFixesShouldDisconnectClient(screenInfo.screens[0]->context->clients[i]))
+    for (i = 1; i < context->currentMaxClients; i++) {
+        if (context->clients[i]) {
+            if (!XFixesShouldDisconnectClient(context->clients[i]))
                 return FALSE;
         }
     }
 
-    /* All remaining screenInfo.screens[0]->context->clients can be safely ignored */
+    /* All remaining clients can be safely ignored */
     return TRUE;
 }
 
@@ -472,7 +472,7 @@ DisableLimitedSchedulingLatency(void)
 }
 
 void
-Dispatch(void)
+Dispatch(XephyrContext* context)
 {
     int result;
     ClientPtr client;
@@ -490,7 +490,7 @@ Dispatch(void)
             FlushIfCriticalOutputPending();
         }
 
-        if (!WaitForSomething(clients_are_ready()))
+        if (!WaitForSomething(clients_are_ready(), context))
             continue;
 
        /*****************
@@ -511,7 +511,7 @@ Dispatch(void)
                 FlushIfCriticalOutputPending();
                 if ((SmartScheduleTime - start_tick) >= SmartScheduleSlice)
                 {
-                    /* Penalize screenInfo.screens[0]->context->clients which consume ticks */
+                    /* Penalize xephyr_context->clients which consume ticks */
                     if (client->smart_priority > SMART_MIN_PRIORITY)
                         client->smart_priority--;
                     break;
@@ -542,7 +542,7 @@ Dispatch(void)
                                           client->index,
                                           client->requestBuffer);
 #endif
-                if (result > (screenInfo.screens[0]->context->maxBigRequestSize << 2))
+                if (result > (client->context->maxBigRequestSize << 2))
                     result = BadLength;
                 else {
                     result = XaceHookDispatch(client, client->majorOp);
@@ -583,7 +583,7 @@ Dispatch(void)
 #if defined(DDXBEFORERESET)
     ddxBeforeReset();
 #endif
-    KillAllClients();
+    KillAllClients(client->context);
     dispatchException &= ~DE_RESET;
     SmartScheduleLatencyLimited = 0;
     ResetOsBuffers();
@@ -600,7 +600,7 @@ SetVendorRelease(int release)
 }
 
 Bool
-CreateConnectionBlock(void)
+CreateConnectionBlock(XephyrContext* context)
 {
     xConnSetup setup;
     xWindowRoot root;
@@ -620,30 +620,30 @@ CreateConnectionBlock(void)
     /*
      * per-server image and bitmap parameters are defined in Xmd.h
      */
-    setup.imageByteOrder = screenInfo.screens[0]->context->screenInfo.imageByteOrder;
+    setup.imageByteOrder = context->screenInfo.imageByteOrder;
 
-    setup.bitmapScanlineUnit = screenInfo.screens[0]->context->screenInfo.bitmapScanlineUnit;
-    setup.bitmapScanlinePad = screenInfo.screens[0]->context->screenInfo.bitmapScanlinePad;
+    setup.bitmapScanlineUnit = context->screenInfo.bitmapScanlineUnit;
+    setup.bitmapScanlinePad = context->screenInfo.bitmapScanlinePad;
 
-    setup.bitmapBitOrder = screenInfo.screens[0]->context->screenInfo.bitmapBitOrder;
-    setup.motionBufferSize = NumMotionEvents();
-    setup.numRoots = screenInfo.screens[0]->context->screenInfo.numScreens;
+    setup.bitmapBitOrder = context->screenInfo.bitmapBitOrder;
+    setup.motionBufferSize = NumMotionEvents(context);
+    setup.numRoots = context->screenInfo.numScreens;
     setup.nbytesVendor = strlen(VendorString);
-    setup.numFormats = screenInfo.screens[0]->context->screenInfo.numPixmapFormats;
+    setup.numFormats = context->screenInfo.numPixmapFormats;
     setup.maxRequestSize = MAX_REQUEST_SIZE;
-    QueryMinMaxKeyCodes(&setup.minKeyCode, &setup.maxKeyCode);
+    QueryMinMaxKeyCodes(&setup.minKeyCode, &setup.maxKeyCode, context);
 
     lenofblock = sizeof(xConnSetup) +
         pad_to_int32(setup.nbytesVendor) +
         (setup.numFormats * sizeof(xPixmapFormat)) +
         (setup.numRoots * sizeof(xWindowRoot));
-    screenInfo.screens[0]->context->ConnectionInfo = malloc(lenofblock);
-    if (!screenInfo.screens[0]->context->ConnectionInfo)
+    context->ConnectionInfo = malloc(lenofblock);
+    if (!context->ConnectionInfo)
         return FALSE;
 
-    memmove(screenInfo.screens[0]->context->ConnectionInfo, (char *) &setup, sizeof(xConnSetup));
+    memmove(context->ConnectionInfo, (char *) &setup, sizeof(xConnSetup));
     sizesofar = sizeof(xConnSetup);
-    pBuf = screenInfo.screens[0]->context->ConnectionInfo + sizeof(xConnSetup);
+    pBuf = context->ConnectionInfo + sizeof(xConnSetup);
 
     memmove(pBuf, VendorString, (int) setup.nbytesVendor);
     sizesofar += setup.nbytesVendor;
@@ -654,10 +654,10 @@ CreateConnectionBlock(void)
         *pBuf++ = 0;
 
     memset(&format, 0, sizeof(xPixmapFormat));
-    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numPixmapFormats; i++) {
-        format.depth = screenInfo.screens[0]->context->screenInfo.formats[i].depth;
-        format.bitsPerPixel = screenInfo.screens[0]->context->screenInfo.formats[i].bitsPerPixel;
-        format.scanLinePad = screenInfo.screens[0]->context->screenInfo.formats[i].scanlinePad;
+    for (i = 0; i < context->screenInfo.numPixmapFormats; i++) {
+        format.depth = context->screenInfo.formats[i].depth;
+        format.bitsPerPixel = context->screenInfo.formats[i].bitsPerPixel;
+        format.scanLinePad = context->screenInfo.formats[i].scanlinePad;
         memmove(pBuf, (char *) &format, sizeof(xPixmapFormat));
         pBuf += sizeof(xPixmapFormat);
         sizesofar += sizeof(xPixmapFormat);
@@ -666,12 +666,12 @@ CreateConnectionBlock(void)
     connBlockScreenStart = sizesofar;
     memset(&depth, 0, sizeof(xDepth));
     memset(&visual, 0, sizeof(xVisualType));
-    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++) {
+    for (i = 0; i < context->screenInfo.numScreens; i++) {
         ScreenPtr pScreen;
         DepthPtr pDepth;
         VisualPtr pVisual;
 
-        pScreen = screenInfo.screens[0]->context->screenInfo.screens[i];
+        pScreen = context->screenInfo.screens[i];
         root.windowId = pScreen->root->drawable.id;
         root.defaultColormap = pScreen->defColormap;
         root.whitePixel = pScreen->whitePixel;
@@ -696,12 +696,12 @@ CreateConnectionBlock(void)
         for (j = 0; j < pScreen->numDepths; j++, pDepth++) {
             lenofblock += sizeof(xDepth) +
                 (pDepth->numVids * sizeof(xVisualType));
-            pBuf = (char *) realloc(screenInfo.screens[0]->context->ConnectionInfo, lenofblock);
+            pBuf = (char *) realloc(context->ConnectionInfo, lenofblock);
             if (!pBuf) {
-                free(screenInfo.screens[0]->context->ConnectionInfo);
+                free(context->ConnectionInfo);
                 return FALSE;
             }
-            screenInfo.screens[0]->context->ConnectionInfo = pBuf;
+            context->ConnectionInfo = pBuf;
             pBuf += sizesofar;
             depth.depth = pDepth->depth;
             depth.nVisuals = pDepth->numVids;
@@ -768,7 +768,7 @@ ProcCreateWindow(ClientPtr client)
         Mask mask = pWin->eventMask;
 
         pWin->eventMask = 0;    /* subterfuge in case AddResource fails */
-        if (!AddResource(stuff->wid, RT_WINDOW, (void *) pWin))
+        if (!AddResource(stuff->wid, RT_WINDOW, (void *) pWin, client->context))
             return BadAlloc;
         pWin->eventMask = mask;
     }
@@ -833,7 +833,7 @@ ProcDestroyWindow(ClientPtr client)
                              DixRemoveAccess);
         if (rc != Success)
             return rc;
-        FreeResource(stuff->id, RT_NONE);
+        FreeResource(stuff->id, RT_NONE, client->context);
     }
     return Success;
 }
@@ -1198,7 +1198,7 @@ UngrabServer(ClientPtr client)
     int i;
 
     grabState = GrabNone;
-    ListenToAllClients();
+    ListenToAllClients(client->context);
     mark_client_ungrab();
     for (i = mskcnt; --i >= 0 && !grabWaiters[i];);
     if (i >= 0) {
@@ -1206,7 +1206,7 @@ UngrabServer(ClientPtr client)
         while (!GETBIT(grabWaiters, i))
             i++;
         BITCLEAR(grabWaiters, i);
-        AttendClient(screenInfo.screens[0]->context->clients[i]);
+        AttendClient(client->context->clients[i]);
     }
 
     if (ServerGrabCallback) {
@@ -1329,7 +1329,7 @@ ProcCloseFont(ClientPtr client)
     rc = dixLookupResourceByType((void **) &pFont, stuff->id, RT_FONT,
                                  client, DixDestroyAccess);
     if (rc == Success) {
-        FreeResource(stuff->id, RT_NONE);
+        FreeResource(stuff->id, RT_NONE, client->context);
         return Success;
     }
     else {
@@ -1453,7 +1453,7 @@ ProcListFontsWithInfo(ClientPtr client)
  *  \param value must conform to DeleteType
  */
 int
-dixDestroyPixmap(void *value, XID pid)
+dixDestroyPixmap(void *value, XID pid, XephyrContext* context)
 {
     PixmapPtr pPixmap = (PixmapPtr) value;
 
@@ -1511,7 +1511,9 @@ ProcCreatePixmap(ClientPtr client)
     pMap = (PixmapPtr) (*pDraw->pScreen->CreatePixmap)
         (pDraw->pScreen, stuff->width, stuff->height, stuff->depth, 0);
     if (pMap) {
-        pMap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+        pMap->drawable.serialNumber = ((client->context->screenInfo.numScreens > 0) ? 
+            ((++(client->context->globalSerialNumber)) > MAX_SERIAL_NUM ? 
+                (client->context->globalSerialNumber = 1): client->context->globalSerialNumber) : 1);
         pMap->drawable.id = stuff->pid;
         /* security creation/labeling check */
         rc = XaceHook(XACE_RESOURCE_ACCESS, client, stuff->pid, RT_PIXMAP,
@@ -1520,7 +1522,7 @@ ProcCreatePixmap(ClientPtr client)
             (*pDraw->pScreen->DestroyPixmap) (pMap);
             return rc;
         }
-        if (AddResource(stuff->pid, RT_PIXMAP, (void *) pMap))
+        if (AddResource(stuff->pid, RT_PIXMAP, (void *) pMap, client->context))
             return Success;
     }
     return BadAlloc;
@@ -1538,7 +1540,7 @@ ProcFreePixmap(ClientPtr client)
     rc = dixLookupResourceByType((void **) &pMap, stuff->id, RT_PIXMAP,
                                  client, DixDestroyAccess);
     if (rc == Success) {
-        FreeResource(stuff->id, RT_NONE);
+        FreeResource(stuff->id, RT_NONE, client->context);
         return Success;
     }
     else {
@@ -1572,7 +1574,7 @@ ProcCreateGC(ClientPtr client)
                           stuff->gc, client);
     if (error != Success)
         return error;
-    if (!AddResource(stuff->gc, RT_GC, (void *) pGC))
+    if (!AddResource(stuff->gc, RT_GC, (void *) pGC, client->context))
         return BadAlloc;
     return Success;
 }
@@ -1687,7 +1689,7 @@ ProcFreeGC(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->id, RT_NONE);
+    FreeResource(stuff->id, RT_NONE, client->context);
     return Success;
 }
 
@@ -2095,13 +2097,13 @@ ProcPutImage(ClientPtr client)
     VALIDATE_DRAWABLE_AND_GC(stuff->drawable, pDraw, DixWriteAccess);
     if (stuff->format == XYBitmap) {
         if ((stuff->depth != 1) ||
-            (stuff->leftPad >= (unsigned int) screenInfo.screens[0]->context->screenInfo.bitmapScanlinePad))
+            (stuff->leftPad >= (unsigned int) client->context->screenInfo.bitmapScanlinePad))
             return BadMatch;
         length = BitmapBytePad(stuff->width + stuff->leftPad);
     }
     else if (stuff->format == XYPixmap) {
         if ((pDraw->depth != stuff->depth) ||
-            (stuff->leftPad >= (unsigned int) screenInfo.screens[0]->context->screenInfo.bitmapScanlinePad))
+            (stuff->leftPad >= (unsigned int) client->context->screenInfo.bitmapScanlinePad))
             return BadMatch;
         length = BitmapBytePad(stuff->width + stuff->leftPad);
         length *= stuff->depth;
@@ -2475,7 +2477,7 @@ ProcFreeColormap(ClientPtr client)
     if (rc == Success) {
         /* Freeing a default colormap is a no-op */
         if (!(pmap->flags & IsDefault))
-            FreeResource(stuff->id, RT_NONE);
+            FreeResource(stuff->id, RT_NONE, client->context);
         return Success;
     }
     else {
@@ -2500,7 +2502,7 @@ ProcCopyColormapAndFree(ClientPtr client)
                                  RT_COLORMAP, client,
                                  DixReadAccess | DixRemoveAccess);
     if (rc == Success)
-        return CopyColormapAndFree(mid, pSrcMap, client->index, screenInfo.screens[0]->context);
+        return CopyColormapAndFree(mid, pSrcMap, client->index, client->context);
     client->errorValue = stuff->srcCmap;
     return rc;
 }
@@ -2624,7 +2626,7 @@ ProcAllocColor(ClientPtr client)
             .pixel = 0
         };
         if ((rc = AllocColor(pmap, &acr.red, &acr.green, &acr.blue,
-                             &acr.pixel, client->index, screenInfo.screens[0]->context)))
+                             &acr.pixel, client->index, client->context)))
             return rc;
 #ifdef PANORAMIX
         if (noPanoramiXExtension || !pmap->pScreen->myNum)
@@ -2665,7 +2667,7 @@ ProcAllocNamedColor(ClientPtr client)
             ancr.pixel = 0;
             if ((rc = AllocColor(pcmp,
                                  &ancr.screenRed, &ancr.screenGreen,
-                                 &ancr.screenBlue, &ancr.pixel, client->index, screenInfo.screens[0]->context)))
+                                 &ancr.screenBlue, &ancr.pixel, client->index, client->context)))
                 return rc;
 #ifdef PANORAMIX
             if (noPanoramiXExtension || !pcmp->pScreen->myNum)
@@ -2717,7 +2719,7 @@ ProcAllocColorCells(ClientPtr client)
         pmasks = ppixels + npixels;
 
         if ((rc = AllocColorCells(client->index, pcmp, npixels, nmasks,
-                                  (Bool) stuff->contiguous, ppixels, pmasks))) {
+                                  (Bool) stuff->contiguous, ppixels, pmasks, client->context))) {
             free(ppixels);
             return rc;
         }
@@ -2785,7 +2787,7 @@ ProcAllocColorPlanes(ClientPtr client)
                                    (int) stuff->red, (int) stuff->green,
                                    (int) stuff->blue, (Bool) stuff->contiguous,
                                    ppixels, &acpr.redMask, &acpr.greenMask,
-                                   &acpr.blueMask, screenInfo.screens[0]->context))) {
+                                   &acpr.blueMask, client->context))) {
             free(ppixels);
             return rc;
         }
@@ -2825,7 +2827,7 @@ ProcFreeColors(ClientPtr client)
             return BadAccess;
         count = bytes_to_int32((client->req_len << 2) - sizeof(xFreeColorsReq));
         return FreeColors(pcmp, client->index, count,
-                          (Pixel *) &stuff[1], (Pixel) stuff->planeMask, screenInfo.screens[0]->context);
+                          (Pixel *) &stuff[1], (Pixel) stuff->planeMask, client->context);
     }
     else {
         client->errorValue = stuff->cmap;
@@ -3063,7 +3065,7 @@ ProcCreateCursor(ClientPtr client)
 
     if (rc != Success)
         goto bail;
-    if (!AddResource(stuff->cid, RT_CURSOR, (void *) pCursor)) {
+    if (!AddResource(stuff->cid, RT_CURSOR, (void *) pCursor, client->context)) {
         rc = BadAlloc;
         goto bail;
     }
@@ -3093,7 +3095,7 @@ ProcCreateGlyphCursor(ClientPtr client)
                            &pCursor, client, stuff->cid);
     if (res != Success)
         return res;
-    if (AddResource(stuff->cid, RT_CURSOR, (void *) pCursor))
+    if (AddResource(stuff->cid, RT_CURSOR, (void *) pCursor, client->context))
         return Success;
     return BadAlloc;
 }
@@ -3110,7 +3112,7 @@ ProcFreeCursor(ClientPtr client)
     rc = dixLookupResourceByType((void **) &pCursor, stuff->id, RT_CURSOR,
                                  client, DixDestroyAccess);
     if (rc == Success) {
-        FreeResource(stuff->id, RT_NONE);
+        FreeResource(stuff->id, RT_NONE, client->context);
         return Success;
     }
     else {
@@ -3167,8 +3169,8 @@ ProcSetScreenSaver(ClientPtr client)
     REQUEST(xSetScreenSaverReq);
     REQUEST_SIZE_MATCH(xSetScreenSaverReq);
 
-    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++) {
-        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, screenInfo.screens[0]->context->screenInfo.screens[i],
+    for (i = 0; i < client->context->screenInfo.numScreens; i++) {
+        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, client->context->screenInfo.screens[i],
                       DixSetAttrAccess);
         if (rc != Success)
             return rc;
@@ -3198,24 +3200,24 @@ ProcSetScreenSaver(ClientPtr client)
     }
 
     if (blankingOption == DefaultBlanking)
-        screenInfo.screens[0]->context->ScreenSaverBlanking = screenInfo.screens[0]->context->defaultScreenSaverBlanking;
+        client->context->ScreenSaverBlanking = client->context->defaultScreenSaverBlanking;
     else
-        screenInfo.screens[0]->context->ScreenSaverBlanking = blankingOption;
+        client->context->ScreenSaverBlanking = blankingOption;
     if (exposureOption == DefaultExposures)
-        screenInfo.screens[0]->context->ScreenSaverAllowExposures = screenInfo.screens[0]->context->defaultScreenSaverAllowExposures;
+        client->context->ScreenSaverAllowExposures = client->context->defaultScreenSaverAllowExposures;
     else
-        screenInfo.screens[0]->context->ScreenSaverAllowExposures = exposureOption;
+        client->context->ScreenSaverAllowExposures = exposureOption;
 
     if (stuff->timeout >= 0)
-        screenInfo.screens[0]->context->ScreenSaverTime = stuff->timeout * MILLI_PER_SECOND;
+        client->context->ScreenSaverTime = stuff->timeout * MILLI_PER_SECOND;
     else
-        screenInfo.screens[0]->context->ScreenSaverTime = screenInfo.screens[0]->context->defaultScreenSaverTime;
+        client->context->ScreenSaverTime = client->context->defaultScreenSaverTime;
     if (stuff->interval >= 0)
-        screenInfo.screens[0]->context->ScreenSaverInterval = stuff->interval * MILLI_PER_SECOND;
+        client->context->ScreenSaverInterval = stuff->interval * MILLI_PER_SECOND;
     else
-        screenInfo.screens[0]->context->ScreenSaverInterval = screenInfo.screens[0]->context->defaultScreenSaverInterval;
+        client->context->ScreenSaverInterval = client->context->defaultScreenSaverInterval;
 
-    SetScreenSaverTimer();
+    SetScreenSaverTimer(client->context);
     return Success;
 }
 
@@ -3227,8 +3229,8 @@ ProcGetScreenSaver(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xReq);
 
-    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++) {
-        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, screenInfo.screens[0]->context->screenInfo.screens[i],
+    for (i = 0; i < client->context->screenInfo.numScreens; i++) {
+        rc = XaceHook(XACE_SCREENSAVER_ACCESS, client, client->context->screenInfo.screens[i],
                       DixGetAttrAccess);
         if (rc != Success)
             return rc;
@@ -3238,10 +3240,10 @@ ProcGetScreenSaver(ClientPtr client)
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = 0,
-        .timeout = screenInfo.screens[0]->context->ScreenSaverTime / MILLI_PER_SECOND,
-        .interval = screenInfo.screens[0]->context->ScreenSaverInterval / MILLI_PER_SECOND,
-        .preferBlanking = screenInfo.screens[0]->context->ScreenSaverBlanking,
-        .allowExposures = screenInfo.screens[0]->context->ScreenSaverAllowExposures
+        .timeout = client->context->ScreenSaverTime / MILLI_PER_SECOND,
+        .interval = client->context->ScreenSaverInterval / MILLI_PER_SECOND,
+        .preferBlanking = client->context->ScreenSaverBlanking,
+        .allowExposures = client->context->ScreenSaverAllowExposures
     };
     WriteReplyToClient(client, sizeof(xGetScreenSaverReply), &rep);
     return Success;
@@ -3276,7 +3278,7 @@ ProcListHosts(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xListHostsReq);
 
-    /* untrusted screenInfo.screens[0]->context->clients can't list hosts */
+    /* untrusted xephyr_context->clients can't list hosts */
     result = XaceHook(XACE_SERVER_ACCESS, client, DixReadAccess);
     if (result != Success)
         return result;
@@ -3317,18 +3319,18 @@ ProcChangeAccessControl(ClientPtr client)
 /*********************
  * CloseDownRetainedResources
  *
- *    Find all screenInfo.screens[0]->context->clients that are gone and have terminated in RetainTemporary
+ *    Find all xephyr_context->clients that are gone and have terminated in RetainTemporary
  *    and destroy their resources.
  *********************/
 
 static void
-CloseDownRetainedResources(void)
+CloseDownRetainedResources(XephyrContext* context)
 {
     int i;
     ClientPtr client;
 
-    for (i = 1; i < screenInfo.screens[0]->context->currentMaxClients; i++) {
-        client = screenInfo.screens[0]->context->clients[i];
+    for (i = 1; i < context->currentMaxClients; i++) {
+        client = context->clients[i];
         if (client && (client->closeDownMode == RetainTemporary)
             && (client->clientGone))
             CloseDownClient(client);
@@ -3344,7 +3346,7 @@ ProcKillClient(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
     if (stuff->id == AllTemporary) {
-        CloseDownRetainedResources();
+        CloseDownRetainedResources(client->context);
         return Success;
     }
 
@@ -3544,8 +3546,8 @@ CloseDownClient(ClientPtr client)
             clientinfo.setup = (xConnSetup *) NULL;
             CallCallbacks((&ClientStateCallback), (void *) &clientinfo);
         }
-        TouchListenerGone(client->clientAsMask);
-        GestureListenerGone(client->clientAsMask);
+        TouchListenerGone(client->clientAsMask, client->context);
+        GestureListenerGone(client->clientAsMask, client->context);
         FreeClientResources(client);
         /* Disable client ID tracking. This must be done after
          * ClientStateCallback. */
@@ -3555,28 +3557,28 @@ CloseDownClient(ClientPtr client)
 #endif
         if (client->index < nextFreeClientID)
             nextFreeClientID = client->index;
-        screenInfo.screens[0]->context->clients[client->index] = NullClient;
+        client->context->clients[client->index] = NullClient;
         SmartLastClient = NullClient;
         dixFreeObjectWithPrivates(client, PRIVATE_CLIENT);
 
-        while (!screenInfo.screens[0]->context->clients[screenInfo.screens[0]->context->currentMaxClients - 1])
-            screenInfo.screens[0]->context->currentMaxClients--;
+        while (!client->context->clients[client->context->currentMaxClients - 1])
+            client->context->currentMaxClients--;
     }
 
-    if (ShouldDisconnectRemainingClients())
+    if (ShouldDisconnectRemainingClients(client->context))
         SetDispatchExceptionTimer();
 }
 
 static void
-KillAllClients(void)
+KillAllClients(XephyrContext* context)
 {
     int i;
 
-    for (i = 1; i < screenInfo.screens[0]->context->currentMaxClients; i++)
-        if (screenInfo.screens[0]->context->clients[i]) {
-            /* Make sure Retained screenInfo.screens[0]->context->clients are released. */
-            screenInfo.screens[0]->context->clients[i]->closeDownMode = DestroyAll;
-            CloseDownClient(screenInfo.screens[0]->context->clients[i]);
+    for (i = 1; i < context->currentMaxClients; i++)
+        if (context->clients[i]) {
+            /* Make sure Retained clients are released. */
+            context->clients[i]->closeDownMode = DestroyAll;
+            CloseDownClient(context->clients[i]);
         }
 }
 
@@ -3590,7 +3592,7 @@ InitClient(ClientPtr client, int i, void *ospriv)
     client->closeDownMode = i ? DestroyAll : RetainPermanent;
     client->requestVector = InitialVector;
     client->osPrivate = ospriv;
-    QueryMinMaxKeyCodes(&client->minKC, &client->maxKC);
+    QueryMinMaxKeyCodes(&client->minKC, &client->maxKC, client->context);
     client->smart_start_tick = SmartScheduleTime;
     client->smart_stop_tick = SmartScheduleTime;
     client->clientIds = NULL;
@@ -3600,7 +3602,7 @@ InitClient(ClientPtr client, int i, void *ospriv)
  * int NextAvailableClient(ospriv)
  *
  * OS dependent portion can't assign client id's because of CloseDownModes.
- * Returns NULL if there are no free screenInfo.screens[0]->context->clients.
+ * Returns NULL if there are no free xephyr_context->clients.
  *************************/
 
 ClientPtr
@@ -3630,9 +3632,9 @@ NextAvailableClient(void *ospriv, XephyrContext* context)
         dixFreeObjectWithPrivates(client, PRIVATE_CLIENT);
         return (ClientPtr) NULL;
     }
-    if (i == screenInfo.screens[0]->context->currentMaxClients)
-        screenInfo.screens[0]->context->currentMaxClients++;
-    while ((nextFreeClientID < LimitClients) && screenInfo.screens[0]->context->clients[nextFreeClientID])
+    if (i == client->context->currentMaxClients)
+        client->context->currentMaxClients++;
+    while ((nextFreeClientID < LimitClients) && client->context->clients[nextFreeClientID])
         nextFreeClientID++;
 
     /* Enable client ID tracking. This must be done before
@@ -3705,8 +3707,8 @@ SendConnSetup(ClientPtr client, const char *reason)
         return client->noClientException = -1;
     }
 
-    numScreens = screenInfo.screens[0]->context->screenInfo.numScreens;
-    lConnectionInfo = screenInfo.screens[0]->context->ConnectionInfo;
+    numScreens = client->context->screenInfo.numScreens;
+    lConnectionInfo = client->context->ConnectionInfo;
     lconnSetupPrefix = &connSetupPrefix;
 
     /* We're about to start speaking X protocol back to the client by
@@ -3728,15 +3730,15 @@ SendConnSetup(ClientPtr client, const char *reason)
     root = (xWindowRoot *) (lConnectionInfo + connBlockScreenStart);
 #ifdef PANORAMIX
     if (noPanoramiXExtension)
-        numScreens = screenInfo.screens[0]->context->screenInfo.numScreens;
+        numScreens = client->context->screenInfo.numScreens;
     else
-        numScreens = ((xConnSetup *) screenInfo.screens[0]->context->ConnectionInfo)->numRoots;
+        numScreens = ((xConnSetup *) client->context->ConnectionInfo)->numRoots;
 #endif
 
     for (i = 0; i < numScreens; i++) {
         unsigned int j;
         xDepth *pDepth;
-        WindowPtr pRoot = screenInfo.screens[0]->context->screenInfo.screens[i]->root;
+        WindowPtr pRoot = client->context->screenInfo.screens[i]->root;
 
         root->currentInputMask = pRoot->eventMask | wOtherEventMasks(pRoot);
         pDepth = (xDepth *) (root + 1);
@@ -3905,7 +3907,7 @@ with its screen number, a pointer to its ScreenRec, argc, and argv.
 
 */
 
-static int init_screen(ScreenPtr pScreen, int i, Bool gpu)
+static int init_screen(ScreenPtr pScreen, int i, Bool gpu, XephyrContext* context)
 {
     int scanlinepad, format, depth, bitsPerPixel, j, k;
 
@@ -3935,10 +3937,10 @@ static int init_screen(ScreenPtr pScreen, int i, Bool gpu)
      * Anyway, this must be called after InitOutput and before the
      * screen init routine is called.
      */
-    for (format = 0; format < screenInfo.screens[0]->context->screenInfo.numPixmapFormats; format++) {
-        depth = screenInfo.screens[0]->context->screenInfo.formats[format].depth;
-        bitsPerPixel = screenInfo.screens[0]->context->screenInfo.formats[format].bitsPerPixel;
-        scanlinepad = screenInfo.screens[0]->context->screenInfo.formats[format].scanlinePad;
+    for (format = 0; format < context->screenInfo.numPixmapFormats; format++) {
+        depth = context->screenInfo.formats[format].depth;
+        bitsPerPixel = context->screenInfo.formats[format].bitsPerPixel;
+        scanlinepad = context->screenInfo.formats[format].scanlinePad;
         j = indexForBitsPerPixel[bitsPerPixel];
         k = indexForScanlinePad[scanlinepad];
         PixmapWidthPaddingInfo[depth].padPixelsLog2 = answer[j][k];
@@ -3963,14 +3965,14 @@ int
 AddScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
                            int /*argc */ ,
                            char **      /*argv */
-          ), int argc, char **argv)
+          ), int argc, char **argv, XephyrContext* context)
 {
 
     int i;
     ScreenPtr pScreen;
     Bool ret;
 
-    i = screenInfo.screens[0]->context->screenInfo.numScreens;
+    i = context->screenInfo.numScreens;
     if (i == MAXSCREENS)
         return -1;
 
@@ -3978,7 +3980,7 @@ AddScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
     if (!pScreen)
         return -1;
 
-    ret = init_screen(pScreen, i, FALSE);
+    ret = init_screen(pScreen, i, FALSE, context);
     if (ret != 0) {
         free(pScreen);
         return ret;
@@ -3991,17 +3993,17 @@ AddScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
        any of the strings pointed to by argv.  They may be passed to
        multiple screens.
      */
-    screenInfo.screens[0]->context->screenInfo.screens[i] = pScreen;
-    screenInfo.screens[0]->context->screenInfo.numScreens++;
+    context->screenInfo.screens[i] = pScreen;
+    context->screenInfo.numScreens++;
     if (!(*pfnInit) (pScreen, argc, argv)) {
         dixFreeScreenSpecificPrivates(pScreen);
         dixFreePrivates(pScreen->devPrivates, PRIVATE_SCREEN);
         free(pScreen);
-        screenInfo.screens[0]->context->screenInfo.numScreens--;
+        context->screenInfo.numScreens--;
         return -1;
     }
 
-    update_desktop_dimensions();
+    update_desktop_dimensions(context);
 
     dixRegisterScreenPrivateKey(&cursorScreenDevPriv, pScreen, PRIVATE_CURSOR,
                                 0);
@@ -4014,13 +4016,13 @@ AddGPUScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
                               int /*argc */ ,
                               char **      /*argv */
                               ),
-             int argc, char **argv)
+             int argc, char **argv, XephyrContext* context)
 {
     int i;
     ScreenPtr pScreen;
     Bool ret;
 
-    i = screenInfo.screens[0]->context->screenInfo.numGPUScreens;
+    i = context->screenInfo.numGPUScreens;
     if (i == MAXGPUSCREENS)
         return -1;
 
@@ -4028,7 +4030,7 @@ AddGPUScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
     if (!pScreen)
         return -1;
 
-    ret = init_screen(pScreen, i, TRUE);
+    ret = init_screen(pScreen, i, TRUE, context);
     if (ret != 0) {
         free(pScreen);
         return ret;
@@ -4042,16 +4044,16 @@ AddGPUScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
        any of the strings pointed to by argv.  They may be passed to
        multiple screens.
      */
-    screenInfo.screens[0]->context->screenInfo.gpuscreens[i] = pScreen;
-    screenInfo.screens[0]->context->screenInfo.numGPUScreens++;
+    context->screenInfo.gpuscreens[i] = pScreen;
+    context->screenInfo.numGPUScreens++;
     if (!(*pfnInit) (pScreen, argc, argv)) {
         dixFreePrivates(pScreen->devPrivates, PRIVATE_SCREEN);
         free(pScreen);
-        screenInfo.screens[0]->context->screenInfo.numGPUScreens--;
+        context->screenInfo.numGPUScreens--;
         return -1;
     }
 
-    update_desktop_dimensions();
+    update_desktop_dimensions(context);
 
     /*
      * We cannot register the Screen PRIVATE_CURSOR key if cursors are already
@@ -4067,23 +4069,23 @@ AddGPUScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
 }
 
 void
-RemoveGPUScreen(ScreenPtr pScreen)
+RemoveGPUScreen(ScreenPtr pScreen, XephyrContext* context)
 {
     int idx, j;
     if (!pScreen->isGPU)
         return;
 
     idx = pScreen->myNum - GPU_SCREEN_OFFSET;
-    for (j = idx; j < screenInfo.screens[0]->context->screenInfo.numGPUScreens - 1; j++) {
-        screenInfo.screens[0]->context->screenInfo.gpuscreens[j] = screenInfo.screens[0]->context->screenInfo.gpuscreens[j + 1];
-        screenInfo.screens[0]->context->screenInfo.gpuscreens[j]->myNum = j + GPU_SCREEN_OFFSET;
+    for (j = idx; j < context->screenInfo.numGPUScreens - 1; j++) {
+        context->screenInfo.gpuscreens[j] = context->screenInfo.gpuscreens[j + 1];
+        context->screenInfo.gpuscreens[j]->myNum = j + GPU_SCREEN_OFFSET;
     }
-    screenInfo.screens[0]->context->screenInfo.numGPUScreens--;
+    context->screenInfo.numGPUScreens--;
 
     /* this gets freed later in the resource list, but without
      * the screen existing it causes crashes - so remove it here */
     if (pScreen->defColormap)
-        FreeResource(pScreen->defColormap, RT_COLORMAP);
+        FreeResource(pScreen->defColormap, RT_COLORMAP, context);
     free(pScreen);
 
 }

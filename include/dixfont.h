@@ -33,7 +33,7 @@ SOFTWARE.
 
 typedef struct _DIXFontProp *DIXFontPropPtr;
 
-extern _X_EXPORT Bool SetDefaultFont(const char * /*defaultfontname */ );
+extern _X_EXPORT Bool SetDefaultFont(const char * /*defaultfontname */, XephyrContext* context);
 
 extern _X_EXPORT int OpenFont(ClientPtr /*client */ ,
                               XID /*fid */ ,
@@ -42,7 +42,7 @@ extern _X_EXPORT int OpenFont(ClientPtr /*client */ ,
                               const char * /*pfontname */ );
 
 extern _X_EXPORT int CloseFont(void *pfont,
-                               XID fid);
+                               XID fid, XephyrContext* context);
 
 typedef struct _xQueryFontReply *xQueryFontReplyPtr;
 

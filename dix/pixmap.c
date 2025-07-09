@@ -320,13 +320,13 @@ PixmapDirtyCompositeRotate(PixmapPtr dst_pixmap,
                         dirty->src,
                         format,
                         CPSubwindowMode,
-                        &include_inferiors, context->serverClient, &error);
+                        &include_inferiors, pScreen->context->serverClient, &error);
     if (!src)
         return;
 
     dst = CreatePicture(None,
                         &dst_pixmap->drawable,
-                        format, 0L, NULL, context->serverClient, &error);
+                        format, 0L, NULL, pScreen->context->serverClient, &error);
     if (!dst)
         return;
 

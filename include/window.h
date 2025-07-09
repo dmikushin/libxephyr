@@ -68,6 +68,7 @@ SOFTWARE.
 /* Forward declaration, we can't include input.h here */
 struct _DeviceIntRec;
 struct _Cursor;
+struct _XephyrContext;
 
 typedef struct _BackingStore *BackingStorePtr;
 typedef struct _Window *WindowPtr;
@@ -115,7 +116,8 @@ extern _X_EXPORT WindowPtr CreateWindow(Window /*wid */ ,
                                         int * /*error */ );
 
 extern _X_EXPORT int DeleteWindow(void *pWin,
-                                  XID wid);
+                                  XID wid,
+                                  struct _XephyrContext* context);
 
 extern _X_EXPORT int DestroySubwindows(WindowPtr /*pWin */ ,
                                        ClientPtr /*client */ );
@@ -228,8 +230,8 @@ extern _X_EXPORT RegionPtr CreateBoundingShape(WindowPtr /* pWin */ );
 extern _X_EXPORT RegionPtr CreateClipShape(WindowPtr /* pWin */ );
 
 extern _X_EXPORT void SetRootClip(ScreenPtr pScreen, int enable);
-extern _X_EXPORT void PrintWindowTree(void);
-extern _X_EXPORT void PrintPassiveGrabs(void);
+extern _X_EXPORT void PrintWindowTree(XephyrContext* context);
+extern _X_EXPORT void PrintPassiveGrabs(XephyrContext* context);
 
 extern _X_EXPORT VisualPtr WindowGetVisual(WindowPtr /*pWin*/);
 #endif                          /* WINDOW_H */

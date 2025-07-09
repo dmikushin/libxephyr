@@ -53,8 +53,8 @@
 #include "inpututils.h"
 
 static int countValuators(DeviceEvent *ev, int *first);
-static int getValuatorEvents(DeviceEvent *ev, deviceValuator * xv);
-static int eventToKeyButtonPointer(DeviceEvent *ev, xEvent **xi, int *count);
+static int getValuatorEvents(DeviceEvent *ev, deviceValuator * xv, XephyrContext* context);
+static int eventToKeyButtonPointer(DeviceEvent *ev, xEvent **xi, int *count, XephyrContext* context);
 static int eventToDeviceChanged(DeviceChangedEvent *ev, xEvent **dcce);
 static int eventToDeviceEvent(DeviceEvent *ev, xEvent **xi);
 static int eventToRawEvent(RawDeviceEvent *ev, xEvent **xi);
@@ -204,7 +204,7 @@ EventToCore(InternalEvent *event, xEvent **core_out, int *count_out)
  * @return Success or the error code.
  */
 int
-EventToXI(InternalEvent *ev, xEvent **xi, int *count)
+EventToXI(InternalEvent *ev, xEvent **xi, int *count, XephyrContext* context)
 {
     switch (ev->any.type) {
     case ET_Motion:
@@ -214,7 +214,7 @@ EventToXI(InternalEvent *ev, xEvent **xi, int *count)
     case ET_KeyRelease:
     case ET_ProximityIn:
     case ET_ProximityOut:
-        return eventToKeyButtonPointer(&ev->device_event, xi, count);
+        return eventToKeyButtonPointer(&ev->device_event, xi, count, context);
     case ET_DeviceChanged:
     case ET_RawKeyPress:
     case ET_RawKeyRelease:
@@ -317,7 +317,7 @@ EventToXI2(InternalEvent *ev, xEvent **xi)
 }
 
 static int
-eventToKeyButtonPointer(DeviceEvent *ev, xEvent **xi, int *count)
+eventToKeyButtonPointer(DeviceEvent *ev, xEvent **xi, int *count, XephyrContext* context)
 {
     int num_events;
     int first;                  /* dummy */
@@ -397,7 +397,7 @@ eventToKeyButtonPointer(DeviceEvent *ev, xEvent **xi, int *count)
     }
 
     if (num_events > 1) {
-        getValuatorEvents(ev, (deviceValuator *) (kbp + 1));
+        getValuatorEvents(ev, (deviceValuator *) (kbp + 1), context);
     }
 
     *count = num_events;
@@ -431,7 +431,7 @@ countValuators(DeviceEvent *ev, int *first)
 }
 
 static int
-getValuatorEvents(DeviceEvent *ev, deviceValuator * xv)
+getValuatorEvents(DeviceEvent *ev, deviceValuator * xv, XephyrContext* context)
 {
     int i;
     int state = 0;

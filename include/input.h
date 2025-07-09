@@ -306,9 +306,9 @@ extern void DisableAllDevices(XephyrContext* context);
 extern int InitAndStartDevices(XephyrContext* context);
 
 extern void CloseDownDevices(XephyrContext* context);
-extern void AbortDevices(void);
+extern void AbortDevices(XephyrContext* context);
 
-extern void UndisplayDevices(void);
+extern void UndisplayDevices(XephyrContext* context);
 
 extern _X_EXPORT int RemoveDevice(DeviceIntPtr /*dev */ ,
                                   BOOL /* sendevent */ );
@@ -592,7 +592,7 @@ extern int AllocXTestDevice(ClientPtr client, const char *name,
 extern BOOL IsXTestDevice(DeviceIntPtr dev, DeviceIntPtr master);
 extern DeviceIntPtr GetXTestDevice(DeviceIntPtr master);
 extern void SendDevicePresenceEvent(int deviceid, int type, XephyrContext* context);
-extern void DeliverDeviceClassesChangedEvent(int sourceid, Time time);
+extern void DeliverDeviceClassesChangedEvent(int sourceid, Time time, XephyrContext* context);
 extern _X_EXPORT InputAttributes *DuplicateInputAttributes(InputAttributes *
                                                            attrs);
 extern _X_EXPORT void FreeInputAttributes(InputAttributes * attrs);
@@ -629,7 +629,7 @@ extern void TouchEndDDXTouch(DeviceIntPtr dev, DDXTouchPointInfoPtr ti);
 extern DDXTouchPointInfoPtr TouchFindByDDXID(DeviceIntPtr dev,
                                              uint32_t ddx_id, Bool create);
 extern Bool TouchInitTouchPoint(TouchClassPtr touch, ValuatorClassPtr v,
-                                int index);
+                                int index, XephyrContext* context);
 extern void TouchFreeTouchPoint(DeviceIntPtr dev, int index);
 extern TouchPointInfoPtr TouchBeginTouch(DeviceIntPtr dev, int sourceid,
                                          uint32_t touchid,
@@ -657,7 +657,7 @@ extern int TouchConvertToPointerEvent(const InternalEvent *ev,
                                       InternalEvent *button);
 extern int TouchGetPointerEventType(const InternalEvent *ev);
 extern void TouchRemovePointerGrab(DeviceIntPtr dev);
-extern void TouchListenerGone(XID resource);
+extern void TouchListenerGone(XID resource, XephyrContext* context);
 extern int TouchListenerAcceptReject(DeviceIntPtr dev, TouchPointInfoPtr ti,
                                      int listener, int mode);
 extern int TouchAcceptReject(ClientPtr client, DeviceIntPtr dev, int mode,
@@ -666,10 +666,10 @@ extern void TouchEndPhysicallyActiveTouches(DeviceIntPtr dev);
 extern void TouchEmitTouchEnd(DeviceIntPtr dev, TouchPointInfoPtr ti, int flags, XID resource);
 extern void TouchAcceptAndEnd(DeviceIntPtr dev, int touchid);
 
-extern Bool GestureInitGestureInfo(GestureInfoPtr gesture);
+extern Bool GestureInitGestureInfo(GestureInfoPtr gesture, XephyrContext* context);
 extern GestureInfoPtr GestureBeginGesture(DeviceIntPtr dev, InternalEvent *ev);
 extern GestureInfoPtr GestureFindActiveByEventType(DeviceIntPtr dev, int type);
-extern void GestureEndGesture(GestureInfoPtr gi);
+extern void GestureEndGesture(GestureInfoPtr gi, XephyrContext* context);
 extern Bool GestureResourceIsOwner(GestureInfoPtr gi, XID resource);
 extern void GestureAddListener(GestureInfoPtr gi, XID resource, int resource_type,
                                enum GestureListenerType type,
@@ -677,7 +677,7 @@ extern void GestureAddListener(GestureInfoPtr gi, XID resource, int resource_typ
 extern void GestureSetupListener(DeviceIntPtr dev, GestureInfoPtr gi,
                                  InternalEvent *ev);
 extern Bool GestureBuildSprite(DeviceIntPtr sourcedev, GestureInfoPtr gi);
-extern void GestureListenerGone(XID resource);
+extern void GestureListenerGone(XID resource, XephyrContext* context);
 extern void GestureEndActiveGestures(DeviceIntPtr dev);
 extern void GestureEmitGestureEndToOwner(DeviceIntPtr dev, GestureInfoPtr gi);
 extern void ProcessGestureEvent(InternalEvent *ev, DeviceIntPtr dev);
@@ -691,7 +691,7 @@ extern int GetXI2MaskByte(XI2Mask *mask, DeviceIntPtr dev, int event_type);
 void FixUpEventFromWindow(SpritePtr pSprite,
                           xEvent *xE,
                           WindowPtr pWin, Window child, Bool calcChild);
-extern Bool PointInBorderSize(WindowPtr pWin, int x, int y);
+extern Bool PointInBorderSize(WindowPtr pWin, int x, int y, XephyrContext* context);
 extern WindowPtr XYToWindow(SpritePtr pSprite, int x, int y);
 extern int EventIsDeliverable(DeviceIntPtr dev, int evtype, WindowPtr win);
 extern Bool ActivatePassiveGrab(DeviceIntPtr dev, GrabPtr grab,
@@ -799,7 +799,7 @@ extern _X_EXPORT void input_option_set_value(InputOption *opt,
                                              const char *value);
 
 extern _X_HIDDEN Bool point_on_screen(ScreenPtr pScreen, int x, int y);
-extern _X_HIDDEN void update_desktop_dimensions(void);
+extern _X_HIDDEN void update_desktop_dimensions(XephyrContext* context);
 
 extern _X_HIDDEN void input_constrain_cursor(DeviceIntPtr pDev, ScreenPtr screen,
                                              int current_x, int current_y,

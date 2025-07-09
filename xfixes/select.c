@@ -150,7 +150,7 @@ XFixesSelectSelectionInput(ClientPtr pClient,
         e->selection = selection;
         e->pClient = pClient;
         e->pWindow = pWindow;
-        e->clientResource = FakeClientID(pClient->index);
+        e->clientResource = FakeClientID(pClient->index, pClient->context);
 
         /*
          * Add a resource hanging from the window to

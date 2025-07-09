@@ -277,7 +277,7 @@ setEventMask(ScreenPtr pScreen, ClientPtr client, unsigned long mask)
             pEv->next = NULL;
             pEv->client = client;
             pEv->screen = pScreen;
-            pEv->resource = FakeClientID(client->index);
+            pEv->resource = FakeClientID(client->index, client->context);
             if (!AddResource(pEv->resource, SaverEventType, (void *) pEv))
                 return FALSE;
         }
@@ -383,7 +383,7 @@ ScreenSaverFreeSuspend(void *value, XID id)
             UpdateCurrentTimeIf();
             nt_list_for_each_entry(dev, inputInfo.devices, next)
                 NoticeTime(dev, context->currentTime);
-            SetScreenSaverTimer();
+            SetScreenSaverTimer(context);
         }
     }
 
@@ -1054,7 +1054,7 @@ ScreenSaverSetAttributes(ClientPtr client)
     if (pPriv->attr)
         FreeScreenAttr(pPriv->attr);
     pPriv->attr = pAttr;
-    pAttr->resource = FakeClientID(client->index);
+    pAttr->resource = FakeClientID(client->index, client->context);
     if (!AddResource(pAttr->resource, AttrType, (void *) pAttr))
         return BadAlloc;
     return Success;
@@ -1255,7 +1255,7 @@ ProcScreenSaverSuspend(ClientPtr client)
     this->next = NULL;
     this->pClient = client;
     this->count = 1;
-    this->clientResource = FakeClientID(client->index);
+    this->clientResource = FakeClientID(client->index, client->context);
 
     if (!AddResource(this->clientResource, SuspendType, (void *) this)) {
         free(this);

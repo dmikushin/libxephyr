@@ -58,7 +58,7 @@ ProcBigReqDispatch(ClientPtr client)
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = 0,
-        .max_request_size = context->maxBigRequestSize
+        .max_request_size = client->context->maxBigRequestSize
     };
     if (client->swapped) {
         swaps(&rep.sequenceNumber);

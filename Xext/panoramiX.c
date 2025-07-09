@@ -62,6 +62,8 @@ Equipment Corporation.
 #include "extinit.h"
 #include "protocol-versions.h"
 
+static XephyrContext* panoramix_context = NULL;
+
 #ifdef GLXPROXY
 extern VisualPtr glxMatchVisual(ScreenPtr pScreen,
                                 VisualPtr pVisual, ScreenPtr pMatchScreen);
@@ -319,7 +321,7 @@ XineramaDestroyClip(GCPtr pGC)
 }
 
 int
-XineramaDeleteResource(void *data, XID id)
+XineramaDeleteResource(void *data, XID id, XephyrContext* context)
 {
     free(data);
     return 1;
@@ -340,7 +342,7 @@ XineramaFindIDByScrnum(void *resource, XID id, void *privdata)
 }
 
 PanoramiXRes *
-PanoramiXFindIDByScrnum(RESTYPE type, XID id, int screen)
+PanoramiXFindIDByScrnum(RESTYPE type, XID id, int screen, XephyrContext* context)
 {
     PanoramiXSearchData data;
     void *val;
@@ -354,18 +356,18 @@ PanoramiXFindIDByScrnum(RESTYPE type, XID id, int screen)
     data.id = id;
 
     return LookupClientResourceComplex(context->clients[CLIENT_ID(id)], type,
-                                       XineramaFindIDByScrnum, &data);
+                                       XineramaFindIDByScrnum, &data, context);
 }
 
 typedef struct _connect_callback_list {
-    void (*func) (void);
+    void (*func) (XephyrContext*);
     struct _connect_callback_list *next;
 } XineramaConnectionCallbackList;
 
 static XineramaConnectionCallbackList *ConnectionCallbackList = NULL;
 
 Bool
-XineramaRegisterConnectionBlockCallback(void (*func) (void))
+XineramaRegisterConnectionBlockCallback(void (*func) (XephyrContext*))
 {
     XineramaConnectionCallbackList *newlist;
 
@@ -380,7 +382,7 @@ XineramaRegisterConnectionBlockCallback(void (*func) (void))
 }
 
 static void
-XineramaInitData(void)
+XineramaInitData(XephyrContext* context)
 {
     int i, w, h;
 
@@ -420,10 +422,10 @@ XineramaInitData(void)
 }
 
 void
-XineramaReinitData(void)
+XineramaReinitData(XephyrContext* context)
 {
     RegionUninit(&PanoramiXScreenRegion);
-    XineramaInitData();
+    XineramaInitData(context);
 }
 
 /*
@@ -434,7 +436,7 @@ XineramaReinitData(void)
  */
 
 void
-PanoramiXExtensionInit(void)
+PanoramiXExtensionInit(XephyrContext* context)
 {
     int i;
     Bool success = FALSE;
@@ -442,16 +444,18 @@ PanoramiXExtensionInit(void)
     ScreenPtr pScreen = context->screenInfo.screens[0];
     PanoramiXScreenPtr pScreenPriv;
 
+    panoramix_context = context;
+
     if (noPanoramiXExtension)
         return;
 
-    if (!dixRegisterPrivateKey(&PanoramiXScreenKeyRec, PRIVATE_SCREEN, 0)) {
+    if (!dixRegisterPrivateKey(&PanoramiXScreenKeyRec, PRIVATE_SCREEN, 0, context)) {
         noPanoramiXExtension = TRUE;
         return;
     }
 
     if (!dixRegisterPrivateKey
-        (&PanoramiXGCKeyRec, PRIVATE_GC, sizeof(PanoramiXGCRec))) {
+        (&PanoramiXGCKeyRec, PRIVATE_GC, sizeof(PanoramiXGCRec), context)) {
         noPanoramiXExtension = TRUE;
         return;
     }
@@ -521,7 +525,7 @@ PanoramiXExtensionInit(void)
         return;
     }
 
-    XineramaInitData();
+    XineramaInitData(context);
 
     /*
      *  Put our processes into the ProcVector
@@ -592,7 +596,7 @@ PanoramiXExtensionInit(void)
 }
 
 Bool
-PanoramiXCreateConnectionBlock(void)
+PanoramiXCreateConnectionBlock(XephyrContext* context)
 {
     int i, j, length;
     Bool disable_backing_store = FALSE;
@@ -633,7 +637,7 @@ PanoramiXCreateConnectionBlock(void)
 
     i = context->screenInfo.numScreens;
     context->screenInfo.numScreens = 1;
-    if (!CreateConnectionBlock()) {
+    if (!CreateConnectionBlock(context)) {
         context->screenInfo.numScreens = i;
         return FALSE;
     }
@@ -695,7 +699,7 @@ PanoramiXCreateConnectionBlock(void)
         void *tmp;
 
         tmp = (void *) ConnectionCallbackList;
-        (*ConnectionCallbackList->func) ();
+        (*ConnectionCallbackList->func) (context);
         ConnectionCallbackList = ConnectionCallbackList->next;
         free(tmp);
     }
@@ -727,7 +731,7 @@ VisualsEqual(VisualPtr a, ScreenPtr pScreenB, VisualPtr b)
 }
 
 static void
-PanoramiXMaybeAddDepth(DepthPtr pDepth)
+PanoramiXMaybeAddDepth(DepthPtr pDepth, XephyrContext* context)
 {
     ScreenPtr pScreen;
     int j, k;
@@ -756,7 +760,7 @@ PanoramiXMaybeAddDepth(DepthPtr pDepth)
 }
 
 static void
-PanoramiXMaybeAddVisual(VisualPtr pVisual)
+PanoramiXMaybeAddVisual(VisualPtr pVisual, XephyrContext* context)
 {
     ScreenPtr pScreen;
     int j, k;
@@ -804,7 +808,7 @@ PanoramiXMaybeAddVisual(VisualPtr pVisual)
 }
 
 extern void
-PanoramiXConsolidate(void)
+PanoramiXConsolidate(XephyrContext* context)
 {
     int i;
     PanoramiXRes *root, *defmap, *saver;
@@ -816,10 +820,10 @@ PanoramiXConsolidate(void)
     PanoramiXNumVisuals = 0;
 
     for (i = 0; i < pScreen->numDepths; i++)
-        PanoramiXMaybeAddDepth(pDepth++);
+        PanoramiXMaybeAddDepth(pDepth++, context);
 
     for (i = 0; i < pScreen->numVisuals; i++)
-        PanoramiXMaybeAddVisual(pVisual++);
+        PanoramiXMaybeAddVisual(pVisual++, context);
 
     root = malloc(sizeof(PanoramiXRes));
     root->type = XRT_WINDOW;
@@ -840,13 +844,13 @@ PanoramiXConsolidate(void)
         defmap->info[i].id = scr->defColormap;
     }
 
-    AddResource(root->info[0].id, XRT_WINDOW, root);
-    AddResource(saver->info[0].id, XRT_WINDOW, saver);
-    AddResource(defmap->info[0].id, XRT_COLORMAP, defmap);
+    AddResource(root->info[0].id, XRT_WINDOW, root, context);
+    AddResource(saver->info[0].id, XRT_WINDOW, saver, context);
+    AddResource(defmap->info[0].id, XRT_COLORMAP, defmap, context);
 }
 
 VisualID
-PanoramiXTranslateVisualID(int screen, VisualID orig)
+PanoramiXTranslateVisualID(int screen, VisualID orig, XephyrContext* context)
 {
     ScreenPtr pOtherScreen = context->screenInfo.screens[screen];
     VisualPtr pVisual = NULL;
@@ -893,7 +897,7 @@ PanoramiXResetProc(ExtensionEntry * extEntry)
 #ifdef COMPOSITE
     PanoramiXCompositeReset ();
 #endif
-    context->screenInfo.numScreens = PanoramiXNumScreens;
+    panoramix_context->screenInfo.numScreens = PanoramiXNumScreens;
     for (i = 256; i--;)
         ProcVector[i] = SavedProcVector[i];
 }
@@ -1002,8 +1006,8 @@ ProcPanoramiXGetScreenSize(ClientPtr client)
         .sequenceNumber = client->sequence,
         .length = 0,
     /* screen dimensions */
-        .width = context->screenInfo.screens[stuff->screen]->width,
-        .height = context->screenInfo.screens[stuff->screen]->height,
+        .width = client->context->screenInfo.screens[stuff->screen]->width,
+        .height = client->context->screenInfo.screens[stuff->screen]->height,
         .window = stuff->window,
         .screen = stuff->screen
     };
@@ -1074,10 +1078,10 @@ ProcXineramaQueryScreens(ClientPtr client)
         int i;
 
         FOR_NSCREENS(i) {
-            scratch.x_org = context->screenInfo.screens[i]->x;
-            scratch.y_org = context->screenInfo.screens[i]->y;
-            scratch.width = context->screenInfo.screens[i]->width;
-            scratch.height = context->screenInfo.screens[i]->height;
+            scratch.x_org = client->context->screenInfo.screens[i]->x;
+            scratch.y_org = client->context->screenInfo.screens[i]->y;
+            scratch.width = client->context->screenInfo.screens[i]->width;
+            scratch.height = client->context->screenInfo.screens[i]->height;
 
             if (client->swapped) {
                 swaps(&scratch.x_org);
@@ -1147,7 +1151,8 @@ XineramaGetImageData(DrawablePtr *pDrawables,
                      int height,
                      unsigned int format,
                      unsigned long planemask,
-                     char *data, int pitch, Bool isRoot)
+                     char *data, int pitch, Bool isRoot,
+                     XephyrContext* context)
 {
     RegionRec SrcRegion, ScreenRegion, GrabRegion;
     BoxRec SrcBox, *pbox;

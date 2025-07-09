@@ -128,12 +128,12 @@ static const Bool screen_specific_private[PRIVATE_LAST] = {
     [PRIVATE_GLYPHSET] = FALSE,
 };
 
-typedef Bool (*FixupFunc) (PrivatePtr *privates, int offset, unsigned bytes);
+typedef Bool (*FixupFunc) (PrivatePtr *privates, int offset, unsigned bytes, XephyrContext* context);
 
 typedef enum { FixupMove, FixupRealloc } FixupType;
 
 static Bool
-dixReallocPrivates(PrivatePtr *privates, int old_offset, unsigned bytes)
+dixReallocPrivates(PrivatePtr *privates, int old_offset, unsigned bytes, XephyrContext* context)
 {
     void *new_privates;
 
@@ -146,7 +146,7 @@ dixReallocPrivates(PrivatePtr *privates, int old_offset, unsigned bytes)
 }
 
 static Bool
-dixMovePrivates(PrivatePtr *privates, int new_offset, unsigned bytes)
+dixMovePrivates(PrivatePtr *privates, int new_offset, unsigned bytes, XephyrContext* context)
 {
     memmove((char *) *privates + bytes, *privates, new_offset - bytes);
     memset(*privates, '\0', bytes);
@@ -154,7 +154,7 @@ dixMovePrivates(PrivatePtr *privates, int new_offset, unsigned bytes)
 }
 
 static Bool
-fixupOneScreen(ScreenPtr pScreen, FixupFunc fixup, unsigned bytes)
+fixupOneScreen(ScreenPtr pScreen, FixupFunc fixup, unsigned bytes, XephyrContext* context)
 {
     uintptr_t       old;
     char            *new;
@@ -164,7 +164,7 @@ fixupOneScreen(ScreenPtr pScreen, FixupFunc fixup, unsigned bytes)
 
     old = (uintptr_t) pScreen->devPrivates;
     size = global_keys[PRIVATE_SCREEN].offset;
-    if (!fixup (&pScreen->devPrivates, size, bytes))
+    if (!fixup (&pScreen->devPrivates, size, bytes, context))
         return FALSE;
 
     /* Screen privates can contain screen-specific private keys
@@ -212,31 +212,31 @@ fixupOneScreen(ScreenPtr pScreen, FixupFunc fixup, unsigned bytes)
 }
 
 static Bool
-fixupScreens(FixupFunc fixup, unsigned bytes)
+fixupScreens(FixupFunc fixup, unsigned bytes, XephyrContext* context)
 {
     int s;
 
-    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numScreens; s++)
-        if (!fixupOneScreen (screenInfo.screens[0]->context->screenInfo.screens[s], fixup, bytes))
+    for (s = 0; s < context->screenInfo.numScreens; s++)
+        if (!fixupOneScreen (context->screenInfo.screens[s], fixup, bytes, context))
             return FALSE;
 
-    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numGPUScreens; s++)
-        if (!fixupOneScreen (screenInfo.screens[0]->context->screenInfo.gpuscreens[s], fixup, bytes))
+    for (s = 0; s < context->screenInfo.numGPUScreens; s++)
+        if (!fixupOneScreen (context->screenInfo.gpuscreens[s], fixup, bytes, context))
             return FALSE;
     return TRUE;
 }
 
 static Bool
-fixupServerClient(FixupFunc fixup, unsigned bytes)
+fixupServerClient(FixupFunc fixup, unsigned bytes, XephyrContext* context)
 {
     if (context->serverClient)
         return fixup(&context->serverClient->devPrivates, global_keys[PRIVATE_CLIENT].offset,
-                     bytes);
+                     bytes, context);
     return TRUE;
 }
 
 static Bool
-fixupExtensions(FixupFunc fixup, unsigned bytes)
+fixupExtensions(FixupFunc fixup, unsigned bytes, XephyrContext* context)
 {
     unsigned char major;
     ExtensionEntry *extension;
@@ -244,34 +244,34 @@ fixupExtensions(FixupFunc fixup, unsigned bytes)
     for (major = EXTENSION_BASE; (extension = GetExtensionEntry(major));
          major++)
         if (!fixup
-            (&extension->devPrivates, global_keys[PRIVATE_EXTENSION].offset, bytes))
+            (&extension->devPrivates, global_keys[PRIVATE_EXTENSION].offset, bytes, context))
             return FALSE;
     return TRUE;
 }
 
 static Bool
-fixupDefaultColormaps(FixupFunc fixup, unsigned bytes)
+fixupDefaultColormaps(FixupFunc fixup, unsigned bytes, XephyrContext* context)
 {
     int s;
 
-    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numScreens; s++) {
+    for (s = 0; s < context->screenInfo.numScreens; s++) {
         ColormapPtr cmap;
 
         dixLookupResourceByType((void **) &cmap,
-                                screenInfo.screens[0]->context->screenInfo.screens[s]->defColormap, RT_COLORMAP,
+                                context->screenInfo.screens[s]->defColormap, RT_COLORMAP,
                                 context->serverClient, DixCreateAccess);
         if (cmap &&
-            !fixup(&cmap->devPrivates, screenInfo.screens[0]->context->screenInfo.screens[s]->screenSpecificPrivates[PRIVATE_COLORMAP].offset, bytes))
+            !fixup(&cmap->devPrivates, context->screenInfo.screens[s]->screenSpecificPrivates[PRIVATE_COLORMAP].offset, bytes, context))
             return FALSE;
     }
     return TRUE;
 }
 
 static Bool
-fixupDeviceList(DeviceIntPtr device, FixupFunc fixup, unsigned bytes)
+fixupDeviceList(DeviceIntPtr device, FixupFunc fixup, unsigned bytes, XephyrContext* context)
 {
     while (device) {
-        if (!fixup(&device->devPrivates, global_keys[PRIVATE_DEVICE].offset, bytes))
+        if (!fixup(&device->devPrivates, global_keys[PRIVATE_DEVICE].offset, bytes, context))
             return FALSE;
         device = device->next;
     }
@@ -279,13 +279,13 @@ fixupDeviceList(DeviceIntPtr device, FixupFunc fixup, unsigned bytes)
 }
 
 static Bool
-fixupDevices(FixupFunc fixup, unsigned bytes)
+fixupDevices(FixupFunc fixup, unsigned bytes, XephyrContext* context)
 {
-    return (fixupDeviceList(inputInfo.devices, fixup, bytes) &&
-            fixupDeviceList(inputInfo.off_devices, fixup, bytes));
+    return (fixupDeviceList(context->inputInfo.devices, fixup, bytes, context) &&
+            fixupDeviceList(context->inputInfo.off_devices, fixup, bytes, context));
 }
 
-static Bool (*const allocated_early[PRIVATE_LAST]) (FixupFunc, unsigned) = {
+static Bool (*const allocated_early[PRIVATE_LAST]) (FixupFunc, unsigned, XephyrContext*) = {
     [PRIVATE_SCREEN] = fixupScreens,
     [PRIVATE_CLIENT] = fixupServerClient,
     [PRIVATE_EXTENSION] = fixupExtensions,
@@ -304,18 +304,18 @@ grow_private_set(DevPrivateSetPtr set, unsigned bytes)
 }
 
 static void
-grow_screen_specific_set(DevPrivateType type, unsigned bytes)
+grow_screen_specific_set(DevPrivateType type, unsigned bytes, XephyrContext* context)
 {
     int s;
 
     /* Update offsets for all screen-specific keys */
-    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numScreens; s++) {
-        ScreenPtr       pScreen = screenInfo.screens[0]->context->screenInfo.screens[s];
+    for (s = 0; s < context->screenInfo.numScreens; s++) {
+        ScreenPtr       pScreen = context->screenInfo.screens[s];
 
         grow_private_set(&pScreen->screenSpecificPrivates[type], bytes);
     }
-    for (s = 0; s < screenInfo.screens[0]->context->screenInfo.numGPUScreens; s++) {
-        ScreenPtr       pScreen = screenInfo.screens[0]->context->screenInfo.gpuscreens[s];
+    for (s = 0; s < context->screenInfo.numGPUScreens; s++) {
+        ScreenPtr       pScreen = context->screenInfo.gpuscreens[s];
 
         grow_private_set(&pScreen->screenSpecificPrivates[type], bytes);
     }
@@ -330,7 +330,7 @@ grow_screen_specific_set(DevPrivateType type, unsigned bytes)
  * be allocated which can be set with dixSetPrivate
  */
 Bool
-dixRegisterPrivateKey(DevPrivateKey key, DevPrivateType type, unsigned size)
+dixRegisterPrivateKey(DevPrivateKey key, DevPrivateType type, unsigned size, XephyrContext* context)
 {
     DevPrivateType t;
     int offset;
@@ -358,7 +358,7 @@ dixRegisterPrivateKey(DevPrivateKey key, DevPrivateType type, unsigned size)
             if (xselinux_private[t]) {
                 if (!allocated_early[t])
                     assert(!global_keys[t].created);
-                else if (!allocated_early[t] (dixReallocPrivates, bytes))
+                else if (!allocated_early[t] (dixReallocPrivates, bytes, context))
                     return FALSE;
             }
 
@@ -368,9 +368,9 @@ dixRegisterPrivateKey(DevPrivateKey key, DevPrivateType type, unsigned size)
         for (t = PRIVATE_XSELINUX; t < PRIVATE_LAST; t++) {
             if (xselinux_private[t]) {
                 grow_private_set(&global_keys[t], bytes);
-                grow_screen_specific_set(t, bytes);
+                grow_screen_specific_set(t, bytes, context);
                 if (allocated_early[t])
-                    allocated_early[t] (dixMovePrivates, bytes);
+                    allocated_early[t] (dixMovePrivates, bytes, context);
             }
 
         }
@@ -381,11 +381,11 @@ dixRegisterPrivateKey(DevPrivateKey key, DevPrivateType type, unsigned size)
         /* Resize if we can, or make sure nothing's allocated if we can't */
         if (!allocated_early[type])
             assert(!global_keys[type].created);
-        else if (!allocated_early[type] (dixReallocPrivates, bytes))
+        else if (!allocated_early[type] (dixReallocPrivates, bytes, context))
             return FALSE;
         offset = global_keys[type].offset;
         global_keys[type].offset += bytes;
-        grow_screen_specific_set(type, bytes);
+        grow_screen_specific_set(type, bytes, context);
     }
 
     /* Setup this key */
@@ -406,7 +406,7 @@ dixRegisterScreenPrivateKey(DevScreenPrivateKey screenKey, ScreenPtr pScreen,
 {
     DevPrivateKey key;
 
-    if (!dixRegisterPrivateKey(&screenKey->screenKey, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&screenKey->screenKey, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
     key = dixGetPrivate(&pScreen->devPrivates, &screenKey->screenKey);
     if (key != NULL) {
@@ -417,7 +417,7 @@ dixRegisterScreenPrivateKey(DevScreenPrivateKey screenKey, ScreenPtr pScreen,
     key = calloc(sizeof(DevPrivateKeyRec), 1);
     if (!key)
         return FALSE;
-    if (!dixRegisterPrivateKey(key, type, size)) {
+    if (!dixRegisterPrivateKey(key, type, size, pScreen->context)) {
         free(key);
         return FALSE;
     }

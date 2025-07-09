@@ -62,7 +62,7 @@ RROldModeAdd(RROutputPtr output, RRScreenSizePtr size, int refresh)
         modes = malloc(sizeof(RRModePtr));
     if (!modes) {
         RRModeDestroy(mode);
-        FreeResource(mode->mode.id, 0);
+        FreeResource(mode->mode.id, 0, output->pScreen->context);
         return NULL;
     }
     modes[output->numModes++] = mode;

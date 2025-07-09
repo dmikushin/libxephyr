@@ -148,7 +148,7 @@ RRLeaseTerminated(RRLeasePtr lease)
         RRLeaseChangeState(lease, RRLeaseTerminating, RRLeaseTerminating);
 
     if (lease->id != None)
-        FreeResource(lease->id, RT_NONE);
+        FreeResource(lease->id, RT_NONE, lease->screen->context);
 
     xorg_list_del(&lease->list);
 }
@@ -298,7 +298,7 @@ ProcRRCreateLease(ClientPtr client)
 
     xorg_list_add(&lease->list, &scr_priv->leases);
 
-    if (!AddResource(stuff->lid, RRLeaseType, lease)) {
+    if (!AddResource(stuff->lid, RRLeaseType, lease, client->context)) {
         close(fd);
         return BadAlloc;
     }
@@ -346,7 +346,7 @@ ProcRRFreeLease(ClientPtr client)
         RRTerminateLease(lease);
     else
         /* Get rid of the resource database entry */
-        FreeResource(stuff->lid, RT_NONE);
+        FreeResource(stuff->lid, RT_NONE, client->context);
 
     return Success;
 }

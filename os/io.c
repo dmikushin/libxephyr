@@ -307,7 +307,7 @@ ReadRequestFromClient(ClientPtr client)
          */
 
         oci->lenLastReq = 0;
-        if (needed > context->maxBigRequestSize << 2) {
+        if (needed > client->context->maxBigRequestSize << 2) {
             /* request is too big for us to handle */
             /*
              * Mark the rest of it as needing to be ignored, and then return
@@ -692,7 +692,7 @@ WriteToClient(ClientPtr who, int count, const void *__buf)
 #ifdef DEBUG_COMMUNICATION
     Bool multicount = FALSE;
 #endif
-    if (!count || !who || who == context->serverClient || who->clientGone)
+    if (!count || !who || who == who->context->serverClient || who->clientGone)
         return 0;
     oc = who->osPrivate;
     oco = oc->output;

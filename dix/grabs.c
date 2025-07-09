@@ -86,7 +86,7 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
            (grab->grabtype == XI2) ? "xi2" :
            ((grab->grabtype == CORE) ? "core" : "xi1"), dev->name, dev->id);
 
-    client = context->clients[CLIENT_ID(grab->resource)];
+    client = dev->context->clients[CLIENT_ID(grab->resource)];
     if (client) {
         pid_t clientpid = GetClientPid(client);
         const char *cmdname = GetClientCmdName(client);
@@ -167,7 +167,7 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
 }
 
 void
-UngrabAllDevices(Bool kill_client)
+UngrabAllDevices(Bool kill_client, XephyrContext* context)
 {
     DeviceIntPtr dev;
     ClientPtr client;
@@ -175,7 +175,7 @@ UngrabAllDevices(Bool kill_client)
     ErrorF("Ungrabbing all devices%s; grabs listed below:\n",
            kill_client ? " and killing their owners" : "");
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (!dev->deviceGrab.grab)
             continue;
         PrintDeviceGrabInfo(dev);
@@ -222,7 +222,7 @@ CreateGrab(int client, DeviceIntPtr device, DeviceIntPtr modDevice,
     grab = AllocGrab(NULL);
     if (!grab)
         return (GrabPtr) NULL;
-    grab->resource = FakeClientID(client);
+    grab->resource = FakeClientID(client, device->context);
     grab->device = device;
     grab->window = window;
     if (grabtype == CORE || grabtype == XI)
@@ -251,7 +251,7 @@ CreateGrab(int client, DeviceIntPtr device, DeviceIntPtr modDevice,
 }
 
 void
-FreeGrab(GrabPtr pGrab)
+FreeGrab(GrabPtr pGrab, XephyrContext* context)
 {
     BUG_RETURN(!pGrab);
 
@@ -259,7 +259,7 @@ FreeGrab(GrabPtr pGrab)
     free(pGrab->detail.pMask);
 
     if (pGrab->cursor)
-        FreeCursor(pGrab->cursor, (Cursor) 0);
+        FreeCursor(pGrab->cursor, (Cursor) 0, context);
 
     xi2mask_free(&pGrab->xi2mask);
     free(pGrab);
@@ -334,7 +334,7 @@ DeletePassiveGrab(void *value, XID id, XephyrContext* context)
         }
         prev = g;
     }
-    FreeGrab(pGrab);
+    FreeGrab(pGrab, context);
     return Success;
 }
 
@@ -441,17 +441,17 @@ GrabMatchesSecond(GrabPtr pFirstGrab, GrabPtr pSecondGrab, Bool ignoreDevice)
         return FALSE;
 
     if (pFirstGrab->grabtype == XI2) {
-        if (pFirstGrab->device == inputInfo.all_devices ||
-            pSecondGrab->device == inputInfo.all_devices) {
+        if (pFirstGrab->device == pFirstGrab->device->context->inputInfo.all_devices ||
+            pSecondGrab->device == pSecondGrab->device->context->inputInfo.all_devices) {
             /* do nothing */
         }
-        else if (pFirstGrab->device == inputInfo.all_master_devices) {
-            if (pSecondGrab->device != inputInfo.all_master_devices &&
+        else if (pFirstGrab->device == pFirstGrab->device->context->inputInfo.all_master_devices) {
+            if (pSecondGrab->device != pSecondGrab->device->context->inputInfo.all_master_devices &&
                 !IsMaster(pSecondGrab->device))
                 return FALSE;
         }
-        else if (pSecondGrab->device == inputInfo.all_master_devices) {
-            if (pFirstGrab->device != inputInfo.all_master_devices &&
+        else if (pSecondGrab->device == pSecondGrab->device->context->inputInfo.all_master_devices) {
+            if (pFirstGrab->device != pFirstGrab->device->context->inputInfo.all_master_devices &&
                 !IsMaster(pFirstGrab->device))
                 return FALSE;
         }
@@ -527,7 +527,7 @@ GrabsAreIdentical(GrabPtr pFirstGrab, GrabPtr pSecondGrab)
  * @return Success or X error code on failure.
  */
 int
-AddPassiveGrabToList(ClientPtr client, GrabPtr pGrab)
+AddPassiveGrabToList(ClientPtr client, GrabPtr pGrab, XephyrContext* context)
 {
     GrabPtr grab;
     Mask access_mode = DixGrabAccess;
@@ -536,7 +536,7 @@ AddPassiveGrabToList(ClientPtr client, GrabPtr pGrab)
     for (grab = wPassiveGrabs(pGrab->window); grab; grab = grab->next) {
         if (GrabMatchesSecond(pGrab, grab, (pGrab->grabtype == CORE))) {
             if (CLIENT_BITS(pGrab->resource) != CLIENT_BITS(grab->resource)) {
-                FreeGrab(pGrab);
+                FreeGrab(pGrab, context);
                 return BadAccess;
             }
         }
@@ -558,13 +558,13 @@ AddPassiveGrabToList(ClientPtr client, GrabPtr pGrab)
     }
 
     if (!pGrab->window->optional && !MakeWindowOptional(pGrab->window)) {
-        FreeGrab(pGrab);
+        FreeGrab(pGrab, context);
         return BadAlloc;
     }
 
     pGrab->next = pGrab->window->optional->passiveGrabs;
     pGrab->window->optional->passiveGrabs = pGrab;
-    if (AddResource(pGrab->resource, RT_PASSIVEGRAB, (void *) pGrab))
+    if (AddResource(pGrab->resource, RT_PASSIVEGRAB, (void *) pGrab, context))
         return Success;
     return BadAlloc;
 }
@@ -658,11 +658,11 @@ DeletePassiveGrabFromList(GrabPtr pMinuendGrab)
                                             exact))
                      || (!pNewGrab->window->optional &&
                          !MakeWindowOptional(pNewGrab->window))) {
-                FreeGrab(pNewGrab);
+                FreeGrab(pNewGrab, pNewGrab->device->context);
                 ok = FALSE;
             }
             else if (!AddResource(pNewGrab->resource, RT_PASSIVEGRAB,
-                                  (void *) pNewGrab))
+                                  (void *) pNewGrab, pNewGrab->device->context))
                 ok = FALSE;
             else
                 adds[nadds++] = pNewGrab;
@@ -678,13 +678,13 @@ DeletePassiveGrabFromList(GrabPtr pMinuendGrab)
 
     if (!ok) {
         for (i = 0; i < nadds; i++)
-            FreeResource(adds[i]->resource, RT_NONE);
+            FreeResource(adds[i]->resource, RT_NONE, pMinuendGrab->device->context);
         for (i = 0; i < nups; i++)
             free(details[i]);
     }
     else {
         for (i = 0; i < ndels; i++)
-            FreeResource(deletes[i]->resource, RT_NONE);
+            FreeResource(deletes[i]->resource, RT_NONE, pMinuendGrab->device->context);
         for (i = 0; i < nadds; i++) {
             grab = adds[i];
             grab->next = grab->window->optional->passiveGrabs;

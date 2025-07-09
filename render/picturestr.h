@@ -418,11 +418,11 @@ PictureFindFilter(ScreenPtr pScreen, char *name, int len);
 
 extern _X_EXPORT int
 SetPicturePictFilter(PicturePtr pPicture, PictFilterPtr pFilter,
-                     xFixed * params, int nparams);
+                     xFixed * params, int nparams, XephyrContext* context);
 
 extern _X_EXPORT int
 SetPictureFilter(PicturePtr pPicture, char *name, int len,
-                 xFixed * params, int nparams);
+                 xFixed * params, int nparams, XephyrContext* context);
 
 extern _X_EXPORT Bool
  PictureFinishInit(void);
@@ -453,7 +453,7 @@ extern _X_EXPORT void
  ValidatePicture(PicturePtr pPicture);
 
 extern _X_EXPORT int
- FreePicture(void *pPicture, XID pid);
+ FreePicture(void *pPicture, XID pid, XephyrContext* context);
 
 extern _X_EXPORT void
 CompositePicture(CARD8 op,

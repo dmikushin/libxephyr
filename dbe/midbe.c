@@ -178,7 +178,7 @@ miDbeAllocBackBufferName(WindowPtr pWin, XID bufId, int swapAction)
         if (rc != Success || !AddResource(bufId, dbeDrawableResType,
                                           pDbeWindowPriv->pBackBuffer)) {
             /* free the buffer and the drawable resource */
-            FreeResource(bufId, RT_NONE);
+            FreeResource(bufId, RT_NONE, pWin->drawable.pScreen->context);
             return (rc == Success) ? BadAlloc : rc;
         }
 
@@ -600,7 +600,7 @@ miDbePositionWindow(WindowPtr pWin, int x, int y)
             /* DbeWindowPrivDelete() will free the window private if there no
              * more buffer IDs associated with this window.
              */
-            FreeResource(pDbeWindowPriv->IDs[0], RT_NONE);
+            FreeResource(pDbeWindowPriv->IDs[0], RT_NONE, pWin->drawable.pScreen->context);
             pDbeWindowPriv = DBE_WINDOW_PRIV(pWin);
         }
 

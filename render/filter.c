@@ -282,10 +282,11 @@ PictureResetFilters(ScreenPtr pScreen)
 
 int
 SetPictureFilter(PicturePtr pPicture, char *name, int len, xFixed * params,
-                 int nparams)
+                 int nparams, XephyrContext* context)
 {
     PictFilterPtr pFilter;
     ScreenPtr pScreen;
+    
 
     if (pPicture->pDrawable != NULL)
         pScreen = pPicture->pDrawable->pScreen;
@@ -311,15 +312,16 @@ SetPictureFilter(PicturePtr pPicture, char *name, int len, xFixed * params,
                 return BadMatch;
         }
     }
-    return SetPicturePictFilter(pPicture, pFilter, params, nparams);
+    return SetPicturePictFilter(pPicture, pFilter, params, nparams, context);
 }
 
 int
 SetPicturePictFilter(PicturePtr pPicture, PictFilterPtr pFilter,
-                     xFixed * params, int nparams)
+                     xFixed * params, int nparams, XephyrContext* context)
 {
     ScreenPtr pScreen;
     int i;
+    
 
     if (pPicture->pDrawable)
         pScreen = pPicture->pDrawable->pScreen;

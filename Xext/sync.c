@@ -111,9 +111,9 @@ static const char *WARN_INVALID_COUNTER_ALARM =
 
 static void SyncComputeBracketValues(SyncCounter *);
 
-static void SyncInitServerTime(void);
+static void SyncInitServerTime(XephyrContext* context);
 
-static void SyncInitIdleTime(void);
+static void SyncInitIdleTime(XephyrContext* context);
 
 static inline void*
 SysCounterGetPrivate(SyncCounter *counter)
@@ -433,7 +433,7 @@ SyncSendAlarmNotifyEvents(SyncAlarm * pAlarm)
 
     pCounter = (SyncCounter *) pTrigger->pSync;
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(pAlarm->client->context);
 
     ane = (xSyncAlarmNotifyEvent) {
         .type = SyncEventBase + XSyncAlarmNotify,
@@ -441,7 +441,7 @@ SyncSendAlarmNotifyEvents(SyncAlarm * pAlarm)
         .alarm = pAlarm->alarm_id,
         .alarm_value_hi = pTrigger->test_value >> 32,
         .alarm_value_lo = pTrigger->test_value,
-        .time = context->currentTime.milliseconds,
+        .time = pAlarm->client->context->currentTime.milliseconds,
         .state = pAlarm->state
     };
 
@@ -478,7 +478,7 @@ SyncSendCounterNotifyEvents(ClientPtr client, SyncAwait ** ppAwait,
     pev = pEvents = calloc(num_events, sizeof(xSyncCounterNotifyEvent));
     if (!pEvents)
         return;
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     for (i = 0; i < num_events; i++, ppAwait++, pev++) {
         SyncTrigger *pTrigger = &(*ppAwait)->trigger;
 
@@ -498,7 +498,7 @@ SyncSendCounterNotifyEvents(ClientPtr client, SyncAwait ** ppAwait,
             pev->counter_value_hi = 0;
         }
 
-        pev->time = context->currentTime.milliseconds;
+        pev->time = client->context->currentTime.milliseconds;
         pev->count = num_events - i - 1;        /* events remaining */
         pev->destroyed = pTrigger->pSync->beingDestroyed;
     }
@@ -694,7 +694,7 @@ SyncAwaitTriggerFired(SyncTrigger * pTrigger)
     /* unblock the client */
     AttendClient(pAwaitUnion->header.client);
     /* delete the await */
-    FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
+    FreeResource(pAwaitUnion->header.delete_id, RT_NONE, pAwaitUnion->header.client->context);
 }
 
 static int64_t
@@ -749,7 +749,7 @@ SyncEventSelectForAlarm(SyncAlarm * pAlarm, ClientPtr client, Bool wantevents)
              * nothing, since it's already got them.
              */
             if (!wantevents) {
-                FreeResource(pClients->delete_id, RT_NONE);
+                FreeResource(pClients->delete_id, RT_NONE, client->context);
             }
             return Success;
         }
@@ -775,14 +775,14 @@ SyncEventSelectForAlarm(SyncAlarm * pAlarm, ClientPtr client, Bool wantevents)
      *  if the client dies
      */
 
-    pClients->delete_id = FakeClientID(client->index);
+    pClients->delete_id = FakeClientID(client->index, client->context);
 
     /* link it into list after we know all the allocations succeed */
     pClients->next = pAlarm->pEventClients;
     pAlarm->pEventClients = pClients;
     pClients->client = client;
 
-    if (!AddResource(pClients->delete_id, RTAlarmClient, pAlarm))
+    if (!AddResource(pClients->delete_id, RTAlarmClient, pAlarm, client->context))
         return BadAlloc;
 
     return Success;
@@ -907,7 +907,7 @@ SyncCreate(ClientPtr client, XID id, unsigned char type)
 
     pSync->initialized = FALSE;
 
-    if (!AddResource(id, resType, (void *) pSync))
+    if (!AddResource(id, resType, (void *) pSync, client->context))
         return NULL;
 
     pSync->client = client;
@@ -932,7 +932,7 @@ SyncCreateFenceFromFD(ClientPtr client, DrawablePtr pDraw, XID id, int fd, BOOL 
 
     status = miSyncInitFenceFromFD(pDraw, pFence, fd, initially_triggered);
     if (status != Success) {
-        FreeResource(pFence->sync.id, RT_NONE);
+        FreeResource(pFence->sync.id, RT_NONE, client->context);
         return status;
     }
 
@@ -968,7 +968,7 @@ SyncCreateCounter(ClientPtr client, XSyncCounter id, int64_t initialvalue)
     return pCounter;
 }
 
-static int FreeCounter(void *, XID);
+static int FreeCounter(void *, XID, XephyrContext*);
 
 /*
  * ***** System Counter utilities
@@ -980,17 +980,19 @@ SyncCreateSystemCounter(const char *name,
                         int64_t resolution,
                         SyncCounterType counterType,
                         SyncSystemCounterQueryValue QueryValue,
-                        SyncSystemCounterBracketValues BracketValues
+                        SyncSystemCounterBracketValues BracketValues,
+                        XephyrContext* context
     )
 {
-    SyncCounter *pCounter = SyncCreateCounter(NULL, FakeClientID(0), initial);
+    /* TODO: Need proper context here - using NULL for now */
+    SyncCounter *pCounter = SyncCreateCounter(NULL, FakeClientID(0, NULL), initial);
 
     if (pCounter) {
         SysCounterInfo *psci;
 
         psci = malloc(sizeof(SysCounterInfo));
         if (!psci) {
-            FreeResource(pCounter->sync.id, RT_NONE);
+            FreeResource(pCounter->sync.id, RT_NONE, context);
             return pCounter;
         }
         pCounter->pSysCounterInfo = psci;
@@ -1009,11 +1011,11 @@ SyncCreateSystemCounter(const char *name,
 }
 
 void
-SyncDestroySystemCounter(void *pSysCounter)
+SyncDestroySystemCounter(void *pSysCounter, XephyrContext* context)
 {
     SyncCounter *pCounter = (SyncCounter *) pSysCounter;
 
-    FreeResource(pCounter->sync.id, RT_NONE);
+    FreeResource(pCounter->sync.id, RT_NONE, context);
 }
 
 static void
@@ -1115,7 +1117,7 @@ SyncComputeBracketValues(SyncCounter * pCounter)
 
 /* ARGSUSED */
 static int
-FreeAlarm(void *addr, XID id)
+FreeAlarm(void *addr, XID id, XephyrContext* context)
 {
     SyncAlarm *pAlarm = (SyncAlarm *) addr;
 
@@ -1126,7 +1128,7 @@ FreeAlarm(void *addr, XID id)
     /* delete event selections */
 
     while (pAlarm->pEventClients)
-        FreeResource(pAlarm->pEventClients->delete_id, RT_NONE);
+        FreeResource(pAlarm->pEventClients->delete_id, RT_NONE, context);
 
     SyncDeleteTriggerFromSyncObject(&pAlarm->trigger);
 
@@ -1139,7 +1141,7 @@ FreeAlarm(void *addr, XID id)
  */
 /* ARGSUSED */
 static int
-FreeCounter(void *env, XID id)
+FreeCounter(void *env, XID id, XephyrContext* context)
 {
     SyncCounter *pCounter = (SyncCounter *) env;
 
@@ -1171,7 +1173,7 @@ FreeCounter(void *env, XID id)
  */
 /* ARGSUSED */
 static int
-FreeAwait(void *addr, XID id)
+FreeAwait(void *addr, XID id, XephyrContext* context)
 {
     SyncAwaitUnion *pAwaitUnion = (SyncAwaitUnion *) addr;
     SyncAwait *pAwait;
@@ -1197,7 +1199,7 @@ FreeAwait(void *addr, XID id)
 
 /* loosely based on dix/events.c/OtherClientGone */
 static int
-FreeAlarmClient(void *value, XID id)
+FreeAlarmClient(void *value, XID id, XephyrContext* context)
 {
     SyncAlarm *pAlarm = (SyncAlarm *) value;
     SyncAlarmClientList *pCur, *pPrev;
@@ -1491,7 +1493,7 @@ ProcSyncDestroyCounter(ClientPtr client)
         client->errorValue = stuff->counter;
         return BadAccess;
     }
-    FreeResource(pCounter->sync.id, RT_NONE);
+    FreeResource(pCounter->sync.id, RT_NONE, client->context);
     return Success;
 }
 
@@ -1509,11 +1511,11 @@ SyncAwaitPrologue(ClientPtr client, int items)
 
     /* first item is the header, remainder are real wait conditions */
 
-    pAwaitUnion->header.delete_id = FakeClientID(client->index);
+    pAwaitUnion->header.delete_id = FakeClientID(client->index, client->context);
     pAwaitUnion->header.client = client;
     pAwaitUnion->header.num_waitconditions = 0;
 
-    if (!AddResource(pAwaitUnion->header.delete_id, RTAwait, pAwaitUnion))
+    if (!AddResource(pAwaitUnion->header.delete_id, RTAwait, pAwaitUnion, client->context))
         return NULL;
 
     return pAwaitUnion;
@@ -1592,7 +1594,7 @@ ProcSyncAwait(ClientPtr client)
             /*  this should take care of removing any triggers created by
              *  this request that have already been registered on sync objects
              */
-            FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
+            FreeResource(pAwaitUnion->header.delete_id, RT_NONE, client->context);
             client->errorValue = pProtocolWaitConds->counter;
             return SyncErrorBase + XSyncBadCounter;
         }
@@ -1612,7 +1614,7 @@ ProcSyncAwait(ClientPtr client)
             /*  this should take care of removing any triggers created by
              *  this request that have already been registered on sync objects
              */
-            FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
+            FreeResource(pAwaitUnion->header.delete_id, RT_NONE, client->context);
             return status;
         }
         /* this is not a mistake -- same function works for both cases */
@@ -1728,7 +1730,7 @@ ProcSyncCreateAlarm(ClientPtr client)
         return status;
     }
 
-    if (!AddResource(stuff->id, RTAlarm, pAlarm))
+    if (!AddResource(stuff->id, RTAlarm, pAlarm, client->context))
         return BadAlloc;
 
     /*  see if alarm already triggered.  NULL counter will not trigger
@@ -1743,7 +1745,7 @@ ProcSyncCreateAlarm(ClientPtr client)
 
         if (!SyncCheckWarnIsCounter(pTrigger->pSync,
                                     WARN_INVALID_COUNTER_ALARM)) {
-            FreeResource(stuff->id, RT_NONE);
+            FreeResource(stuff->id, RT_NONE, client->context);
             return BadAlloc;
         }
 
@@ -1874,7 +1876,7 @@ ProcSyncDestroyAlarm(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->alarm, RT_NONE);
+    FreeResource(stuff->alarm, RT_NONE, client->context);
     return Success;
 }
 
@@ -1903,7 +1905,7 @@ ProcSyncCreateFence(ClientPtr client)
 }
 
 static int
-FreeFence(void *obj, XID id)
+FreeFence(void *obj, XID id, XephyrContext* context)
 {
     SyncFence *pFence = (SyncFence *) obj;
 
@@ -1979,7 +1981,7 @@ ProcSyncDestroyFence(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->fid, RT_NONE);
+    FreeResource(stuff->fid, RT_NONE, client->context);
     return Success;
 }
 
@@ -2057,7 +2059,7 @@ ProcSyncAwaitFence(ClientPtr client)
             /*  this should take care of removing any triggers created by
              *  this request that have already been registered on sync objects
              */
-            FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
+            FreeResource(pAwaitUnion->header.delete_id, RT_NONE, client->context);
             client->errorValue = *pProtocolFences;
             return SyncErrorBase + XSyncBadFence;
         }
@@ -2076,7 +2078,7 @@ ProcSyncAwaitFence(ClientPtr client)
             /*  this should take care of removing any triggers created by
              *  this request that have already been registered on sync objects
              */
-            FreeResource(pAwaitUnion->header.delete_id, RT_NONE);
+            FreeResource(pAwaitUnion->header.delete_id, RT_NONE, client->context);
             return status;
         }
         /* this is not a mistake -- same function works for both cases */
@@ -2480,7 +2482,7 @@ SyncResetProc(ExtensionEntry * extEntry)
  * ** Initialise the extension.
  */
 void
-SyncExtensionInit(void)
+SyncExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
     int s;
@@ -2527,8 +2529,8 @@ SyncExtensionInit(void)
      * is not initialised when OsInit() is called. This is just about OK
      * because there is always a servertime counter.
      */
-    SyncInitServerTime();
-    SyncInitIdleTime();
+    SyncInitServerTime(context);
+    SyncInitIdleTime(context);
 
 #ifdef DEBUG
     fprintf(stderr, "Sync Extension %d.%d\n",
@@ -2615,7 +2617,7 @@ ServertimeBracketValues(void *pCounter, int64_t *pbracket_less,
 }
 
 static void
-SyncInitServerTime(void)
+SyncInitServerTime(XephyrContext* context)
 {
     int64_t resolution = 4;
 
@@ -2623,7 +2625,7 @@ SyncInitServerTime(void)
     ServertimeCounter = SyncCreateSystemCounter("SERVERTIME", Now, resolution,
                                                 XSyncCounterNeverDecreases,
                                                 ServertimeQueryValue,
-                                                ServertimeBracketValues);
+                                                ServertimeBracketValues, context);
     pnext_time = NULL;
 }
 
@@ -2793,7 +2795,9 @@ IdleTimeBracketValues(void *pCounter, int64_t *pbracket_less,
     else if (!registered && (pbracket_less || pbracket_greater)) {
         /* Reset flag must be zero so we don't force a idle timer reset on
            the first wakeup */
-        LastEventTimeToggleResetAll(FALSE);
+        /* TODO: Get context properly - this is called from a system callback */
+        extern XephyrContext* context;
+        LastEventTimeToggleResetAll(FALSE, context);
         RegisterBlockAndWakeupHandlers(IdleTimeBlockHandler,
                                        IdleTimeWakeupHandler, pCounter);
     }
@@ -2803,7 +2807,7 @@ IdleTimeBracketValues(void *pCounter, int64_t *pbracket_less,
 }
 
 static SyncCounter*
-init_system_idle_counter(const char *name, int deviceid)
+init_system_idle_counter(const char *name, int deviceid, XephyrContext* context)
 {
     int64_t resolution = 4;
     int64_t idle;
@@ -2814,7 +2818,7 @@ init_system_idle_counter(const char *name, int deviceid)
     idle_time_counter = SyncCreateSystemCounter(name, idle, resolution,
                                                 XSyncCounterUnrestricted,
                                                 IdleTimeQueryValue,
-                                                IdleTimeBracketValues);
+                                                IdleTimeBracketValues, context);
 
     if (idle_time_counter != NULL) {
         IdleCounterPriv *priv = malloc(sizeof(IdleCounterPriv));
@@ -2829,9 +2833,9 @@ init_system_idle_counter(const char *name, int deviceid)
 }
 
 static void
-SyncInitIdleTime(void)
+SyncInitIdleTime(XephyrContext* context)
 {
-    init_system_idle_counter("IDLETIME", XIAllDevices);
+    init_system_idle_counter("IDLETIME", XIAllDevices, context);
 }
 
 SyncCounter*
@@ -2840,7 +2844,7 @@ SyncInitDeviceIdleTime(DeviceIntPtr dev)
     char timer_name[64];
     sprintf(timer_name, "DEVICEIDLETIME %d", dev->id);
 
-    return init_system_idle_counter(timer_name, dev->id);
+    return init_system_idle_counter(timer_name, dev->id, dev->context);
 }
 
 void SyncRemoveDeviceIdleTime(SyncCounter *counter)

@@ -107,7 +107,7 @@ extern Bool
 
 extern GlyphPtr FindGlyph(GlyphSetPtr glyphSet, Glyph id);
 
-extern GlyphPtr AllocateGlyph(xGlyphInfo * gi, int format);
+extern GlyphPtr AllocateGlyph(xGlyphInfo * gi, int format, XephyrContext* context);
 
 extern Bool
  ResizeGlyphSet(GlyphSetPtr glyphSet, CARD32 change);
@@ -115,7 +115,7 @@ extern Bool
 extern GlyphSetPtr AllocateGlyphSet(int fdepth, PictFormatPtr format);
 
 extern int
- FreeGlyphSet(void *value, XID gid);
+ FreeGlyphSet(void *value, XID gid, XephyrContext* context);
 
 #define GLYPH_HAS_GLYPH_PICTURE_ACCESSOR 1 /* used for api compat */
 extern _X_EXPORT PicturePtr

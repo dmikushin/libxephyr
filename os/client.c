@@ -95,7 +95,7 @@ DetermineClientPid(struct _Client * client)
     if (client == NullClient)
         return pid;
 
-    if (client == context->serverClient)
+    if (client == client->context->serverClient)
         return getpid();
 
     if (GetLocalClientCreds(client, &lcc) != -1) {

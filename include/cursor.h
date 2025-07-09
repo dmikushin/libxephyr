@@ -112,7 +112,8 @@ extern _X_EXPORT CursorPtr CreateRootCursor(char * /*pfilename */ ,
 extern _X_EXPORT int ServerBitsFromGlyph(FontPtr /*pfont */ ,
                                          unsigned int /*ch */ ,
                                          CursorMetricPtr /*cm */ ,
-                                         unsigned char ** /*ppbits */ );
+                                         unsigned char ** /*ppbits */ ,
+                                         XephyrContext* /*context*/);
 
 extern _X_EXPORT Bool CursorMetricsFromGlyph(FontPtr /*pfont */ ,
                                              unsigned /*ch */ ,

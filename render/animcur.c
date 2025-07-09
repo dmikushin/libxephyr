@@ -245,7 +245,7 @@ AnimCurUnrealizeCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
 
         if (pScreen->myNum == 0)
             for (i = 0; i < ac->nelt; i++)
-                FreeCursor(ac->elts[i].pCursor, 0);
+                FreeCursor(ac->elts[i].pCursor, 0, pScreen->context);
         ret = TRUE;
     }
     else
@@ -281,7 +281,7 @@ AnimCurInit(ScreenPtr pScreen)
     AnimCurScreenPtr as;
 
     if (!dixRegisterPrivateKey(&AnimCurScreenPrivateKeyRec, PRIVATE_SCREEN,
-                               sizeof(AnimCurScreenRec)))
+                               sizeof(AnimCurScreenRec), pScreen->context))
         return FALSE;
 
     as = GetAnimCurScreen(pScreen);
@@ -305,8 +305,9 @@ AnimCursorCreate(CursorPtr *cursors, CARD32 *deltas, int ncursor,
     int rc = BadAlloc, i;
     AnimCurPtr ac;
 
-    for (i = 0; i < context->screenInfo.numScreens; i++)
-        if (!GetAnimCurScreen(context->screenInfo.screens[i]))
+    
+    for (i = 0; i < client->context->screenInfo.numScreens; i++)
+        if (!GetAnimCurScreen(client->context->screenInfo.screens[i]))
             return BadImplementation;
 
     for (i = 0; i < ncursor; i++)

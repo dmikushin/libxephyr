@@ -55,10 +55,10 @@ typedef struct _Depth *DepthPtr;
 typedef struct _Screen *ScreenPtr;
 
 typedef Bool (*ScreenInitProcPtr)(ScreenPtr pScreen, int argc, char **argv);
-extern _X_EXPORT int AddScreen(ScreenInitProcPtr pfnInit, int argc, char **argv);
-extern _X_EXPORT int AddGPUScreen(ScreenInitProcPtr pfnInit, int argc, char **argv);
+extern _X_EXPORT int AddScreen(ScreenInitProcPtr pfnInit, int argc, char **argv, XephyrContext* context);
+extern _X_EXPORT int AddGPUScreen(ScreenInitProcPtr pfnInit, int argc, char **argv, XephyrContext* context);
 
-extern _X_EXPORT void RemoveGPUScreen(ScreenPtr pScreen);
+extern _X_EXPORT void RemoveGPUScreen(ScreenPtr pScreen, XephyrContext* context);
 
 extern _X_EXPORT void
 AttachUnboundGPU(ScreenPtr pScreen, ScreenPtr newScreen);

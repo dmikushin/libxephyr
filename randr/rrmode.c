@@ -89,8 +89,8 @@ RRModeCreate(xRRModeInfo * modeInfo, const char *name, ScreenPtr userScreen)
         return NULL;
     }
 
-    mode->mode.id = FakeClientID(0);
-    if (!AddResource(mode->mode.id, RRModeType, (void *) mode)) {
+    mode->mode.id = FakeClientID(0, userScreen->context);
+    if (!AddResource(mode->mode.id, RRModeType, (void *) mode, userScreen->context)) {
         free(newModes);
         return NULL;
     }
@@ -343,7 +343,7 @@ ProcRRDestroyMode(ClientPtr client)
         return BadMatch;
     if (mode->refcnt > 1)
         return BadAccess;
-    FreeResource(stuff->mode, 0);
+    FreeResource(stuff->mode, 0, client->context);
     return Success;
 }
 

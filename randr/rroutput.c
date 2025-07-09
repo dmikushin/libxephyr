@@ -84,7 +84,7 @@ RROutputCreate(ScreenPtr pScreen,
     output = malloc(sizeof(RROutputRec) + nameLength + 1);
     if (!output)
         return NULL;
-    output->id = FakeClientID(0);
+    output->id = FakeClientID(0, pScreen->context);
     output->pScreen = pScreen;
     output->name = (char *) (output + 1);
     output->nameLength = nameLength;
@@ -110,7 +110,7 @@ RROutputCreate(ScreenPtr pScreen,
     output->nonDesktop = FALSE;
     output->devPrivate = devPrivate;
 
-    if (!AddResource(output->id, RROutputType, (void *) output))
+    if (!AddResource(output->id, RROutputType, (void *) output, pScreen->context))
         return NULL;
 
     pScrPriv->outputs[pScrPriv->numOutputs++] = output;
@@ -367,7 +367,7 @@ RRDeliverOutputEvent(ClientPtr client, WindowPtr pWin, RROutputPtr output)
 void
 RROutputDestroy(RROutputPtr output)
 {
-    FreeResource(output->id, 0);
+    FreeResource(output->id, 0, output->pScreen->context);
 }
 
 static int

@@ -30,14 +30,14 @@ extern _X_EXPORT int miExpandDirectColors(ColormapPtr, int, xColorItem *,
 extern _X_EXPORT Bool miCreateDefColormap(ScreenPtr);
 extern _X_EXPORT void miClearVisualTypes(void);
 extern _X_EXPORT Bool miSetVisualTypes(int, int, int, int);
-extern _X_EXPORT Bool miSetPixmapDepths(void);
+extern _X_EXPORT Bool miSetPixmapDepths(XephyrContext* context);
 extern _X_EXPORT Bool miSetVisualTypesAndMasks(int depth, int visuals,
                                                int bitsPerRGB, int preferredCVC,
                                                Pixel redMask, Pixel greenMask,
                                                Pixel blueMask);
 extern _X_EXPORT int miGetDefaultVisualMask(int);
 extern _X_EXPORT Bool miInitVisuals(VisualPtr *, DepthPtr *, int *, int *,
-                                    int *, VisualID *, unsigned long, int, int);
+                                    int *, VisualID *, unsigned long, int, int, XephyrContext*);
 
 #define MAX_PSEUDO_DEPTH	10
 #define MIN_TRUE_DEPTH		6

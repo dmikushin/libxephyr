@@ -402,7 +402,7 @@ RRProviderCreate(ScreenPtr pScreen, const char *name,
     if (!provider)
         return NULL;
 
-    provider->id = FakeClientID(0);
+    provider->id = FakeClientID(0, pScreen->context);
     provider->pScreen = pScreen;
     provider->name = (char *) (provider + 1);
     provider->nameLength = nameLength;
@@ -410,7 +410,7 @@ RRProviderCreate(ScreenPtr pScreen, const char *name,
     provider->name[nameLength] = '\0';
     provider->changed = FALSE;
 
-    if (!AddResource (provider->id, RRProviderType, (void *) provider))
+    if (!AddResource (provider->id, RRProviderType, (void *) provider, pScreen->context))
         return NULL;
     pScrPriv->provider = provider;
     return provider;
@@ -423,7 +423,7 @@ void
 RRProviderDestroy (RRProviderPtr provider)
 {
     RRFiniPrimeSyncProps(provider->pScreen);
-    FreeResource (provider->id, 0);
+    FreeResource (provider->id, 0, provider->pScreen->context);
 }
 
 void

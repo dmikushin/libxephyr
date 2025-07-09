@@ -100,7 +100,7 @@ fbSetupScreen(ScreenPtr pScreen, void *pbits, /* pointer to screen bitmap */
 {                               /* bits per pixel for screen */
     if (!fbAllocatePrivates(pScreen))
         return FALSE;
-    pScreen->defColormap = FakeClientID(0);
+    pScreen->defColormap = FakeClientID(0, pScreen->context);
     /* let CreateDefColormap do whatever it wants for pixels */
     pScreen->blackPixel = pScreen->whitePixel = (Pixel) 0;
     pScreen->QueryBestSize = fbQueryBestSize;
@@ -172,7 +172,7 @@ fbFinishScreenInit(ScreenPtr pScreen, void *pbits, int xsize, int ysize,
     rootdepth = 0;
     if (!fbInitVisuals(&visuals, &depths, &nvisuals, &ndepths, &rootdepth,
                        &defaultVisual, ((unsigned long) 1 << (bpp - 1)),
-                       8))
+                       8, pScreen->context))
         return FALSE;
     if (!miScreenInit(pScreen, pbits, xsize, ysize, dpix, dpiy, width,
                       rootdepth, ndepths, depths,

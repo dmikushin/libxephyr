@@ -75,7 +75,7 @@ DevScreenPrivateKeyRec cursorScreenDevPriv;
 static CARD32 cursorSerial;
 
 static void
-FreeCursorBits(CursorBitsPtr bits)
+FreeCursorBits(CursorBitsPtr bits, XephyrContext* context)
 {
     if (--bits->refcnt > 0)
         return;
@@ -90,7 +90,7 @@ FreeCursorBits(CursorBitsPtr bits)
              (this = *prev) && (this->bits != bits); prev = &this->next);
         if (this) {
             *prev = this->next;
-            CloseFont(this->font, (Font) 0);
+            CloseFont(this->font, (Font) 0, context);
             free(this);
         }
         free(bits);
@@ -124,7 +124,7 @@ FreeCursor(void *value, XID cid, XephyrContext* context)
             (void) (*pscr->UnrealizeCursor) (pDev, pscr, pCurs);
         }
     }
-    FreeCursorBits(pCurs->bits);
+    FreeCursorBits(pCurs->bits, context);
     dixFiniPrivates(pCurs, PRIVATE_CURSOR);
     free(pCurs);
     return Success;
@@ -319,7 +319,7 @@ AllocARGBCursor(unsigned char *psrcbits, unsigned char *pmaskbits,
     return Success;
 
  error:
-    FreeCursorBits(bits);
+    FreeCursorBits(bits, client->context);
     dixFiniPrivates(pCurs, PRIVATE_CURSOR);
     free(pCurs);
 
@@ -391,10 +391,10 @@ AllocGlyphCursor(Font source, unsigned sourceChar, Font mask, unsigned maskChar,
                 client->errorValue = maskChar;
                 return BadValue;
             }
-            if ((rc = ServerBitsFromGlyph(maskfont, maskChar, &cm, &mskbits)))
+            if ((rc = ServerBitsFromGlyph(maskfont, maskChar, &cm, &mskbits, client->context)))
                 return rc;
         }
-        if ((rc = ServerBitsFromGlyph(sourcefont, sourceChar, &cm, &srcbits))) {
+        if ((rc = ServerBitsFromGlyph(sourcefont, sourceChar, &cm, &srcbits, client->context))) {
             free(mskbits);
             return rc;
         }
@@ -433,7 +433,7 @@ AllocGlyphCursor(Font source, unsigned sourceChar, Font mask, unsigned maskChar,
             bits->refcnt = 1;
             pShare = malloc(sizeof(GlyphShare));
             if (!pShare) {
-                FreeCursorBits(bits);
+                FreeCursorBits(bits, client->context);
                 return BadAlloc;
             }
             pShare->font = sourcefont;
@@ -476,7 +476,7 @@ AllocGlyphCursor(Font source, unsigned sourceChar, Font mask, unsigned maskChar,
     return Success;
 
  error:
-    FreeCursorBits(bits);
+    FreeCursorBits(bits, client->context);
     dixFiniPrivates(pCurs, PRIVATE_CURSOR);
     free(pCurs);
 
@@ -505,7 +505,7 @@ CreateRootCursor(char *unused1, unsigned int unused2, XephyrContext* context)
         return NullCursor;
     }
 
-    fontID = FakeClientID(0);
+    fontID = FakeClientID(0, context);
     err = OpenFont(context->serverClient, fontID, FontLoadAll | FontOpenSync,
                    (unsigned) strlen(defaultCursorFont), defaultCursorFont);
     if (err != Success)
@@ -519,7 +519,7 @@ CreateRootCursor(char *unused1, unsigned int unused2, XephyrContext* context)
                          &curs, context->serverClient, (XID) 0) != Success)
         return NullCursor;
 
-    if (!AddResource(FakeClientID(0), RT_CURSOR, (void *) curs))
+    if (!AddResource(FakeClientID(0, context), RT_CURSOR, (void *) curs, context))
         return NullCursor;
 
     return curs;

@@ -62,7 +62,8 @@ static void ClientAwaken(ClientPtr /* client */ ,
                          void *    /* closure */
     );
 static int SertafiedDelete(void *  /* value */ ,
-                           XID     /* id */
+                           XID     /* id */,
+                           XephyrContext* /* context */
     );
 static void SertafiedBlockHandler(void *data,
                                   void *timeout);
@@ -77,12 +78,12 @@ ClientSleepUntil(ClientPtr client,
 {
     SertafiedPtr pRequest, pReq, pPrev;
 
-    if (SertafiedGeneration != context->serverGeneration) {
+    if (SertafiedGeneration != client->context->serverGeneration) {
         SertafiedResType = CreateNewResourceType(SertafiedDelete,
                                                  "ClientSleep");
         if (!SertafiedResType)
             return FALSE;
-        SertafiedGeneration = context->serverGeneration;
+        SertafiedGeneration = client->context->serverGeneration;
         BlockHandlerRegistered = FALSE;
     }
     pRequest = malloc(sizeof(SertafiedRec));
@@ -90,7 +91,7 @@ ClientSleepUntil(ClientPtr client,
         return FALSE;
     pRequest->pClient = client;
     pRequest->revive = *revive;
-    pRequest->id = FakeClientID(client->index);
+    pRequest->id = FakeClientID(client->index, client->context);
     pRequest->closure = closure;
     if (!BlockHandlerRegistered) {
         if (!RegisterBlockAndWakeupHandlers(SertafiedBlockHandler,
@@ -102,7 +103,7 @@ ClientSleepUntil(ClientPtr client,
         BlockHandlerRegistered = TRUE;
     }
     pRequest->notifyFunc = 0;
-    if (!AddResource(pRequest->id, SertafiedResType, (void *) pRequest))
+    if (!AddResource(pRequest->id, SertafiedResType, (void *) pRequest, client->context))
         return FALSE;
     if (!notifyFunc)
         notifyFunc = ClientAwaken;
@@ -130,7 +131,7 @@ ClientAwaken(ClientPtr client, void *closure)
 }
 
 static int
-SertafiedDelete(void *value, XID id)
+SertafiedDelete(void *value, XID id, XephyrContext* context)
 {
     SertafiedPtr pRequest = (SertafiedPtr) value;
     SertafiedPtr pReq, pPrev;
@@ -160,14 +161,14 @@ SertafiedBlockHandler(void *data, void *wt)
     if (!pPending)
         return;
     now.milliseconds = GetTimeInMillis();
-    now.months = context->currentTime.months;
-    if ((int) (now.milliseconds - context->currentTime.milliseconds) < 0)
+    now.months = pPending->pClient->context->currentTime.months;
+    if ((int) (now.milliseconds - pPending->pClient->context->currentTime.milliseconds) < 0)
         now.months++;
     for (pReq = pPending; pReq; pReq = pNext) {
         pNext = pReq->next;
         if (CompareTimeStamps(pReq->revive, now) == LATER)
             break;
-        FreeResource(pReq->id, RT_NONE);
+        FreeResource(pReq->id, RT_NONE, pReq->pClient->context);
 
         /* AttendClient() may have been called via the resource delete
          * function so a client may have input to be processed and so
@@ -189,14 +190,14 @@ SertafiedWakeupHandler(void *data, int i)
     TimeStamp now;
 
     now.milliseconds = GetTimeInMillis();
-    now.months = context->currentTime.months;
-    if ((int) (now.milliseconds - context->currentTime.milliseconds) < 0)
+    now.months = pPending->pClient->context->currentTime.months;
+    if ((int) (now.milliseconds - pPending->pClient->context->currentTime.milliseconds) < 0)
         now.months++;
     for (pReq = pPending; pReq; pReq = pNext) {
         pNext = pReq->next;
         if (CompareTimeStamps(pReq->revive, now) == LATER)
             break;
-        FreeResource(pReq->id, RT_NONE);
+        FreeResource(pReq->id, RT_NONE, pReq->pClient->context);
     }
     if (!pPending) {
         RemoveBlockAndWakeupHandlers(SertafiedBlockHandler,

@@ -97,7 +97,7 @@ typedef void (*xkbcomp_buffer_callback)(FILE *out, void *userdata);
  * return a strdup'd copy of the file name we've written to.
  */
 static char *
-RunXkbComp(xkbcomp_buffer_callback callback, void *userdata)
+RunXkbComp(xkbcomp_buffer_callback callback, void *userdata, XephyrContext* context)
 {
     FILE *out;
     char *buf = NULL, keymap[PATH_MAX], xkm_output_dir[PATH_MAX];
@@ -229,7 +229,7 @@ static Bool
 XkbDDXCompileKeymapByNames(XkbDescPtr xkb,
                            XkbComponentNamesPtr names,
                            unsigned want,
-                           unsigned need, char *nameRtrn, int nameRtrnLen)
+                           unsigned need, char *nameRtrn, int nameRtrnLen, XephyrContext* context)
 {
     char *keymap;
     Bool rc = FALSE;
@@ -240,7 +240,7 @@ XkbDDXCompileKeymapByNames(XkbDescPtr xkb,
         .need = need
     };
 
-    keymap = RunXkbComp(xkb_write_keymap_for_names_cb, &ctx);
+    keymap = RunXkbComp(xkb_write_keymap_for_names_cb, &ctx, context);
 
     if (keymap) {
         if(nameRtrn)
@@ -282,7 +282,7 @@ XkbDDXLoadKeymapFromString(DeviceIntPtr keybd,
 
     *xkbRtrn = NULL;
 
-    map_name = RunXkbComp(xkb_write_keymap_string_cb, &map);
+    map_name = RunXkbComp(xkb_write_keymap_string_cb, &map, keybd->context);
     if (!map_name) {
         LogMessage(X_ERROR, "XKB: Couldn't compile keymap\n");
         return 0;
@@ -382,7 +382,7 @@ XkbDDXLoadKeymapByNames(DeviceIntPtr keybd,
         return 0;
     }
     else if (!XkbDDXCompileKeymapByNames(xkb, names, want, need,
-                                         nameRtrn, nameRtrnLen)) {
+                                         nameRtrn, nameRtrnLen, keybd->context)) {
         LogMessage(X_ERROR, "XKB: Couldn't compile keymap\n");
         return 0;
     }

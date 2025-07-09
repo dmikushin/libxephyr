@@ -380,7 +380,7 @@ SecurityEventSelectForAuthorization(SecurityAuthorizationPtr pAuth,
     if (!pEventClient)
         return BadAlloc;
     pEventClient->mask = mask;
-    pEventClient->resource = FakeClientID(client->index);
+    pEventClient->resource = FakeClientID(client->index, client->context);
     pEventClient->next = pAuth->eventClients;
     if (!AddResource(pEventClient->resource, RTEventClient, (void *) pAuth)) {
         free(pEventClient);

@@ -128,9 +128,9 @@ _XkbDDXBeepExpire(OsTimerPtr timer, CARD32 now, void *arg)
     if ((dev == NULL) || (dev->key == NULL) || (dev->key->xkbInfo == NULL) ||
         (dev->kbdfeed == NULL))
         return 0;
-    if (atomGeneration != context->serverGeneration) {
+    if (atomGeneration != dev->context->serverGeneration) {
         _XkbDDXBeepInitAtoms();
-        atomGeneration = context->serverGeneration;
+        atomGeneration = dev->context->serverGeneration;
     }
 
     feed = dev->kbdfeed;

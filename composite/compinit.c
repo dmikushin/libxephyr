@@ -346,7 +346,7 @@ compScreenInit(ScreenPtr pScreen)
     if (!cs)
         return FALSE;
 
-    cs->overlayWid = FakeClientID(0);
+    cs->overlayWid = FakeClientID(0, pScreen->context);
     cs->pOverlayWin = NULL;
     cs->pOverlayClients = NULL;
 

@@ -511,7 +511,7 @@ miPointerSetScreen(DeviceIntPtr pDev, int screen_no, int x, int y)
 
     pPointer = MIPOINTER(pDev);
 
-    pScreen = context->screenInfo.screens[screen_no];
+    pScreen = pDev->context->screenInfo.screens[screen_no];
     mieqSwitchScreen(pDev, pScreen, FALSE);
     NewCurrentScreen(pDev, pScreen, x, y);
 
@@ -560,7 +560,7 @@ miPointerMoveNoEvent(DeviceIntPtr pDev, ScreenPtr pScreen, int x, int y)
      * not holding the input lock. This would race with building the command
      * buffer for other rendering.
      */
-    if (GetMaster(pDev, MASTER_POINTER) == inputInfo.pointer
+    if (GetMaster(pDev, MASTER_POINTER) == pDev->context->inputInfo.pointer
         &&!pScreenPriv->waitForUpdate && pScreen == pPointer->pSpriteScreen) {
         pPointer->devx = x;
         pPointer->devy = y;

@@ -122,20 +122,20 @@ CompareTimeStamps(TimeStamp a, TimeStamp b)
 
 #define HALFMONTH ((unsigned long) 1<<31)
 TimeStamp
-ClientTimeToServerTime(CARD32 c)
+ClientTimeToServerTime(CARD32 c, XephyrContext* context)
 {
     TimeStamp ts;
 
     if (c == CurrentTime)
-        return screenInfo.screens[0]->context->currentTime;
-    ts.months = screenInfo.screens[0]->context->currentTime.months;
+        return context->currentTime;
+    ts.months = context->currentTime.months;
     ts.milliseconds = c;
-    if (c > screenInfo.screens[0]->context->currentTime.milliseconds) {
-        if (((unsigned long) c - screenInfo.screens[0]->context->currentTime.milliseconds) > HALFMONTH)
+    if (c > context->currentTime.milliseconds) {
+        if (((unsigned long) c - context->currentTime.milliseconds) > HALFMONTH)
             ts.months -= 1;
     }
-    else if (c < screenInfo.screens[0]->context->currentTime.milliseconds) {
-        if (((unsigned long) screenInfo.screens[0]->context->currentTime.milliseconds - c) > HALFMONTH)
+    else if (c < context->currentTime.milliseconds) {
+        if (((unsigned long) context->currentTime.milliseconds - c) > HALFMONTH)
             ts.months += 1;
     }
     return ts;
@@ -265,18 +265,18 @@ dixLookupClient(ClientPtr *pClient, XID rid, ClientPtr client, Mask access)
     void *pRes;
     int rc = BadValue, clientIndex = CLIENT_ID(rid);
 
-    if (!clientIndex || !screenInfo.screens[0]->context->clients[clientIndex] || (rid & SERVER_BIT))
+    if (!clientIndex || !client->context->clients[clientIndex] || (rid & SERVER_BIT))
         goto bad;
 
     rc = dixLookupResourceByClass(&pRes, rid, RC_ANY, client, DixGetAttrAccess);
     if (rc != Success)
         goto bad;
 
-    rc = XaceHook(XACE_CLIENT_ACCESS, client, screenInfo.screens[0]->context->clients[clientIndex], access);
+    rc = XaceHook(XACE_CLIENT_ACCESS, client, client->context->clients[clientIndex], access);
     if (rc != Success)
         goto bad;
 
-    *pClient = screenInfo.screens[0]->context->clients[clientIndex];
+    *pClient = client->context->clients[clientIndex];
     return Success;
  bad:
     if (client)
@@ -337,13 +337,13 @@ AlterSaveSetForClient(ClientPtr client, WindowPtr pWin, unsigned mode,
 }
 
 void
-DeleteWindowFromAnySaveSet(WindowPtr pWin)
+DeleteWindowFromAnySaveSet(WindowPtr pWin, XephyrContext* context)
 {
     int i;
     ClientPtr client;
 
-    for (i = 0; i < screenInfo.screens[0]->context->currentMaxClients; i++) {
-        client = screenInfo.screens[0]->context->clients[i];
+    for (i = 0; i < context->currentMaxClients; i++) {
+        client = context->clients[i];
         if (client && client->numSaved)
             (void) AlterSaveSetForClient(client, pWin, SetModeDelete, FALSE,
                                          TRUE);
@@ -379,7 +379,7 @@ static Bool handlerDeleted;
  *  \param pReadMask  nor how it represents the det of descriptors
  */
 void
-BlockHandler(void *pTimeout)
+BlockHandler(void *pTimeout, XephyrContext* context)
 {
     int i, j;
 
@@ -388,11 +388,11 @@ BlockHandler(void *pTimeout)
         if (!handlers[i].deleted)
             (*handlers[i].BlockHandler) (handlers[i].blockData, pTimeout);
 
-    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numGPUScreens; i++)
-        (*screenInfo.screens[0]->context->screenInfo.gpuscreens[i]->BlockHandler) (screenInfo.screens[0]->context->screenInfo.gpuscreens[i], pTimeout);
+    for (i = 0; i < context->screenInfo.numGPUScreens; i++)
+        (*context->screenInfo.gpuscreens[i]->BlockHandler) (context->screenInfo.gpuscreens[i], pTimeout);
 
-    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++)
-        (*screenInfo.screens[0]->context->screenInfo.screens[i]->BlockHandler) (screenInfo.screens[0]->context->screenInfo.screens[i], pTimeout);
+    for (i = 0; i < context->screenInfo.numScreens; i++)
+        (*context->screenInfo.screens[i]->BlockHandler) (context->screenInfo.screens[i], pTimeout);
 
     if (handlerDeleted) {
         for (i = 0; i < numHandlers;)
@@ -414,15 +414,15 @@ BlockHandler(void *pTimeout)
  *  \param pReadmask the resulting descriptor mask
  */
 void
-WakeupHandler(int result)
+WakeupHandler(int result, XephyrContext* context)
 {
     int i, j;
 
     ++inHandler;
-    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++)
-        (*screenInfo.screens[0]->context->screenInfo.screens[i]->WakeupHandler) (screenInfo.screens[0]->context->screenInfo.screens[i], result);
-    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numGPUScreens; i++)
-        (*screenInfo.screens[0]->context->screenInfo.gpuscreens[i]->WakeupHandler) (screenInfo.screens[0]->context->screenInfo.gpuscreens[i], result);
+    for (i = 0; i < context->screenInfo.numScreens; i++)
+        (*context->screenInfo.screens[i]->WakeupHandler) (context->screenInfo.screens[i], result);
+    for (i = 0; i < context->screenInfo.numGPUScreens; i++)
+        (*context->screenInfo.gpuscreens[i]->WakeupHandler) (context->screenInfo.gpuscreens[i], result);
     for (i = numHandlers - 1; i >= 0; i--)
         if (!handlers[i].deleted)
             (*handlers[i].WakeupHandler) (handlers[i].blockData, result);
@@ -585,7 +585,7 @@ QueueWorkProc(Bool (*function) (ClientPtr pClient, void *closure),
 }
 
 /*
- * Manage a queue of sleeping screenInfo.screens[0]->context->clients, awakening them
+ * Manage a queue of sleeping xephyr_context->clients, awakening them
  * when requested, by using the OS functions IgnoreClient
  * and AttendClient.  Note that this *ignores* the troubles
  * with request data interleaving itself with events, but

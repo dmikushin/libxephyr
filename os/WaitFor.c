@@ -164,7 +164,7 @@ check_timers(void)
  *****************/
 
 Bool
-WaitForSomething(Bool are_ready)
+WaitForSomething(Bool are_ready, XephyrContext* context)
 {
     int i;
     int timeout;
@@ -199,7 +199,7 @@ WaitForSomething(Bool are_ready)
         if (are_ready)
             timeout = 0;
 
-        BlockHandler(&timeout);
+        BlockHandler(&timeout, context);
         if (NewOutputPending)
             FlushAllOutput();
         /* keep this check close to select() call to minimize race */
@@ -208,7 +208,7 @@ WaitForSomething(Bool are_ready)
         else
             i = ospoll_wait(server_poll, timeout);
         pollerr = GetErrno();
-        WakeupHandler(i);
+        WakeupHandler(i, context);
         if (i <= 0) {           /* An error or timeout occurred */
             if (dispatchException)
                 return FALSE;
@@ -435,6 +435,7 @@ NextDPMSTimeout(INT32 timeout)
 static CARD32
 ScreenSaverTimeoutExpire(OsTimerPtr timer, CARD32 now, void *arg)
 {
+    XephyrContext* context = (XephyrContext*)arg;
     INT32 timeout = now - LastEventTime(XIAllDevices).milliseconds;
     CARD32 nextTimeout = 0;
 
@@ -491,7 +492,7 @@ FreeScreenSaverTimer(void)
 }
 
 void
-SetScreenSaverTimer(void)
+SetScreenSaverTimer(XephyrContext* context)
 {
     CARD32 timeout = 0;
 
@@ -522,7 +523,7 @@ SetScreenSaverTimer(void)
     if (timeout) {
 #endif
         ScreenSaverTimer = TimerSet(ScreenSaverTimer, 0, timeout,
-                                    ScreenSaverTimeoutExpire, NULL);
+                                    ScreenSaverTimeoutExpire, context);
     }
     else if (ScreenSaverTimer) {
         FreeScreenSaverTimer();

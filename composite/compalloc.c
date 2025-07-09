@@ -165,7 +165,7 @@ compRedirectWindow(ClientPtr pClient, WindowPtr pWin, int update)
     ccw = malloc(sizeof(CompClientWindowRec));
     if (!ccw)
         return BadAlloc;
-    ccw->id = FakeClientID(pClient->index);
+    ccw->id = FakeClientID(pClient->index, pClient->context);
     ccw->update = update;
     /*
      * Now make sure there's a per-window structure to hang this from
@@ -362,7 +362,7 @@ compRedirectSubwindows(ClientPtr pClient, WindowPtr pWin, int update)
     ccw = malloc(sizeof(CompClientWindowRec));
     if (!ccw)
         return BadAlloc;
-    ccw->id = FakeClientID(pClient->index);
+    ccw->id = FakeClientID(pClient->index, pClient->context);
     ccw->update = update;
     /*
      * Now make sure there's a per-window structure to hang this from

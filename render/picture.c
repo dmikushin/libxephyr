@@ -73,8 +73,8 @@ PictureDestroyWindow(WindowPtr pWindow)
     while ((pPicture = GetPictureWindow(pWindow))) {
         SetPictureWindow(pWindow, pPicture->pNext);
         if (pPicture->id)
-            FreeResource(pPicture->id, PictureType);
-        FreePicture((void *) pPicture, pPicture->id);
+            FreeResource(pPicture->id, PictureType, pScreen->context);
+        FreePicture((void *) pPicture, pPicture->id, pScreen->context);
     }
     pScreen->DestroyWindow = ps->DestroyWindow;
     ret = (*pScreen->DestroyWindow) (pWindow);
@@ -299,7 +299,7 @@ PictureCreateDefaultFormats(ScreenPtr pScreen, int *nformatp)
     if (!pFormats)
         return 0;
     for (f = 0; f < nformats; f++) {
-        pFormats[f].id = FakeClientID(0);
+        pFormats[f].id = FakeClientID(0, pScreen->context);
         pFormats[f].depth = formats[f].depth;
         format = formats[f].format;
         pFormats[f].format = format;
@@ -423,13 +423,13 @@ PictureInitIndexedFormat(ScreenPtr pScreen, PictFormatPtr format)
     if (format->index.vid == pScreen->rootVisual) {
         dixLookupResourceByType((void **) &format->index.pColormap,
                                 pScreen->defColormap, RT_COLORMAP,
-                                context->serverClient, DixGetAttrAccess);
+                                pScreen->context->serverClient, DixGetAttrAccess);
     }
     else {
         VisualPtr pVisual = PictureFindVisual(pScreen, format->index.vid);
 
-        if (CreateColormap(FakeClientID(0), pScreen, pVisual,
-                           &format->index.pColormap, AllocNone, 0)
+        if (CreateColormap(FakeClientID(0, pScreen->context), pScreen, pVisual,
+                           &format->index.pColormap, AllocNone, 0, pScreen->context)
             != Success)
             return FALSE;
     }
@@ -599,7 +599,7 @@ GetPictureBytes(void *value, XID id, ResourceSizePtr size)
 }
 
 static int
-FreePictFormat(void *pPictFormat, XID pid)
+FreePictFormat(void *pPictFormat, XID pid, XephyrContext* context)
 {
     return Success;
 }
@@ -611,7 +611,7 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
     int n;
     CARD32 type, a, r, g, b;
 
-    if (PictureGeneration != context->serverGeneration) {
+    if (PictureGeneration != pScreen->context->serverGeneration) {
         PictureType = CreateNewResourceType(FreePicture, "PICTURE");
         if (!PictureType)
             return FALSE;
@@ -622,12 +622,12 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
         GlyphSetType = CreateNewResourceType(FreeGlyphSet, "GLYPHSET");
         if (!GlyphSetType)
             return FALSE;
-        PictureGeneration = context->serverGeneration;
+        PictureGeneration = pScreen->context->serverGeneration;
     }
-    if (!dixRegisterPrivateKey(&PictureScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&PictureScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&PictureWindowPrivateKeyRec, PRIVATE_WINDOW, 0))
+    if (!dixRegisterPrivateKey(&PictureWindowPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
         return FALSE;
 
     if (!formats) {
@@ -637,10 +637,10 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
     }
     for (n = 0; n < nformats; n++) {
         if (!AddResource
-            (formats[n].id, PictFormatType, (void *) (formats + n))) {
+            (formats[n].id, PictFormatType, (void *) (formats + n), pScreen->context)) {
             int i;
             for (i = 0; i < n; i++)
-                FreeResource(formats[i].id, RT_NONE);
+                FreeResource(formats[i].id, RT_NONE, pScreen->context);
             free(formats);
             return FALSE;
         }
@@ -784,7 +784,7 @@ CreatePicture(Picture pid,
         *error = (*ps->CreatePicture) (pPicture);
  out:
     if (*error != Success) {
-        FreePicture(pPicture, (XID) 0);
+        FreePicture(pPicture, (XID) 0, pDrawable->pScreen->context);
         pPicture = 0;
     }
     return pPicture;
@@ -1097,7 +1097,7 @@ ChangePicture(PicturePtr pPicture,
                 if (pAlpha && pAlpha->pDrawable->type == DRAWABLE_PIXMAP)
                     pAlpha->refcnt++;
                 if (pPicture->alphaMap)
-                    FreePicture((void *) pPicture->alphaMap, (XID) 0);
+                    FreePicture((void *) pPicture->alphaMap, (XID) 0, pScreen->context);
                 pPicture->alphaMap = pAlpha;
             }
         }
@@ -1375,7 +1375,7 @@ ValidatePicture(PicturePtr pPicture)
 }
 
 int
-FreePicture(void *value, XID pid)
+FreePicture(void *value, XID pid, XephyrContext* context)
 {
     PicturePtr pPicture = (PicturePtr) value;
 
@@ -1395,7 +1395,7 @@ FreePicture(void *value, XID pid)
             PictureScreenPtr ps = GetPictureScreen(pScreen);
 
             if (pPicture->alphaMap)
-                FreePicture((void *) pPicture->alphaMap, (XID) 0);
+                FreePicture((void *) pPicture->alphaMap, (XID) 0, pScreen->context);
             (*ps->DestroyPicture) (pPicture);
             (*ps->DestroyPictureClip) (pPicture);
             if (pPicture->pDrawable->type == DRAWABLE_WINDOW) {

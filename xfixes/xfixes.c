@@ -226,18 +226,18 @@ SProcXFixesDispatch(ClientPtr client)
 }
 
 void
-XFixesExtensionInit(void)
+XFixesExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
     if (!dixRegisterPrivateKey
-        (&XFixesClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(XFixesClientRec)))
+        (&XFixesClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(XFixesClientRec), context))
         return;
 
-    if (XFixesSelectionInit() &&
-        XFixesCursorInit() &&
-        XFixesRegionInit() &&
-        XFixesClientDisconnectInit() &&
+    if (XFixesSelectionInit(context) &&
+        XFixesCursorInit(context) &&
+        XFixesRegionInit(context) &&
+        XFixesClientDisconnectInit(context) &&
         (extEntry = AddExtension(XFIXES_NAME, XFixesNumberEvents,
                                  XFixesNumberErrors,
                                  ProcXFixesDispatch, SProcXFixesDispatch,

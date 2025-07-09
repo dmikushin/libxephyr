@@ -111,8 +111,8 @@ fbInitVisuals(VisualPtr * visualp,
               int *nvisualp,
               int *ndepthp,
               int *rootDepthp,
-              VisualID * defaultVisp, unsigned long sizes, int bitsPerRGB)
+              VisualID * defaultVisp, unsigned long sizes, int bitsPerRGB, XephyrContext* context)
 {
     return miInitVisuals(visualp, depthp, nvisualp, ndepthp, rootDepthp,
-                         defaultVisp, sizes, bitsPerRGB, -1);
+                         defaultVisp, sizes, bitsPerRGB, -1, context);
 }

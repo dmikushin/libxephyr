@@ -185,12 +185,12 @@ SGEGenericEvent(xEvent *from, xEvent *to)
  * idea to init XGE first, before any other extension.
  */
 void
-GEExtensionInit(void)
+GEExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
     if (!dixRegisterPrivateKey
-        (&GEClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(GEClientInfoRec)))
+        (&GEClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(GEClientInfoRec), context))
         FatalError("GEExtensionInit: GE private request failed.\n");
 
     if ((extEntry = AddExtension(GE_NAME,

@@ -13,15 +13,15 @@ extern _X_EXPORT int PanoramiXPixWidth;
 extern _X_EXPORT int PanoramiXPixHeight;
 extern _X_EXPORT RegionRec PanoramiXScreenRegion;
 
-extern _X_EXPORT VisualID PanoramiXTranslateVisualID(int screen, VisualID orig);
-extern _X_EXPORT void PanoramiXConsolidate(void);
-extern _X_EXPORT Bool PanoramiXCreateConnectionBlock(void);
-extern _X_EXPORT PanoramiXRes *PanoramiXFindIDByScrnum(RESTYPE, XID, int);
+extern _X_EXPORT VisualID PanoramiXTranslateVisualID(int screen, VisualID orig, XephyrContext* context);
+extern _X_EXPORT void PanoramiXConsolidate(XephyrContext* context);
+extern _X_EXPORT Bool PanoramiXCreateConnectionBlock(XephyrContext* context);
+extern _X_EXPORT PanoramiXRes *PanoramiXFindIDByScrnum(RESTYPE, XID, int, XephyrContext*);
 extern _X_EXPORT Bool
-XineramaRegisterConnectionBlockCallback(void (*func) (void));
-extern _X_EXPORT int XineramaDeleteResource(void *, XID);
+XineramaRegisterConnectionBlockCallback(void (*func) (XephyrContext*));
+extern _X_EXPORT int XineramaDeleteResource(void *, XID, XephyrContext*);
 
-extern _X_EXPORT void XineramaReinitData(void);
+extern _X_EXPORT void XineramaReinitData(XephyrContext* context);
 
 extern _X_EXPORT RESTYPE XRC_DRAWABLE;
 extern _X_EXPORT RESTYPE XRT_WINDOW;
@@ -47,7 +47,8 @@ extern _X_EXPORT void XineramaGetImageData(DrawablePtr *pDrawables,
                                            int height,
                                            unsigned int format,
                                            unsigned long planemask,
-                                           char *data, int pitch, Bool isRoot);
+                                           char *data, int pitch, Bool isRoot,
+                                           XephyrContext* context);
 
 static inline void
 panoramix_setup_ids(PanoramiXRes * resource, ClientPtr client, XID base_id)
@@ -56,7 +57,7 @@ panoramix_setup_ids(PanoramiXRes * resource, ClientPtr client, XID base_id)
 
     resource->info[0].id = base_id;
     FOR_NSCREENS_FORWARD_SKIP(j) {
-        resource->info[j].id = FakeClientID(client->index);
+        resource->info[j].id = FakeClientID(client->index, client->context);
     }
 }
 

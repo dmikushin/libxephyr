@@ -41,7 +41,7 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 int
 XkbDDXTerminateServer(DeviceIntPtr dev, KeyCode key, XkbAction *act)
 {
-    if (dev != inputInfo.keyboard)
+    if (dev != dev->context->inputInfo.keyboard)
         GiveUp(1);
 
     return 0;

@@ -78,7 +78,7 @@ miUninstallColormap(ColormapPtr pmap)
         if (pmap->mid != pmap->pScreen->defColormap) {
             dixLookupResourceByType((void **) &curpmap,
                                     pmap->pScreen->defColormap,
-                                    RT_COLORMAP, context->serverClient, DixUseAccess);
+                                    RT_COLORMAP, pmap->pScreen->context->serverClient, DixUseAccess);
             (*pmap->pScreen->InstallColormap) (curpmap);
         }
     }
@@ -254,15 +254,15 @@ miCreateDefColormap(ScreenPtr pScreen)
         alloctype = AllocAll;
 
     if (CreateColormap(pScreen->defColormap, pScreen, pVisual, &cmap,
-                       alloctype, 0) != Success)
+                       alloctype, 0, pScreen->context) != Success)
         return FALSE;
 
     if (pScreen->rootDepth > 1) {
         wp = pScreen->whitePixel;
         bp = pScreen->blackPixel;
-        if ((AllocColor(cmap, &ones, &ones, &ones, &wp, 0) !=
+        if ((AllocColor(cmap, &ones, &ones, &ones, &wp, 0, pScreen->context) !=
              Success) ||
-            (AllocColor(cmap, &zero, &zero, &zero, &bp, 0) != Success))
+            (AllocColor(cmap, &zero, &zero, &zero, &bp, 0, pScreen->context) != Success))
             return FALSE;
         pScreen->whitePixel = wp;
         pScreen->blackPixel = bp;
@@ -382,7 +382,7 @@ miVisualTypesSet(int depth)
 }
 
 Bool
-miSetPixmapDepths(void)
+miSetPixmapDepths(XephyrContext* context)
 {
     int d, f;
 
@@ -424,7 +424,7 @@ maskShift(Pixel p)
 Bool
 miInitVisuals(VisualPtr * visualp, DepthPtr * depthp, int *nvisualp,
               int *ndepthp, int *rootDepthp, VisualID * defaultVisp,
-              unsigned long sizes, int bitsPerRGB, int preferredVis)
+              unsigned long sizes, int bitsPerRGB, int preferredVis, XephyrContext* context)
 {
     int i, j = 0, k;
     VisualPtr visual;
@@ -501,7 +501,7 @@ miInitVisuals(VisualPtr * visualp, DepthPtr * depthp, int *nvisualp,
             visual->bitsPerRGBValue = visuals->bitsPerRGB;
             visual->ColormapEntries = 1 << d;
             visual->nplanes = d;
-            visual->vid = *vid = FakeClientID(0);
+            visual->vid = *vid = FakeClientID(0, context);
             switch (visual->class) {
             case PseudoColor:
             case GrayScale:

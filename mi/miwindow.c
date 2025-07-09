@@ -300,7 +300,7 @@ miMoveWindow(WindowPtr pWin, int x, int y, WindowPtr pNextSib, VTKind kind)
         }
     }
     if (pWin->realized)
-        WindowsRestructured();
+        WindowsRestructured(pWin->drawable.pScreen->context);
 }
 
 /*
@@ -618,7 +618,7 @@ miResizeWindow(WindowPtr pWin, int x, int y, unsigned int w, unsigned int h,
         }
     }
     if (pWin->realized)
-        WindowsRestructured();
+        WindowsRestructured(pWin->drawable.pScreen->context);
 }
 
 WindowPtr
@@ -678,7 +678,7 @@ miSetShape(WindowPtr pWin, int kind)
         }
     }
     if (pWin->realized)
-        WindowsRestructured();
+        WindowsRestructured(pWin->drawable.pScreen->context);
     CheckCursorConfinement(pWin);
 }
 
@@ -732,7 +732,7 @@ miChangeBorderWidth(WindowPtr pWin, unsigned int width)
         }
     }
     if (pWin->realized)
-        WindowsRestructured();
+        WindowsRestructured(pWin->drawable.pScreen->context);
 }
 
 void
@@ -765,7 +765,7 @@ miSpriteTrace(SpritePtr pSprite, int x, int y)
              * is made to see if the point is inside
              * borderSize
              */
-            && (!wBoundingShape(pWin) || PointInBorderSize(pWin, x, y))
+            && (!wBoundingShape(pWin) || PointInBorderSize(pWin, x, y, pWin->drawable.pScreen->context))
             && (!wInputShape(pWin) ||
                 RegionContainsPoint(wInputShape(pWin),
                                     x - pWin->drawable.x,

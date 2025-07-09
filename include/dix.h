@@ -48,6 +48,8 @@ SOFTWARE.
 #ifndef DIX_H
 #define DIX_H
 
+typedef struct _XephyrContext XephyrContext;
+
 #include "callback.h"
 #include "gc.h"
 #include "window.h"
@@ -174,12 +176,13 @@ extern _X_EXPORT void SetInputCheck(HWEventQueuePtr /*c0 */ ,
 
 extern _X_EXPORT void CloseDownClient(ClientPtr /*client */ );
 
-extern _X_EXPORT void UpdateCurrentTime(void);
+extern _X_EXPORT void UpdateCurrentTime(XephyrContext* context);
 
-extern _X_EXPORT void UpdateCurrentTimeIf(void);
+extern _X_EXPORT void UpdateCurrentTimeIf(XephyrContext* context);
 
 extern _X_EXPORT int dixDestroyPixmap(void *value,
-                                      XID pid);
+                                      XID pid,
+                                      XephyrContext* context);
 
 extern _X_EXPORT void InitClient(ClientPtr client,
                                  int i,
@@ -195,7 +198,7 @@ extern _X_EXPORT void SendErrorToClient(ClientPtr /*client */ ,
 
 extern _X_EXPORT void MarkClientException(ClientPtr /*client */ );
 
-extern _X_HIDDEN Bool CreateConnectionBlock(void);
+extern _X_HIDDEN Bool CreateConnectionBlock(XephyrContext* context);
 
 /* dixutils.c */
 
@@ -232,11 +235,11 @@ extern _X_EXPORT int AlterSaveSetForClient(ClientPtr /*client */ ,
                                            Bool /*toRoot */ ,
                                            Bool /*map */ );
 
-extern _X_EXPORT void DeleteWindowFromAnySaveSet(WindowPtr /*pWin */ );
+extern _X_EXPORT void DeleteWindowFromAnySaveSet(WindowPtr /*pWin */, XephyrContext* context);
 
-extern _X_EXPORT void BlockHandler(void *timeout);
+extern _X_EXPORT void BlockHandler(void *timeout, XephyrContext* context);
 
-extern _X_EXPORT void WakeupHandler(int result);
+extern _X_EXPORT void WakeupHandler(int result, XephyrContext* context);
 
 void
 EnableLimitedSchedulingLatency(void);
@@ -362,13 +365,13 @@ LastEventTimeWasReset(int deviceid);
 extern _X_EXPORT void
 LastEventTimeToggleResetFlag(int deviceid, Bool state);
 extern _X_EXPORT void
-LastEventTimeToggleResetAll(Bool state);
+LastEventTimeToggleResetAll(Bool state, XephyrContext* context);
 
 extern void
 EnqueueEvent(InternalEvent * /* ev */ ,
              DeviceIntPtr /* device */ );
 extern void
-PlayReleasedEvents(void);
+PlayReleasedEvents(XephyrContext* context);
 
 extern void
 ActivatePointerGrab(DeviceIntPtr /* mouse */ ,
@@ -485,7 +488,8 @@ RecalculateDeliverableEvents(WindowPtr /* pWin */ );
 
 extern _X_EXPORT int
 OtherClientGone(void *value,
-                XID id);
+                XID id,
+                XephyrContext* context);
 
 extern void
 DoFocusEvents(DeviceIntPtr /* dev */ ,
@@ -516,7 +520,7 @@ GrabDevice(ClientPtr /* client */ ,
            CARD8 * /* status */ );
 
 extern void
-InitEvents(void);
+InitEvents(XephyrContext* context);
 
 extern void
 CloseDownEvents(void);
@@ -554,7 +558,7 @@ TryClientEvents(ClientPtr /*client */ ,
                 GrabPtr /*grab */ );
 
 extern _X_EXPORT void
-WindowsRestructured(void);
+WindowsRestructured(XephyrContext* context);
 
 extern int
 SetClientPointer(ClientPtr /* client */ ,

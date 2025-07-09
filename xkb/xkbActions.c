@@ -67,10 +67,10 @@ xkbUnwrapProc(DeviceIntPtr device, DeviceHandleProc proc, void *data)
 }
 
 Bool
-XkbInitPrivates(void)
+XkbInitPrivates(XephyrContext* context)
 {
     return dixRegisterPrivateKey(&xkbDevicePrivateKeyRec, PRIVATE_DEVICE,
-                                 sizeof(xkbDeviceInfoRec));
+                                 sizeof(xkbDeviceInfoRec), context);
 }
 
 void
@@ -975,7 +975,7 @@ _XkbFilterSwitchScreen(XkbSrvInfoPtr xkbi,
 {
     DeviceIntPtr dev = xkbi->device;
 
-    if (dev == inputInfo.keyboard)
+    if (dev == dev->context->inputInfo.keyboard)
         return 0;
 
     if (filter->keycode == 0) { /* initial press */
@@ -1009,24 +1009,24 @@ XkbHandlePrivate(DeviceIntPtr dev, KeyCode keycode, XkbAction *pAction)
             DeviceIntPtr tmp;
 
             LogMessage(X_INFO, "Printing all currently active device grabs:\n");
-            for (tmp = inputInfo.devices; tmp; tmp = tmp->next)
+            for (tmp = dev->context->inputInfo.devices; tmp; tmp = tmp->next)
                 if (tmp->deviceGrab.grab)
                     PrintDeviceGrabInfo(tmp);
             LogMessage(X_INFO, "End list of active device grabs\n");
 
-            PrintPassiveGrabs();
+            PrintPassiveGrabs(dev->context);
         }
         else if (strcasecmp(msgbuf, "ungrab") == 0) {
             LogMessage(X_INFO, "Ungrabbing devices\n");
-            UngrabAllDevices(FALSE);
+            UngrabAllDevices(FALSE, dev->context);
         }
         else if (strcasecmp(msgbuf, "clsgrb") == 0) {
             LogMessage(X_INFO, "Clear grabs\n");
-            UngrabAllDevices(TRUE);
+            UngrabAllDevices(TRUE, dev->context);
         }
         else if (strcasecmp(msgbuf, "prwins") == 0) {
             LogMessage(X_INFO, "Printing window tree\n");
-            PrintWindowTree();
+            PrintWindowTree(dev->context);
         }
     }
 
@@ -1039,7 +1039,7 @@ _XkbFilterXF86Private(XkbSrvInfoPtr xkbi,
 {
     DeviceIntPtr dev = xkbi->device;
 
-    if (dev == inputInfo.keyboard)
+    if (dev == dev->context->inputInfo.keyboard)
         return 0;
 
     if (filter->keycode == 0) { /* initial press */
@@ -1061,14 +1061,14 @@ static int
 _XkbFilterDeviceBtn(XkbSrvInfoPtr xkbi,
                     XkbFilterPtr filter, unsigned keycode, XkbAction *pAction)
 {
-    if (xkbi->device == inputInfo.keyboard)
+    if (xkbi->device == xkbi->device->context->inputInfo.keyboard)
         return 0;
 
     if (filter->keycode == 0) { /* initial press */
         DeviceIntPtr dev;
         int button;
 
-        _XkbLookupButtonDevice(&dev, pAction->devbtn.device, context->serverClient,
+        _XkbLookupButtonDevice(&dev, pAction->devbtn.device, xkbi->device->context->serverClient,
                                DixUnknownAccess, &button);
         if (!dev || !dev->public.on)
             return 1;
@@ -1113,7 +1113,7 @@ _XkbFilterDeviceBtn(XkbSrvInfoPtr xkbi,
 
         filter->active = 0;
         _XkbLookupButtonDevice(&dev, filter->upAction.devbtn.device,
-                               context->serverClient, DixUnknownAccess, &button);
+                               xkbi->device->context->serverClient, DixUnknownAccess, &button);
         if (!dev || !dev->public.on)
             return 1;
 
@@ -1227,7 +1227,7 @@ XkbPushLockedStateToSlaves(DeviceIntPtr master, int evtype, int key)
     DeviceIntPtr dev;
     Bool genStateNotify;
 
-    nt_list_for_each_entry(dev, inputInfo.devices, next) {
+    nt_list_for_each_entry(dev, master->context->inputInfo.devices, next) {
         if (!dev->key || GetMaster(dev, MASTER_KEYBOARD) != master)
             continue;
 
@@ -1560,7 +1560,7 @@ InjectPointerKeyEvents(DeviceIntPtr dev, int type, int button, int flags,
     if (IsMaster(dev)) {
         mpointer = GetMaster(dev, MASTER_POINTER);
         lastSlave = mpointer->lastSlave;
-        ptr = GetXTestDevice(mpointer);
+        ptr = GetXTestDevice(mpointer, dev->context);
     }
     else if (IsFloating(dev))
         ptr = dev;
@@ -1622,7 +1622,7 @@ XkbFakeDeviceButton(DeviceIntPtr dev, Bool press, int button)
     if (IsMaster(dev)) {
         DeviceIntPtr mpointer = GetMaster(dev, MASTER_POINTER);
 
-        ptr = GetXTestDevice(mpointer);
+        ptr = GetXTestDevice(mpointer, dev->context);
     }
     else if (IsFloating(dev))
         ptr = dev;

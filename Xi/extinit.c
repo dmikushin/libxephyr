@@ -387,7 +387,7 @@ ProcIDispatch(ClientPtr client)
     if (stuff->data >= ARRAY_SIZE(ProcIVector) || !ProcIVector[stuff->data])
         return BadRequest;
 
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(client->context);
     return (*ProcIVector[stuff->data]) (client);
 }
 
@@ -407,7 +407,7 @@ SProcIDispatch(ClientPtr client)
     if (stuff->data >= ARRAY_SIZE(SProcIVector) || !SProcIVector[stuff->data])
         return BadRequest;
 
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(client->context);
     return (*SProcIVector[stuff->data]) (client);
 }
 
@@ -1306,7 +1306,7 @@ SEventIDispatch(xEvent *from, xEvent *to)
  */
 
 void
-XInputExtensionInit(void)
+XInputExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
@@ -1316,10 +1316,10 @@ XInputExtensionInit(void)
     };
 
     if (!dixRegisterPrivateKey
-        (&XIClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(XIClientRec)))
+        (&XIClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(XIClientRec), context))
         FatalError("Cannot request private for XI.\n");
 
-    if (!XIBarrierInit())
+    if (!XIBarrierInit(context))
         FatalError("Could not initialize barriers.\n");
 
     extEntry = AddExtension(INAME, IEVENTS, IERRORS, ProcIDispatch,
@@ -1361,8 +1361,8 @@ XInputExtensionInit(void)
         xi_all_master_devices.id = XIAllMasterDevices;
         xi_all_master_devices.name = strdup("XIAllMasterDevices");
 
-        inputInfo.all_devices = &xi_all_devices;
-        inputInfo.all_master_devices = &xi_all_master_devices;
+        context->inputInfo.all_devices = &xi_all_devices;
+        context->inputInfo.all_master_devices = &xi_all_master_devices;
 
         XIResetProperties();
     }

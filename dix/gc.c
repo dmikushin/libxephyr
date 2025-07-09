@@ -66,9 +66,19 @@ SOFTWARE.
 #include "xace.h"
 #include <assert.h>
 
+#define MAX_SERIAL_NUM     (1L<<28)
+
 static Bool CreateDefaultTile(GCPtr pGC);
 
 static unsigned char DefaultDash[2] = { 4, 4 };
+
+unsigned long
+NextSerialNumber(XephyrContext* context)
+{
+    return (context->screenInfo.numScreens > 0) ? 
+        ((++(context->screenInfo.screens[0]->context->globalSerialNumber)) > MAX_SERIAL_NUM ? 
+            (context->screenInfo.screens[0]->context->globalSerialNumber = 1): context->screenInfo.screens[0]->context->globalSerialNumber) : 1;
+}
 
 void
 ValidateGC(DrawablePtr pDraw, GC * pGC)
@@ -288,7 +298,7 @@ ChangeGC(ClientPtr client, GC * pGC, BITS32 mask, ChangeGCValPtr pUnion)
 
             pFont->refcnt++;
             if (pGC->font)
-                CloseFont(pGC->font, (Font) 0);
+                CloseFont(pGC->font, (Font) 0, client->context);
             pGC->font = pFont;
             break;
         }
@@ -500,7 +510,7 @@ NewGCObject(ScreenPtr pScreen, int depth)
     pGC->dashOffset = 0;
 
     /* use the default font and stipple */
-    pGC->font = context->defaultFont;
+    pGC->font = pScreen->context->defaultFont;
     if (pGC->font)              /* necessary, because open of default font could fail */
         pGC->font->refcnt++;
     pGC->stipple = pGC->pScreen->defaultStipple;
@@ -563,7 +573,7 @@ CreateGC(DrawablePtr pDrawable, BITS32 mask, XID *pval, int *pStatus,
     if (*pStatus != Success) {
         if (!pGC->tileIsPixel && !pGC->tile.pixmap)
             pGC->tileIsPixel = TRUE;    /* undo special case */
-        FreeGC(pGC, (XID) 0);
+        FreeGC(pGC, (XID) 0, client->context);
         pGC = (GCPtr) NULL;
     }
 
@@ -694,7 +704,7 @@ CopyGC(GC * pgcSrc, GC * pgcDst, BITS32 mask)
             if (pgcDst->font == pgcSrc->font)
                 break;
             if (pgcDst->font)
-                CloseFont(pgcDst->font, (Font) 0);
+                CloseFont(pgcDst->font, (Font) 0, pgcDst->pScreen->context);
             if ((pgcDst->font = pgcSrc->font) != NullFont)
                 (pgcDst->font)->refcnt++;
             break;
@@ -768,7 +778,7 @@ FreeGC(void *value, XID gid, XephyrContext* context)
 {
     GCPtr pGC = (GCPtr) value;
 
-    CloseFont(pGC->font, (Font) 0);
+    CloseFont(pGC->font, (Font) 0, context);
     (*pGC->funcs->DestroyClip) (pGC);
 
     if (!pGC->tileIsPixel)
@@ -807,7 +817,7 @@ CreateScratchGC(ScreenPtr pScreen, unsigned depth)
 
     pGC->stateChanges = GCAllBits;
     if (!(*pScreen->CreateGC) (pGC)) {
-        FreeGC(pGC, (XID) 0);
+        FreeGC(pGC, (XID) 0, pScreen->context);
         pGC = (GCPtr) NULL;
     }
     pGC->graphicsExposures = FALSE;
@@ -815,30 +825,30 @@ CreateScratchGC(ScreenPtr pScreen, unsigned depth)
 }
 
 void
-FreeGCperDepth(int screenNum)
+FreeGCperDepth(int screenNum, XephyrContext* context)
 {
     int i;
     ScreenPtr pScreen;
     GCPtr *ppGC;
 
-    pScreen = screenInfo.screens[0]->context->screenInfo.screens[screenNum];
+    pScreen = context->screenInfo.screens[screenNum];
     ppGC = pScreen->GCperDepth;
 
     for (i = 0; i <= pScreen->numDepths; i++) {
-        (void) FreeGC(ppGC[i], (XID) 0);
+        (void) FreeGC(ppGC[i], (XID) 0, context);
         ppGC[i] = NULL;
     }
 }
 
 Bool
-CreateGCperDepth(int screenNum)
+CreateGCperDepth(int screenNum, XephyrContext* context)
 {
     int i;
     ScreenPtr pScreen;
     DepthPtr pDepth;
     GCPtr *ppGC;
 
-    pScreen = screenInfo.screens[0]->context->screenInfo.screens[screenNum];
+    pScreen = context->screenInfo.screens[screenNum];
     ppGC = pScreen->GCperDepth;
     /* do depth 1 separately because it's not included in list */
     if (!(ppGC[0] = CreateScratchGC(pScreen, 1)))
@@ -851,7 +861,7 @@ CreateGCperDepth(int screenNum)
     for (i = 0; i < pScreen->numDepths; i++, pDepth++) {
         if (!(ppGC[i + 1] = CreateScratchGC(pScreen, pDepth->depth))) {
             for (; i >= 0; i--)
-                (void) FreeGC(ppGC[i], (XID) 0);
+                (void) FreeGC(ppGC[i], (XID) 0, context);
             return FALSE;
         }
     }
@@ -859,7 +869,7 @@ CreateGCperDepth(int screenNum)
 }
 
 Bool
-CreateDefaultStipple(int screenNum)
+CreateDefaultStipple(int screenNum, XephyrContext* context)
 {
     ScreenPtr pScreen;
     ChangeGCVal tmpval[3];
@@ -867,7 +877,7 @@ CreateDefaultStipple(int screenNum)
     CARD16 w, h;
     GCPtr pgcScratch;
 
-    pScreen = screenInfo.screens[0]->context->screenInfo.screens[screenNum];
+    pScreen = context->screenInfo.screens[screenNum];
 
     w = 16;
     h = 16;
@@ -897,9 +907,9 @@ CreateDefaultStipple(int screenNum)
 }
 
 void
-FreeDefaultStipple(int screenNum)
+FreeDefaultStipple(int screenNum, XephyrContext* context)
 {
-    ScreenPtr pScreen = screenInfo.screens[0]->context->screenInfo.screens[screenNum];
+    ScreenPtr pScreen = context->screenInfo.screens[screenNum];
 
     (*pScreen->DestroyPixmap) (pScreen->defaultStipple);
 }
@@ -1084,5 +1094,5 @@ FreeScratchGC(GCPtr pGC)
     if (pGC->scratch_inuse)
         pGC->scratch_inuse = FALSE;
     else
-        FreeGC(pGC, (GContext) 0);
+        FreeGC(pGC, (GContext) 0, pGC->pScreen->context);
 }

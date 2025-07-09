@@ -112,7 +112,7 @@ extern _X_EXPORT unsigned int ResourceClientBits(void);
 
 #define BAD_RESOURCE 0xe0000000
 
-#define rClient(obj) (context->clients[CLIENT_ID((obj)->resource)])
+extern _X_EXPORT ClientPtr rClient(void* obj, XephyrContext* context);
 
 /* Resource state callback */
 extern _X_EXPORT CallbackListPtr ResourceStateCallback;
@@ -186,7 +186,7 @@ extern _X_EXPORT RESTYPE CreateNewResourceClass(void);
 
 extern _X_EXPORT Bool InitClientResources(ClientPtr /*client */ );
 
-extern _X_EXPORT XID FakeClientID(int /*client */ );
+extern _X_EXPORT XID FakeClientID(int /*client */, XephyrContext* context);
 
 /* Quartz support on Mac OS X uses the CarbonCore
    framework whose AddResource function conflicts here. */
@@ -195,14 +195,17 @@ extern _X_EXPORT XID FakeClientID(int /*client */ );
 #endif
 extern _X_EXPORT Bool AddResource(XID id,
                                   RESTYPE type,
-                                  void *value);
+                                  void *value,
+                                  XephyrContext* context);
 
 extern _X_EXPORT void FreeResource(XID /*id */ ,
-                                   RESTYPE /*skipDeleteFuncType */ );
+                                   RESTYPE /*skipDeleteFuncType */,
+                                   XephyrContext* context);
 
 extern _X_EXPORT void FreeResourceByType(XID /*id */ ,
                                          RESTYPE /*type */ ,
-                                         Bool /*skipFree */ );
+                                         Bool /*skipFree */,
+                                         XephyrContext* context);
 
 extern _X_EXPORT Bool ChangeResourceValue(XID id,
                                           RESTYPE rtype,
@@ -211,11 +214,13 @@ extern _X_EXPORT Bool ChangeResourceValue(XID id,
 extern _X_EXPORT void FindClientResourcesByType(ClientPtr client,
                                                 RESTYPE type,
                                                 FindResType func,
-                                                void *cdata);
+                                                void *cdata,
+                                                XephyrContext* context);
 
 extern _X_EXPORT void FindAllClientResources(ClientPtr client,
                                              FindAllRes func,
-                                             void *cdata);
+                                             void *cdata,
+                                             XephyrContext* context);
 
 /** @brief Iterate through all subresources of a resource.
 
@@ -230,7 +235,7 @@ extern _X_EXPORT void FreeClientNeverRetainResources(ClientPtr /*client */ );
 
 extern _X_EXPORT void FreeClientResources(ClientPtr /*client */ );
 
-extern _X_EXPORT void FreeAllResources(void);
+extern _X_EXPORT void FreeAllResources(XephyrContext* context);
 
 extern _X_EXPORT Bool LegalNewID(XID /*id */ ,
                                  ClientPtr /*client */ );
@@ -238,7 +243,8 @@ extern _X_EXPORT Bool LegalNewID(XID /*id */ ,
 extern _X_EXPORT void *LookupClientResourceComplex(ClientPtr client,
                                                      RESTYPE type,
                                                      FindComplexResType func,
-                                                     void *cdata);
+                                                     void *cdata,
+                                                     XephyrContext* context);
 
 extern _X_EXPORT int dixLookupResourceByType(void **result,
                                              XID id,

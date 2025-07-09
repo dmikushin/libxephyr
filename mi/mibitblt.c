@@ -266,7 +266,7 @@ miCopyArea(DrawablePtr pSrcDrawable,
  */
 _X_COLD static MiBits *
 miGetPlane(DrawablePtr pDraw, int planeNum,     /* number of the bitPlane */
-           int sx, int sy, int w, int h, MiBits * result)
+           int sx, int sy, int w, int h, MiBits * result, XephyrContext* context)
 {
     int i, j, k, width, bitsPerPixel, widthInBytes;
     DDXPointRec pt = { 0, 0 };
@@ -571,7 +571,7 @@ miCopyPlane(DrawablePtr pSrcDrawable,
         box.y2 -= pSrcDrawable->y;
         ptile = miGetPlane(pSrcDrawable, ffs(bitPlane) - 1,
                            box.x1, box.y1,
-                           box.x2 - box.x1, box.y2 - box.y1, (MiBits *) NULL);
+                           box.x2 - box.x1, box.y2 - box.y1, (MiBits *) NULL, pGC->pScreen->context);
         if (ptile) {
             miOpqStipDrawable(pDstDrawable, pGC, prgnSrc, ptile, 0,
                               box.x2 - box.x1, box.y2 - box.y1,
@@ -667,7 +667,7 @@ miGetImage(DrawablePtr pDraw, int sx, int sy, int w, int h,
     }
     else {
         (void) miGetPlane(pDraw, ffs(planeMask) - 1, sx, sy, w, h,
-                          (MiBits *) pDst);
+                          (MiBits *) pDst, pDraw->pScreen->context);
     }
 }
 

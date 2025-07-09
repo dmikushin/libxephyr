@@ -132,7 +132,8 @@ extern _X_EXPORT int AllocColorCells(int /*client */ ,
                                      int /*planes */ ,
                                      Bool /*contig */ ,
                                      Pixel * /*ppix */ ,
-                                     Pixel * /*masks */ );
+                                     Pixel * /*masks */ ,
+                                     XephyrContext* /*context*/ );
 
 extern _X_EXPORT int AllocColorPlanes(int /*client */ ,
                                       ColormapPtr /*pmap */ ,

@@ -172,7 +172,7 @@ CursorDisplayCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
     if (pCursor != pOldCursor) {
         CursorEventPtr e;
 
-        UpdateCurrentTimeIf();
+        UpdateCurrentTimeIf(pScreen->context);
         for (e = cursorEvents; e; e = e->next) {
             if ((e->eventMask & XFixesDisplayCursorNotifyMask)) {
                 xXFixesCursorNotifyEvent ev = {
@@ -180,7 +180,7 @@ CursorDisplayCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
                     .subtype = XFixesDisplayCursorNotify,
                     .window = e->pWindow->drawable.id,
                     .cursorSerial = pCursor ? pCursor->serialNumber : 0,
-                    .timestamp = context->currentTime.milliseconds,
+                    .timestamp = pScreen->context->currentTime.milliseconds,
                     .name = pCursor ? pCursor->name : None
                 };
                 WriteEventsToClient(e->pClient, 1, (xEvent *) &ev);
@@ -224,7 +224,7 @@ XFixesSelectCursorInput(ClientPtr pClient, WindowPtr pWindow, CARD32 eventMask)
     }
     if (!eventMask) {
         if (e) {
-            FreeResource(e->clientResource, 0);
+            FreeResource(e->clientResource, 0, pClient->context);
         }
         return Success;
     }
@@ -236,23 +236,23 @@ XFixesSelectCursorInput(ClientPtr pClient, WindowPtr pWindow, CARD32 eventMask)
         e->next = 0;
         e->pClient = pClient;
         e->pWindow = pWindow;
-        e->clientResource = FakeClientID(pClient->index);
+        e->clientResource = FakeClientID(pClient->index, pClient->context);
 
         /*
          * Add a resource hanging from the window to
          * catch window destroy
          */
         rc = dixLookupResourceByType(&val, pWindow->drawable.id,
-                                     CursorWindowType, context->serverClient,
+                                     CursorWindowType, pClient->context->serverClient,
                                      DixGetAttrAccess);
         if (rc != Success)
             if (!AddResource(pWindow->drawable.id, CursorWindowType,
-                             (void *) pWindow)) {
+                             (void *) pWindow, pClient->context)) {
                 free(e);
                 return BadAlloc;
             }
 
-        if (!AddResource(e->clientResource, CursorClientType, (void *) e))
+        if (!AddResource(e->clientResource, CursorClientType, (void *) e, pClient->context))
             return BadAlloc;
 
         *prev = e;
@@ -280,7 +280,7 @@ ProcXFixesSelectCursorInput(ClientPtr client)
 }
 
 static int
-GetBit(unsigned char *line, int x)
+GetBit(unsigned char *line, int x, XephyrContext* context)
 {
     unsigned char mask;
 
@@ -320,7 +320,7 @@ SXFixesCursorNotifyEvent(xXFixesCursorNotifyEvent * from,
 }
 
 static void
-CopyCursorToImage(CursorPtr pCursor, CARD32 *image)
+CopyCursorToImage(CursorPtr pCursor, CARD32 *image, XephyrContext* context)
 {
     int width = pCursor->bits->width;
     int height = pCursor->bits->height;
@@ -344,8 +344,8 @@ CopyCursorToImage(CursorPtr pCursor, CARD32 *image)
               (pCursor->backGreen & 0xff00) | (pCursor->backBlue >> 8));
         for (y = 0; y < height; y++) {
             for (x = 0; x < width; x++) {
-                if (GetBit(mskLine, x)) {
-                    if (GetBit(srcLine, x))
+                if (GetBit(mskLine, x, context)) {
+                    if (GetBit(srcLine, x, context))
                         *image++ = fg;
                     else
                         *image++ = bg;
@@ -397,7 +397,7 @@ ProcXFixesGetCursorImage(ClientPtr client)
     rep->cursorSerial = pCursor->serialNumber;
 
     image = (CARD32 *) (rep + 1);
-    CopyCursorToImage(pCursor, image);
+    CopyCursorToImage(pCursor, image, client->context);
     if (client->swapped) {
         swaps(&rep->sequenceNumber);
         swapl(&rep->length);
@@ -551,7 +551,7 @@ ProcXFixesGetCursorImageAndName(ClientPtr client)
     rep->nbytes = nbytes;
 
     image = (CARD32 *) (rep + 1);
-    CopyCursorToImage(pCursor, image);
+    CopyCursorToImage(pCursor, image, client->context);
     memcpy((image + npixels), name, nbytes);
     if (client->swapped) {
         swaps(&rep->sequenceNumber);
@@ -593,6 +593,7 @@ typedef struct {
     TestCursorFunc testCursor;
     CursorPtr pNew;
     void *closure;
+    XephyrContext* context;
 } ReplaceCursorLookupRec, *ReplaceCursorLookupPtr;
 
 static const RESTYPE CursorRestypes[] = {
@@ -635,14 +636,14 @@ ReplaceCursorLookup(void *value, XID id, void *closure)
                 *pCursorRef = curs;
             else
                 ChangeResourceValue(id, RT_CURSOR, curs);
-            FreeCursor(pCursor, cursor);
+            FreeCursor(pCursor, cursor, rcl->context);
         }
     }
     return FALSE;               /* keep walking */
 }
 
 static void
-ReplaceCursor(CursorPtr pCursor, TestCursorFunc testCursor, void *closure)
+ReplaceCursor(CursorPtr pCursor, TestCursorFunc testCursor, void *closure, XephyrContext* context)
 {
     int clientIndex;
     int resIndex;
@@ -656,6 +657,7 @@ ReplaceCursor(CursorPtr pCursor, TestCursorFunc testCursor, void *closure)
     rcl.testCursor = testCursor;
     rcl.pNew = pCursor;
     rcl.closure = closure;
+    rcl.context = context;
 
     /* for each client */
     for (clientIndex = 0; clientIndex < context->currentMaxClients; clientIndex++) {
@@ -668,7 +670,7 @@ ReplaceCursor(CursorPtr pCursor, TestCursorFunc testCursor, void *closure)
              */
             LookupClientResourceComplex(context->clients[clientIndex],
                                         rcl.type,
-                                        ReplaceCursorLookup, (void *) &rcl);
+                                        ReplaceCursorLookup, (void *) &rcl, context);
         }
     }
     /* this "knows" that WindowHasNewCursor doesn't depend on its argument */
@@ -694,7 +696,7 @@ ProcXFixesChangeCursor(ClientPtr client)
     VERIFY_CURSOR(pDestination, stuff->destination, client,
                   DixWriteAccess | DixSetAttrAccess);
 
-    ReplaceCursor(pSource, TestForCursor, (void *) pDestination);
+    ReplaceCursor(pSource, TestForCursor, (void *) pDestination, client->context);
     return Success;
 }
 
@@ -733,7 +735,7 @@ ProcXFixesChangeCursorByName(ClientPtr client)
     tchar = (char *) &stuff[1];
     name = MakeAtom(tchar, stuff->nbytes, FALSE);
     if (name)
-        ReplaceCursor(pSource, TestForCursorName, &name);
+        ReplaceCursor(pSource, TestForCursorName, &name, client->context);
     return Success;
 }
 
@@ -784,7 +786,7 @@ createCursorHideCount(ClientPtr pClient, ScreenPtr pScreen)
     pChc->pClient = pClient;
     pChc->pScreen = pScreen;
     pChc->hideCount = 1;
-    pChc->resource = FakeClientID(pClient->index);
+    pChc->resource = FakeClientID(pClient->index, pClient->context);
     pChc->pNext = cs->pCursorHideCounts;
     cs->pCursorHideCounts = pChc;
 
@@ -792,7 +794,7 @@ createCursorHideCount(ClientPtr pClient, ScreenPtr pScreen)
      * Create a resource for this element so it can be deleted
      * when the client goes away.
      */
-    if (!AddResource(pChc->resource, CursorHideCountType, (void *) pChc))
+    if (!AddResource(pChc->resource, CursorHideCountType, (void *) pChc, pClient->context))
         return BadAlloc;
 
     return Success;
@@ -838,7 +840,7 @@ deleteCursorHideCountsForScreen(ScreenPtr pScreen)
     pChc = cs->pCursorHideCounts;
     while (pChc != NULL) {
         pTmp = pChc->pNext;
-        FreeResource(pChc->resource, 0);
+        FreeResource(pChc->resource, 0, pScreen->context);
         pChc = pTmp;
     }
     cs->pCursorHideCounts = NULL;
@@ -887,7 +889,7 @@ ProcXFixesHideCursor(ClientPtr client)
     if (ret == Success) {
         DeviceIntPtr dev;
 
-        for (dev = inputInfo.devices; dev; dev = dev->next) {
+        for (dev = client->context->inputInfo.devices; dev; dev = dev->next) {
             if (IsMaster(dev) && IsPointerDevice(dev))
                 CursorDisplayCursor(dev, pWin->drawable.pScreen,
                                     CursorForDevice(dev));
@@ -942,7 +944,7 @@ ProcXFixesShowCursor(ClientPtr client)
 
     pChc->hideCount--;
     if (pChc->hideCount <= 0) {
-        FreeResource(pChc->resource, 0);
+        FreeResource(pChc->resource, 0, client->context);
     }
 
     return Success;
@@ -960,7 +962,7 @@ SProcXFixesShowCursor(ClientPtr client)
 }
 
 static int
-CursorFreeClient(void *data, XID id)
+CursorFreeClient(void *data, XID id, XephyrContext* context)
 {
     CursorEventPtr old = (CursorEventPtr) data;
     CursorEventPtr *prev, e;
@@ -976,14 +978,14 @@ CursorFreeClient(void *data, XID id)
 }
 
 static int
-CursorFreeHideCount(void *data, XID id)
+CursorFreeHideCount(void *data, XID id, XephyrContext* context)
 {
     CursorHideCountPtr pChc = (CursorHideCountPtr) data;
     ScreenPtr pScreen = pChc->pScreen;
     DeviceIntPtr dev;
 
     deleteCursorHideCount(pChc, pChc->pScreen);
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (IsMaster(dev) && IsPointerDevice(dev))
             CursorDisplayCursor(dev, pScreen, CursorForDevice(dev));
     }
@@ -992,7 +994,7 @@ CursorFreeHideCount(void *data, XID id)
 }
 
 static int
-CursorFreeWindow(void *data, XID id)
+CursorFreeWindow(void *data, XID id, XephyrContext* context)
 {
     WindowPtr pWindow = (WindowPtr) data;
     CursorEventPtr e, next;
@@ -1000,7 +1002,7 @@ CursorFreeWindow(void *data, XID id)
     for (e = cursorEvents; e; e = next) {
         next = e->next;
         if (e->pWindow == pWindow) {
-            FreeResource(e->clientResource, 0);
+            FreeResource(e->clientResource, 0, context);
         }
     }
     return 1;
@@ -1068,7 +1070,7 @@ SProcXFixesDestroyPointerBarrier(ClientPtr client)
 }
 
 Bool
-XFixesCursorInit(void)
+XFixesCursorInit(XephyrContext* context)
 {
     int i;
 
@@ -1077,7 +1079,7 @@ XFixesCursorInit(void)
     else
         CursorVisible = FALSE;
 
-    if (!dixRegisterPrivateKey(&CursorScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&CursorScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
     for (i = 0; i < context->screenInfo.numScreens; i++) {

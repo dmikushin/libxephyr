@@ -126,7 +126,7 @@ RRPointerMoved(ScreenPtr pScreen, int x, int y)
 
     /* None contain pointer, find nearest */
     ErrorF("RRPointerMoved: Untested, may cause \"bogus pointer event\"\n");
-    RRPointerToNearestCrtc(inputInfo.pointer, pScreen, x, y, pointerCrtc);
+    RRPointerToNearestCrtc(pScreen->context->inputInfo.pointer, pScreen, x, y, pointerCrtc);
 }
 
 /*
@@ -141,7 +141,7 @@ RRPointerScreenConfigured(ScreenPtr pScreen)
     int x, y;
     DeviceIntPtr pDev;
 
-    for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+    for (pDev = pScreen->context->inputInfo.devices; pDev; pDev = pDev->next) {
         if (IsPointerDevice(pDev)) {
             pRoot = GetCurrentRootWindow(pDev);
             pCurrentScreen = pRoot ? pRoot->drawable.pScreen : NULL;

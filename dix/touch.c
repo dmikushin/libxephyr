@@ -203,7 +203,7 @@ TouchInitDDXTouchPoint(DeviceIntPtr dev, DDXTouchPointInfoPtr ddxtouch)
 }
 
 Bool
-TouchInitTouchPoint(TouchClassPtr t, ValuatorClassPtr v, int index)
+TouchInitTouchPoint(TouchClassPtr t, ValuatorClassPtr v, int index, XephyrContext* context)
 {
     TouchPointInfoPtr ti;
 
@@ -223,9 +223,9 @@ TouchInitTouchPoint(TouchClassPtr t, ValuatorClassPtr v, int index)
         return FALSE;
     }
     ti->sprite.spriteTraceSize = 32;
-    ti->sprite.spriteTrace[0] = screenInfo.screens[0]->context->screenInfo.screens[0]->root;
-    ti->sprite.hot.pScreen = screenInfo.screens[0]->context->screenInfo.screens[0];
-    ti->sprite.hotPhys.pScreen = screenInfo.screens[0]->context->screenInfo.screens[0];
+    ti->sprite.spriteTrace[0] = context->screenInfo.screens[0]->root;
+    ti->sprite.hot.pScreen = context->screenInfo.screens[0];
+    ti->sprite.hotPhys.pScreen = context->screenInfo.screens[0];
 
     ti->client_id = -1;
 
@@ -327,7 +327,7 @@ TouchBeginTouch(DeviceIntPtr dev, int sourceid, uint32_t touchid,
     if (tmp) {
         t->touches = tmp;
         t->num_touches++;
-        if (TouchInitTouchPoint(t, dev->valuator, t->num_touches - 1))
+        if (TouchInitTouchPoint(t, dev->valuator, t->num_touches - 1, dev->context))
             goto try_find_touch;
     }
 
@@ -450,7 +450,7 @@ TouchEventHistoryReplay(TouchPointInfoPtr ti, DeviceIntPtr dev, XID resource)
     if (!ti->history)
         return;
 
-    DeliverDeviceClassesChangedEvent(ti->sourceid, ti->history[0].time);
+    DeliverDeviceClassesChangedEvent(ti->sourceid, ti->history[0].time, dev->context);
 
     for (i = 0; i < ti->history_elements; i++) {
         DeviceEvent *ev = &ti->history[i];
@@ -676,7 +676,7 @@ TouchRemoveListener(TouchPointInfoPtr ti, XID resource)
             continue;
 
         if (listener->grab) {
-            FreeGrab(listener->grab);
+            FreeGrab(listener->grab, listener->grab->device->context);
             listener->grab = NULL;
             ti->num_grabs--;
         }
@@ -904,7 +904,7 @@ TouchRemovePointerGrab(DeviceIntPtr dev)
  * need to walk all the touches and remove this grab from any delivery
  * lists. */
 void
-TouchListenerGone(XID resource)
+TouchListenerGone(XID resource, XephyrContext* context)
 {
     TouchPointInfoPtr ti;
     DeviceIntPtr dev;
@@ -914,7 +914,7 @@ TouchListenerGone(XID resource)
     if (!events)
         FatalError("TouchListenerGone: couldn't allocate events\n");
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (!dev->touch)
             continue;
 
@@ -1054,7 +1054,7 @@ TouchEmitTouchEnd(DeviceIntPtr dev, TouchPointInfoPtr ti, int flags, XID resourc
     flags |= TOUCH_CLIENT_ID;
     if (ti->emulate_pointer)
         flags |= TOUCH_POINTER_EMULATED;
-    DeliverDeviceClassesChangedEvent(ti->sourceid, GetTimeInMillis());
+    DeliverDeviceClassesChangedEvent(ti->sourceid, GetTimeInMillis(), dev->context);
     GetDixTouchEnd(&event, dev, ti, flags);
     DeliverTouchEvents(dev, ti, &event, resource);
     if (ti->num_grabs == 0)

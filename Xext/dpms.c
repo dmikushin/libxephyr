@@ -50,9 +50,10 @@ CARD32 DPMSStandbyTime = -1;
 CARD32 DPMSSuspendTime = -1;
 CARD32 DPMSOffTime = -1;
 Bool DPMSEnabled;
+static XephyrContext* dpms_context = NULL;
 
 Bool
-DPMSSupported(void)
+DPMSSupported(XephyrContext* context)
 {
     int i;
 
@@ -102,13 +103,13 @@ DPMSSet(ClientPtr client, int level)
             return rc;
     }
 
-    for (i = 0; i < context->screenInfo.numScreens; i++)
-        if (context->screenInfo.screens[i]->DPMS != NULL)
-            context->screenInfo.screens[i]->DPMS(context->screenInfo.screens[i], level);
+    for (i = 0; i < client->context->screenInfo.numScreens; i++)
+        if (client->context->screenInfo.screens[i]->DPMS != NULL)
+            client->context->screenInfo.screens[i]->DPMS(client->context->screenInfo.screens[i], level);
 
-    for (i = 0; i < context->screenInfo.numGPUScreens; i++)
-        if (context->screenInfo.gpuscreens[i]->DPMS != NULL)
-            context->screenInfo.gpuscreens[i]->DPMS(context->screenInfo.gpuscreens[i], level);
+    for (i = 0; i < client->context->screenInfo.numGPUScreens; i++)
+        if (client->context->screenInfo.gpuscreens[i]->DPMS != NULL)
+            client->context->screenInfo.gpuscreens[i]->DPMS(client->context->screenInfo.gpuscreens[i], level);
 
     return Success;
 }
@@ -200,7 +201,7 @@ ProcDPMSSetTimeouts(ClientPtr client)
     DPMSStandbyTime = stuff->standby * MILLI_PER_SECOND;
     DPMSSuspendTime = stuff->suspend * MILLI_PER_SECOND;
     DPMSOffTime = stuff->off * MILLI_PER_SECOND;
-    SetScreenSaverTimer();
+    SetScreenSaverTimer(client->context);
 
     return Success;
 }
@@ -214,7 +215,7 @@ ProcDPMSEnable(ClientPtr client)
 
     DPMSEnabled = TRUE;
     if (!was_enabled)
-        SetScreenSaverTimer();
+        SetScreenSaverTimer(client->context);
 
     return Success;
 }
@@ -427,12 +428,14 @@ SProcDPMSDispatch(ClientPtr client)
 static void
 DPMSCloseDownExtension(ExtensionEntry *e)
 {
-    DPMSSet(context->serverClient, DPMSModeOn);
+    DPMSSet(dpms_context->serverClient, DPMSModeOn);
 }
 
 void
-DPMSExtensionInit(void)
+DPMSExtensionInit(XephyrContext* context)
 {
+    dpms_context = context;
+    
 #define CONDITIONALLY_SET_DPMS_TIMEOUT(_timeout_value_)         \
     if (_timeout_value_ == -1) { /* not yet set from config */  \
         _timeout_value_ = context->ScreenSaverTime;                      \
@@ -443,7 +446,7 @@ DPMSExtensionInit(void)
     CONDITIONALLY_SET_DPMS_TIMEOUT(DPMSOffTime)
 
     DPMSPowerLevel = DPMSModeOn;
-    DPMSEnabled = DPMSSupported();
+    DPMSEnabled = DPMSSupported(context);
 
     if (DPMSEnabled)
         AddExtension(DPMSExtensionName, 0, 0,

@@ -333,15 +333,15 @@ ProcRenderQueryPictFormats(ClientPtr client)
 
 #ifdef PANORAMIX
     if (noPanoramiXExtension)
-        numScreens = context->screenInfo.numScreens;
+        numScreens = client->context->screenInfo.numScreens;
     else
-        numScreens = ((xConnSetup *) context->ConnectionInfo)->numRoots;
+        numScreens = ((xConnSetup *) client->context->ConnectionInfo)->numRoots;
 #else
-    numScreens = context->screenInfo.numScreens;
+    numScreens = client->context->screenInfo.numScreens;
 #endif
     ndepth = nformat = nvisual = 0;
     for (s = 0; s < numScreens; s++) {
-        pScreen = context->screenInfo.screens[s];
+        pScreen = client->context->screenInfo.screens[s];
         for (d = 0; d < pScreen->numDepths; d++) {
             pDepth = pScreen->allowedDepths + d;
             ++ndepth;
@@ -382,7 +382,7 @@ ProcRenderQueryPictFormats(ClientPtr client)
     pictForm = (xPictFormInfo *) (reply + 1);
 
     for (s = 0; s < numScreens; s++) {
-        pScreen = context->screenInfo.screens[s];
+        pScreen = client->context->screenInfo.screens[s];
         ps = GetPictureScreenIfSet(pScreen);
         if (ps) {
             for (nformat = 0, pFormat = ps->formats;
@@ -422,7 +422,7 @@ ProcRenderQueryPictFormats(ClientPtr client)
 
     pictScreen = (xPictScreen *) pictForm;
     for (s = 0; s < numScreens; s++) {
-        pScreen = context->screenInfo.screens[s];
+        pScreen = client->context->screenInfo.screens[s];
         pictDepth = (xPictDepth *) (pictScreen + 1);
         ndepth = 0;
         for (d = 0; d < pScreen->numDepths; d++) {
@@ -468,7 +468,7 @@ ProcRenderQueryPictFormats(ClientPtr client)
     pictSubpixel = (CARD32 *) pictScreen;
 
     for (s = 0; s < numSubpixel; s++) {
-        pScreen = context->screenInfo.screens[s];
+        pScreen = client->context->screenInfo.screens[s];
         ps = GetPictureScreenIfSet(pScreen);
         if (ps)
             *pictSubpixel = ps->subpixel;
@@ -592,7 +592,7 @@ ProcRenderCreatePicture(ClientPtr client)
                              stuff->mask, (XID *) (stuff + 1), client, &error);
     if (!pPicture)
         return error;
-    if (!AddResource(stuff->pid, PictureType, (void *) pPicture))
+    if (!AddResource(stuff->pid, PictureType, (void *) pPicture, client->context))
         return BadAlloc;
     return Success;
 }
@@ -647,7 +647,7 @@ ProcRenderFreePicture(ClientPtr client)
     REQUEST_SIZE_MATCH(xRenderFreePictureReq);
 
     VERIFY_PICTURE(pPicture, stuff->picture, client, DixDestroyAccess);
-    FreeResource(stuff->picture, RT_NONE);
+    FreeResource(stuff->picture, RT_NONE, client->context);
     return Success;
 }
 
@@ -931,7 +931,7 @@ ProcRenderCreateGlyphSet(ClientPtr client)
                   glyphSet, RT_NONE, NULL, DixCreateAccess);
     if (rc != Success)
         return rc;
-    if (!AddResource(stuff->gsid, GlyphSetType, (void *) glyphSet))
+    if (!AddResource(stuff->gsid, GlyphSetType, (void *) glyphSet, client->context))
         return BadAlloc;
     return Success;
 }
@@ -955,7 +955,7 @@ ProcRenderReferenceGlyphSet(ClientPtr client)
         return rc;
     }
     glyphSet->refcnt++;
-    if (!AddResource(stuff->gsid, GlyphSetType, (void *) glyphSet))
+    if (!AddResource(stuff->gsid, GlyphSetType, (void *) glyphSet, client->context))
         return BadAlloc;
     return Success;
 }
@@ -978,7 +978,7 @@ ProcRenderFreeGlyphSet(ClientPtr client)
         client->errorValue = stuff->glyphset;
         return rc;
     }
-    FreeResource(stuff->glyphset, RT_NONE);
+    FreeResource(stuff->glyphset, RT_NONE, client->context);
     return Success;
 }
 
@@ -1082,13 +1082,13 @@ ProcRenderAddGlyphs(ClientPtr client)
             GlyphPtr glyph;
 
             glyph_new->found = FALSE;
-            glyph_new->glyph = glyph = AllocateGlyph(&gi[i], glyphSet->fdepth);
+            glyph_new->glyph = glyph = AllocateGlyph(&gi[i], glyphSet->fdepth, client->context);
             if (!glyph) {
                 err = BadAlloc;
                 goto bail;
             }
 
-            for (screen = 0; screen < context->screenInfo.numScreens; screen++) {
+            for (screen = 0; screen < client->context->screenInfo.numScreens; screen++) {
                 int width = gi[i].width;
                 int height = gi[i].height;
                 int depth = glyphSet->format->depth;
@@ -1099,7 +1099,7 @@ ProcRenderAddGlyphs(ClientPtr client)
                 if (!width || !height)
                     break;
 
-                pScreen = context->screenInfo.screens[screen];
+                pScreen = client->context->screenInfo.screens[screen];
                 pSrcPix = GetScratchPixmapHeader(pScreen,
                                                  width, height,
                                                  depth, depth, -1, bits);
@@ -1110,7 +1110,7 @@ ProcRenderAddGlyphs(ClientPtr client)
 
                 pSrc = CreatePicture(0, &pSrcPix->drawable,
                                      glyphSet->format, 0, NULL,
-                                     context->serverClient, &error);
+                                     client->context->serverClient, &error);
                 if (!pSrc) {
                     err = BadAlloc;
                     goto bail;
@@ -1128,7 +1128,7 @@ ProcRenderAddGlyphs(ClientPtr client)
                 pDst = CreatePicture(0, &pDstPix->drawable,
                                   glyphSet->format,
                                   CPComponentAlpha, &component_alpha,
-                                  context->serverClient, &error);
+                                  client->context->serverClient, &error);
                 SetGlyphPicture(glyph, pScreen, pDst);
 
                 /* The picture takes a reference to the pixmap, so we
@@ -1145,7 +1145,7 @@ ProcRenderAddGlyphs(ClientPtr client)
                                  pSrc,
                                  None, pDst, 0, 0, 0, 0, 0, 0, width, height);
 
-                FreePicture((void *) pSrc, 0);
+                FreePicture((void *) pSrc, 0, pScreen->context);
                 pSrc = NULL;
                 FreeScratchPixmapHeader(pSrcPix);
                 pSrcPix = NULL;
@@ -1177,7 +1177,7 @@ ProcRenderAddGlyphs(ClientPtr client)
     return Success;
  bail:
     if (pSrc)
-        FreePicture((void *) pSrc, 0);
+        FreePicture((void *) pSrc, 0, client->context);
     if (pSrcPix)
         FreeScratchPixmapHeader(pSrcPix);
     for (i = 0; i < nglyphs; i++)
@@ -1538,7 +1538,7 @@ ProcRenderCreateCursor(ClientPtr client)
         (*pScreen->GetImage) (pPicture->pDrawable,
                               0, 0, width, height, ZPixmap,
                               0xffffffff, (void *) argbbits);
-        FreePicture(pPicture, 0);
+        FreePicture(pPicture, 0, pScreen->context);
     }
     /*
      * Check whether the cursor can be directly supported by
@@ -1626,7 +1626,7 @@ ProcRenderCreateCursor(ClientPtr client)
                          &pCursor, client, stuff->cid);
     if (rc != Success)
         goto bail;
-    if (!AddResource(stuff->cid, RT_CURSOR, (void *) pCursor)) {
+    if (!AddResource(stuff->cid, RT_CURSOR, (void *) pCursor, client->context)) {
         rc = BadAlloc;
         goto bail;
     }
@@ -1766,7 +1766,7 @@ ProcRenderSetPictureFilter(ClientPtr client)
     if (nparams < 0)
 	return BadLength;
 
-    result = SetPictureFilter(pPicture, name, stuff->nbytes, params, nparams);
+    result = SetPictureFilter(pPicture, name, stuff->nbytes, params, nparams, client->context);
     return result;
 }
 
@@ -1810,7 +1810,7 @@ ProcRenderCreateAnimCursor(ClientPtr client)
     if (ret != Success)
         return ret;
 
-    if (AddResource(stuff->cid, RT_CURSOR, (void *) pCursor))
+    if (AddResource(stuff->cid, RT_CURSOR, (void *) pCursor, client->context))
         return Success;
     return BadAlloc;
 }
@@ -1857,7 +1857,7 @@ ProcRenderCreateSolidFill(ClientPtr client)
                      pPicture, RT_NONE, NULL, DixCreateAccess);
     if (error != Success)
         return error;
-    if (!AddResource(stuff->pid, PictureType, (void *) pPicture))
+    if (!AddResource(stuff->pid, PictureType, (void *) pPicture, client->context))
         return BadAlloc;
     return Success;
 }
@@ -1896,7 +1896,7 @@ ProcRenderCreateLinearGradient(ClientPtr client)
                      pPicture, RT_NONE, NULL, DixCreateAccess);
     if (error != Success)
         return error;
-    if (!AddResource(stuff->pid, PictureType, (void *) pPicture))
+    if (!AddResource(stuff->pid, PictureType, (void *) pPicture, client->context))
         return BadAlloc;
     return Success;
 }
@@ -1936,7 +1936,7 @@ ProcRenderCreateRadialGradient(ClientPtr client)
                      pPicture, RT_NONE, NULL, DixCreateAccess);
     if (error != Success)
         return error;
-    if (!AddResource(stuff->pid, PictureType, (void *) pPicture))
+    if (!AddResource(stuff->pid, PictureType, (void *) pPicture, client->context))
         return BadAlloc;
     return Success;
 }
@@ -1975,7 +1975,7 @@ ProcRenderCreateConicalGradient(ClientPtr client)
                      pPicture, RT_NONE, NULL, DixCreateAccess);
     if (error != Success)
         return error;
-    if (!AddResource(stuff->pid, PictureType, (void *) pPicture))
+    if (!AddResource(stuff->pid, PictureType, (void *) pPicture, client->context))
         return BadAlloc;
     return Success;
 }
@@ -2610,7 +2610,7 @@ PanoramiXRenderCreatePicture(ClientPtr client)
     panoramix_setup_ids(newPict, client, stuff->pid);
 
     if (refDraw->type == XRT_WINDOW &&
-        stuff->drawable == context->screenInfo.screens[0]->root->drawable.id) {
+        stuff->drawable == client->context->screenInfo.screens[0]->root->drawable.id) {
         newPict->u.pict.root = TRUE;
     }
     else
@@ -2625,7 +2625,7 @@ PanoramiXRenderCreatePicture(ClientPtr client)
     }
 
     if (result == Success)
-        AddResource(newPict->info[0].id, XRT_PICTURE, newPict);
+        AddResource(newPict->info[0].id, XRT_PICTURE, newPict, client->context);
     else
         free(newPict);
 
@@ -2768,19 +2768,19 @@ PanoramiXRenderComposite(ClientPtr client)
     FOR_NSCREENS_FORWARD(j) {
         stuff->src = src->info[j].id;
         if (src->u.pict.root) {
-            stuff->xSrc = orig.xSrc - context->screenInfo.screens[j]->x;
-            stuff->ySrc = orig.ySrc - context->screenInfo.screens[j]->y;
+            stuff->xSrc = orig.xSrc - client->context->screenInfo.screens[j]->x;
+            stuff->ySrc = orig.ySrc - client->context->screenInfo.screens[j]->y;
         }
         stuff->dst = dst->info[j].id;
         if (dst->u.pict.root) {
-            stuff->xDst = orig.xDst - context->screenInfo.screens[j]->x;
-            stuff->yDst = orig.yDst - context->screenInfo.screens[j]->y;
+            stuff->xDst = orig.xDst - client->context->screenInfo.screens[j]->x;
+            stuff->yDst = orig.yDst - client->context->screenInfo.screens[j]->y;
         }
         if (msk) {
             stuff->mask = msk->info[j].id;
             if (msk->u.pict.root) {
-                stuff->xMask = orig.xMask - context->screenInfo.screens[j]->x;
-                stuff->yMask = orig.yMask - context->screenInfo.screens[j]->y;
+                stuff->xMask = orig.xMask - client->context->screenInfo.screens[j]->x;
+                stuff->yMask = orig.yMask - client->context->screenInfo.screens[j]->y;
             }
         }
         result = (*PanoramiXSaveRenderVector[X_RenderComposite]) (client);
@@ -2814,13 +2814,13 @@ PanoramiXRenderCompositeGlyphs(ClientPtr client)
         FOR_NSCREENS_FORWARD(j) {
             stuff->src = src->info[j].id;
             if (src->u.pict.root) {
-                stuff->xSrc = xSrc - context->screenInfo.screens[j]->x;
-                stuff->ySrc = ySrc - context->screenInfo.screens[j]->y;
+                stuff->xSrc = xSrc - client->context->screenInfo.screens[j]->x;
+                stuff->ySrc = ySrc - client->context->screenInfo.screens[j]->y;
             }
             stuff->dst = dst->info[j].id;
             if (dst->u.pict.root) {
-                elt->deltax = origElt.deltax - context->screenInfo.screens[j]->x;
-                elt->deltay = origElt.deltay - context->screenInfo.screens[j]->y;
+                elt->deltax = origElt.deltax - client->context->screenInfo.screens[j]->x;
+                elt->deltay = origElt.deltay - client->context->screenInfo.screens[j]->y;
             }
             result =
                 (*PanoramiXSaveRenderVector[stuff->renderReqType]) (client);
@@ -2851,8 +2851,8 @@ PanoramiXRenderFillRectangles(ClientPtr client)
             if (j)
                 memcpy(stuff + 1, extra, extra_len);
             if (dst->u.pict.root) {
-                int x_off = context->screenInfo.screens[j]->x;
-                int y_off = context->screenInfo.screens[j]->y;
+                int x_off = client->context->screenInfo.screens[j]->x;
+                int y_off = client->context->screenInfo.screens[j]->y;
 
                 if (x_off || y_off) {
                     xRectangle *rects = (xRectangle *) (stuff + 1);
@@ -2901,8 +2901,8 @@ PanoramiXRenderTrapezoids(ClientPtr client)
             if (j)
                 memcpy(stuff + 1, extra, extra_len);
             if (dst->u.pict.root) {
-                int x_off = context->screenInfo.screens[j]->x;
-                int y_off = context->screenInfo.screens[j]->y;
+                int x_off = client->context->screenInfo.screens[j]->x;
+                int y_off = client->context->screenInfo.screens[j]->y;
 
                 if (x_off || y_off) {
                     xTrapezoid *trap = (xTrapezoid *) (stuff + 1);
@@ -2962,8 +2962,8 @@ PanoramiXRenderTriangles(ClientPtr client)
             if (j)
                 memcpy(stuff + 1, extra, extra_len);
             if (dst->u.pict.root) {
-                int x_off = context->screenInfo.screens[j]->x;
-                int y_off = context->screenInfo.screens[j]->y;
+                int x_off = client->context->screenInfo.screens[j]->x;
+                int y_off = client->context->screenInfo.screens[j]->y;
 
                 if (x_off || y_off) {
                     xTriangle *tri = (xTriangle *) (stuff + 1);
@@ -3019,8 +3019,8 @@ PanoramiXRenderTriStrip(ClientPtr client)
             if (j)
                 memcpy(stuff + 1, extra, extra_len);
             if (dst->u.pict.root) {
-                int x_off = context->screenInfo.screens[j]->x;
-                int y_off = context->screenInfo.screens[j]->y;
+                int x_off = client->context->screenInfo.screens[j]->x;
+                int y_off = client->context->screenInfo.screens[j]->y;
 
                 if (x_off || y_off) {
                     xPointFixed *fixed = (xPointFixed *) (stuff + 1);
@@ -3072,8 +3072,8 @@ PanoramiXRenderTriFan(ClientPtr client)
             if (j)
                 memcpy(stuff + 1, extra, extra_len);
             if (dst->u.pict.root) {
-                int x_off = context->screenInfo.screens[j]->x;
-                int y_off = context->screenInfo.screens[j]->y;
+                int x_off = client->context->screenInfo.screens[j]->x;
+                int y_off = client->context->screenInfo.screens[j]->y;
 
                 if (x_off || y_off) {
                     xPointFixed *fixed = (xPointFixed *) (stuff + 1);
@@ -3125,8 +3125,8 @@ PanoramiXRenderAddTraps(ClientPtr client)
             stuff->picture = picture->info[j].id;
 
             if (picture->u.pict.root) {
-                stuff->xOff = x_off + context->screenInfo.screens[j]->x;
-                stuff->yOff = y_off + context->screenInfo.screens[j]->y;
+                stuff->xOff = x_off + client->context->screenInfo.screens[j]->x;
+                stuff->yOff = y_off + client->context->screenInfo.screens[j]->y;
             }
             result = (*PanoramiXSaveRenderVector[X_RenderAddTraps]) (client);
             if (result != Success)
@@ -3162,7 +3162,7 @@ PanoramiXRenderCreateSolidFill(ClientPtr client)
     }
 
     if (result == Success)
-        AddResource(newPict->info[0].id, XRT_PICTURE, newPict);
+        AddResource(newPict->info[0].id, XRT_PICTURE, newPict, client->context);
     else
         free(newPict);
 
@@ -3194,7 +3194,7 @@ PanoramiXRenderCreateLinearGradient(ClientPtr client)
     }
 
     if (result == Success)
-        AddResource(newPict->info[0].id, XRT_PICTURE, newPict);
+        AddResource(newPict->info[0].id, XRT_PICTURE, newPict, client->context);
     else
         free(newPict);
 
@@ -3226,7 +3226,7 @@ PanoramiXRenderCreateRadialGradient(ClientPtr client)
     }
 
     if (result == Success)
-        AddResource(newPict->info[0].id, XRT_PICTURE, newPict);
+        AddResource(newPict->info[0].id, XRT_PICTURE, newPict, client->context);
     else
         free(newPict);
 
@@ -3259,7 +3259,7 @@ PanoramiXRenderCreateConicalGradient(ClientPtr client)
     }
 
     if (result == Success)
-        AddResource(newPict->info[0].id, XRT_PICTURE, newPict);
+        AddResource(newPict->info[0].id, XRT_PICTURE, newPict, client->context);
     else
         free(newPict);
 

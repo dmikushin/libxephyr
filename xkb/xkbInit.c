@@ -143,7 +143,7 @@ XkbFreeRMLVOSet(XkbRMLVOSet * rmlvo, Bool freeRMLVO)
 }
 
 static Bool
-XkbWriteRulesProp(void)
+XkbWriteRulesProp(XephyrContext* context)
 {
     int len, out;
     Atom name;
@@ -223,7 +223,7 @@ XkbInitRules(XkbRMLVOSet *rmlvo,
 }
 
 static void
-XkbSetRulesUsed(XkbRMLVOSet * rmlvo)
+XkbSetRulesUsed(XkbRMLVOSet * rmlvo, XephyrContext* context)
 {
     free(XkbRulesUsed);
     XkbRulesUsed = (rmlvo->rules ? Xstrdup(rmlvo->rules) : NULL);
@@ -236,7 +236,7 @@ XkbSetRulesUsed(XkbRMLVOSet * rmlvo)
     free(XkbOptionsUsed);
     XkbOptionsUsed = (rmlvo->options ? Xstrdup(rmlvo->options) : NULL);
     if (XkbWantRulesProp)
-        XkbWriteRulesProp();
+        XkbWriteRulesProp(context);
     return;
 }
 
@@ -628,7 +628,7 @@ InitKeyboardDeviceStructInternal(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
     dev->kbdfeed->BellProc = bell_func;
     dev->kbdfeed->CtrlProc = XkbDDXKeybdCtrlProc;
 
-    dev->kbdfeed->ctrl = context->defaultKeyboardControl;
+    dev->kbdfeed->ctrl = dev->context->defaultKeyboardControl;
     if (dev->kbdfeed->ctrl.autoRepeat)
         xkb->ctrls->enabled_ctrls |= XkbRepeatKeysMask;
 
@@ -645,7 +645,7 @@ InitKeyboardDeviceStructInternal(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
 
     if (rmlvo) {
         XkbSetRulesDflts(rmlvo);
-        XkbSetRulesUsed(rmlvo);
+        XkbSetRulesUsed(rmlvo, dev->context);
     }
     XkbFreeRMLVOSet(&rmlvo_dflts, FALSE);
 

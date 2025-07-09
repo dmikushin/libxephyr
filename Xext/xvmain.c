@@ -725,7 +725,7 @@ XvdiGrabPort(ClientPtr client, XvPortPtr pPort, Time ctime, int *p_result)
         return Success;
     }
 
-    id = FakeClientID(client->index);
+    id = FakeClientID(client->index, client->context);
 
     if (!AddResource(id, XvRTGrab, &pPort->grab)) {
         return BadAlloc;
@@ -843,7 +843,7 @@ XvdiSelectVideoNotify(ClientPtr client, DrawablePtr pDraw, BOOL onoff)
     /* ADD RESOURCE SO THAT IF CLIENT EXITS THE CLIENT PTR WILL BE CLEARED */
 
     tpn->client = NULL;
-    tpn->id = FakeClientID(client->index);
+    tpn->id = FakeClientID(client->index, client->context);
     if (!AddResource(tpn->id, XvRTVideoNotify, tpn))
         return BadAlloc;
 
@@ -893,7 +893,7 @@ XvdiSelectPortNotify(ClientPtr client, XvPortPtr pPort, BOOL onoff)
     }
 
     tpn->client = client;
-    tpn->id = FakeClientID(client->index);
+    tpn->id = FakeClientID(client->index, client->context);
     if (!AddResource(tpn->id, XvRTPortNotify, tpn))
         return BadAlloc;
 

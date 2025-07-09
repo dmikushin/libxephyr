@@ -263,7 +263,7 @@ present_flip_idle(ScreenPtr screen)
                             screen_priv->flip_serial, screen_priv->flip_idle_fence);
         if (screen_priv->flip_idle_fence)
             present_fence_destroy(screen_priv->flip_idle_fence);
-        dixDestroyPixmap(screen_priv->flip_pixmap, screen_priv->flip_pixmap->drawable.id);
+        dixDestroyPixmap(screen_priv->flip_pixmap, screen_priv->flip_pixmap->drawable.id, screen_priv->flip_pixmap->drawable.pScreen->context);
         screen_priv->flip_crtc = NULL;
         screen_priv->flip_window = NULL;
         screen_priv->flip_serial = 0;

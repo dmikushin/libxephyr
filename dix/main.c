@@ -119,7 +119,7 @@ Equipment Corporation.
 #include "dpmsproc.h"
 #endif
 
-extern void Dispatch(void);
+extern void Dispatch(XephyrContext* context);
 
 CallbackListPtr RootWindowFinalizeCallback = NULL;
 
@@ -188,22 +188,22 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             FatalError("couldn't init server resources");
 
         SetInputCheck(&alwaysCheckForInput[0], &alwaysCheckForInput[1]);
-        screenInfo.screens[0]->context->screenInfo.numScreens = 0;
+        context->screenInfo.numScreens = 0;
 
         InitAtoms();
-        InitEvents();
+        InitEvents(context);
         xfont2_init_glyph_caching();
         dixResetRegistry();
         InitFonts();
         InitCallbackManager();
-        InitOutput(&screenInfo.screens[0]->context->screenInfo, argc, argv);
+        InitOutput(&context->screenInfo, argc, argv);
 
-        if (screenInfo.screens[0]->context->screenInfo.numScreens < 1)
+        if (context->screenInfo.numScreens < 1)
             FatalError("no screens found");
         InitExtensions(argc, argv);
 
-        for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numGPUScreens; i++) {
-            ScreenPtr pScreen = screenInfo.screens[0]->context->screenInfo.gpuscreens[i];
+        for (i = 0; i < context->screenInfo.numGPUScreens; i++) {
+            ScreenPtr pScreen = context->screenInfo.gpuscreens[i];
             if (!CreateScratchPixmapsForScreen(pScreen))
                 FatalError("failed to create scratch pixmaps");
             if (pScreen->CreateScreenResources &&
@@ -211,17 +211,17 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
                 FatalError("failed to create screen resources");
         }
 
-        for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++) {
-            ScreenPtr pScreen = screenInfo.screens[0]->context->screenInfo.screens[i];
+        for (i = 0; i < context->screenInfo.numScreens; i++) {
+            ScreenPtr pScreen = context->screenInfo.screens[i];
 
             if (!CreateScratchPixmapsForScreen(pScreen))
                 FatalError("failed to create scratch pixmaps");
             if (pScreen->CreateScreenResources &&
                 !(*pScreen->CreateScreenResources) (pScreen))
                 FatalError("failed to create screen resources");
-            if (!CreateGCperDepth(i))
+            if (!CreateGCperDepth(i, context))
                 FatalError("failed to create scratch GCs");
-            if (!CreateDefaultStipple(i))
+            if (!CreateDefaultStipple(i, context))
                 FatalError("failed to create default stipple");
             if (!CreateRootWindow(pScreen))
                 FatalError("failed to create root window");
@@ -232,7 +232,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             ErrorF("[dix] failed to set default font path '%s'",
                    context->defaultFontPath);
         }
-        if (!SetDefaultFont("fixed")) {
+        if (!SetDefaultFont("fixed", context)) {
             FatalError("could not open default font");
         }
 
@@ -269,7 +269,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         else
 #endif
         {
-            if (!CreateConnectionBlock()) {
+            if (!CreateConnectionBlock(context)) {
                 FatalError("could not create connection block info");
             }
         }
@@ -284,10 +284,10 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             xephyr_signal_ready();
         }
 
-        Dispatch();
+        Dispatch(context);
 
-        UndisplayDevices();
-        DisableAllDevices();
+        UndisplayDevices(context);
+        DisableAllDevices(context);
 
         /* Now free up whatever must be freed */
         if (screenIsSaved == SCREEN_SAVER_ON)
@@ -300,11 +300,11 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             Bool remember_it = noPanoramiXExtension;
 
             noPanoramiXExtension = TRUE;
-            FreeAllResources();
+            FreeAllResources(context);
             noPanoramiXExtension = remember_it;
         }
 #else
-        FreeAllResources();
+        FreeAllResources(context);
 #endif
 
         CloseInput();
@@ -325,18 +325,18 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             (*pScreen->CloseScreen) (pScreen);
             dixFreePrivates(pScreen->devPrivates, PRIVATE_SCREEN);
             free(pScreen);
-            screenInfo.screens[0]->context->screenInfo.numGPUScreens = i;
+            context->screenInfo.numGPUScreens = i;
         }
 
-        for (i = screenInfo.screens[0]->context->screenInfo.numScreens - 1; i >= 0; i--) {
-            FreeScratchPixmapsForScreen(screenInfo.screens[0]->context->screenInfo.screens[i]);
-            FreeGCperDepth(i);
-            FreeDefaultStipple(i);
-            dixFreeScreenSpecificPrivates(screenInfo.screens[0]->context->screenInfo.screens[i]);
-            (*screenInfo.screens[0]->context->screenInfo.screens[i]->CloseScreen) (screenInfo.screens[0]->context->screenInfo.screens[i]);
-            dixFreePrivates(screenInfo.screens[0]->context->screenInfo.screens[i]->devPrivates, PRIVATE_SCREEN);
-            free(screenInfo.screens[0]->context->screenInfo.screens[i]);
-            screenInfo.screens[0]->context->screenInfo.numScreens = i;
+        for (i = context->screenInfo.numScreens - 1; i >= 0; i--) {
+            FreeScratchPixmapsForScreen(context->screenInfo.screens[i]);
+            FreeGCperDepth(i, context);
+            FreeDefaultStipple(i, context);
+            dixFreeScreenSpecificPrivates(context->screenInfo.screens[i]);
+            (*context->screenInfo.screens[i]->CloseScreen) (context->screenInfo.screens[i]);
+            dixFreePrivates(context->screenInfo.screens[i]->devPrivates, PRIVATE_SCREEN);
+            free(context->screenInfo.screens[i]);
+            context->screenInfo.numScreens = i;
         }
 
         ReleaseClientIds(context->serverClient);

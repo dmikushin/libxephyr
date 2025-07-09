@@ -246,7 +246,7 @@ static char *saved_log_backup;
 static char *saved_log_tempname;
 
 const char *
-LogInit(const char *fname, const char *backup)
+LogInit(const char *fname, const char *backup, XephyrContext* context)
 {
     char *logFileName = NULL;
 
@@ -298,7 +298,7 @@ LogInit(const char *fname, const char *backup)
 }
 
 void
-LogSetDisplay(void)
+LogSetDisplay(XephyrContext* context)
 {
     if (saved_log_fname && strstr(saved_log_fname, "%s")) {
         char *logFileName;
@@ -597,7 +597,7 @@ pnprintf(char *string, int size, const char *f, ...)
  * When attempting to call non-signal-safe functions, guard them with a check
  * of the context->inSignalContext global variable. */
 static void
-LogSWrite(int verb, const char *buf, size_t len, Bool end_line)
+LogSWrite(int verb, const char *buf, size_t len, Bool end_line, XephyrContext* context)
 {
     static Bool newline = TRUE;
     int ret;
@@ -704,7 +704,7 @@ LogMessageTypeVerbString(MessageType type, int verb)
 }
 
 void
-LogVMessageVerb(MessageType type, int verb, const char *format, va_list args)
+LogVMessageVerb(MessageType type, int verb, const char *format, va_list args, XephyrContext* context)
 {
     const char *type_str;
     char buf[1024];
@@ -733,7 +733,7 @@ LogVMessageVerb(MessageType type, int verb, const char *format, va_list args)
         buf[len - 1] = '\n';
 
     newline = (buf[len - 1] == '\n');
-    LogSWrite(verb, buf, len, newline);
+    LogSWrite(verb, buf, len, newline, context);
 }
 
 /* Log message with verbosity level specified. */

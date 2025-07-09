@@ -240,7 +240,7 @@ ProcRRXineramaIsActive(ClientPtr client)
         .type = X_Reply,
         .length = 0,
         .sequenceNumber = client->sequence,
-        .state = RRXineramaScreenActive(context->screenInfo.screens[RR_XINERAMA_SCREEN])
+        .state = RRXineramaScreenActive(client->context->screenInfo.screens[RR_XINERAMA_SCREEN])
     };
     if (client->swapped) {
         swaps(&rep.sequenceNumber);
@@ -275,7 +275,7 @@ int
 ProcRRXineramaQueryScreens(ClientPtr client)
 {
     xXineramaQueryScreensReply rep;
-    ScreenPtr pScreen = context->screenInfo.screens[RR_XINERAMA_SCREEN];
+    ScreenPtr pScreen = client->context->screenInfo.screens[RR_XINERAMA_SCREEN];
     int m;
     RRMonitorPtr monitors = NULL;
     int nmonitors = 0;

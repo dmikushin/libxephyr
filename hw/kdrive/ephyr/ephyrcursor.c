@@ -248,7 +248,7 @@ Bool
 ephyrCursorInit(ScreenPtr screen)
 {
     if (!dixRegisterPrivateKey(&ephyrCursorPrivateKey, PRIVATE_CURSOR_BITS,
-                               sizeof(ephyrCursorRec)))
+                               sizeof(ephyrCursorRec), screen->context))
         return FALSE;
 
     miPointerInitialize(screen,

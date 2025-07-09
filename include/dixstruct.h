@@ -25,7 +25,7 @@ SOFTWARE.
 #ifndef DIXSTRUCT_H
 #define DIXSTRUCT_H
 
-struct XephyrContext;
+typedef struct _XephyrContext XephyrContext;
 
 #include "client.h"
 #include "dix.h"
@@ -114,7 +114,7 @@ typedef struct _Client {
     DeviceIntPtr clientPtr;
     ClientIdPtr clientIds;
     int req_fds;
-    struct XephyrContext *context;
+    XephyrContext *context;
 } ClientRec;
 
 static inline void
@@ -202,7 +202,7 @@ CompareTimeStamps(TimeStamp /*a */ ,
                   TimeStamp /*b */ );
 
 extern _X_EXPORT TimeStamp
-ClientTimeToServerTime(CARD32 /*c */ );
+ClientTimeToServerTime(CARD32 /*c */, XephyrContext* context);
 
 typedef struct _CallbackRec {
     CallbackProcPtr proc;

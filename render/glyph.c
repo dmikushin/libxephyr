@@ -98,7 +98,7 @@ GlyphUninit(ScreenPtr pScreen)
             glyph = globalGlyphs[fdepth].table[i].glyph;
             if (glyph && glyph != DeletedGlyph) {
                 if (GetGlyphPicture(glyph, pScreen)) {
-                    FreePicture((void *) GetGlyphPicture(glyph, pScreen), 0);
+                    FreePicture((void *) GetGlyphPicture(glyph, pScreen), 0, pScreen->context);
                     SetGlyphPicture(glyph, pScreen, NULL);
                 }
                 (*ps->UnrealizeGlyph) (pScreen, glyph);
@@ -233,12 +233,13 @@ FreeGlyphPicture(GlyphPtr glyph)
 {
     PictureScreenPtr ps;
     int i;
+    
 
     for (i = 0; i < context->screenInfo.numScreens; i++) {
         ScreenPtr pScreen = context->screenInfo.screens[i];
 
         if (GetGlyphPicture(glyph, pScreen))
-            FreePicture((void *) GetGlyphPicture(glyph, pScreen), 0);
+            FreePicture((void *) GetGlyphPicture(glyph, pScreen), 0, pScreen->context);
 
         ps = GetPictureScreenIfSet(pScreen);
         if (ps)
@@ -342,13 +343,14 @@ FindGlyph(GlyphSetPtr glyphSet, Glyph id)
 }
 
 GlyphPtr
-AllocateGlyph(xGlyphInfo * gi, int fdepth)
+AllocateGlyph(xGlyphInfo * gi, int fdepth, XephyrContext* context)
 {
     PictureScreenPtr ps;
     int size;
     GlyphPtr glyph;
     int i;
     int head_size;
+    
 
     head_size = sizeof(GlyphRec) + context->screenInfo.numScreens * sizeof(PicturePtr);
     size = (head_size + dixPrivatesSize(PRIVATE_GLYPH));
@@ -468,7 +470,7 @@ AllocateGlyphSet(int fdepth, PictFormatPtr format)
 }
 
 int
-FreeGlyphSet(void *value, XID gid)
+FreeGlyphSet(void *value, XID gid, XephyrContext* context)
 {
     GlyphSetPtr glyphSet = (GlyphSetPtr) value;
 
@@ -610,7 +612,7 @@ miGlyphs(CARD8 op,
         component_alpha = NeedsComponent(maskFormat->format);
         pMask = CreatePicture(0, &pMaskPixmap->drawable,
                               maskFormat, CPComponentAlpha, &component_alpha,
-                              context->serverClient, &error);
+                              pScreen->context->serverClient, &error);
         if (!pMask) {
             (*pScreen->DestroyPixmap) (pMaskPixmap);
             return;
@@ -679,7 +681,7 @@ miGlyphs(CARD8 op,
                          pDst,
                          xSrc + x - xDst,
                          ySrc + y - yDst, 0, 0, x, y, width, height);
-        FreePicture((void *) pMask, (XID) 0);
+        FreePicture((void *) pMask, (XID) 0, pScreen->context);
         (*pScreen->DestroyPixmap) (pMaskPixmap);
     }
 }

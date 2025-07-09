@@ -260,7 +260,7 @@ static Bool nolock = FALSE;
  *      the lock file containing the PID.
  */
 void
-LockServer(void)
+LockServer(XephyrContext* context)
 {
     char tmp[PATH_MAX], pid_str[12];
     int lfd, i, haslock, l_pid, t;
@@ -663,7 +663,7 @@ static const char *defaultNoListenList[] = {
  * argc or any of the strings pointed to by argv.
  */
 void
-ProcessCommandLine(int argc, char *argv[])
+ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
 {
     int i, skip;
 

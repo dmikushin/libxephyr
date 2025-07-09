@@ -83,15 +83,15 @@ do_butmap_change(DeviceIntPtr dev, CARD8 *map, int len, ClientPtr client)
     core_mn.u.mappingNotify.request = MappingPointer;
 
     /* 0 is the server client. */
-    for (i = 1; i < context->currentMaxClients; i++) {
+    for (i = 1; i < dev->context->currentMaxClients; i++) {
         /* Don't send irrelevant events to naïve context->clients. */
-        if (!context->clients[i] || context->clients[i]->clientState != ClientStateRunning)
+        if (!dev->context->clients[i] || dev->context->clients[i]->clientState != ClientStateRunning)
             continue;
 
-        if (!XIShouldNotify(context->clients[i], dev))
+        if (!XIShouldNotify(dev->context->clients[i], dev))
             continue;
 
-        WriteEventsToClient(context->clients[i], 1, &core_mn);
+        WriteEventsToClient(dev->context->clients[i], 1, &core_mn);
     }
 
     xi_mn = (deviceMappingNotify) {
@@ -218,7 +218,7 @@ check_modmap_change_slave(ClientPtr client, DeviceIntPtr master,
 static void
 do_modmap_change(ClientPtr client, DeviceIntPtr dev, CARD8 *modmap)
 {
-    XkbApplyMappingChange(dev, NULL, 0, 0, modmap, context->serverClient);
+    XkbApplyMappingChange(dev, NULL, 0, 0, modmap, dev->context->serverClient);
 }
 
 /* Rebuild modmap (key -> mod) from map (mod -> key). */
@@ -268,7 +268,7 @@ change_modmap(ClientPtr client, DeviceIntPtr dev, KeyCode *modkeymap,
 
     /* Change any attached masters/slaves. */
     if (IsMaster(dev)) {
-        for (tmp = inputInfo.devices; tmp; tmp = tmp->next) {
+        for (tmp = dev->context->inputInfo.devices; tmp; tmp = tmp->next) {
             if (!IsMaster(tmp) && GetMaster(tmp, MASTER_KEYBOARD) == dev)
                 if (check_modmap_change_slave(client, dev, tmp, modmap))
                     do_modmap_change(client, tmp, modmap);
@@ -856,17 +856,17 @@ point_on_screen(ScreenPtr pScreen, int x, int y)
 }
 
 /**
- * Update desktop dimensions on the screenInfo.screens[0]->context->screenInfo struct.
+ * Update desktop dimensions on the xephyr_context->screenInfo struct.
  */
 void
-update_desktop_dimensions(void)
+update_desktop_dimensions(XephyrContext* context)
 {
     int i;
     int x1 = INT_MAX, y1 = INT_MAX;     /* top-left */
     int x2 = INT_MIN, y2 = INT_MIN;     /* bottom-right */
 
-    for (i = 0; i < screenInfo.screens[0]->context->screenInfo.numScreens; i++) {
-        ScreenPtr screen = screenInfo.screens[0]->context->screenInfo.screens[i];
+    for (i = 0; i < context->screenInfo.numScreens; i++) {
+        ScreenPtr screen = context->screenInfo.screens[i];
 
         x1 = min(x1, screen->x);
         y1 = min(y1, screen->y);
@@ -874,10 +874,10 @@ update_desktop_dimensions(void)
         y2 = max(y2, screen->y + screen->height);
     }
 
-    screenInfo.screens[0]->context->screenInfo.x = x1;
-    screenInfo.screens[0]->context->screenInfo.y = y1;
-    screenInfo.screens[0]->context->screenInfo.width = x2 - x1;
-    screenInfo.screens[0]->context->screenInfo.height = y2 - y1;
+    context->screenInfo.x = x1;
+    context->screenInfo.y = y1;
+    context->screenInfo.width = x2 - x1;
+    context->screenInfo.height = y2 - y1;
 }
 
 /*
@@ -1155,11 +1155,11 @@ xi2mask_isset(XI2Mask *mask, const DeviceIntPtr dev, int event_type)
 {
     int set = 0;
 
-    if (xi2mask_isset_for_device(mask, inputInfo.all_devices, event_type))
+    if (xi2mask_isset_for_device(mask, dev->context->inputInfo.all_devices, event_type))
         set = 1;
     else if (xi2mask_isset_for_device(mask, dev, event_type))
         set = 1;
-    else if (IsMaster(dev) && xi2mask_isset_for_device(mask, inputInfo.all_master_devices, event_type))
+    else if (IsMaster(dev) && xi2mask_isset_for_device(mask, dev->context->inputInfo.all_master_devices, event_type))
         set = 1;
 
     return set;

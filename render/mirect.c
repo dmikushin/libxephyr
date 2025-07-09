@@ -118,7 +118,7 @@ miCompositeRects(CARD8 op,
                 rects++;
             }
 
-            FreePicture((void *) pSrc, 0);
+            FreePicture((void *) pSrc, 0, pDst->pDrawable->pScreen->context);
         }
     }
 }

@@ -1,2 +1,2 @@
-extern void XineramifyXv(void);
+extern void XineramifyXv(XephyrContext* context);
 extern void XvResetProcVector(void);

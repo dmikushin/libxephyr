@@ -670,7 +670,7 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
                 to->touch->touches = calloc(to->touch->num_touches,
                                             sizeof(TouchPointInfoRec));
                 for (i = 0; i < to->touch->num_touches; i++)
-                    TouchInitTouchPoint(to->touch, to->valuator, i);
+                    TouchInitTouchPoint(to->touch, to->valuator, i, to->context);
                 if (!to->touch)
                     FatalError("[Xi] no memory for class shift.\n");
             }
@@ -1804,7 +1804,7 @@ ProcessGestureEvent(InternalEvent *ev, DeviceIntPtr dev)
         FreezeThisEventIfNeededForSyncGrab(dev, ev);
 
     if (IsGestureEndEvent(ev))
-        GestureEndGesture(gi);
+        GestureEndGesture(gi, dev->context);
 
     if (deactivateGestureGrab)
         (*dev->deviceGrab.DeactivateGrab) (dev);
@@ -2738,7 +2738,7 @@ AddExtensionClient(WindowPtr pWin, ClientPtr client, Mask mask, int mskidx)
     if (!others->xi2mask)
         goto bail;
     others->mask[mskidx] = mask;
-    others->resource = FakeClientID(client->index);
+    others->resource = FakeClientID(client->index, client->context);
     others->next = pWin->optional->inputMasks->inputClients;
     pWin->optional->inputMasks->inputClients = others;
     if (!AddResource(others->resource, RT_INPUTCLIENT, (void *) pWin))
@@ -2847,7 +2847,7 @@ InputClientGone(WindowPtr pWin, XID id)
                     FreeInputClient(&other);
                 }
                 else {
-                    other->resource = FakeClientID(0);
+                    other->resource = FakeClientID(0, pWin->drawable.pScreen->context);
                     if (!AddResource(other->resource, RT_INPUTCLIENT,
                                      (void *) pWin))
                         return BadAlloc;

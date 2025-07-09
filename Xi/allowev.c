@@ -99,7 +99,7 @@ ProcXAllowDeviceEvents(ClientPtr client)
     rc = dixLookupDevice(&thisdev, stuff->deviceid, client, DixGetAttrAccess);
     if (rc != Success)
         return rc;
-    time = ClientTimeToServerTime(stuff->time);
+    time = ClientTimeToServerTime(stuff->time, client->context);
 
     switch (stuff->mode) {
     case ReplayThisDevice:

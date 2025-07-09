@@ -125,13 +125,14 @@ extern SyncCounter* SyncCreateSystemCounter(const char *name,
                                             int64_t resolution,
                                             SyncCounterType counterType,
                                             SyncSystemCounterQueryValue QueryValue,
-                                            SyncSystemCounterBracketValues BracketValues
+                                            SyncSystemCounterBracketValues BracketValues,
+                                            XephyrContext* context
     );
 
 extern void SyncChangeCounter(SyncCounter *pCounter,
                               int64_t new_value);
 
-extern void SyncDestroySystemCounter(void *pCounter);
+extern void SyncDestroySystemCounter(void *pCounter, XephyrContext* context);
 
 extern SyncCounter *SyncInitDeviceIdleTime(DeviceIntPtr dev);
 extern void SyncRemoveDeviceIdleTime(SyncCounter *counter);

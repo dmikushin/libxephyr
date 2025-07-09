@@ -138,10 +138,10 @@ XFixesShouldDisconnectClient(ClientPtr client)
 }
 
 Bool
-XFixesClientDisconnectInit(void)
+XFixesClientDisconnectInit(XephyrContext* context)
 {
     if (!dixRegisterPrivateKey(&ClientDisconnectPrivateKeyRec,
-                               PRIVATE_CLIENT, sizeof(ClientDisconnectRec)))
+                               PRIVATE_CLIENT, sizeof(ClientDisconnectRec), context))
         return FALSE;
 
     return TRUE;

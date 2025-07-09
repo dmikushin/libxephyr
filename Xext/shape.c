@@ -52,10 +52,12 @@ typedef RegionPtr (*CreateDftPtr) (WindowPtr    /* pWin */
     );
 
 static int ShapeFreeClient(void * /* data */ ,
-                           XID    /* id */
+                           XID    /* id */,
+                           XephyrContext* /* context */
     );
 static int ShapeFreeEvents(void * /* data */ ,
-                           XID    /* id */
+                           XID    /* id */,
+                           XephyrContext* /* context */
     );
 static void SShapeNotifyEvent(xShapeNotifyEvent * /* from */ ,
                               xShapeNotifyEvent *       /* to */
@@ -243,7 +245,7 @@ ProcShapeRectangles(ClientPtr client)
     CreateDftPtr createDefault;
 
     REQUEST_AT_LEAST_SIZE(xShapeRectanglesReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     rc = dixLookupWindow(&pWin, stuff->dest, client, DixSetAttrAccess);
     if (rc != Success)
         return rc;
@@ -340,7 +342,7 @@ ProcShapeMask(ClientPtr client)
     int rc;
 
     REQUEST_SIZE_MATCH(xShapeMaskReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     rc = dixLookupWindow(&pWin, stuff->dest, client, DixSetAttrAccess);
     if (rc != Success)
         return rc;
@@ -449,7 +451,7 @@ ProcShapeCombine(ClientPtr client)
     int rc;
 
     REQUEST_SIZE_MATCH(xShapeCombineReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     rc = dixLookupWindow(&pDestWin, stuff->dest, client, DixSetAttrAccess);
     if (rc != Success)
         return rc;
@@ -568,7 +570,7 @@ ProcShapeOffset(ClientPtr client)
     int rc;
 
     REQUEST_SIZE_MATCH(xShapeOffsetReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     rc = dixLookupWindow(&pWin, stuff->dest, client, DixSetAttrAccess);
     if (rc != Success)
         return rc;
@@ -687,7 +689,7 @@ ProcShapeQueryExtents(ClientPtr client)
 }
 
  /*ARGSUSED*/ static int
-ShapeFreeClient(void *data, XID id)
+ShapeFreeClient(void *data, XID id, XephyrContext* context)
 {
     ShapeEventPtr pShapeEvent;
     WindowPtr pWin;
@@ -714,14 +716,14 @@ ShapeFreeClient(void *data, XID id)
 }
 
  /*ARGSUSED*/ static int
-ShapeFreeEvents(void *data, XID id)
+ShapeFreeEvents(void *data, XID id, XephyrContext* context)
 {
     ShapeEventPtr *pHead, pCur, pNext;
 
     pHead = (ShapeEventPtr *) data;
     for (pCur = *pHead; pCur; pCur = pNext) {
         pNext = pCur->next;
-        FreeResource(pCur->clientResource, ClientType);
+        FreeResource(pCur->clientResource, ClientType, context);
         free((void *) pCur);
     }
     free((void *) pHead);
@@ -769,9 +771,9 @@ ProcShapeSelectInput(ClientPtr client)
          * add a resource that will be deleted when
          * the client goes away
          */
-        clientResource = FakeClientID(client->index);
+        clientResource = FakeClientID(client->index, client->context);
         pNewShapeEvent->clientResource = clientResource;
-        if (!AddResource(clientResource, ClientType, (void *) pNewShapeEvent))
+        if (!AddResource(clientResource, ClientType, (void *) pNewShapeEvent, client->context))
             return BadAlloc;
         /*
          * create a resource to contain a void *to the list
@@ -783,8 +785,8 @@ ProcShapeSelectInput(ClientPtr client)
             pHead = malloc(sizeof(ShapeEventPtr));
             if (!pHead ||
                 !AddResource(pWin->drawable.id, ShapeEventType,
-                             (void *) pHead)) {
-                FreeResource(clientResource, RT_NONE);
+                             (void *) pHead, client->context)) {
+                FreeResource(clientResource, RT_NONE, client->context);
                 return BadAlloc;
             }
             *pHead = 0;
@@ -803,7 +805,7 @@ ProcShapeSelectInput(ClientPtr client)
                 pNewShapeEvent = pShapeEvent;
             }
             if (pShapeEvent) {
-                FreeResource(pShapeEvent->clientResource, ClientType);
+                FreeResource(pShapeEvent->clientResource, ClientType, client->context);
                 if (pNewShapeEvent)
                     pNewShapeEvent->next = pShapeEvent->next;
                 else
@@ -833,7 +835,7 @@ SendShapeNotify(WindowPtr pWin, int which)
     int rc;
 
     rc = dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                                 ShapeEventType, context->serverClient, DixReadAccess);
+                                 ShapeEventType, pWin->drawable.pScreen->context->serverClient, DixReadAccess);
     if (rc != Success)
         return;
     switch (which) {
@@ -882,7 +884,7 @@ SendShapeNotify(WindowPtr pWin, int which)
     default:
         return;
     }
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(pWin->drawable.pScreen->context);
     for (pShapeEvent = *pHead; pShapeEvent; pShapeEvent = pShapeEvent->next) {
         xShapeNotifyEvent se = {
             .type = ShapeNotify + ShapeEventBase,
@@ -892,7 +894,7 @@ SendShapeNotify(WindowPtr pWin, int which)
             .y = extents.y1,
             .width = extents.x2 - extents.x1,
             .height = extents.y2 - extents.y1,
-            .time = context->currentTime.milliseconds,
+            .time = pWin->drawable.pScreen->context->currentTime.milliseconds,
             .shaped = shaped
         };
         WriteEventsToClient(pShapeEvent->client, 1, (xEvent *) &se);

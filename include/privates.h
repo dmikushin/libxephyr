@@ -100,7 +100,7 @@ typedef struct _DevScreenPrivateKeyRec {
  * during its operation.
  */
 extern _X_EXPORT Bool
- dixRegisterPrivateKey(DevPrivateKey key, DevPrivateType type, unsigned size);
+ dixRegisterPrivateKey(DevPrivateKey key, DevPrivateType type, unsigned size, XephyrContext* context);
 
 /*
  * Check whether a private key has been registered

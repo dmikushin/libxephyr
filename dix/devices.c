@@ -281,7 +281,7 @@ AddInputDevice(ClientPtr client, DeviceProc deviceProc, Bool autoStart, XephyrCo
     dev->startup = autoStart;
 
     /* device grab defaults */
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(context);
     dev->deviceGrab.grabTime = dev->context->currentTime;
     dev->deviceGrab.ActivateGrab = ActivateKeyboardGrab;
     dev->deviceGrab.DeactivateGrab = DeactivateKeyboardGrab;
@@ -339,7 +339,7 @@ SendDevicePresenceEvent(int deviceid, int type, XephyrContext* context)
     DeviceIntRec dummyDev = { .id = XIAllDevices, .context = context };
     devicePresenceNotify ev;
 
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(context);
     ev.type = DevicePresenceNotify;
     ev.time = context->currentTime.milliseconds;
     ev.devchange = type;
@@ -652,7 +652,7 @@ CorePointerProc(DeviceIntPtr pDev, int what)
     int i = 0;
     Atom btn_labels[NBUTTONS] = { 0 };
     Atom axes_labels[NAXES] = { 0 };
-    ScreenPtr scr = screenInfo.screens[0]->context->screenInfo.screens[0];
+    ScreenPtr scr = pDev->context->screenInfo.screens[0];
 
     switch (what) {
     case DEVICE_INIT:
@@ -737,7 +737,7 @@ InitCoreDevices(XephyrContext* context)
          FatalError("Failed to enable virtual core keyboard.");
     }
 
-    InitXTestDevices();
+    InitXTestDevices(context);
 }
 
 /**
@@ -962,7 +962,7 @@ FreeAllDeviceClasses(ClassesPtr classes)
 static void
 CloseDevice(DeviceIntPtr dev)
 {
-    ScreenPtr screen = screenInfo.screens[0]->context->screenInfo.screens[0];
+    ScreenPtr screen = dev->context->screenInfo.screens[0];
     ClassesPtr classes;
     int j;
 
@@ -998,8 +998,8 @@ CloseDevice(DeviceIntPtr dev)
     }
 
     /* a client may have the device set as client pointer */
-    if (screenInfo.numScreens > 0) {
-        XephyrContext* context = screenInfo.screens[0]->context;
+    if (dev->context->screenInfo.numScreens > 0) {
+        XephyrContext* context = dev->context;
         for (j = 0; j < context->currentMaxClients; j++) {
             if (context->clients[j] && context->clients[j]->clientPtr == dev) {
                 context->clients[j]->clientPtr = NULL;
@@ -1009,7 +1009,7 @@ CloseDevice(DeviceIntPtr dev)
     }
 
     if (dev->deviceGrab.grab)
-        FreeGrab(dev->deviceGrab.grab);
+        FreeGrab(dev->deviceGrab.grab, dev->context);
     free(dev->deviceGrab.sync.event);
     free(dev->config_info);     /* Allocated in xf86ActivateDevice. */
     free(dev->last.scroll);
@@ -1094,7 +1094,7 @@ CloseDownDevices(XephyrContext* context)
  * This function is called from a signal handler.
  */
 void
-AbortDevices(void)
+AbortDevices(XephyrContext* context)
 {
     DeviceIntPtr dev;
 
@@ -1102,12 +1102,12 @@ AbortDevices(void)
      * state the input thread might be in, and that could
      * cause a dead-lock.
      */
-    nt_list_for_each_entry(dev, inputInfo.devices, next) {
+    nt_list_for_each_entry(dev, context->inputInfo.devices, next) {
         if (!IsMaster(dev))
             (*dev->deviceProc) (dev, DEVICE_ABORT);
     }
 
-    nt_list_for_each_entry(dev, inputInfo.off_devices, next) {
+    nt_list_for_each_entry(dev, context->inputInfo.off_devices, next) {
         if (!IsMaster(dev))
             (*dev->deviceProc) (dev, DEVICE_ABORT);
     }
@@ -1118,12 +1118,12 @@ AbortDevices(void)
  * resources are freed or any device is deleted.
  */
 void
-UndisplayDevices(void)
+UndisplayDevices(XephyrContext* context)
 {
     DeviceIntPtr dev;
-    ScreenPtr screen = screenInfo.screens[0]->context->screenInfo.screens[0];
+    ScreenPtr screen = context->screenInfo.screens[0];
 
-    for (dev = inputInfo.devices; dev; dev = dev->next)
+    for (dev = context->inputInfo.devices; dev; dev = dev->next)
         screen->DisplayCursor(dev, screen, NullCursor);
 }
 
@@ -1169,12 +1169,12 @@ RemoveDevice(DeviceIntPtr dev, BOOL sendevent)
     input_lock();
 
     prev = NULL;
-    for (tmp = inputInfo.devices; tmp; (prev = tmp), (tmp = next)) {
+    for (tmp = dev->context->inputInfo.devices; tmp; (prev = tmp), (tmp = next)) {
         next = tmp->next;
         if (tmp == dev) {
 
             if (prev == NULL)
-                inputInfo.devices = next;
+                dev->context->inputInfo.devices = next;
             else
                 prev->next = next;
 
@@ -1186,14 +1186,14 @@ RemoveDevice(DeviceIntPtr dev, BOOL sendevent)
     }
 
     prev = NULL;
-    for (tmp = inputInfo.off_devices; tmp; (prev = tmp), (tmp = next)) {
+    for (tmp = dev->context->inputInfo.off_devices; tmp; (prev = tmp), (tmp = next)) {
         next = tmp->next;
         if (tmp == dev) {
             flags[tmp->id] = IsMaster(tmp) ? XIMasterRemoved : XISlaveRemoved;
             CloseDevice(tmp);
 
             if (prev == NULL)
-                inputInfo.off_devices = next;
+                dev->context->inputInfo.off_devices = next;
             else
                 prev->next = next;
 
@@ -1442,10 +1442,10 @@ InitFocusClassDeviceStruct(DeviceIntPtr dev)
     focc = malloc(sizeof(FocusClassRec));
     if (!focc)
         return FALSE;
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(dev->context);
     focc->win = PointerRootWin;
     focc->revert = None;
-    focc->time = screenInfo.screens[0]->context->currentTime;
+    focc->time = dev->context->currentTime;
     focc->trace = (WindowPtr *) NULL;
     focc->traceSize = 0;
     focc->traceGood = 0;
@@ -1465,7 +1465,7 @@ InitPtrFeedbackClassDeviceStruct(DeviceIntPtr dev, PtrCtrlProcPtr controlProc)
     if (!feedc)
         return FALSE;
     feedc->CtrlProc = controlProc;
-    feedc->ctrl = screenInfo.screens[0]->context->defaultPointerControl;
+    feedc->ctrl = dev->context->defaultPointerControl;
     feedc->ctrl.id = 0;
     if ((feedc->next = dev->ptrfeed))
         feedc->ctrl.id = dev->ptrfeed->ctrl.id + 1;
@@ -1655,7 +1655,7 @@ InitTouchClassDeviceStruct(DeviceIntPtr device, unsigned int max_touches,
         goto err;
     touch->num_touches = max_touches;
     for (i = 0; i < max_touches; i++)
-        TouchInitTouchPoint(touch, device->valuator, i);
+        TouchInitTouchPoint(touch, device->valuator, i, device->context);
 
     touch->mode = mode;
     touch->sourceid = device->id;
@@ -1697,7 +1697,7 @@ InitGestureClassDeviceStruct(DeviceIntPtr device, unsigned int max_touches)
 
     g->sourceid = device->id;
     g->max_touches = max_touches;
-    GestureInitGestureInfo(&g->gesture);
+    GestureInitGestureInfo(&g->gesture, device->context);
 
     device->gesture = g;
 
@@ -1827,7 +1827,7 @@ ProcChangeKeyboardMapping(ClientPtr client)
     XkbApplyMappingChange(pDev, &keysyms, stuff->firstKeyCode,
                           stuff->keyCodes, NULL, client);
 
-    for (tmp = inputInfo.devices; tmp; tmp = tmp->next) {
+    for (tmp = client->context->inputInfo.devices; tmp; tmp = tmp->next) {
         if (IsMaster(tmp) || GetMaster(tmp, MASTER_KEYBOARD) != pDev)
             continue;
         if (!tmp->key)
@@ -2027,7 +2027,7 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             t = (INT8) *vlist;
             vlist++;
             if (t == -1) {
-                t = screenInfo.screens[0]->context->defaultKeyboardControl.click;
+                t = client->context->defaultKeyboardControl.click;
             }
             else if (t < 0 || t > 100) {
                 client->errorValue = t;
@@ -2039,7 +2039,7 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             t = (INT8) *vlist;
             vlist++;
             if (t == -1) {
-                t = screenInfo.screens[0]->context->defaultKeyboardControl.bell;
+                t = client->context->defaultKeyboardControl.bell;
             }
             else if (t < 0 || t > 100) {
                 client->errorValue = t;
@@ -2051,7 +2051,7 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             t = (INT16) *vlist;
             vlist++;
             if (t == -1) {
-                t = screenInfo.screens[0]->context->defaultKeyboardControl.bell_pitch;
+                t = client->context->defaultKeyboardControl.bell_pitch;
             }
             else if (t < 0) {
                 client->errorValue = t;
@@ -2063,7 +2063,7 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             t = (INT16) *vlist;
             vlist++;
             if (t == -1)
-                t = screenInfo.screens[0]->context->defaultKeyboardControl.bell_duration;
+                t = client->context->defaultKeyboardControl.bell_duration;
             else if (t < 0) {
                 client->errorValue = t;
                 return BadValue;
@@ -2138,11 +2138,11 @@ DoChangeKeyboardControl(ClientPtr client, DeviceIntPtr keybd, XID *vlist,
             }
             else if (t == AutoRepeatModeDefault) {
                 if (key == DO_ALL)
-                    ctrl.autoRepeat = screenInfo.screens[0]->context->defaultKeyboardControl.autoRepeat;
+                    ctrl.autoRepeat = client->context->defaultKeyboardControl.autoRepeat;
                 else
                     ctrl.autoRepeats[i] =
                         (ctrl.autoRepeats[i] & ~mask) |
-                        (screenInfo.screens[0]->context->defaultKeyboardControl.autoRepeats[i] & mask);
+                        (client->context->defaultKeyboardControl.autoRepeats[i] & mask);
             }
             else {
                 client->errorValue = t;
@@ -2189,7 +2189,7 @@ ProcChangeKeyboardControl(ClientPtr client)
 
     keyboard = PickKeyboard(client);
 
-    for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+    for (pDev = client->context->inputInfo.devices; pDev; pDev = pDev->next) {
         if ((pDev == keyboard ||
              (!IsMaster(pDev) && GetMaster(pDev, MASTER_KEYBOARD) == keyboard))
             && pDev->kbdfeed && pDev->kbdfeed->CtrlProc) {
@@ -2199,7 +2199,7 @@ ProcChangeKeyboardControl(ClientPtr client)
         }
     }
 
-    for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+    for (pDev = client->context->inputInfo.devices; pDev; pDev = pDev->next) {
         if ((pDev == keyboard ||
              (!IsMaster(pDev) && GetMaster(pDev, MASTER_KEYBOARD) == keyboard))
             && pDev->kbdfeed && pDev->kbdfeed->CtrlProc) {
@@ -2265,7 +2265,7 @@ ProcBell(ClientPtr client)
     else
         newpercent = base - newpercent + stuff->percent;
 
-    for (dev = current_context->inputInfo.devices; dev; dev = dev->next) {
+    for (dev = client->context->inputInfo.devices; dev; dev = dev->next) {
         if ((dev == keybd ||
              (!IsMaster(dev) && GetMaster(dev, MASTER_KEYBOARD) == keybd)) &&
             ((dev->kbdfeed && dev->kbdfeed->BellProc) || dev->xkb_interest)) {
@@ -2305,7 +2305,7 @@ ProcChangePointerControl(ClientPtr client)
     }
     if (stuff->doAccel) {
         if (stuff->accelNum == -1) {
-            ctrl.num = screenInfo.screens[0]->context->defaultPointerControl.num;
+            ctrl.num = client->context->defaultPointerControl.num;
         }
         else if (stuff->accelNum < 0) {
             client->errorValue = stuff->accelNum;
@@ -2316,7 +2316,7 @@ ProcChangePointerControl(ClientPtr client)
         }
 
         if (stuff->accelDenum == -1) {
-            ctrl.den = screenInfo.screens[0]->context->defaultPointerControl.den;
+            ctrl.den = client->context->defaultPointerControl.den;
         }
         else if (stuff->accelDenum <= 0) {
             client->errorValue = stuff->accelDenum;
@@ -2328,7 +2328,7 @@ ProcChangePointerControl(ClientPtr client)
     }
     if (stuff->doThresh) {
         if (stuff->threshold == -1) {
-            ctrl.threshold = screenInfo.screens[0]->context->defaultPointerControl.threshold;
+            ctrl.threshold = client->context->defaultPointerControl.threshold;
         }
         else if (stuff->threshold < 0) {
             client->errorValue = stuff->threshold;
@@ -2339,7 +2339,7 @@ ProcChangePointerControl(ClientPtr client)
         }
     }
 
-    for (dev = current_context->inputInfo.devices; dev; dev = dev->next) {
+    for (dev = client->context->inputInfo.devices; dev; dev = dev->next) {
         if ((dev == mouse ||
              (!IsMaster(dev) && GetMaster(dev, MASTER_POINTER) == mouse)) &&
             dev->ptrfeed) {
@@ -2349,7 +2349,7 @@ ProcChangePointerControl(ClientPtr client)
         }
     }
 
-    for (dev = current_context->inputInfo.devices; dev; dev = dev->next) {
+    for (dev = client->context->inputInfo.devices; dev; dev = dev->next) {
         if ((dev == mouse ||
              (!IsMaster(dev) && GetMaster(dev, MASTER_POINTER) == mouse)) &&
             dev->ptrfeed) {
@@ -2371,7 +2371,7 @@ ProcGetPointerControl(ClientPtr client)
     if (ptr->ptrfeed)
         ctrl = &ptr->ptrfeed->ctrl;
     else
-        ctrl = &screenInfo.screens[0]->context->defaultPointerControl;
+        ctrl = &client->context->defaultPointerControl;
 
     REQUEST_SIZE_MATCH(xReq);
 
@@ -2428,7 +2428,7 @@ ProcGetMotionEvents(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(client->context);
     if (mouse->valuator->motionHintWindow)
         MaybeStopHint(mouse, client);
     rep = (xGetMotionEventsReply) {
@@ -2436,13 +2436,13 @@ ProcGetMotionEvents(ClientPtr client)
         .sequenceNumber = client->sequence
     };
     nEvents = 0;
-    start = ClientTimeToServerTime(stuff->start);
-    stop = ClientTimeToServerTime(stuff->stop);
+    start = ClientTimeToServerTime(stuff->start, client->context);
+    stop = ClientTimeToServerTime(stuff->stop, client->context);
     if ((CompareTimeStamps(start, stop) != LATER) &&
-        (CompareTimeStamps(start, screenInfo.screens[0]->context->currentTime) != LATER) &&
+        (CompareTimeStamps(start, client->context->currentTime) != LATER) &&
         mouse->valuator->numMotionEvents) {
-        if (CompareTimeStamps(stop, screenInfo.screens[0]->context->currentTime) == LATER)
-            stop = screenInfo.screens[0]->context->currentTime;
+        if (CompareTimeStamps(stop, client->context->currentTime) == LATER)
+            stop = client->context->currentTime;
         count = GetMotionHistory(mouse, &coords, start.milliseconds,
                                  stop.milliseconds, pWin->drawable.pScreen,
                                  TRUE);
@@ -2522,7 +2522,7 @@ RecalculateMasterButtons(DeviceIntPtr slave)
     if (!master)
         return;
 
-    for (dev = current_context->inputInfo.devices; dev; dev = dev->next) {
+    for (dev = slave->context->inputInfo.devices; dev; dev = dev->next) {
         if (IsMaster(dev) ||
             GetMaster(dev, MASTER_ATTACHED) != master || !dev->button)
             continue;
@@ -2650,7 +2650,7 @@ AttachDevice(ClientPtr client, DeviceIntPtr dev, DeviceIntPtr master)
         if (dev->spriteInfo->sprite)
             currentRoot = GetCurrentRootWindow(dev);
         else                    /* new device auto-set to floating */
-            currentRoot = screenInfo.screens[0]->context->screenInfo.screens[0]->root;
+            currentRoot = dev->context->screenInfo.screens[0]->root;
 
         /* we need to init a fake sprite */
         screen = currentRoot->drawable.pScreen;
@@ -2757,9 +2757,9 @@ AllocDevicePair(ClientPtr client, const char *name,
 
     *ptr = *keybd = NULL;
 
-    XkbInitPrivates();
+    XkbInitPrivates(client->context);
 
-    pointer = AddInputDevice(client, ptr_proc, TRUE);
+    pointer = AddInputDevice(client, ptr_proc, TRUE, client->context);
 
     if (!pointer)
         return BadAlloc;
@@ -2783,7 +2783,7 @@ AllocDevicePair(ClientPtr client, const char *name,
     pointer->last.slave = NULL;
     pointer->type = (master) ? MASTER_POINTER : SLAVE;
 
-    keyboard = AddInputDevice(client, keybd_proc, TRUE);
+    keyboard = AddInputDevice(client, keybd_proc, TRUE, client->context);
     if (!keyboard) {
         RemoveDevice(pointer, FALSE);
 
@@ -2850,13 +2850,13 @@ valuator_set_mode(DeviceIntPtr dev, int axis, int mode)
 }
 
 void
-DeliverDeviceClassesChangedEvent(int sourceid, Time time)
+DeliverDeviceClassesChangedEvent(int sourceid, Time time, XephyrContext* context)
 {
     DeviceIntPtr dev;
     int num_events = 0;
     InternalEvent dcce;
 
-    dixLookupDevice(&dev, sourceid, screenInfo.screens[0]->context->serverClient, DixWriteAccess);
+    dixLookupDevice(&dev, sourceid, context->serverClient, DixWriteAccess);
 
     if (!dev)
         return;

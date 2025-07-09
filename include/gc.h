@@ -77,9 +77,7 @@ SOFTWARE.
 
 #define MAX_SERIAL_NUM     (1L<<28)
 
-#define NEXT_SERIAL_NUMBER ((screenInfo.numScreens > 0) ? \
-    ((++(screenInfo.screens[0]->context->globalSerialNumber)) > MAX_SERIAL_NUM ? \
-	    (screenInfo.screens[0]->context->globalSerialNumber  = 1): screenInfo.screens[0]->context->globalSerialNumber) : 1)
+extern _X_EXPORT unsigned long NextSerialNumber(XephyrContext* context);
 
 typedef struct _GCInterest *GCInterestPtr;
 typedef struct _GC *GCPtr;
@@ -115,15 +113,16 @@ extern _X_EXPORT int CopyGC(GCPtr /*pgcSrc */ ,
                             BITS32 /*mask */ );
 
 extern _X_EXPORT int FreeGC(void *pGC,
-                            XID gid);
+                            XID gid,
+                            XephyrContext* context);
 
-extern _X_EXPORT void FreeGCperDepth(int /*screenNum */ );
+extern _X_EXPORT void FreeGCperDepth(int /*screenNum */ , XephyrContext* /*context*/);
 
-extern _X_EXPORT Bool CreateGCperDepth(int /*screenNum */ );
+extern _X_EXPORT Bool CreateGCperDepth(int /*screenNum */ , XephyrContext* /*context*/);
 
-extern _X_EXPORT Bool CreateDefaultStipple(int /*screenNum */ );
+extern _X_EXPORT Bool CreateDefaultStipple(int /*screenNum */ , XephyrContext* /*context*/);
 
-extern _X_EXPORT void FreeDefaultStipple(int /*screenNum */ );
+extern _X_EXPORT void FreeDefaultStipple(int /*screenNum */ , XephyrContext* /*context*/);
 
 extern _X_EXPORT int SetDashes(GCPtr /*pGC */ ,
                                unsigned /*offset */ ,

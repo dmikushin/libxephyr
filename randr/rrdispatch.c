@@ -121,9 +121,9 @@ ProcRRSelectInput(ClientPtr client)
              * add a resource that will be deleted when
              * the client goes away
              */
-            clientResource = FakeClientID(client->index);
+            clientResource = FakeClientID(client->index, client->context);
             pRREvent->clientResource = clientResource;
-            if (!AddResource(clientResource, RRClientType, (void *) pRREvent))
+            if (!AddResource(clientResource, RRClientType, (void *) pRREvent, client->context))
                 return BadAlloc;
             /*
              * create a resource to contain a pointer to the list
@@ -135,8 +135,8 @@ ProcRRSelectInput(ClientPtr client)
                 pHead = (RREventPtr *) malloc(sizeof(RREventPtr));
                 if (!pHead ||
                     !AddResource(pWin->drawable.id, RREventType,
-                                 (void *) pHead)) {
-                    FreeResource(clientResource, RT_NONE);
+                                 (void *) pHead, client->context)) {
+                    FreeResource(clientResource, RT_NONE, client->context);
                     return BadAlloc;
                 }
                 *pHead = 0;
@@ -192,7 +192,7 @@ ProcRRSelectInput(ClientPtr client)
                 pNewRREvent = pRREvent;
             }
             if (pRREvent) {
-                FreeResource(pRREvent->clientResource, RRClientType);
+                FreeResource(pRREvent->clientResource, RRClientType, client->context);
                 if (pNewRREvent)
                     pNewRREvent->next = pRREvent->next;
                 else

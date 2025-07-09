@@ -191,7 +191,7 @@ present_vblank_scrap(present_vblank_ptr vblank)
 
     present_pixmap_idle(vblank->pixmap, vblank->window, vblank->serial, vblank->idle_fence);
     present_fence_destroy(vblank->idle_fence);
-    dixDestroyPixmap(vblank->pixmap, vblank->pixmap->drawable.id);
+    dixDestroyPixmap(vblank->pixmap, vblank->pixmap->drawable.id, vblank->pixmap->drawable.pScreen->context);
 
     vblank->pixmap = NULL;
     vblank->idle_fence = NULL;
@@ -213,7 +213,7 @@ present_vblank_destroy(present_vblank_ptr vblank)
 
     /* Drop pixmap reference */
     if (vblank->pixmap)
-        dixDestroyPixmap(vblank->pixmap, vblank->pixmap->drawable.id);
+        dixDestroyPixmap(vblank->pixmap, vblank->pixmap->drawable.id, vblank->pixmap->drawable.pScreen->context);
 
     /* Free regions */
     if (vblank->valid)

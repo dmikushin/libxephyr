@@ -73,7 +73,7 @@ cursor metrics.
 
 int
 ServerBitsFromGlyph(FontPtr pfont, unsigned ch, CursorMetricPtr cm,
-                    unsigned char **ppbits)
+                    unsigned char **ppbits, XephyrContext* context)
 {
     ScreenPtr pScreen;
     GCPtr pGC;
@@ -87,7 +87,7 @@ ServerBitsFromGlyph(FontPtr pfont, unsigned ch, CursorMetricPtr cm,
     char2b[0] = (unsigned char) (ch >> 8);
     char2b[1] = (unsigned char) (ch & 0xff);
 
-    pScreen = screenInfo.screens[0]->context->screenInfo.screens[0];
+    pScreen = context->screenInfo.screens[0];
     pbits = calloc(BitmapBytePad(cm->width), cm->height);
     if (!pbits)
         return BadAlloc;

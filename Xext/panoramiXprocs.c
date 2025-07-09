@@ -59,6 +59,7 @@ PanoramiXCreateWindow(ClientPtr client)
     PanoramiXRes *backPix = NULL;
     PanoramiXRes *bordPix = NULL;
     PanoramiXRes *cmap = NULL;
+    XephyrContext* context = client->context;
 
     REQUEST(xCreateWindowReq);
     int pback_offset = 0, pbord_offset = 0, cmap_offset = 0;
@@ -146,14 +147,14 @@ PanoramiXCreateWindow(ClientPtr client)
         if (cmap)
             *((CARD32 *) &stuff[1] + cmap_offset) = cmap->info[j].id;
         if (orig_visual != CopyFromParent)
-            stuff->visual = PanoramiXTranslateVisualID(j, orig_visual);
+            stuff->visual = PanoramiXTranslateVisualID(j, orig_visual, context);
         result = (*SavedProcVector[X_CreateWindow]) (client);
         if (result != Success)
             break;
     }
 
     if (result == Success)
-        AddResource(newWin->info[0].id, XRT_WINDOW, newWin);
+        AddResource(newWin->info[0].id, XRT_WINDOW, newWin, client->context);
     else
         free(newWin);
 
@@ -322,6 +323,7 @@ PanoramiXReparentWindow(ClientPtr client)
     int result, j;
     int x, y;
     Bool parentIsRoot;
+    XephyrContext* context = client->context;
 
     REQUEST(xReparentWindowReq);
 
@@ -465,6 +467,7 @@ PanoramiXConfigureWindow(ClientPtr client)
     int result, j, len, sib_offset = 0, x = 0, y = 0;
     int x_offset = -1;
     int y_offset = -1;
+    XephyrContext* context = client->context;
 
     REQUEST(xConfigureWindowReq);
 
@@ -559,6 +562,7 @@ PanoramiXGetGeometry(ClientPtr client)
     xGetGeometryReply rep;
     DrawablePtr pDraw;
     int rc;
+    XephyrContext* context = client->context;
 
     REQUEST(xResourceReq);
 
@@ -609,6 +613,7 @@ int
 PanoramiXTranslateCoords(ClientPtr client)
 {
     INT16 x, y;
+    XephyrContext* context = client->context;
 
     REQUEST(xTranslateCoordsReq);
     int rc;
@@ -709,7 +714,7 @@ PanoramiXCreatePixmap(ClientPtr client)
     }
 
     if (result == Success)
-        AddResource(newPix->info[0].id, XRT_PIXMAP, newPix);
+        AddResource(newPix->info[0].id, XRT_PIXMAP, newPix, client->context);
     else
         free(newPix);
 
@@ -821,7 +826,7 @@ PanoramiXCreateGC(ClientPtr client)
     }
 
     if (result == Success)
-        AddResource(newGC->info[0].id, XRT_GC, newGC);
+        AddResource(newGC->info[0].id, XRT_GC, newGC, client->context);
     else
         free(newGC);
 
@@ -1011,6 +1016,7 @@ PanoramiXClearToBackground(ClientPtr client)
     PanoramiXRes *win;
     int result, j, x, y;
     Bool isRoot;
+    XephyrContext* context = client->context;
 
     REQUEST(xClearAreaReq);
 
@@ -1056,6 +1062,7 @@ PanoramiXCopyArea(ClientPtr client)
     Bool srcIsRoot = FALSE;
     Bool dstIsRoot = FALSE;
     Bool srcShared, dstShared;
+    XephyrContext* context = client->context;
 
     REQUEST(xCopyAreaReq);
 
@@ -1117,7 +1124,7 @@ PanoramiXCopyArea(ClientPtr client)
             return BadAlloc;
 
         XineramaGetImageData(drawables, srcx, srcy, width, height, ZPixmap, ~0,
-                             data, pitch, srcIsRoot);
+                             data, pitch, srcIsRoot, context);
 
         FOR_NSCREENS_BACKWARD(j) {
             stuff->gc = gc->info[j].id;
@@ -1268,6 +1275,7 @@ PanoramiXCopyPlane(ClientPtr client)
     DrawablePtr psrcDraw, pdstDraw = NULL;
     GCPtr pGC = NULL;
     RegionRec totalReg;
+    XephyrContext* context = client->context;
 
     REQUEST(xCopyPlaneReq);
 
@@ -1375,6 +1383,7 @@ PanoramiXPolyPoint(ClientPtr client)
     int result, npoint, j;
     xPoint *origPts;
     Bool isRoot;
+    XephyrContext* context = client->context;
 
     REQUEST(xPolyPointReq);
 
@@ -1440,6 +1449,7 @@ PanoramiXPolyLine(ClientPtr client)
     int result, npoint, j;
     xPoint *origPts;
     Bool isRoot;
+    XephyrContext* context = client->context;
 
     REQUEST(xPolyLineReq);
 
@@ -1505,6 +1515,7 @@ PanoramiXPolySegment(ClientPtr client)
     PanoramiXRes *gc, *draw;
     xSegment *origSegs;
     Bool isRoot;
+    XephyrContext* context = client->context;
 
     REQUEST(xPolySegmentReq);
 
@@ -1573,6 +1584,7 @@ PanoramiXPolyRectangle(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     xRectangle *origRecs;
+    XephyrContext* context = client->context;
 
     REQUEST(xPolyRectangleReq);
 
@@ -1640,6 +1652,7 @@ PanoramiXPolyArc(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     xArc *origArcs;
+    XephyrContext* context = client->context;
 
     REQUEST(xPolyArcReq);
 
@@ -1705,6 +1718,7 @@ PanoramiXFillPoly(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     DDXPointPtr locPts;
+    XephyrContext* context = client->context;
 
     REQUEST(xFillPolyReq);
 
@@ -1771,6 +1785,7 @@ PanoramiXPolyFillRectangle(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     xRectangle *origRects;
+    XephyrContext* context = client->context;
 
     REQUEST(xPolyFillRectangleReq);
 
@@ -1838,6 +1853,7 @@ PanoramiXPolyFillArc(ClientPtr client)
     Bool isRoot;
     int result, narcs, i, j;
     xArc *origArcs;
+    XephyrContext* context = client->context;
 
     REQUEST(xPolyFillArcReq);
 
@@ -1903,6 +1919,7 @@ PanoramiXPutImage(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     int j, result, orig_x, orig_y;
+    XephyrContext* context = client->context;
 
     REQUEST(xPutImageReq);
 
@@ -1952,6 +1969,7 @@ PanoramiXGetImage(ClientPtr client)
     Mask plane = 0, planemask;
     int linesDone, nlines, linesPerBuf;
     long widthBytesLine, length;
+    XephyrContext* context = client->context;
 
     REQUEST(xGetImageReq);
 
@@ -2067,7 +2085,7 @@ PanoramiXGetImage(ClientPtr client)
 
             XineramaGetImageData(drawables, x, y + linesDone, w, nlines,
                                  format, planemask, pBuf, widthBytesLine,
-                                 isRoot);
+                                 isRoot, context);
 
             WriteToClient(client, (int) (nlines * widthBytesLine), pBuf);
             linesDone += nlines;
@@ -2084,7 +2102,7 @@ PanoramiXGetImage(ClientPtr client)
 
                     XineramaGetImageData(drawables, x, y + linesDone, w,
                                          nlines, format, plane, pBuf,
-                                         widthBytesLine, isRoot);
+                                         widthBytesLine, isRoot, context);
 
                     WriteToClient(client, (int)(nlines * widthBytesLine), pBuf);
 
@@ -2108,6 +2126,7 @@ PanoramiXPolyText8(ClientPtr client)
     Bool isRoot;
     int result, j;
     int orig_x, orig_y;
+    XephyrContext* context = client->context;
 
     REQUEST(xPolyTextReq);
 
@@ -2151,6 +2170,7 @@ PanoramiXPolyText16(ClientPtr client)
     Bool isRoot;
     int result, j;
     int orig_x, orig_y;
+    XephyrContext* context = client->context;
 
     REQUEST(xPolyTextReq);
 
@@ -2194,6 +2214,7 @@ PanoramiXImageText8(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     int orig_x, orig_y;
+    XephyrContext* context = client->context;
 
     REQUEST(xImageTextReq);
 
@@ -2237,6 +2258,7 @@ PanoramiXImageText16(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     int orig_x, orig_y;
+    XephyrContext* context = client->context;
 
     REQUEST(xImageTextReq);
 
@@ -2278,6 +2300,7 @@ PanoramiXCreateColormap(ClientPtr client)
 {
     PanoramiXRes *win, *newCmap;
     int result, j, orig_visual;
+    XephyrContext* context = client->context;
 
     REQUEST(xCreateColormapReq);
 
@@ -2298,14 +2321,14 @@ PanoramiXCreateColormap(ClientPtr client)
     FOR_NSCREENS_BACKWARD(j) {
         stuff->mid = newCmap->info[j].id;
         stuff->window = win->info[j].id;
-        stuff->visual = PanoramiXTranslateVisualID(j, orig_visual);
+        stuff->visual = PanoramiXTranslateVisualID(j, orig_visual, context);
         result = (*SavedProcVector[X_CreateColormap]) (client);
         if (result != Success)
             break;
     }
 
     if (result == Success)
-        AddResource(newCmap->info[0].id, XRT_COLORMAP, newCmap);
+        AddResource(newCmap->info[0].id, XRT_COLORMAP, newCmap, client->context);
     else
         free(newCmap);
 
@@ -2375,7 +2398,7 @@ PanoramiXCopyColormapAndFree(ClientPtr client)
     }
 
     if (result == Success)
-        AddResource(newCmap->info[0].id, XRT_COLORMAP, newCmap);
+        AddResource(newCmap->info[0].id, XRT_COLORMAP, newCmap, client->context);
     else
         free(newCmap);
 

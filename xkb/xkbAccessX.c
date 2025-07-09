@@ -733,7 +733,7 @@ ProcessPointerEvent(InternalEvent *ev, DeviceIntPtr mouse)
             DeviceIntPtr source;
             int rc;
 
-            rc = dixLookupDevice(&source, event->sourceid, context->serverClient,
+            rc = dixLookupDevice(&source, event->sourceid, mouse->context->serverClient,
                     DixWriteAccess);
             if (rc != Success)
                 ErrorF("[xkb] bad sourceid '%d' on button release event.\n",
@@ -741,7 +741,7 @@ ProcessPointerEvent(InternalEvent *ev, DeviceIntPtr mouse)
             else if (!IsXTestDevice(source, GetMaster(dev, MASTER_POINTER))) {
                 DeviceIntPtr xtest_device;
 
-                xtest_device = GetXTestDevice(GetMaster(dev, MASTER_POINTER));
+                xtest_device = GetXTestDevice(GetMaster(dev, MASTER_POINTER), dev->context);
                 if (button_is_down(xtest_device, ev->device_event.detail.button, BUTTON_PROCESSED))
                     XkbFakeDeviceButton(dev, FALSE, event->detail.key);
             }

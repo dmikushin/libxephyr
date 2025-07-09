@@ -107,7 +107,7 @@ compCreateOverlayClient(ScreenPtr pScreen, ClientPtr pClient)
 
     pOc->pClient = pClient;
     pOc->pScreen = pScreen;
-    pOc->resource = FakeClientID(pClient->index);
+    pOc->resource = FakeClientID(pClient->index, pClient->context);
     pOc->pNext = cs->pOverlayClients;
     cs->pOverlayClients = pOc;
 

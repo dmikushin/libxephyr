@@ -759,7 +759,7 @@ fbInitVisuals(VisualPtr * visualp,
               int *nvisualp,
               int *ndepthp,
               int *rootDepthp,
-              VisualID * defaultVisp, unsigned long sizes, int bitsPerRGB);
+              VisualID * defaultVisp, unsigned long sizes, int bitsPerRGB, XephyrContext* context);
 
 /*
  * fbcopy.c
