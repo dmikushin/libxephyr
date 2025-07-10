@@ -191,7 +191,7 @@ send_property_event(DeviceIntPtr dev, Atom property, int what)
         .deviceid = dev->id,
         .state = state,
         .atom = property,
-        .time = context->currentTime.milliseconds
+        .time = dev->context->currentTime.milliseconds
     };
     xXIPropertyEvent xi2 = {
         .type = GenericEvent,
@@ -199,15 +199,15 @@ send_property_event(DeviceIntPtr dev, Atom property, int what)
         .length = 0,
         .evtype = XI_PropertyEvent,
         .deviceid = dev->id,
-        .time = context->currentTime.milliseconds,
+        .time = dev->context->currentTime.milliseconds,
         .property = property,
         .what = what
     };
 
-    SendEventToAllWindows(dev, DevicePropertyNotifyMask, (xEvent *) &event, 1);
+    SendEventToAllWindows(dev, DevicePropertyNotifyMask, (xEvent *) &event, 1, dev->context);
 
     SendEventToAllWindows(dev, GetEventFilter(dev, (xEvent *) &xi2),
-                          (xEvent *) &xi2, 1);
+                          (xEvent *) &xi2, 1, dev->context);
 }
 
 static int
@@ -621,7 +621,7 @@ XIDeleteAllDeviceProperties(DeviceIntPtr device)
     XIPropertyPtr prop, next;
     XIPropertyHandlerPtr curr_handler, next_handler;
 
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(device->context);
     for (prop = device->properties.properties; prop; prop = next) {
         next = prop->next;
         send_property_event(device, prop->propertyName, XIPropertyDeleted);
@@ -672,7 +672,7 @@ XIDeleteDeviceProperty(DeviceIntPtr device, Atom property, Bool fromClient)
     }
 
     if (prop) {
-        UpdateCurrentTimeIf();
+        UpdateCurrentTimeIf(device->context);
         *prev = prop->next;
         send_property_event(device, prop->propertyName, XIPropertyDeleted);
         XIDestroyDeviceProperty(prop);
@@ -797,7 +797,7 @@ XIChangeDeviceProperty(DeviceIntPtr dev, Atom property, Atom type,
     }
 
     if (sendevent) {
-        UpdateCurrentTimeIf();
+        UpdateCurrentTimeIf(dev->context);
         send_property_event(dev, prop->propertyName,
                             (add) ? XIPropertyCreated : XIPropertyModified);
     }
@@ -895,7 +895,7 @@ ProcXChangeDeviceProperty(ClientPtr client)
     int rc;
 
     REQUEST_AT_LEAST_SIZE(xChangeDevicePropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     rc = dixLookupDevice(&dev, stuff->deviceid, client, DixSetPropAccess);
     if (rc != Success)
@@ -924,7 +924,7 @@ ProcXDeleteDeviceProperty(ClientPtr client)
     int rc;
 
     REQUEST_SIZE_MATCH(xDeleteDevicePropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     rc = dixLookupDevice(&dev, stuff->deviceid, client, DixSetPropAccess);
     if (rc != Success)
         return rc;
@@ -951,7 +951,7 @@ ProcXGetDeviceProperty(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xGetDevicePropertyReq);
     if (stuff->delete)
-        UpdateCurrentTime();
+        UpdateCurrentTime(client->context);
     rc = dixLookupDevice(&dev, stuff->deviceid, client,
                          stuff->delete ? DixSetPropAccess : DixGetPropAccess);
     if (rc != Success)
@@ -1134,7 +1134,7 @@ ProcXIChangeProperty(ClientPtr client)
 
     REQUEST(xXIChangePropertyReq);
     REQUEST_AT_LEAST_SIZE(xXIChangePropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     rc = dixLookupDevice(&dev, stuff->deviceid, client, DixSetPropAccess);
     if (rc != Success)
@@ -1163,7 +1163,7 @@ ProcXIDeleteProperty(ClientPtr client)
     REQUEST(xXIDeletePropertyReq);
 
     REQUEST_SIZE_MATCH(xXIDeletePropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     rc = dixLookupDevice(&dev, stuff->deviceid, client, DixSetPropAccess);
     if (rc != Success)
         return rc;
@@ -1190,7 +1190,7 @@ ProcXIGetProperty(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXIGetPropertyReq);
     if (stuff->delete)
-        UpdateCurrentTime();
+        UpdateCurrentTime(client->context);
     rc = dixLookupDevice(&dev, stuff->deviceid, client,
                          stuff->delete ? DixSetPropAccess : DixGetPropAccess);
     if (rc != Success)

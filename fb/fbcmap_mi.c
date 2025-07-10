@@ -43,15 +43,15 @@ fbListInstalledColormaps(ScreenPtr pScreen, Colormap * pmaps)
 }
 
 void
-fbInstallColormap(ColormapPtr pmap)
+fbInstallColormap(ColormapPtr pmap, XephyrContext* context)
 {
-    miInstallColormap(pmap);
+    miInstallColormap(pmap, context);
 }
 
 void
-fbUninstallColormap(ColormapPtr pmap)
+fbUninstallColormap(ColormapPtr pmap, XephyrContext* context)
 {
-    miUninstallColormap(pmap);
+    miUninstallColormap(pmap, context);
 }
 
 void

@@ -40,7 +40,7 @@ fbAllocatePrivates(ScreenPtr pScreen)
     FbScreenPrivPtr     pScrPriv;
 
     if (!dixRegisterPrivateKey
-        (&fbScreenPrivateKeyRec, PRIVATE_SCREEN, sizeof(FbScreenPrivRec)))
+        (&fbScreenPrivateKeyRec, PRIVATE_SCREEN, sizeof(FbScreenPrivRec), pScreen->context))
         return FALSE;
 
     pScrPriv = fbGetScreenPrivate(pScreen);

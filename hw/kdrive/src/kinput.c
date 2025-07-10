@@ -790,7 +790,7 @@ KdAddConfigPointer(char *pointer)
 }
 
 int
-KdAddPointer(KdPointerInfo * pi)
+KdAddPointer(KdPointerInfo * pi, XephyrContext* context)
 {
     KdPointerInfo **prev;
 
@@ -1133,7 +1133,7 @@ KdInitInput(XephyrContext* context)
         pi = KdParsePointer(dev->line);
         if (!pi)
             ErrorF("Failed to parse pointer\n");
-        if (KdAddPointer(pi) != Success)
+        if (KdAddPointer(pi, context) != Success)
             ErrorF("Failed to add pointer!\n");
     }
     for (dev = kdConfigKeyboards; dev; dev = dev->next) {
@@ -1148,16 +1148,16 @@ KdInitInput(XephyrContext* context)
 
 #if defined(CONFIG_UDEV) || defined(CONFIG_HAL)
     if (SeatId) /* Enable input hot-plugging */
-        config_init();
+        config_init(context);
 #endif
 }
 
 void
-KdCloseInput(void)
+KdCloseInput(XephyrContext* context)
 {
 #if defined(CONFIG_UDEV) || defined(CONFIG_HAL)
     if (SeatId) /* Input hot-plugging is enabled */
-        config_fini();
+        config_fini(context);
 #endif
 
     mieqFini();
@@ -1800,7 +1800,7 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
     int n_best_x, n_best_y;
     CARD32 ms;
 
-    if (kdDisableZaphod || context->screenInfo.numScreens <= 1)
+    if (kdDisableZaphod || pScreen->context->screenInfo.numScreens <= 1)
         return FALSE;
 
     if (0 <= *x && *x < pScreen->width && 0 <= *y && *y < pScreen->height)
@@ -1815,8 +1815,8 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
     best_x = 32767;
     n_best_y = -1;
     best_y = 32767;
-    for (n = 0; n < context->screenInfo.numScreens; n++) {
-        pNewScreen = context->screenInfo.screens[n];
+    for (n = 0; n < pScreen->context->screenInfo.numScreens; n++) {
+        pNewScreen = pScreen->context->screenInfo.screens[n];
         if (pNewScreen == pScreen)
             continue;
         dx = KdScreenOrigin(pNewScreen)->x - KdScreenOrigin(pScreen)->x;
@@ -1850,7 +1850,7 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
         n_best_x = n_best_y;
     if (n_best_x == -1)
         return FALSE;
-    pNewScreen = context->screenInfo.screens[n_best_x];
+    pNewScreen = pScreen->context->screenInfo.screens[n_best_x];
 
     if (*x < 0)
         *x += pNewScreen->width;
@@ -1932,7 +1932,7 @@ ChangeDeviceControl(register ClientPtr client, DeviceIntPtr pDev,
 
 int
 NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
-                      DeviceIntPtr *pdev)
+                      DeviceIntPtr *pdev, XephyrContext* context)
 {
     InputOption *option = NULL, *optionsdup = NULL;
     KdPointerInfo *pi = NULL;
@@ -2030,7 +2030,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
             return BadValue;
         }
 
-        if (KdAddPointer(pi) != Success ||
+        if (KdAddPointer(pi, context) != Success ||
             ActivateDevice(pi->dixdev, TRUE) != Success ||
             EnableDevice(pi->dixdev, TRUE) != TRUE) {
             ErrorF("couldn't add or enable pointer \"%s\" (%s)\n",
@@ -2052,7 +2052,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
             return BadValue;
         }
 
-        if (KdAddKeyboard(ki) != Success ||
+        if (KdAddKeyboard(ki, context) != Success ||
             ActivateDevice(ki->dixdev, TRUE) != Success ||
             EnableDevice(ki->dixdev, TRUE) != TRUE) {
             ErrorF("couldn't add or enable keyboard \"%s\" (%s)\n",

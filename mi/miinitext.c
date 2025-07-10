@@ -246,13 +246,13 @@ static ExtensionModule *ExtensionModuleList = NULL;
 static int numExtensionModules = 0;
 
 static void
-UpdateExtensionPointers(void)
+UpdateExtensionPointers(XephyrContext* context)
 {
     ExtensionModule *ext;
     int i;
 
     /* Set up runtime pointers for context-based flags */
-    if (!noTestExtensionsPtr && xephyr_context) {
+    if (!noTestExtensionsPtr && context) {
         noTestExtensionsPtr = &context->noTestExtensions;
     }
 
@@ -273,7 +273,7 @@ UpdateExtensionPointers(void)
 }
 
 static void
-AddStaticExtensions(void)
+AddStaticExtensions(XephyrContext* context)
 {
     static Bool listInitialised = FALSE;
 
@@ -282,19 +282,19 @@ AddStaticExtensions(void)
     listInitialised = TRUE;
 
     /* Update extension pointers to use context-based flags */
-    UpdateExtensionPointers();
+    UpdateExtensionPointers(context);
 
     /* Add built-in extensions to the list. */
-    LoadExtensionList(staticExtensions, ARRAY_SIZE(staticExtensions), TRUE);
+    LoadExtensionList(staticExtensions, ARRAY_SIZE(staticExtensions), TRUE, context);
 }
 
 void
-InitExtensions(int argc, char *argv[])
+InitExtensions(int argc, char *argv[], XephyrContext* context)
 {
     int i;
     ExtensionModule *ext;
 
-    AddStaticExtensions();
+    AddStaticExtensions(context);
 
     for (i = 0; i < numExtensionModules; i++) {
         ext = &ExtensionModuleList[i];
@@ -303,7 +303,7 @@ InitExtensions(int argc, char *argv[])
             LogMessageVerb(X_INFO, 3, "Initializing extension %s\n",
                            ext->name);
 
-            (ext->initFunc) ();
+            (ext->initFunc) (context);
         }
     }
 }
@@ -332,14 +332,14 @@ NewExtensionModuleList(int size)
 }
 
 void
-LoadExtensionList(const ExtensionModule ext[], int size, Bool builtin)
+LoadExtensionList(const ExtensionModule ext[], int size, Bool builtin, XephyrContext* context)
 {
     ExtensionModule *newext;
     int i;
 
     /* Make sure built-in extensions get added to the list before those
      * in modules. */
-    AddStaticExtensions();
+    AddStaticExtensions(context);
 
     if (!(newext = NewExtensionModuleList(size)))
         return;

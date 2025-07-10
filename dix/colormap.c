@@ -409,7 +409,7 @@ FreeColormap(void *value, XID mid, XephyrContext* context)
     ColormapPtr pmap = (ColormapPtr) value;
 
     if (CLIENT_ID(mid) != SERVER_ID) {
-        (*pmap->pScreen->UninstallColormap) (pmap);
+        (*pmap->pScreen->UninstallColormap) (pmap, context);
         WalkTree(pmap->pScreen, (VisitWindowProcPtr) TellNoMap, (void *) &mid);
     }
 

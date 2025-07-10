@@ -861,7 +861,7 @@ glamor_generate_radial_gradient_picture(ScreenPtr screen,
     dst_picture = CreatePicture(0, &pixmap->drawable,
                                 PictureMatchFormat(screen,
                                                    PIXMAN_FORMAT_DEPTH(format),
-                                                   format), 0, 0, context->serverClient,
+                                                   format), 0, 0, screen->context->serverClient,
                                 &error);
 
     /* Release the reference, picture will hold the last one. */
@@ -1084,7 +1084,7 @@ glamor_generate_radial_gradient_picture(ScreenPtr screen,
 
  GRADIENT_FAIL:
     if (dst_picture) {
-        FreePicture(dst_picture, 0);
+        FreePicture(dst_picture, 0, screen->context);
     }
 
     if (stops_count > RADIAL_SMALL_STOPS) {
@@ -1170,7 +1170,7 @@ glamor_generate_linear_gradient_picture(ScreenPtr screen,
     dst_picture = CreatePicture(0, &pixmap->drawable,
                                 PictureMatchFormat(screen,
                                                    PIXMAN_FORMAT_DEPTH(format),
-                                                   format), 0, 0, context->serverClient,
+                                                   format), 0, 0, screen->context->serverClient,
                                 &error);
 
     /* Release the reference, picture will hold the last one. */
@@ -1427,7 +1427,7 @@ glamor_generate_linear_gradient_picture(ScreenPtr screen,
 
  GRADIENT_FAIL:
     if (dst_picture) {
-        FreePicture(dst_picture, 0);
+        FreePicture(dst_picture, 0, screen->context);
     }
 
     if (stops_count > LINEAR_SMALL_STOPS) {

@@ -42,16 +42,16 @@ RREditConnectionInfo(ScreenPtr pScreen)
     int screen = 0;
     int d;
 
-    if (context->ConnectionInfo == NULL)
+    if (pScreen->context->ConnectionInfo == NULL)
         return;
 
-    connSetup = (xConnSetup *) context->ConnectionInfo;
+    connSetup = (xConnSetup *) pScreen->context->ConnectionInfo;
     vendor = (char *) connSetup + sizeof(xConnSetup);
     formats = (xPixmapFormat *) ((char *) vendor +
                                  pad_to_int32(connSetup->nbytesVendor));
     root = (xWindowRoot *) ((char *) formats +
                             sizeof(xPixmapFormat) *
-                            context->screenInfo.numPixmapFormats);
+                            pScreen->context->screenInfo.numPixmapFormats);
     while (screen != pScreen->myNum) {
         depth = (xDepth *) ((char *) root + sizeof(xWindowRoot));
         for (d = 0; d < root->nDepths; d++) {
@@ -518,8 +518,8 @@ rrGetScreenResources(ClientPtr client, Bool query)
             .type = X_Reply,
             .sequenceNumber = client->sequence,
             .length = 0,
-            .timestamp = context->currentTime.milliseconds,
-            .configTimestamp = context->currentTime.milliseconds,
+            .timestamp = pScreen->context->currentTime.milliseconds,
+            .configTimestamp = pScreen->context->currentTime.milliseconds,
             .nCrtcs = 0,
             .nOutputs = 0,
             .nModes = 0,
@@ -786,8 +786,8 @@ ProcRRGetScreenInfo(ClientPtr client)
             .sequenceNumber = client->sequence,
             .length = 0,
             .root = pWin->drawable.pScreen->root->drawable.id,
-            .timestamp = context->currentTime.milliseconds,
-            .configTimestamp = context->currentTime.milliseconds,
+            .timestamp = pScreen->context->currentTime.milliseconds,
+            .configTimestamp = pScreen->context->currentTime.milliseconds,
             .nSizes = 0,
             .sizeID = 0,
             .rotation = RR_Rotate_0,
@@ -922,7 +922,7 @@ ProcRRSetScreenConfig(ClientPtr client)
     RRScreenSizePtr pSize;
     int width, height;
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     if (RRClientKnowsRates(client)) {
         REQUEST_SIZE_MATCH(xRRSetScreenConfigReq);
@@ -941,10 +941,10 @@ ProcRRSetScreenConfig(ClientPtr client)
 
     pScrPriv = rrGetScrPriv(pScreen);
 
-    time = ClientTimeToServerTime(stuff->timestamp);
+    time = ClientTimeToServerTime(stuff->timestamp, client->context);
 
     if (!pScrPriv) {
-        time = context->currentTime;
+        time = client->context->currentTime;
         status = RRSetConfigFailed;
         goto sendReply;
     }
@@ -953,7 +953,7 @@ ProcRRSetScreenConfig(ClientPtr client)
 
     output = RRFirstOutput(pScreen);
     if (!output) {
-        time = context->currentTime;
+        time = client->context->currentTime;
         status = RRSetConfigFailed;
         goto sendReply;
     }

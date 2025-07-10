@@ -79,7 +79,7 @@ present_copy_region(DrawablePtr drawable,
 
         changes[0].val = x_off;
         changes[1].val = y_off;
-        ChangeGC(context->serverClient, gc,
+        ChangeGC(screen->context->serverClient, gc,
                  GCClipXOrigin|GCClipYOrigin,
                  changes);
         (*gc->funcs->ChangeClip)(gc, CT_REGION, update, 0);

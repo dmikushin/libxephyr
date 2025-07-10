@@ -217,7 +217,7 @@ void KdAddPointerDriver(KdPointerDriver * driver);
 void KdRemovePointerDriver(KdPointerDriver * driver);
 KdPointerInfo *KdNewPointer(void);
 void KdFreePointer(KdPointerInfo *);
-int KdAddPointer(KdPointerInfo * ki);
+int KdAddPointer(KdPointerInfo * ki, XephyrContext* context);
 int KdAddConfigPointer(char *pointer);
 void KdRemovePointer(KdPointerInfo * ki);
 
@@ -299,16 +299,16 @@ extern Bool kdDisableZaphod;
 
 /* kcmap.c */
 void
- KdEnableColormap(ScreenPtr pScreen);
+ KdEnableColormap(ScreenPtr pScreen, XephyrContext* context);
 
 void
  KdDisableColormap(ScreenPtr pScreen);
 
 void
- KdInstallColormap(ColormapPtr pCmap);
+ KdInstallColormap(ColormapPtr pCmap, XephyrContext* context);
 
 void
- KdUninstallColormap(ColormapPtr pCmap);
+ KdUninstallColormap(ColormapPtr pCmap, XephyrContext* context);
 
 int
  KdListInstalledColormaps(ScreenPtr pScreen, Colormap * pCmaps);
@@ -354,7 +354,7 @@ void
  KdInitCard(ScreenInfo * pScreenInfo, KdCardInfo * card, int argc, char **argv);
 
 void
- KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv);
+ KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* context);
 
 void
  KdSetSubpixelOrder(ScreenPtr pScreen, Rotation randr);
@@ -379,7 +379,7 @@ void
 void
  KdInitInput(XephyrContext* context);
 void
- KdCloseInput(void);
+ KdCloseInput(XephyrContext* context);
 
 void
 KdEnqueueKeyboardEvent(KdKeyboardInfo * ki, unsigned char scan_code,

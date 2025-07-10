@@ -39,9 +39,9 @@ struct __GLXprovider {
 extern __GLXprovider __glXDRISWRastProvider;
 
 void GlxPushProvider(__GLXprovider * provider);
-Bool xorgGlxCreateVendor(void);
+Bool xorgGlxCreateVendor(XephyrContext* context);
 #else
-static inline Bool xorgGlxCreateVendor(void) { return TRUE; }
+static inline Bool xorgGlxCreateVendor(XephyrContext* context) { (void)context; return TRUE; }
 #endif
 
 

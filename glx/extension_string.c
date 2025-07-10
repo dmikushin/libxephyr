@@ -169,7 +169,7 @@ __glXEnableExtension(unsigned char *enable_bits, const char *ext)
 }
 
 void
-__glXInitExtensionEnableBits(unsigned char *enable_bits)
+__glXInitExtensionEnableBits(unsigned char *enable_bits, XephyrContext* context)
 {
     unsigned i;
 

@@ -90,7 +90,8 @@ typedef struct _ScreenSaverStuff {
     char blanked;
     Bool (*ExternalScreenSaver) (ScreenPtr /*pScreen */ ,
                                  int /*xstate */ ,
-                                 Bool /*force */ );
+                                 Bool /*force */,
+                                 XephyrContext* /*context */ );
 } ScreenSaverStuffRec;
 
 /*
@@ -254,9 +255,9 @@ typedef Bool (*CreateColormapProcPtr) (ColormapPtr /*pColormap */ );
 
 typedef void (*DestroyColormapProcPtr) (ColormapPtr /*pColormap */ );
 
-typedef void (*InstallColormapProcPtr) (ColormapPtr /*pColormap */ );
+typedef void (*InstallColormapProcPtr) (ColormapPtr /*pColormap */, XephyrContext* /*context */ );
 
-typedef void (*UninstallColormapProcPtr) (ColormapPtr /*pColormap */ );
+typedef void (*UninstallColormapProcPtr) (ColormapPtr /*pColormap */, XephyrContext* /*context */ );
 
 typedef int (*ListInstalledColormapsProcPtr) (ScreenPtr /*pScreen */ ,
                                               XID * /*pmaps */ );

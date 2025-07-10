@@ -928,7 +928,7 @@ AddLocalHosts(void)
 
 /* Reset access control list to initial hosts */
 void
-ResetHosts(const char *display)
+ResetHosts(const char *display, XephyrContext* context)
 {
     register HOST *host;
     char lhostname[120], ohostname[120];
@@ -1279,7 +1279,7 @@ AuthorizedClient(ClientPtr client)
 {
     int rc;
 
-    if (!client || context->defeatAccessControl)
+    if (!client || client->context->defeatAccessControl)
         return Success;
 
     /* untrusted clients can't change host access */

@@ -129,19 +129,19 @@ RESTYPE XvRTPortNotify;
 
 static void WriteSwappedVideoNotifyEvent(xvEvent *, xvEvent *);
 static void WriteSwappedPortNotifyEvent(xvEvent *, xvEvent *);
-static Bool CreateResourceTypes(void);
+static Bool CreateResourceTypes(XephyrContext* context);
 
 static Bool XvCloseScreen(ScreenPtr);
 static Bool XvDestroyPixmap(PixmapPtr);
 static Bool XvDestroyWindow(WindowPtr);
 static void XvResetProc(ExtensionEntry *);
-static int XvdiDestroyGrab(void *, XID);
-static int XvdiDestroyEncoding(void *, XID);
-static int XvdiDestroyVideoNotify(void *, XID);
-static int XvdiDestroyPortNotify(void *, XID);
-static int XvdiDestroyVideoNotifyList(void *, XID);
-static int XvdiDestroyPort(void *, XID);
-static int XvdiSendVideoNotify(XvPortPtr, DrawablePtr, int);
+static int XvdiDestroyGrab(void *, XID, XephyrContext*);
+static int XvdiDestroyEncoding(void *, XID, XephyrContext*);
+static int XvdiDestroyVideoNotify(void *, XID, XephyrContext*);
+static int XvdiDestroyPortNotify(void *, XID, XephyrContext*);
+static int XvdiDestroyVideoNotifyList(void *, XID, XephyrContext*);
+static int XvdiDestroyPort(void *, XID, XephyrContext*);
+static int XvdiSendVideoNotify(XvPortPtr, DrawablePtr, int, XephyrContext*);
 
 /*
 ** XvExtensionInit
@@ -150,17 +150,17 @@ static int XvdiSendVideoNotify(XvPortPtr, DrawablePtr, int);
 */
 
 void
-XvExtensionInit(void)
+XvExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
-    if (!dixRegisterPrivateKey(&XvScreenKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&XvScreenKeyRec, PRIVATE_SCREEN, 0, context))
         return;
 
     /* Look to see if any screens were initialized; if not then
        init global variables so the extension can function */
     if (XvScreenGeneration != context->serverGeneration) {
-        if (!CreateResourceTypes()) {
+        if (!CreateResourceTypes(context)) {
             ErrorF("XvExtensionInit: Unable to allocate resource types\n");
             return;
         }
@@ -196,7 +196,7 @@ XvExtensionInit(void)
 }
 
 static Bool
-CreateResourceTypes(void)
+CreateResourceTypes(XephyrContext* context)
 {
 
     if (XvResourceGeneration == context->serverGeneration)
@@ -248,12 +248,12 @@ CreateResourceTypes(void)
 }
 
 int
-XvScreenInit(ScreenPtr pScreen)
+XvScreenInit(ScreenPtr pScreen, XephyrContext* context)
 {
     XvScreenPtr pxvs;
 
     if (XvScreenGeneration != context->serverGeneration) {
-        if (!CreateResourceTypes()) {
+        if (!CreateResourceTypes(context)) {
             ErrorF("XvScreenInit: Unable to allocate resource types\n");
             return BadAlloc;
         }
@@ -263,7 +263,7 @@ XvScreenInit(ScreenPtr pScreen)
         XvScreenGeneration = context->serverGeneration;
     }
 
-    if (!dixRegisterPrivateKey(&XvScreenKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&XvScreenKeyRec, PRIVATE_SCREEN, 0, context))
         return BadAlloc;
 
     if (dixLookupPrivate(&pScreen->devPrivates, XvScreenKey)) {
@@ -329,7 +329,7 @@ XvGetRTPort(void)
 }
 
 static void
-XvStopAdaptors(DrawablePtr pDrawable)
+XvStopAdaptors(DrawablePtr pDrawable, XephyrContext* context)
 {
     ScreenPtr pScreen = pDrawable->pScreen;
     XvScreenPtr pxvs = dixLookupPrivate(&pScreen->devPrivates, XvScreenKey);
@@ -343,7 +343,7 @@ XvStopAdaptors(DrawablePtr pDrawable)
 
         while (np--) {
             if (pp->pDraw == pDrawable) {
-                XvdiSendVideoNotify(pp, pDrawable, XvPreempted);
+                XvdiSendVideoNotify(pp, pDrawable, XvPreempted, context);
 
                 (void) (*pp->pAdaptor->ddStopVideo) (pp, pDrawable);
 
@@ -364,7 +364,7 @@ XvDestroyPixmap(PixmapPtr pPix)
     Bool status;
 
     if (pPix->refcnt == 1)
-        XvStopAdaptors(&pPix->drawable);
+        XvStopAdaptors(&pPix->drawable, NULL);
 
     SCREEN_PROLOGUE(pScreen, DestroyPixmap);
     status = (*pScreen->DestroyPixmap) (pPix);
@@ -380,7 +380,7 @@ XvDestroyWindow(WindowPtr pWin)
     ScreenPtr pScreen = pWin->drawable.pScreen;
     Bool status;
 
-    XvStopAdaptors(&pWin->drawable);
+    XvStopAdaptors(&pWin->drawable, NULL);
 
     SCREEN_PROLOGUE(pScreen, DestroyWindow);
     status = (*pScreen->DestroyWindow) (pWin);
@@ -391,20 +391,20 @@ XvDestroyWindow(WindowPtr pWin)
 }
 
 static int
-XvdiDestroyPort(void *pPort, XID id)
+XvdiDestroyPort(void *pPort, XID id, XephyrContext* context)
 {
     return Success;
 }
 
 static int
-XvdiDestroyGrab(void *pGrab, XID id)
+XvdiDestroyGrab(void *pGrab, XID id, XephyrContext* context)
 {
     ((XvGrabPtr) pGrab)->client = NULL;
     return Success;
 }
 
 static int
-XvdiDestroyVideoNotify(void *pn, XID id)
+XvdiDestroyVideoNotify(void *pn, XID id, XephyrContext* context)
 {
     /* JUST CLEAR OUT THE client POINTER FIELD */
 
@@ -413,7 +413,7 @@ XvdiDestroyVideoNotify(void *pn, XID id)
 }
 
 static int
-XvdiDestroyPortNotify(void *pn, XID id)
+XvdiDestroyPortNotify(void *pn, XID id, XephyrContext* context)
 {
     /* JUST CLEAR OUT THE client POINTER FIELD */
 
@@ -422,7 +422,7 @@ XvdiDestroyPortNotify(void *pn, XID id)
 }
 
 static int
-XvdiDestroyVideoNotifyList(void *pn, XID id)
+XvdiDestroyVideoNotifyList(void *pn, XID id, XephyrContext* context)
 {
     XvVideoNotifyPtr npn, cpn;
 
@@ -433,7 +433,7 @@ XvdiDestroyVideoNotifyList(void *pn, XID id)
     while (cpn) {
         npn = cpn->next;
         if (cpn->client)
-            FreeResource(cpn->id, XvRTVideoNotify);
+            FreeResource(cpn->id, XvRTVideoNotify, context);
         free(cpn);
         cpn = npn;
     }
@@ -441,13 +441,13 @@ XvdiDestroyVideoNotifyList(void *pn, XID id)
 }
 
 static int
-XvdiDestroyEncoding(void *value, XID id)
+XvdiDestroyEncoding(void *value, XID id, XephyrContext* context)
 {
     return Success;
 }
 
 static int
-XvdiSendVideoNotify(XvPortPtr pPort, DrawablePtr pDraw, int reason)
+XvdiSendVideoNotify(XvPortPtr pPort, DrawablePtr pDraw, int reason, XephyrContext* context)
 {
     XvVideoNotifyPtr pn;
 
@@ -471,7 +471,7 @@ XvdiSendVideoNotify(XvPortPtr pPort, DrawablePtr pDraw, int reason)
 }
 
 int
-XvdiSendPortNotify(XvPortPtr pPort, Atom attribute, INT32 value)
+XvdiSendPortNotify(XvPortPtr pPort, Atom attribute, INT32 value, XephyrContext* context)
 {
     XvPortNotifyPtr pn;
 
@@ -515,13 +515,13 @@ XvdiPutVideo(ClientPtr client,
 
     /* UPDATE TIME VARIABLES FOR USE IN EVENTS */
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     /* CHECK FOR GRAB; IF THIS CLIENT DOESN'T HAVE THE PORT GRABBED THEN
        INFORM CLIENT OF ITS FAILURE */
 
     if (pPort->grab.client && (pPort->grab.client != client)) {
-        XvdiSendVideoNotify(pPort, pDraw, XvBusy);
+        XvdiSendVideoNotify(pPort, pDraw, XvBusy, client->context);
         return Success;
     }
 
@@ -530,7 +530,7 @@ XvdiPutVideo(ClientPtr client,
 
     pOldDraw = pPort->pDraw;
     if ((pOldDraw) && (pOldDraw != pDraw)) {
-        XvdiSendVideoNotify(pPort, pPort->pDraw, XvPreempted);
+        XvdiSendVideoNotify(pPort, pPort->pDraw, XvPreempted, client->context);
     }
 
     (void) (*pPort->pAdaptor->ddPutVideo) (pDraw, pPort, pGC,
@@ -539,10 +539,10 @@ XvdiPutVideo(ClientPtr client,
 
     if ((pPort->pDraw) && (pOldDraw != pDraw)) {
         pPort->client = client;
-        XvdiSendVideoNotify(pPort, pPort->pDraw, XvStarted);
+        XvdiSendVideoNotify(pPort, pPort->pDraw, XvStarted, client->context);
     }
 
-    pPort->time = context->currentTime;
+    pPort->time = client->context->currentTime;
 
     return Success;
 
@@ -563,17 +563,17 @@ XvdiPutStill(ClientPtr client,
 
     /* UPDATE TIME VARIABLES FOR USE IN EVENTS */
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     /* CHECK FOR GRAB; IF THIS CLIENT DOESN'T HAVE THE PORT GRABBED THEN
        INFORM CLIENT OF ITS FAILURE */
 
     if (pPort->grab.client && (pPort->grab.client != client)) {
-        XvdiSendVideoNotify(pPort, pDraw, XvBusy);
+        XvdiSendVideoNotify(pPort, pDraw, XvBusy, client->context);
         return Success;
     }
 
-    pPort->time = context->currentTime;
+    pPort->time = client->context->currentTime;
 
     status = (*pPort->pAdaptor->ddPutStill) (pDraw, pPort, pGC,
                                              vid_x, vid_y, vid_w, vid_h,
@@ -599,17 +599,17 @@ XvdiPutImage(ClientPtr client,
 
     /* UPDATE TIME VARIABLES FOR USE IN EVENTS */
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     /* CHECK FOR GRAB; IF THIS CLIENT DOESN'T HAVE THE PORT GRABBED THEN
        INFORM CLIENT OF ITS FAILURE */
 
     if (pPort->grab.client && (pPort->grab.client != client)) {
-        XvdiSendVideoNotify(pPort, pDraw, XvBusy);
+        XvdiSendVideoNotify(pPort, pDraw, XvBusy, client->context);
         return Success;
     }
 
-    pPort->time = context->currentTime;
+    pPort->time = client->context->currentTime;
 
     return (*pPort->pAdaptor->ddPutImage) (pDraw, pPort, pGC,
                                            src_x, src_y, src_w, src_h,
@@ -632,13 +632,13 @@ XvdiGetVideo(ClientPtr client,
 
     /* UPDATE TIME VARIABLES FOR USE IN EVENTS */
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     /* CHECK FOR GRAB; IF THIS CLIENT DOESN'T HAVE THE PORT GRABBED THEN
        INFORM CLIENT OF ITS FAILURE */
 
     if (pPort->grab.client && (pPort->grab.client != client)) {
-        XvdiSendVideoNotify(pPort, pDraw, XvBusy);
+        XvdiSendVideoNotify(pPort, pDraw, XvBusy, client->context);
         return Success;
     }
 
@@ -647,7 +647,7 @@ XvdiGetVideo(ClientPtr client,
 
     pOldDraw = pPort->pDraw;
     if ((pOldDraw) && (pOldDraw != pDraw)) {
-        XvdiSendVideoNotify(pPort, pPort->pDraw, XvPreempted);
+        XvdiSendVideoNotify(pPort, pPort->pDraw, XvPreempted, client->context);
     }
 
     (void) (*pPort->pAdaptor->ddGetVideo) (pDraw, pPort, pGC,
@@ -656,10 +656,10 @@ XvdiGetVideo(ClientPtr client,
 
     if ((pPort->pDraw) && (pOldDraw != pDraw)) {
         pPort->client = client;
-        XvdiSendVideoNotify(pPort, pPort->pDraw, XvStarted);
+        XvdiSendVideoNotify(pPort, pPort->pDraw, XvStarted, client->context);
     }
 
-    pPort->time = context->currentTime;
+    pPort->time = client->context->currentTime;
 
     return Success;
 
@@ -680,13 +680,13 @@ XvdiGetStill(ClientPtr client,
 
     /* UPDATE TIME VARIABLES FOR USE IN EVENTS */
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     /* CHECK FOR GRAB; IF THIS CLIENT DOESN'T HAVE THE PORT GRABBED THEN
        INFORM CLIENT OF ITS FAILURE */
 
     if (pPort->grab.client && (pPort->grab.client != client)) {
-        XvdiSendVideoNotify(pPort, pDraw, XvBusy);
+        XvdiSendVideoNotify(pPort, pDraw, XvBusy, client->context);
         return Success;
     }
 
@@ -694,7 +694,7 @@ XvdiGetStill(ClientPtr client,
                                              vid_x, vid_y, vid_w, vid_h,
                                              drw_x, drw_y, drw_w, drw_h);
 
-    pPort->time = context->currentTime;
+    pPort->time = client->context->currentTime;
 
     return status;
 
@@ -706,15 +706,15 @@ XvdiGrabPort(ClientPtr client, XvPortPtr pPort, Time ctime, int *p_result)
     unsigned long id;
     TimeStamp time;
 
-    UpdateCurrentTime();
-    time = ClientTimeToServerTime(ctime);
+    UpdateCurrentTime(client->context);
+    time = ClientTimeToServerTime(ctime, client->context);
 
     if (pPort->grab.client && (client != pPort->grab.client)) {
         *p_result = XvAlreadyGrabbed;
         return Success;
     }
 
-    if ((CompareTimeStamps(time, context->currentTime) == LATER) ||
+    if ((CompareTimeStamps(time, client->context->currentTime) == LATER) ||
         (CompareTimeStamps(time, pPort->time) == EARLIER)) {
         *p_result = XvInvalidTime;
         return Success;
@@ -727,7 +727,7 @@ XvdiGrabPort(ClientPtr client, XvPortPtr pPort, Time ctime, int *p_result)
 
     id = FakeClientID(client->index, client->context);
 
-    if (!AddResource(id, XvRTGrab, &pPort->grab)) {
+    if (!AddResource(id, XvRTGrab, &pPort->grab, client->context)) {
         return BadAlloc;
     }
 
@@ -740,7 +740,7 @@ XvdiGrabPort(ClientPtr client, XvPortPtr pPort, Time ctime, int *p_result)
     pPort->grab.client = client;
     pPort->grab.id = id;
 
-    pPort->time = context->currentTime;
+    pPort->time = client->context->currentTime;
 
     *p_result = Success;
 
@@ -752,25 +752,26 @@ int
 XvdiUngrabPort(ClientPtr client, XvPortPtr pPort, Time ctime)
 {
     TimeStamp time;
+    XephyrContext* context = client->context;
 
-    UpdateCurrentTime();
-    time = ClientTimeToServerTime(ctime);
+    UpdateCurrentTime(client->context);
+    time = ClientTimeToServerTime(ctime, client->context);
 
     if ((!pPort->grab.client) || (client != pPort->grab.client)) {
         return Success;
     }
 
-    if ((CompareTimeStamps(time, context->currentTime) == LATER) ||
+    if ((CompareTimeStamps(time, client->context->currentTime) == LATER) ||
         (CompareTimeStamps(time, pPort->time) == EARLIER)) {
         return Success;
     }
 
     /* FREE THE GRAB RESOURCE; AND SET THE GRAB CLIENT TO NULL */
 
-    FreeResource(pPort->grab.id, XvRTGrab);
+    FreeResource(pPort->grab.id, XvRTGrab, context);
     pPort->grab.client = NULL;
 
-    pPort->time = context->currentTime;
+    pPort->time = client->context->currentTime;
 
     return Success;
 
@@ -802,7 +803,7 @@ XvdiSelectVideoNotify(ClientPtr client, DrawablePtr pDraw, BOOL onoff)
             return BadAlloc;
         tpn->next = NULL;
         tpn->client = NULL;
-        if (!AddResource(pDraw->id, XvRTVideoNotifyList, tpn))
+        if (!AddResource(pDraw->id, XvRTVideoNotifyList, tpn, client->context))
             return BadAlloc;
     }
     else {
@@ -844,7 +845,7 @@ XvdiSelectVideoNotify(ClientPtr client, DrawablePtr pDraw, BOOL onoff)
 
     tpn->client = NULL;
     tpn->id = FakeClientID(client->index, client->context);
-    if (!AddResource(tpn->id, XvRTVideoNotify, tpn))
+    if (!AddResource(tpn->id, XvRTVideoNotify, tpn, client->context))
         return BadAlloc;
 
     tpn->client = client;
@@ -876,7 +877,7 @@ XvdiSelectPortNotify(ClientPtr client, XvPortPtr pPort, BOOL onoff)
 
         if (!onoff) {
             pn->client = NULL;
-            FreeResource(pn->id, XvRTPortNotify);
+            FreeResource(pn->id, XvRTPortNotify, client->context);
         }
 
         return Success;
@@ -894,7 +895,7 @@ XvdiSelectPortNotify(ClientPtr client, XvPortPtr pPort, BOOL onoff)
 
     tpn->client = client;
     tpn->id = FakeClientID(client->index, client->context);
-    if (!AddResource(tpn->id, XvRTPortNotify, tpn))
+    if (!AddResource(tpn->id, XvRTPortNotify, tpn, client->context))
         return BadAlloc;
 
     return Success;
@@ -905,11 +906,12 @@ int
 XvdiStopVideo(ClientPtr client, XvPortPtr pPort, DrawablePtr pDraw)
 {
     int status;
+    XephyrContext* context = client ? client->context : NULL;
 
     /* IF PORT ISN'T ACTIVE THEN WE'RE DONE */
 
     if (!pPort->pDraw || (pPort->pDraw != pDraw)) {
-        XvdiSendVideoNotify(pPort, pDraw, XvStopped);
+        XvdiSendVideoNotify(pPort, pDraw, XvStopped, context);
         return Success;
     }
 
@@ -917,17 +919,18 @@ XvdiStopVideo(ClientPtr client, XvPortPtr pPort, DrawablePtr pDraw)
        INFORM CLIENT OF ITS FAILURE */
 
     if ((client) && (pPort->grab.client) && (pPort->grab.client != client)) {
-        XvdiSendVideoNotify(pPort, pDraw, XvBusy);
+        XvdiSendVideoNotify(pPort, pDraw, XvBusy, client->context);
         return Success;
     }
 
-    XvdiSendVideoNotify(pPort, pDraw, XvStopped);
+    XvdiSendVideoNotify(pPort, pDraw, XvStopped, context);
 
     status = (*pPort->pAdaptor->ddStopVideo) (pPort, pDraw);
 
     pPort->pDraw = NULL;
     pPort->client = (ClientPtr) client;
-    pPort->time = context->currentTime;
+    if (context)
+        pPort->time = client->context->currentTime;
 
     return status;
 
@@ -969,7 +972,7 @@ XvdiSetPortAttribute(ClientPtr client,
         (*pPort->pAdaptor->ddSetPortAttribute) (pPort, attribute,
                                                 value);
     if (status == Success)
-        XvdiSendPortNotify(pPort, attribute, value);
+        XvdiSendPortNotify(pPort, attribute, value, client->context);
 
     return status;
 }

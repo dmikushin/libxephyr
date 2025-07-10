@@ -29,18 +29,18 @@
 #include "input.h"
 #include "list.h"
 
-void remove_devices(const char *backend, const char *config_info);
-BOOL device_is_duplicate(const char *config_info);
+void remove_devices(const char *backend, const char *config_info, XephyrContext* context);
+BOOL device_is_duplicate(const char *config_info, XephyrContext* context);
 
 #ifdef CONFIG_UDEV
-int config_udev_pre_init(void);
-int config_udev_init(void);
-void config_udev_fini(void);
-void config_udev_odev_probe(config_odev_probe_proc_ptr probe_callback);
+int config_udev_pre_init(XephyrContext* context);
+int config_udev_init(XephyrContext* context);
+void config_udev_fini(XephyrContext* context);
+void config_udev_odev_probe(config_odev_probe_proc_ptr probe_callback, XephyrContext* context);
 #elif defined(CONFIG_HAL)
-int config_hal_init(void);
+int config_hal_init(XephyrContext* context);
 void config_hal_fini(void);
 #elif defined(CONFIG_WSCONS)
-int config_wscons_init(void);
+int config_wscons_init(XephyrContext* context);
 void config_wscons_fini(void);
 #endif

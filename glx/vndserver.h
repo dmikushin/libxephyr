@@ -91,9 +91,9 @@ GlxClientPriv *GlxGetClientData(ClientPtr client);
  */
 void GlxFreeClientData(ClientPtr client);
 
-Bool GlxAddXIDMap(XID id, GlxServerVendor *vendor);
+Bool GlxAddXIDMap(XID id, GlxServerVendor *vendor, XephyrContext* context);
 GlxServerVendor * GlxGetXIDMap(XID id);
-void GlxRemoveXIDMap(XID id);
+void GlxRemoveXIDMap(XID id, XephyrContext* context);
 
 /**
  * Records the client that sent the current request. This is needed in

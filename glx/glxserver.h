@@ -92,8 +92,8 @@ enum {
     GLX_ALL_VISUALS
 };
 
-void glxSuspendClients(void);
-void glxResumeClients(void);
+void glxSuspendClients(XephyrContext* context);
+void glxResumeClients(XephyrContext* context);
 
 typedef void (*glx_func_ptr)(void);
 typedef glx_func_ptr (*glx_gpa_proc)(const char *);

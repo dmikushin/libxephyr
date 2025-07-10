@@ -134,7 +134,7 @@ ProcXChangeDeviceDontPropagateList(ClientPtr client)
         else if (others)
             tmp[i].mask |= others->dontPropagateMask[i];
 
-        if (DeviceEventSuppressForWindow(pWin, client, tmp[i].mask, i) !=
+        if (DeviceEventSuppressForWindow(pWin, client, tmp[i].mask, i, client->context) !=
             Success)
             return BadClass;
     }

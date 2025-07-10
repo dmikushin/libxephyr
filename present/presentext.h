@@ -24,6 +24,6 @@
 #define _PRESENTEXT_H_
 
 extern _X_EXPORT void
-present_extension_init(void);
+present_extension_init(XephyrContext* context);
 
 #endif /* _PRESENTEXT_H_ */

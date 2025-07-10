@@ -49,7 +49,7 @@ present_fake_notify(ScreenPtr screen, uint64_t event_id)
     uint64_t                    ust, msc;
 
     present_fake_get_ust_msc(screen, &ust, &msc);
-    present_event_notify(event_id, ust, msc);
+    present_event_notify(event_id, ust, msc, screen->context);
 }
 
 static CARD32

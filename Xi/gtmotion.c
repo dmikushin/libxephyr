@@ -120,15 +120,15 @@ ProcXGetDeviceMotionEvents(ClientPtr client)
         .axes = axes,
         .mode = Absolute        /* XXX we don't do relative at the moment */
     };
-    start = ClientTimeToServerTime(stuff->start);
-    stop = ClientTimeToServerTime(stuff->stop);
+    start = ClientTimeToServerTime(stuff->start, client->context);
+    stop = ClientTimeToServerTime(stuff->stop, client->context);
     if (CompareTimeStamps(start, stop) == LATER ||
-        CompareTimeStamps(start, context->currentTime) == LATER) {
+        CompareTimeStamps(start, client->context->currentTime) == LATER) {
         WriteReplyToClient(client, sizeof(xGetDeviceMotionEventsReply), &rep);
         return Success;
     }
-    if (CompareTimeStamps(stop, context->currentTime) == LATER)
-        stop = context->currentTime;
+    if (CompareTimeStamps(stop, client->context->currentTime) == LATER)
+        stop = client->context->currentTime;
     num_events = v->numMotionEvents;
     if (num_events) {
         size = sizeof(Time) + (axes * sizeof(INT32));

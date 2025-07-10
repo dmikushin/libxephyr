@@ -251,7 +251,7 @@ present_select_input(ClientPtr client, XID eid, WindowPtr window, CARD32 mask)
     event->next = window_priv->events;
     window_priv->events = event;
 
-    if (!AddResource(event->id, present_event_type, (void *) event))
+    if (!AddResource(event->id, present_event_type, (void *) event, client->context))
         return BadAlloc;
 
     return Success;

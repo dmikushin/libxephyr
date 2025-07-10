@@ -1375,7 +1375,7 @@ glamor_convert_gradient_picture(ScreenPtr screen,
         return NULL;
 
     dst = CreatePicture(0,
-                        &pixmap->drawable, pFormat, 0, 0, context->serverClient, &error);
+                        &pixmap->drawable, pFormat, 0, 0, screen->context->serverClient, &error);
     glamor_destroy_pixmap(pixmap);
     if (!dst)
         return NULL;
@@ -1591,9 +1591,9 @@ glamor_composite_clipped_region(CARD8 op,
         free(prect);
  out:
     if (temp_src != source)
-        FreePicture(temp_src, 0);
+        FreePicture(temp_src, 0, dest->pDrawable->pScreen->context);
     if (temp_mask != mask)
-        FreePicture(temp_mask, 0);
+        FreePicture(temp_mask, 0, dest->pDrawable->pScreen->context);
 
     return ok;
 }

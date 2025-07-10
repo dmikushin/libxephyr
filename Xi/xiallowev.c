@@ -91,7 +91,7 @@ ProcXIAllowEvents(ClientPtr client)
     if (ret != Success)
         return ret;
 
-    time = ClientTimeToServerTime(stuff->time);
+    time = ClientTimeToServerTime(stuff->time, client->context);
 
     switch (stuff->mode) {
     case XIReplayDevice:

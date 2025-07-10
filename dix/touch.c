@@ -942,7 +942,7 @@ TouchListenerGone(XID resource, XephyrContext* context)
 
 int
 TouchListenerAcceptReject(DeviceIntPtr dev, TouchPointInfoPtr ti, int listener,
-                          int mode)
+                          int mode, XephyrContext* context)
 {
     InternalEvent *events;
     int nev;
@@ -953,7 +953,7 @@ TouchListenerAcceptReject(DeviceIntPtr dev, TouchPointInfoPtr ti, int listener,
 
     if (listener > 0) {
         if (mode == XIRejectTouch)
-            TouchRejected(dev, ti, ti->listeners[listener].listener, NULL);
+            TouchRejected(dev, ti, ti->listeners[listener].listener, NULL, context);
         else
             ti->listeners[listener].state = TOUCH_LISTENER_EARLY_ACCEPT;
 
@@ -1001,7 +1001,7 @@ TouchAcceptReject(ClientPtr client, DeviceIntPtr dev, int mode,
     if (i == ti->num_listeners)
         return BadAccess;
 
-    return TouchListenerAcceptReject(dev, ti, i, mode);
+    return TouchListenerAcceptReject(dev, ti, i, mode, client->context);
 }
 
 /**
@@ -1056,9 +1056,9 @@ TouchEmitTouchEnd(DeviceIntPtr dev, TouchPointInfoPtr ti, int flags, XID resourc
         flags |= TOUCH_POINTER_EMULATED;
     DeliverDeviceClassesChangedEvent(ti->sourceid, GetTimeInMillis(), dev->context);
     GetDixTouchEnd(&event, dev, ti, flags);
-    DeliverTouchEvents(dev, ti, &event, resource);
+    DeliverTouchEvents(dev, ti, &event, resource, dev->context);
     if (ti->num_grabs == 0)
-        UpdateDeviceState(dev, &event.device_event);
+        UpdateDeviceState(dev, &event.device_event, dev->context);
 }
 
 void
@@ -1068,7 +1068,7 @@ TouchAcceptAndEnd(DeviceIntPtr dev, int touchid)
     if (!ti)
         return;
 
-    TouchListenerAcceptReject(dev, ti, 0, XIAcceptTouch);
+    TouchListenerAcceptReject(dev, ti, 0, XIAcceptTouch, dev->context);
     if (ti->pending_finish)
         TouchEmitTouchEnd(dev, ti, 0, 0);
     if (ti->num_listeners <= 1)

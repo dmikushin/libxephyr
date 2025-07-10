@@ -172,7 +172,7 @@ ProcXTestFakeInput(ClientPtr client)
     if ((nev % sizeof(xEvent)) || !nev)
         return BadLength;
     nev /= sizeof(xEvent);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     ev = (xEvent *) &((xReq *) stuff)[1];
     type = ev->u.u.type & 0177;
 
@@ -319,7 +319,7 @@ ProcXTestFakeInput(ClientPtr client)
         if (!dev)
             return BadAccess;
 
-        dev = GetXTestDevice(dev);
+        dev = GetXTestDevice(dev, client->context);
     }
 
 
@@ -328,7 +328,7 @@ ProcXTestFakeInput(ClientPtr client)
         TimeStamp activateTime;
         CARD32 ms;
 
-        activateTime = context->currentTime;
+        activateTime = client->context->currentTime;
         ms = activateTime.milliseconds + ev->u.keyButtonPointer.time;
         if (ms < activateTime.milliseconds)
             activateTime.months++;
@@ -407,7 +407,7 @@ ProcXTestFakeInput(ClientPtr client)
         break;
     }
     if (screenIsSaved == SCREEN_SAVER_ON)
-        dixSaveScreens(context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
+        dixSaveScreens(client->context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
 
     switch (type) {
     case MotionNotify:
@@ -428,7 +428,7 @@ ProcXTestFakeInput(ClientPtr client)
     }
 
     for (i = 0; i < nevents; i++)
-        mieqProcessDeviceEvent(dev, &xtest_evlist[i], miPointerGetScreen(inputInfo.pointer));
+        mieqProcessDeviceEvent(dev, &xtest_evlist[i], miPointerGetScreen(client->context->inputInfo.pointer));
 
     if (need_ptr_update)
         miPointerUpdateSprite(dev);
@@ -563,11 +563,11 @@ SProcXTestDispatch(ClientPtr client)
  * is a slave device to inputInfo master devices
  */
 void
-InitXTestDevices(void)
+InitXTestDevices(XephyrContext* context)
 {
     if (AllocXTestDevice(context->serverClient, "Virtual core",
                          &xtestpointer, &xtestkeyboard,
-                         inputInfo.pointer, inputInfo.keyboard) != Success)
+                         context->inputInfo.pointer, context->inputInfo.keyboard) != Success)
          FatalError("Failed to allocate XTest devices");
 
     if (ActivateDevice(xtestpointer, TRUE) != Success ||
@@ -576,9 +576,9 @@ InitXTestDevices(void)
     if (!EnableDevice(xtestpointer, TRUE) || !EnableDevice(xtestkeyboard, TRUE))
         FatalError("Failed to enable XTest core devices.");
 
-    AttachDevice(NULL, xtestpointer, inputInfo.pointer);
+    AttachDevice(NULL, xtestpointer, context->inputInfo.pointer);
 
-    AttachDevice(NULL, xtestkeyboard, inputInfo.keyboard);
+    AttachDevice(NULL, xtestkeyboard, context->inputInfo.keyboard);
 }
 
 /**
@@ -665,11 +665,11 @@ IsXTestDevice(DeviceIntPtr dev, DeviceIntPtr master)
  * @return The X Test virtual device for the given master.
  */
 DeviceIntPtr
-GetXTestDevice(DeviceIntPtr master)
+GetXTestDevice(DeviceIntPtr master, XephyrContext* context)
 {
     DeviceIntPtr it;
 
-    for (it = inputInfo.devices; it; it = it->next) {
+    for (it = context->inputInfo.devices; it; it = it->next) {
         if (IsXTestDevice(it, master))
             return it;
     }

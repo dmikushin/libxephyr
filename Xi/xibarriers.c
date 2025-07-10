@@ -599,7 +599,7 @@ CreatePointerBarrierClient(ClientPtr client,
 
     /* Alloc one per master pointer, they're the ones that can be blocked */
     xorg_list_init(&ret->per_device);
-    nt_list_for_each_entry(dev, inputInfo.devices, next) {
+    nt_list_for_each_entry(dev, client->context->inputInfo.devices, next) {
         struct PointerBarrierDevice *pbd;
 
         if (dev->type != MASTER_POINTER)
@@ -653,7 +653,7 @@ BarrierFreeBarrier(void *data, XID id)
     c = container_of(data, struct PointerBarrierClient, barrier);
     screen = c->screen;
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = screen->context->inputInfo.devices; dev; dev = dev->next) {
         struct PointerBarrierDevice *pbd;
         int root_x, root_y;
         BarrierEvent ev = {
@@ -731,7 +731,7 @@ static void remove_master_func(void *res, XID id, void *devid)
     int rc;
     Time ms = GetTimeInMillis();
 
-    rc = dixLookupDevice(&dev, *deviceid, context->serverClient, DixSendAccess);
+    rc = dixLookupDevice(&dev, *deviceid, NullClient, DixSendAccess);
     if (rc != Success)
         return;
 
@@ -769,12 +769,12 @@ static void remove_master_func(void *res, XID id, void *devid)
 
 void XIBarrierNewMasterDevice(ClientPtr client, int deviceid)
 {
-    FindClientResourcesByType(client, PointerBarrierType, add_master_func, &deviceid);
+    FindClientResourcesByType(client, PointerBarrierType, add_master_func, &deviceid, client->context);
 }
 
 void XIBarrierRemoveMasterDevice(ClientPtr client, int deviceid)
 {
-    FindClientResourcesByType(client, PointerBarrierType, remove_master_func, &deviceid);
+    FindClientResourcesByType(client, PointerBarrierType, remove_master_func, &deviceid, client->context);
 }
 
 int
@@ -807,7 +807,7 @@ XICreatePointerBarrier(ClientPtr client,
     if ((err = CreatePointerBarrierClient(client, stuff, &barrier)))
         return err;
 
-    if (!AddResource(stuff->barrier, PointerBarrierType, &barrier->barrier))
+    if (!AddResource(stuff->barrier, PointerBarrierType, &barrier->barrier, client->context))
         return BadAlloc;
 
     return Success;
@@ -830,7 +830,7 @@ XIDestroyPointerBarrier(ClientPtr client,
     if (CLIENT_ID(stuff->barrier) != client->index)
         return BadAccess;
 
-    FreeResource(stuff->barrier, RT_NONE);
+    FreeResource(stuff->barrier, RT_NONE, client->context);
     return Success;
 }
 
@@ -913,11 +913,11 @@ ProcXIBarrierReleasePointer(ClientPtr client)
 }
 
 Bool
-XIBarrierInit(void)
+XIBarrierInit(XephyrContext* context)
 {
     int i;
 
-    if (!dixRegisterPrivateKey(&BarrierScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&BarrierScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
     for (i = 0; i < context->screenInfo.numScreens; i++) {
@@ -938,7 +938,7 @@ XIBarrierInit(void)
 }
 
 void
-XIBarrierReset(void)
+XIBarrierReset(XephyrContext* context)
 {
     int i;
     for (i = 0; i < context->screenInfo.numScreens; i++) {

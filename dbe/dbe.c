@@ -322,7 +322,7 @@ ProcDbeAllocateBackBufferName(ClientPtr client)
     if (status == Success) {
         pDbeWindowPriv->IDs[add_index] = stuff->buffer;
         if (!AddResource(stuff->buffer, dbeWindowPrivResType,
-                         (void *) pDbeWindowPriv)) {
+                         (void *) pDbeWindowPriv, client->context)) {
             pDbeWindowPriv->IDs[add_index] = DBE_FREE_ID_ELEMENT;
 
             if (pDbeWindowPriv->nBufferIDs == 0) {
@@ -599,7 +599,7 @@ ProcDbeGetVisualInfo(ClientPtr client)
         }
     }
 
-    count = (stuff->n == 0) ? context->screenInfo.numScreens : stuff->n;
+    count = (stuff->n == 0) ? client->context->screenInfo.numScreens : stuff->n;
     if (!(pScrVisInfo = calloc(count, sizeof(XdbeScreenVisualInfo)))) {
         free(pDrawables);
 
@@ -609,7 +609,7 @@ ProcDbeGetVisualInfo(ClientPtr client)
     length = 0;
 
     for (i = 0; i < count; i++) {
-        pScreen = (stuff->n == 0) ? context->screenInfo.screens[i] :
+        pScreen = (stuff->n == 0) ? client->context->screenInfo.screens[i] :
             pDrawables[i]->pScreen;
         pDbeScreenPriv = DBE_SCREEN_PRIV(pScreen);
 
@@ -1255,8 +1255,16 @@ DbeResetProc(ExtensionEntry * extEntry)
     ScreenPtr pScreen;
     DbeScreenPrivPtr pDbeScreenPriv;
 
-    for (i = 0; i < context->screenInfo.numScreens; i++) {
-        pScreen = context->screenInfo.screens[i];
+    /* Get context from first available screen */
+    ScreenPtr pFirstScreen = NULL;
+    for (i = 0; i < 16; i++) { /* reasonable max screens */
+        if ((pFirstScreen = GetScreen(i)) != NULL && pFirstScreen->context != NULL)
+            break;
+    }
+    if (!pFirstScreen) return; /* No screens available */
+    
+    for (i = 0; i < pFirstScreen->context->screenInfo.numScreens; i++) {
+        pScreen = pFirstScreen->context->screenInfo.screens[i];
         pDbeScreenPriv = DBE_SCREEN_PRIV(pScreen);
 
         if (pDbeScreenPriv) {
@@ -1359,7 +1367,7 @@ DbeDestroyWindow(WindowPtr pWin)
  *****************************************************************************/
 
 void
-DbeExtensionInit(void)
+DbeExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
     register int i, j;
@@ -1385,10 +1393,10 @@ DbeExtensionInit(void)
     if (!dbeWindowPrivResType)
         return;
 
-    if (!dixRegisterPrivateKey(&dbeScreenPrivKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&dbeScreenPrivKeyRec, PRIVATE_SCREEN, 0, context))
         return;
 
-    if (!dixRegisterPrivateKey(&dbeWindowPrivKeyRec, PRIVATE_WINDOW, 0))
+    if (!dixRegisterPrivateKey(&dbeWindowPrivKeyRec, PRIVATE_WINDOW, 0, context))
         return;
 
     for (i = 0; i < context->screenInfo.numScreens; i++) {

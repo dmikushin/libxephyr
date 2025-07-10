@@ -223,6 +223,6 @@ void ephyr_glamor_host_paint_rect(ScreenPtr pScreen);
 
 Bool ephyrInitVideo(ScreenPtr pScreen);
 
-void ephyr_glamor_xv_init(ScreenPtr screen);
+void ephyr_glamor_xv_init(ScreenPtr screen, XephyrContext* context);
 
 #endif

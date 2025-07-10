@@ -73,7 +73,7 @@ GlxServerVendor *GlxGetXIDMap(XID id)
     return vendor;
 }
 
-Bool GlxAddXIDMap(XID id, GlxServerVendor *vendor)
+Bool GlxAddXIDMap(XID id, GlxServerVendor *vendor, XephyrContext* context)
 {
     if (id == 0 || vendor == NULL) {
         return FALSE;
@@ -81,12 +81,12 @@ Bool GlxAddXIDMap(XID id, GlxServerVendor *vendor)
     if (LookupXIDMapResource(id) != NULL) {
         return FALSE;
     }
-    return AddResource(id, idResource, vendor);
+    return AddResource(id, idResource, vendor, context);
 }
 
-void GlxRemoveXIDMap(XID id)
+void GlxRemoveXIDMap(XID id, XephyrContext* context)
 {
-    FreeResourceByType(id, idResource, FALSE);
+    FreeResourceByType(id, idResource, FALSE, context);
 }
 
 GlxContextTagInfo *GlxAllocContextTag(ClientPtr client, GlxServerVendor *vendor)

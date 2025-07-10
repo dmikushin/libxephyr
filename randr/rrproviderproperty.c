@@ -32,7 +32,7 @@ DeliverPropertyEvent(WindowPtr pWin, void *value)
     RREventPtr *pHead, pRREvent;
 
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            RREventType, context->serverClient, DixReadAccess);
+                            RREventType, pWin->drawable.pScreen->context->serverClient, DixReadAccess);
     if (!pHead)
         return WT_WALKCHILDREN;
 
@@ -72,7 +72,7 @@ RRDeleteProperty(RRProviderRec * provider, RRPropertyRec * prop)
         .provider = provider->id,
         .state = PropertyDelete,
         .atom = prop->propertyName,
-        .timestamp = context->currentTime.milliseconds
+        .timestamp = provider->pScreen->context->currentTime.milliseconds
     };
 
     RRDeliverPropertyEvent(provider->pScreen, (xEvent *) &event);
@@ -245,7 +245,7 @@ RRChangeProviderProperty(RRProviderPtr provider, Atom property, Atom type,
             .provider = provider->id,
             .state = PropertyNewValue,
             .atom = prop->propertyName,
-            .timestamp = context->currentTime.milliseconds
+            .timestamp = provider->pScreen->context->currentTime.milliseconds
         };
         RRDeliverPropertyEvent(provider->pScreen, (xEvent *) &event);
     }
@@ -503,7 +503,7 @@ ProcRRChangeProviderProperty(ClientPtr client)
     int err;
 
     REQUEST_AT_LEAST_SIZE(xRRChangeProviderPropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     format = stuff->format;
     mode = stuff->mode;
     if ((mode != PropModeReplace) && (mode != PropModeAppend) &&
@@ -551,7 +551,7 @@ ProcRRDeleteProviderProperty(ClientPtr client)
     RRPropertyPtr prop;
 
     REQUEST_SIZE_MATCH(xRRDeleteProviderPropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     VERIFY_RR_PROVIDER(stuff->provider, provider, DixReadAccess);
 
     if (!ValidAtom(stuff->property)) {
@@ -590,7 +590,7 @@ ProcRRGetProviderProperty(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xRRGetProviderPropertyReq);
     if (stuff->delete)
-        UpdateCurrentTime();
+        UpdateCurrentTime(client->context);
     VERIFY_RR_PROVIDER(stuff->provider, provider,
                      stuff->delete ? DixWriteAccess : DixReadAccess);
 
@@ -693,7 +693,7 @@ ProcRRGetProviderProperty(ClientPtr client)
             .provider = provider->id,
             .state = PropertyDelete,
             .atom = prop->propertyName,
-            .timestamp = context->currentTime.milliseconds
+            .timestamp = provider->pScreen->context->currentTime.milliseconds
         };
         RRDeliverPropertyEvent(provider->pScreen, (xEvent *) &event);
     }

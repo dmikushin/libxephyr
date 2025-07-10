@@ -254,7 +254,7 @@ ProcXvMCCreateContext(ClientPtr client)
         free(pContext);
         return result;
     }
-    if (!AddResource(pContext->context_id, XvMCRTContext, pContext)) {
+    if (!AddResource(pContext->context_id, XvMCRTContext, pContext, client->context)) {
         free(data);
         return BadAlloc;
     }
@@ -291,7 +291,7 @@ ProcXvMCDestroyContext(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->context_id, RT_NONE);
+    FreeResource(stuff->context_id, RT_NONE, client->context);
 
     return Success;
 }
@@ -333,7 +333,7 @@ ProcXvMCCreateSurface(ClientPtr client)
         free(pSurface);
         return result;
     }
-    if (!AddResource(pSurface->surface_id, XvMCRTSurface, pSurface)) {
+    if (!AddResource(pSurface->surface_id, XvMCRTSurface, pSurface, client->context)) {
         free(data);
         return BadAlloc;
     }
@@ -369,7 +369,7 @@ ProcXvMCDestroySurface(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->surface_id, RT_NONE);
+    FreeResource(stuff->surface_id, RT_NONE, client->context);
 
     return Success;
 }
@@ -453,7 +453,7 @@ ProcXvMCCreateSubpicture(ClientPtr client)
         free(pSubpicture);
         return result;
     }
-    if (!AddResource(pSubpicture->subpicture_id, XvMCRTSubpicture, pSubpicture)) {
+    if (!AddResource(pSubpicture->subpicture_id, XvMCRTSubpicture, pSubpicture, client->context)) {
         free(data);
         return BadAlloc;
     }
@@ -497,7 +497,7 @@ ProcXvMCDestroySubpicture(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    FreeResource(stuff->subpicture_id, RT_NONE);
+    FreeResource(stuff->subpicture_id, RT_NONE, client->context);
 
     return Success;
 }
@@ -752,7 +752,7 @@ XvMCScreenInit(ScreenPtr pScreen, int num, XvMCAdaptorPtr pAdapt)
 {
     XvMCScreenPtr pScreenPriv;
 
-    if (!dixRegisterPrivateKey(&XvMCScreenKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&XvMCScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return BadAlloc;
 
     if (!(pScreenPriv = malloc(sizeof(XvMCScreenRec))))

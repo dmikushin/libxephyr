@@ -131,11 +131,11 @@ extern _X_EXPORT int WriteToClient(ClientPtr /*who */ , int /*count */ ,
 
 extern _X_EXPORT void ResetOsBuffers(void);
 
-extern _X_EXPORT void NotifyParentProcess(void);
+extern _X_EXPORT void NotifyParentProcess(XephyrContext* context);
 
-extern _X_EXPORT void CreateWellKnownSockets(void);
+extern _X_EXPORT void CreateWellKnownSockets(XephyrContext* context);
 
-extern _X_EXPORT void ResetWellKnownSockets(void);
+extern _X_EXPORT void ResetWellKnownSockets(XephyrContext* context);
 
 extern _X_EXPORT void CloseWellKnownConnections(void);
 
@@ -165,7 +165,7 @@ static inline void RemoveNotifyFd(int fd)
 
 extern _X_EXPORT int OnlyListenToOneClient(ClientPtr /*client */ );
 
-extern _X_EXPORT void ListenToAllClients(void);
+extern _X_EXPORT void ListenToAllClients(XephyrContext* context);
 
 extern _X_EXPORT void IgnoreClient(ClientPtr /*client */ );
 
@@ -175,7 +175,7 @@ extern _X_EXPORT void MakeClientGrabImpervious(ClientPtr /*client */ );
 
 extern _X_EXPORT void MakeClientGrabPervious(ClientPtr /*client */ );
 
-extern _X_EXPORT void ListenOnOpenFD(int /* fd */ , int /* noxauth */ );
+extern _X_EXPORT void ListenOnOpenFD(int /* fd */ , int /* noxauth */ , XephyrContext* /* context */ );
 
 extern _X_EXPORT Bool AddClientOnOpenFD(int /* fd */ , XephyrContext* /* context */ );
 
@@ -220,7 +220,7 @@ extern _X_EXPORT void GiveUp(int /*sig */ );
 
 extern _X_EXPORT void UseMsg(void);
 
-extern _X_EXPORT void ProcessCommandLine(int /*argc */ , char * /*argv */ []);
+extern _X_EXPORT void ProcessCommandLine(int /*argc */ , char * /*argv */ [], XephyrContext* /*context */ );
 
 extern _X_EXPORT int set_font_authorizations(char **authorizations,
                                              int *authlen,
@@ -307,7 +307,7 @@ OsRegisterSigWrapper(OsSigWrapperPtr newWrap);
 extern _X_EXPORT int auditTrailLevel;
 
 extern _X_EXPORT void
-LockServer(void);
+LockServer(XephyrContext* context);
 extern _X_EXPORT void
 UnlockServer(void);
 
@@ -444,7 +444,7 @@ extern _X_EXPORT void
 AddLocalHosts(void);
 
 extern _X_EXPORT void
-ResetHosts(const char *display);
+ResetHosts(const char *display, XephyrContext* context);
 
 extern _X_EXPORT void
 EnableLocalAccess(void);
@@ -636,9 +636,9 @@ typedef enum {
 } MessageType;
 
 extern _X_EXPORT const char *
-LogInit(const char *fname, const char *backup);
+LogInit(const char *fname, const char *backup, XephyrContext* context);
 extern void
-LogSetDisplay(void);
+LogSetDisplay(XephyrContext* context);
 extern _X_EXPORT void
 LogClose(enum ExitCode error);
 extern _X_EXPORT Bool
@@ -650,7 +650,7 @@ extern _X_EXPORT void
 LogWrite(int verb, const char *f, ...)
 _X_ATTRIBUTE_PRINTF(2, 3);
 extern _X_EXPORT void
-LogVMessageVerb(MessageType type, int verb, const char *format, va_list args)
+LogVMessageVerb(MessageType type, int verb, const char *format, va_list args, XephyrContext* context)
 _X_ATTRIBUTE_PRINTF(3, 0);
 extern _X_EXPORT void
 LogMessageVerb(MessageType type, int verb, const char *format, ...)

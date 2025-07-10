@@ -76,9 +76,22 @@ XFixesSelectionCallback(CallbackListPtr *callbacks, void *data, void *args)
     default:
         return;
     }
-    UpdateCurrentTimeIf();
+    // Get context from the first client in the list (if available)
+    XephyrContext* context = NULL;
+    for (e = selectionEvents; e; e = e->next) {
+        if (e->pClient && e->pClient->context) {
+            context = e->pClient->context;
+            break;
+        }
+    }
+    
+    if (context) {
+        UpdateCurrentTimeIf(context);
+    }
+    
     for (e = selectionEvents; e; e = e->next) {
         if (e->selection == selection->selection && (e->eventMask & eventMask)) {
+            XephyrContext* clientContext = e->pClient ? e->pClient->context : context;
             xXFixesSelectionNotifyEvent ev = {
                 .type = XFixesEventBase + XFixesSelectionNotify,
                 .subtype = subtype,
@@ -86,7 +99,7 @@ XFixesSelectionCallback(CallbackListPtr *callbacks, void *data, void *args)
                 .owner = (subtype == XFixesSetSelectionOwnerNotify) ?
                             selection->window : 0,
                 .selection = e->selection,
-                .timestamp = context->currentTime.milliseconds,
+                .timestamp = clientContext ? clientContext->currentTime.milliseconds : 0,
                 .selectionTimestamp = selection->lastTimeChanged.milliseconds
             };
             WriteEventsToClient(e->pClient, 1, (xEvent *) &ev);
@@ -137,7 +150,7 @@ XFixesSelectSelectionInput(ClientPtr pClient,
     }
     if (!eventMask) {
         if (e) {
-            FreeResource(e->clientResource, 0);
+            FreeResource(e->clientResource, 0, pClient->context);
         }
         return Success;
     }
@@ -157,21 +170,21 @@ XFixesSelectSelectionInput(ClientPtr pClient,
          * catch window destroy
          */
         rc = dixLookupResourceByType(&val, pWindow->drawable.id,
-                                     SelectionWindowType, context->serverClient,
+                                     SelectionWindowType, pClient->context->serverClient,
                                      DixGetAttrAccess);
         if (rc != Success)
             if (!AddResource(pWindow->drawable.id, SelectionWindowType,
-                             (void *) pWindow)) {
+                             (void *) pWindow, pClient->context)) {
                 free(e);
                 return BadAlloc;
             }
 
-        if (!AddResource(e->clientResource, SelectionClientType, (void *) e))
+        if (!AddResource(e->clientResource, SelectionClientType, (void *) e, pClient->context))
             return BadAlloc;
 
         *prev = e;
         if (!CheckSelectionCallback()) {
-            FreeResource(e->clientResource, 0);
+            FreeResource(e->clientResource, 0, pClient->context);
             return BadAlloc;
         }
     }
@@ -225,7 +238,7 @@ SXFixesSelectionNotifyEvent(xXFixesSelectionNotifyEvent * from,
 }
 
 static int
-SelectionFreeClient(void *data, XID id)
+SelectionFreeClient(void *data, XID id, XephyrContext* context)
 {
     SelectionEventPtr old = (SelectionEventPtr) data;
     SelectionEventPtr *prev, e;
@@ -242,7 +255,7 @@ SelectionFreeClient(void *data, XID id)
 }
 
 static int
-SelectionFreeWindow(void *data, XID id)
+SelectionFreeWindow(void *data, XID id, XephyrContext* context)
 {
     WindowPtr pWindow = (WindowPtr) data;
     SelectionEventPtr e, next;
@@ -250,14 +263,14 @@ SelectionFreeWindow(void *data, XID id)
     for (e = selectionEvents; e; e = next) {
         next = e->next;
         if (e->pWindow == pWindow) {
-            FreeResource(e->clientResource, 0);
+            FreeResource(e->clientResource, 0, context);
         }
     }
     return 1;
 }
 
 Bool
-XFixesSelectionInit(void)
+XFixesSelectionInit(XephyrContext* context)
 {
     SelectionClientType = CreateNewResourceType(SelectionFreeClient,
                                                 "XFixesSelectionClient");

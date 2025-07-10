@@ -588,7 +588,7 @@ extern _X_EXPORT void
 extern _X_EXPORT Bool
  RRGetInfo(ScreenPtr pScreen, Bool force_query);
 
-extern _X_EXPORT Bool RRInit(void);
+extern _X_EXPORT Bool RRInit(XephyrContext* context);
 
 extern _X_EXPORT Bool RRScreenInit(ScreenPtr pScreen);
 

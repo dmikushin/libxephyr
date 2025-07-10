@@ -1097,7 +1097,7 @@ exaCreateAlphaPicture(ScreenPtr pScreen,
     exaPixmapDirty(pPixmap, 0, 0, width, height);
     FreeScratchGC(pGC);
     pPicture = CreatePicture(0, &pPixmap->drawable, pPictFormat,
-                             0, 0, context->serverClient, &error);
+                             0, 0, pScreen->context->serverClient, &error);
     (*pScreen->DestroyPixmap) (pPixmap);
     return pPicture;
 }
@@ -1154,7 +1154,7 @@ exaTrapezoids(CARD8 op, PicturePtr pSrc, PicturePtr pDst,
         CompositePicture(op, pSrc, pPicture, pDst,
                          xRel, yRel, 0, 0, bounds.x1, bounds.y1,
                          bounds.x2 - bounds.x1, bounds.y2 - bounds.y1);
-        FreePicture(pPicture, 0);
+        FreePicture(pPicture, 0, pScreen->context);
     }
     else {
         if (pDst->polyEdge == PolyEdgeSharp)
@@ -1216,7 +1216,7 @@ exaTriangles(CARD8 op, PicturePtr pSrc, PicturePtr pDst,
         CompositePicture(op, pSrc, pPicture, pDst,
                          xRel, yRel, 0, 0, bounds.x1, bounds.y1,
                          bounds.x2 - bounds.x1, bounds.y2 - bounds.y1);
-        FreePicture(pPicture, 0);
+        FreePicture(pPicture, 0, pScreen->context);
     }
     else {
         if (pDst->polyEdge == PolyEdgeSharp)

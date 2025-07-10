@@ -83,7 +83,7 @@ compReportDamage(DamagePtr pDamage, RegionPtr pRegion, void *closure)
     CompWindowPtr cw = GetCompWindow(pWin);
 
     if (!cs->pendingScreenUpdate) {
-        QueueWorkProc(compScreenUpdate, context->serverClient, pScreen);
+        QueueWorkProc(compScreenUpdate, pScreen->context->serverClient, pScreen);
         cs->pendingScreenUpdate = TRUE;
     }
     cw->damaged = TRUE;
@@ -200,7 +200,7 @@ compRedirectWindow(ClientPtr pClient, WindowPtr pWin, int update)
     }
     ccw->next = cw->clients;
     cw->clients = ccw;
-    if (!AddResource(ccw->id, CompositeClientWindowType, pWin))
+    if (!AddResource(ccw->id, CompositeClientWindowType, pWin, pClient->context))
         return BadAlloc;
     if (ccw->update == CompositeRedirectManual) {
         if (!anyMarked)
@@ -218,7 +218,7 @@ compRedirectWindow(ClientPtr pClient, WindowPtr pWin, int update)
     }
 
     if (!compCheckRedirect(pWin)) {
-        FreeResource(ccw->id, RT_NONE);
+        FreeResource(ccw->id, RT_NONE, pClient->context);
         return BadAlloc;
     }
 
@@ -330,7 +330,7 @@ compUnredirectWindow(ClientPtr pClient, WindowPtr pWin, int update)
 
     for (ccw = cw->clients; ccw; ccw = ccw->next)
         if (ccw->update == update && CLIENT_ID(ccw->id) == pClient->index) {
-            FreeResource(ccw->id, RT_NONE);
+            FreeResource(ccw->id, RT_NONE, pClient->context);
             return Success;
         }
     return BadValue;
@@ -399,7 +399,7 @@ compRedirectSubwindows(ClientPtr pClient, WindowPtr pWin, int update)
      */
     ccw->next = csw->clients;
     csw->clients = ccw;
-    if (!AddResource(ccw->id, CompositeClientSubwindowsType, pWin))
+    if (!AddResource(ccw->id, CompositeClientSubwindowsType, pWin, pClient->context))
         return BadAlloc;
     if (ccw->update == CompositeRedirectManual) {
         csw->update = CompositeRedirectManual;
@@ -428,7 +428,7 @@ compFreeClientSubwindows(WindowPtr pWin, XID id)
         return;
     for (prev = &csw->clients; (ccw = *prev); prev = &ccw->next) {
         if (ccw->id == id) {
-            ClientPtr pClient = context->clients[CLIENT_ID(id)];
+            ClientPtr pClient = pWin->drawable.pScreen->context->clients[CLIENT_ID(id)];
 
             *prev = ccw->next;
             if (ccw->update == CompositeRedirectManual) {
@@ -478,7 +478,7 @@ compUnredirectSubwindows(ClientPtr pClient, WindowPtr pWin, int update)
         return BadValue;
     for (ccw = csw->clients; ccw; ccw = ccw->next)
         if (ccw->update == update && CLIENT_ID(ccw->id) == pClient->index) {
-            FreeResource(ccw->id, RT_NONE);
+            FreeResource(ccw->id, RT_NONE, pClient->context);
             return Success;
         }
     return BadValue;
@@ -497,7 +497,7 @@ compRedirectOneSubwindow(WindowPtr pParent, WindowPtr pWin)
     if (!csw)
         return Success;
     for (ccw = csw->clients; ccw; ccw = ccw->next) {
-        int ret = compRedirectWindow(context->clients[CLIENT_ID(ccw->id)],
+        int ret = compRedirectWindow(pParent->drawable.pScreen->context->clients[CLIENT_ID(ccw->id)],
                                      pWin, ccw->update);
 
         if (ret != Success)
@@ -519,7 +519,7 @@ compUnredirectOneSubwindow(WindowPtr pParent, WindowPtr pWin)
     if (!csw)
         return Success;
     for (ccw = csw->clients; ccw; ccw = ccw->next) {
-        int ret = compUnredirectWindow(context->clients[CLIENT_ID(ccw->id)],
+        int ret = compUnredirectWindow(pParent->drawable.pScreen->context->clients[CLIENT_ID(ccw->id)],
                                        pWin, ccw->update);
 
         if (ret != Success)
@@ -572,13 +572,13 @@ compNewPixmap(WindowPtr pWin, int x, int y, int w, int h)
                                                pSrcFormat,
                                                CPSubwindowMode,
                                                &inferiors,
-                                               context->serverClient, &error);
+                                               pParent->drawable.pScreen->context->serverClient, &error);
 
         PicturePtr pDstPicture = CreatePicture(None,
                                                &pPixmap->drawable,
                                                pDstFormat,
                                                0, 0,
-                                               context->serverClient, &error);
+                                               pPixmap->drawable.pScreen->context->serverClient, &error);
 
         if (pSrcPicture && pDstPicture) {
             CompositePicture(PictOpSrc,
@@ -589,9 +589,9 @@ compNewPixmap(WindowPtr pWin, int x, int y, int w, int h)
                              y - pParent->drawable.y, 0, 0, 0, 0, w, h);
         }
         if (pSrcPicture)
-            FreePicture(pSrcPicture, 0);
+            FreePicture(pSrcPicture, 0, pParent->drawable.pScreen->context);
         if (pDstPicture)
-            FreePicture(pDstPicture, 0);
+            FreePicture(pDstPicture, 0, pPixmap->drawable.pScreen->context);
     }
     return pPixmap;
 }

@@ -1341,7 +1341,7 @@ ComputeFreezes(XephyrContext* context)
                     TouchFindByClientID(replayDev, event->device_event.touchid);
                 BUG_WARN(!ti);
 
-                TouchListenerAcceptReject(replayDev, ti, 0, XIRejectTouch);
+                TouchListenerAcceptReject(replayDev, ti, 0, XIRejectTouch, context);
             }
             else if (IsGestureEvent(event)) {
                 GestureInfoPtr gi =
@@ -1350,7 +1350,7 @@ ComputeFreezes(XephyrContext* context)
                     GestureEmitGestureEndToOwner(replayDev, gi);
                     GestureEndGesture(gi, context);
                 }
-                ProcessGestureEvent(event, replayDev);
+                ProcessGestureEvent(event, replayDev, context);
             }
             else {
                 WindowPtr w = XYToWindow(replayDev->spriteInfo->sprite,
@@ -1661,7 +1661,7 @@ DeactivatePointerGrab(DeviceIntPtr mouse)
                  * this hack is in DeliverTouchEndEvent */
                 ti->listeners[0].state = TOUCH_LISTENER_HAS_END;
             }
-            TouchListenerAcceptReject(mouse, ti, 0, mode);
+            TouchListenerAcceptReject(mouse, ti, 0, mode, mouse->context);
         }
     }
 
@@ -2063,7 +2063,7 @@ TryClientEvents(ClientPtr client, DeviceIntPtr dev, xEvent *pEvents,
     }
     else if (type == DeviceMotionNotify) {
         if (MaybeSendDeviceMotionNotifyHint((deviceKeyButtonPointer *) pEvents,
-                                            mask) != 0)
+                                            mask, dev ? dev->context : client->context) != 0)
             return 1;
     }
     else if (type == KeyPress) {
@@ -2396,7 +2396,7 @@ DeliverEventsToWindow(DeviceIntPtr pDev, WindowPtr pWin, xEvent
         else if (type == DeviceMotionNotify || type == DeviceButtonPress)
             CheckDeviceGrabAndHintWindow(pWin, type,
                                          (deviceKeyButtonPointer *) pEvents,
-                                         grab, client, deliveryMask);
+                                         grab, client, deliveryMask, pDev->context);
         return deliveries;
     }
     return nondeliveries;
@@ -3514,7 +3514,7 @@ NewCurrentScreen(DeviceIntPtr pDev, ScreenPtr newScreen, int x, int y)
 
     ptr =
         IsFloating(pDev) ? pDev :
-        GetXTestDevice(GetMaster(pDev, MASTER_POINTER));
+        GetXTestDevice(GetMaster(pDev, MASTER_POINTER), pDev->context);
     pSprite = ptr->spriteInfo->sprite;
 
     pSprite->hotPhys.x = x;

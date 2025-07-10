@@ -441,11 +441,12 @@ extern void
 DeliverTouchEvents(DeviceIntPtr /* dev */ ,
                    TouchPointInfoPtr /* ti */ ,
                    InternalEvent * /* ev */ ,
-                   XID /* resource */ );
+                   XID /* resource */,
+                   XephyrContext* /* context */ );
 
 extern Bool
 DeliverGestureEventToOwner(DeviceIntPtr dev, GestureInfoPtr gi,
-                           InternalEvent *ev);
+                           InternalEvent *ev, XephyrContext* context);
 
 extern void
 InitializeSprite(DeviceIntPtr /* pDev */ ,

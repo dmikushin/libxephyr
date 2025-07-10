@@ -31,7 +31,7 @@
  */
 
 static void
-KdSetColormap(ScreenPtr pScreen)
+KdSetColormap(ScreenPtr pScreen, XephyrContext* context)
 {
     KdScreenPriv(pScreen);
     ColormapPtr pCmap = pScreenPriv->pInstalledmap;
@@ -80,7 +80,7 @@ KdSetColormap(ScreenPtr pScreen)
  * the current colormap
  */
 void
-KdEnableColormap(ScreenPtr pScreen)
+KdEnableColormap(ScreenPtr pScreen, XephyrContext* context)
 {
     KdScreenPriv(pScreen);
     int i;
@@ -96,7 +96,7 @@ KdEnableColormap(ScreenPtr pScreen)
                                                   depth),
                                                  pScreenPriv->systemPalette);
     }
-    KdSetColormap(pScreen);
+    KdSetColormap(pScreen, context);
 }
 
 void
@@ -125,24 +125,24 @@ KdDisableColormap(ScreenPtr pScreen)
  * colormap and realize it into the Windows system palette.
  */
 void
-KdInstallColormap(ColormapPtr pCmap)
+KdInstallColormap(ColormapPtr pCmap, XephyrContext* context)
 {
     KdScreenPriv(pCmap->pScreen);
 
     if (pCmap == pScreenPriv->pInstalledmap)
         return;
 
-    /* Tell X context->clients that the installed colormap is going away. */
+    /* Tell X clients that the installed colormap is going away. */
     if (pScreenPriv->pInstalledmap)
         WalkTree(pScreenPriv->pInstalledmap->pScreen, TellLostMap,
                  (void *) &(pScreenPriv->pInstalledmap->mid));
 
-    /* Take note of the new installed colorscreen-> */
+    /* Take note of the new installed colorscreen */
     pScreenPriv->pInstalledmap = pCmap;
 
-    KdSetColormap(pCmap->pScreen);
+    KdSetColormap(pCmap->pScreen, context);
 
-    /* Tell X context->clients of the new colormap */
+    /* Tell X clients of the new colormap */
     WalkTree(pCmap->pScreen, TellGainedMap, (void *) &(pCmap->mid));
 }
 
@@ -154,7 +154,7 @@ KdInstallColormap(ColormapPtr pCmap)
  * The default X colormap itself cannot be uninstalled.
  */
 void
-KdUninstallColormap(ColormapPtr pCmap)
+KdUninstallColormap(ColormapPtr pCmap, XephyrContext* context)
 {
     KdScreenPriv(pCmap->pScreen);
     Colormap defMapID;
@@ -173,7 +173,7 @@ KdUninstallColormap(ColormapPtr pCmap)
     dixLookupResourceByType((void **) &defMap, defMapID, RT_COLORMAP,
                             context->serverClient, DixInstallAccess);
     if (defMap)
-        (*pCmap->pScreen->InstallColormap) (defMap);
+        (*pCmap->pScreen->InstallColormap) (defMap, context);
     else {
         /* uninstall and clear colormap pointer */
         WalkTree(pCmap->pScreen, TellLostMap, (void *) &(pCmap->mid));

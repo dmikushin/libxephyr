@@ -73,10 +73,10 @@ damageGetGeometry(DrawablePtr draw, int *x, int *y, int *w, int *h)
         WindowPtr win = (WindowPtr)draw;
 
         if (!win->parent) {
-            *x = context->screenInfo.x;
-            *y = context->screenInfo.y;
-            *w = context->screenInfo.width;
-            *h = context->screenInfo.height;
+            *x = draw->pScreen->context->screenInfo.x;
+            *y = draw->pScreen->context->screenInfo.y;
+            *w = draw->pScreen->context->screenInfo.width;
+            *h = draw->pScreen->context->screenInfo.height;
             return;
         }
     }
@@ -98,13 +98,13 @@ DamageExtNotify(DamageExtPtr pDamageExt, BoxPtr pBoxes, int nBoxes)
 
     damageGetGeometry(pDrawable, &x, &y, &w, &h);
 
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(pClient->context);
     ev = (xDamageNotifyEvent) {
         .type = DamageEventBase + XDamageNotify,
         .level = pDamageExt->level,
         .drawable = pDamageExt->drawable,
         .damage = pDamageExt->id,
-        .timestamp = context->currentTime.milliseconds,
+        .timestamp = pClient->context->currentTime.milliseconds,
         .geometry.x = x,
         .geometry.y = y,
         .geometry.width = w,
@@ -162,7 +162,7 @@ DamageExtDestroy(DamagePtr pDamage, void *closure)
 
     pDamageExt->pDamage = 0;
     if (pDamageExt->id)
-        FreeResource(pDamageExt->id, RT_NONE);
+        FreeResource(pDamageExt->id, RT_NONE, pDamageExt->pClient->context);
 }
 
 void
@@ -246,7 +246,7 @@ DamageExtCreate(DrawablePtr pDrawable, DamageReportLevel level,
         return NULL;
     }
 
-    if (!AddResource(id, DamageExtType, (void *) pDamageExt))
+    if (!AddResource(id, DamageExtType, (void *) pDamageExt, client->context))
         return NULL;
 
     DamageExtRegister(pDrawable, pDamageExt->pDamage,
@@ -315,7 +315,7 @@ ProcDamageDestroy(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xDamageDestroyReq);
     VERIFY_DAMAGEEXT(pDamageExt, stuff->damage, client, DixWriteAccess);
-    FreeResource(stuff->damage, RT_NONE);
+    FreeResource(stuff->damage, RT_NONE, client->context);
     return Success;
 }
 
@@ -332,7 +332,7 @@ DamageExtSubtractWindowClip(DamageExtPtr pDamageExt)
         return &PanoramiXScreenRegion;
 
     dixLookupResourceByType((void **)&res, win->drawable.id, XRT_WINDOW,
-                            context->serverClient, DixReadAccess);
+                            pDamageExt->pClient->context->serverClient, DixReadAccess);
     if (!res)
         return NULL;
 
@@ -342,7 +342,7 @@ DamageExtSubtractWindowClip(DamageExtPtr pDamageExt)
 
     FOR_NSCREENS_FORWARD(i) {
         ScreenPtr screen;
-        if (Success != dixLookupWindow(&win, res->info[i].id, context->serverClient,
+        if (Success != dixLookupWindow(&win, res->info[i].id, pDamageExt->pClient->context->serverClient,
                                        DixReadAccess))
             goto out;
 
@@ -655,7 +655,7 @@ PanoramiXDamageCreate(ClientPtr client)
     if (!(damage = calloc(1, sizeof(PanoramiXDamageRes))))
         return BadAlloc;
 
-    if (!AddResource(stuff->damage, XRT_DAMAGE, damage))
+    if (!AddResource(stuff->damage, XRT_DAMAGE, damage, client->context))
         return BadAlloc;
 
     damage->ext = doDamageCreate(client, &rc);
@@ -666,7 +666,7 @@ PanoramiXDamageCreate(ClientPtr client)
                                              PanoramiXDamageExtDestroy,
                                              DamageReportRawRegion,
                                              FALSE,
-                                             context->screenInfo.screens[i],
+                                             client->context->screenInfo.screens[i],
                                              damage);
             if (!pDamage) {
                 rc = BadAlloc;
@@ -684,7 +684,7 @@ PanoramiXDamageCreate(ClientPtr client)
     }
 
     if (rc != Success)
-        FreeResource(stuff->damage, RT_NONE);
+        FreeResource(stuff->damage, RT_NONE, client->context);
 
     return rc;
 }
@@ -726,7 +726,7 @@ PanoramiXDamageReset(void)
 #endif /* PANORAMIX */
 
 void
-DamageExtensionInit(void)
+DamageExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
     int s;
@@ -739,7 +739,7 @@ DamageExtensionInit(void)
         return;
 
     if (!dixRegisterPrivateKey
-        (&DamageClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(DamageClientRec)))
+        (&DamageClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(DamageClientRec), context))
         return;
 
     if ((extEntry = AddExtension(DAMAGE_NAME, XDamageNumberEvents,

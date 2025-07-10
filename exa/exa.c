@@ -878,7 +878,7 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
 
     ps = GetPictureScreenIfSet(pScreen);
 
-    if (!dixRegisterPrivateKey(&exaScreenPrivateKeyRec, PRIVATE_SCREEN, 0)) {
+    if (!dixRegisterPrivateKey(&exaScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context)) {
         LogMessage(X_WARNING, "EXA(%d): Failed to register screen private\n",
                    pScreen->myNum);
         return FALSE;

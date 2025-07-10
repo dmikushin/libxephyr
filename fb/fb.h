@@ -720,10 +720,10 @@ extern _X_EXPORT int
  fbListInstalledColormaps(ScreenPtr pScreen, Colormap * pmaps);
 
 extern _X_EXPORT void
- fbInstallColormap(ColormapPtr pmap);
+ fbInstallColormap(ColormapPtr pmap, XephyrContext* context);
 
 extern _X_EXPORT void
- fbUninstallColormap(ColormapPtr pmap);
+ fbUninstallColormap(ColormapPtr pmap, XephyrContext* context);
 
 extern _X_EXPORT void
 

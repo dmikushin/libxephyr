@@ -1,6 +1,6 @@
 #include "dix/context.h"
 /* Forward declaration for InitOutput from ephyr layer */
-extern void InitOutput(ScreenInfo *pScreenInfo, int argc, char **argv);
+extern void InitOutput(ScreenInfo *pScreenInfo, int argc, char **argv, XephyrContext* context);
 /***********************************************************
 
 Copyright 1987, 1998  The Open Group
@@ -143,7 +143,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
     CheckUserAuthorization();
 
-    ProcessCommandLine(argc, argv);
+    ProcessCommandLine(argc, argv, context);
 
     alwaysCheckForInput[0] = 0;
     alwaysCheckForInput[1] = 1;
@@ -158,7 +158,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         /* Perform any operating system dependent initializations you'd like */
         OsInit(context);
         if (context->serverGeneration == 1) {
-            CreateWellKnownSockets();
+            CreateWellKnownSockets(context);
             for (i = 1; i < LimitClients; i++)
                 context->clients[i] = NullClient;
             context->serverClient = calloc(sizeof(ClientRec), 1);
@@ -168,7 +168,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             context->serverClient->context = context;
         }
         else
-            ResetWellKnownSockets();
+            ResetWellKnownSockets(context);
         context->clients[0] = context->serverClient;
         context->currentMaxClients = 1;
 
@@ -196,11 +196,11 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         dixResetRegistry();
         InitFonts();
         InitCallbackManager();
-        InitOutput(&context->screenInfo, argc, argv);
+        InitOutput(&context->screenInfo, argc, argv, context);
 
         if (context->screenInfo.numScreens < 1)
             FatalError("no screens found");
-        InitExtensions(argc, argv);
+        InitExtensions(argc, argv, context);
 
         for (i = 0; i < context->screenInfo.numGPUScreens; i++) {
             ScreenPtr pScreen = context->screenInfo.gpuscreens[i];
@@ -245,7 +245,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
          * Consolidate window and colourmap information for each screen
          */
         if (!noPanoramiXExtension)
-            PanoramiXConsolidate();
+            PanoramiXConsolidate(context);
 #endif
 
         for (i = 0; i < context->screenInfo.numScreens; i++)
@@ -262,7 +262,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
 #ifdef PANORAMIX
         if (!noPanoramiXExtension) {
-            if (!PanoramiXCreateConnectionBlock()) {
+            if (!PanoramiXCreateConnectionBlock(context)) {
                 FatalError("could not create connection block info");
             }
         }
@@ -274,7 +274,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             }
         }
 
-        NotifyParentProcess();
+        NotifyParentProcess(context);
 
         InputThreadInit();
 
@@ -307,7 +307,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         FreeAllResources(context);
 #endif
 
-        CloseInput();
+        CloseInput(context);
 
         InputThreadFini();
 

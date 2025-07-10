@@ -53,7 +53,7 @@ miListInstalledColormaps(ScreenPtr pScreen, Colormap * pmaps)
 }
 
 void
-miInstallColormap(ColormapPtr pmap)
+miInstallColormap(ColormapPtr pmap, XephyrContext* context)
 {
     ColormapPtr oldpmap = GetInstalledmiColormap(pmap->pScreen);
 
@@ -70,7 +70,7 @@ miInstallColormap(ColormapPtr pmap)
 }
 
 void
-miUninstallColormap(ColormapPtr pmap)
+miUninstallColormap(ColormapPtr pmap, XephyrContext* context)
 {
     ColormapPtr curpmap = GetInstalledmiColormap(pmap->pScreen);
 
@@ -78,8 +78,8 @@ miUninstallColormap(ColormapPtr pmap)
         if (pmap->mid != pmap->pScreen->defColormap) {
             dixLookupResourceByType((void **) &curpmap,
                                     pmap->pScreen->defColormap,
-                                    RT_COLORMAP, pmap->pScreen->context->serverClient, DixUseAccess);
-            (*pmap->pScreen->InstallColormap) (curpmap);
+                                    RT_COLORMAP, context->serverClient, DixUseAccess);
+            (*pmap->pScreen->InstallColormap) (curpmap, context);
         }
     }
 }
@@ -242,7 +242,7 @@ miCreateDefColormap(ScreenPtr pScreen)
     ColormapPtr cmap;
     int alloctype;
 
-    if (!dixRegisterPrivateKey(&micmapScrPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&micmapScrPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
     for (pVisual = pScreen->visuals;
@@ -268,7 +268,7 @@ miCreateDefColormap(ScreenPtr pScreen)
         pScreen->blackPixel = bp;
     }
 
-    (*pScreen->InstallColormap) (cmap);
+    (*pScreen->InstallColormap) (cmap, pScreen->context);
     return TRUE;
 }
 

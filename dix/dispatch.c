@@ -2528,7 +2528,7 @@ ProcInstallColormap(ClientPtr client)
         goto out;
     }
 
-    (*(pcmp->pScreen->InstallColormap)) (pcmp);
+    (*(pcmp->pScreen->InstallColormap)) (pcmp, client->context);
     return Success;
 
  out:
@@ -2558,7 +2558,7 @@ ProcUninstallColormap(ClientPtr client)
     }
 
     if (pcmp->mid != pcmp->pScreen->defColormap)
-        (*(pcmp->pScreen->UninstallColormap)) (pcmp);
+        (*(pcmp->pScreen->UninstallColormap)) (pcmp, client->context);
     return Success;
 
  out:

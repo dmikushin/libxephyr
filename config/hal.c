@@ -47,6 +47,7 @@
 struct config_hal_info {
     DBusConnection *system_bus;
     LibHalContext *hal_ctx;
+    XephyrContext *context;
 };
 
 /* Used for special handling of xkb options. */
@@ -62,11 +63,12 @@ static void
 device_removed(LibHalContext * ctx, const char *udi)
 {
     char *value;
+    XephyrContext *context = (XephyrContext*)libhal_ctx_get_user_data(ctx);
 
     if (asprintf(&value, "hal:%s", udi) == -1)
         return;
 
-    remove_devices("hal", value);
+    remove_devices("hal", value, context);
 
     free(value);
 }
@@ -142,6 +144,9 @@ device_added(LibHalContext * hal_ctx, const char *udi)
     char *psi_key = NULL, *tmp_val;
 
     dbus_error_init(&error);
+    
+    struct config_hal_info *info = (struct config_hal_info *)libhal_ctx_get_user_data(hal_ctx);
+    XephyrContext* context = info->context;
 
     driver = get_prop_string(hal_ctx, udi, "input.x11_driver");
     if (!driver) {
@@ -242,7 +247,7 @@ device_added(LibHalContext * hal_ctx, const char *udi)
     }
 
     /* Check for duplicate devices */
-    if (device_is_duplicate(config_info)) {
+    if (device_is_duplicate(config_info, (XephyrContext*)libhal_ctx_get_user_data(hal_ctx))) {
         LogMessage(X_WARNING,
                    "config/hal: device %s already added. Ignoring.\n", name);
         goto unwind;
@@ -398,7 +403,7 @@ device_added(LibHalContext * hal_ctx, const char *udi)
 
     /* this isn't an error, but how else do you output something that the user can see? */
     LogMessage(X_INFO, "config/hal: Adding input device %s\n", name);
-    if ((rc = NewInputDeviceRequest(input_options, &attrs, &dev)) != Success) {
+    if ((rc = NewInputDeviceRequest(input_options, &attrs, &dev, context)) != Success) {
         LogMessage(X_ERROR, "config/hal: NewInputDeviceRequest failed (%d)\n",
                    rc);
         dev = NULL;
@@ -481,6 +486,8 @@ connect_and_register(DBusConnection * connection, struct config_hal_info *info)
         LogMessage(X_ERROR, "config/hal: couldn't create HAL context\n");
         goto out_err;
     }
+    
+    libhal_ctx_set_user_data(info->hal_ctx, info->context);
 
     if (!libhal_ctx_set_dbus_connection(info->hal_ctx, info->system_bus)) {
         LogMessage(X_ERROR,
@@ -652,11 +659,12 @@ static struct dbus_core_hook hook = {
 };
 
 int
-config_hal_init(void)
+config_hal_init(XephyrContext* context)
 {
     memset(&hal_info, 0, sizeof(hal_info));
     hal_info.system_bus = NULL;
     hal_info.hal_ctx = NULL;
+    hal_info.context = context;
 
     if (!dbus_core_add_hook(&hook)) {
         LogMessage(X_ERROR, "config/hal: failed to add D-Bus hook\n");

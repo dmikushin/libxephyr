@@ -58,7 +58,7 @@
 
 extern void __glXFlushContextCache(void);
 
-extern Bool __glXAddContext(__GLXcontext * cx);
+extern Bool __glXAddContext(__GLXcontext * cx, XephyrContext* context);
 extern void __glXErrorCallBack(GLenum code);
 extern void __glXClearErrorOccured(void);
 extern GLboolean __glXErrorOccured(void);

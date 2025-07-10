@@ -69,7 +69,8 @@ extern _X_EXPORT Bool SetScrollValuator(DeviceIntPtr /* dev */ ,
                                         int /* axnum */ ,
                                         enum ScrollType /* type */ ,
                                         double /* increment */ ,
-                                        int /* flags */ );
+                                        int /* flags */,
+                                        XephyrContext* /* context */ );
 
 /* Input device properties */
 extern _X_EXPORT void XIDeleteAllDeviceProperties(DeviceIntPtr  /* device */
@@ -122,7 +123,7 @@ extern _X_EXPORT void XIUnregisterPropertyHandler(DeviceIntPtr dev, long id);
 
 extern _X_EXPORT Atom XIGetKnownProperty(const char *name);
 
-extern _X_EXPORT DeviceIntPtr XIGetDevice(xEvent *ev);
+extern _X_EXPORT DeviceIntPtr XIGetDevice(xEvent *ev, XephyrContext* context);
 
 extern _X_EXPORT int XIPropToInt(XIPropertyValuePtr val,
                                  int *nelem_return, int **buf_return);
@@ -156,11 +157,13 @@ typedef struct _GrabParameters {
 
 extern int
  UpdateDeviceState(DeviceIntPtr /* device */ ,
-                   DeviceEvent * /*  xE    */ );
+                   DeviceEvent * /*  xE    */,
+                   XephyrContext* /* context */ );
 
 extern void
  ProcessOtherEvent(InternalEvent * /* ev */ ,
-                   DeviceIntPtr /* other */ );
+                   DeviceIntPtr /* other */,
+                   XephyrContext* /* context */ );
 
 extern int
  CheckGrabValues(ClientPtr /* client */ ,
@@ -173,7 +176,8 @@ extern int
             int /* button */ ,
             GrabParameters * /* param */ ,
             enum InputLevel /* grabtype */ ,
-            GrabMask * /* eventMask */ );
+            GrabMask * /* eventMask */,
+            XephyrContext* /* context */ );
 
 extern int
  GrabKey(ClientPtr /* client */ ,
@@ -182,14 +186,16 @@ extern int
          int /* key */ ,
          GrabParameters * /* param */ ,
          enum InputLevel /* grabtype */ ,
-         GrabMask * /* eventMask */ );
+         GrabMask * /* eventMask */,
+         XephyrContext* /* context */ );
 
 extern int
  GrabWindow(ClientPtr /* client */ ,
             DeviceIntPtr /* dev */ ,
             int /* type */ ,
             GrabParameters * /* param */ ,
-            GrabMask * /* eventMask */ );
+            GrabMask * /* eventMask */,
+            XephyrContext* /* context */ );
 
 extern int
  GrabTouchOrGesture(ClientPtr /* client */ ,
@@ -197,30 +203,35 @@ extern int
                     DeviceIntPtr /* mod_dev */ ,
                     int /* type */ ,
                     GrabParameters * /* param */ ,
-                    GrabMask * /* eventMask */ );
+                    GrabMask * /* eventMask */,
+                    XephyrContext* /* context */ );
 
 extern int
  SelectForWindow(DeviceIntPtr /* dev */ ,
                  WindowPtr /* pWin */ ,
                  ClientPtr /* client */ ,
                  Mask /* mask */ ,
-                 Mask /* exclusivemasks */ );
+                 Mask /* exclusivemasks */,
+                 XephyrContext* /* context */ );
 
 extern int
  AddExtensionClient(WindowPtr /* pWin */ ,
                     ClientPtr /* client */ ,
                     Mask /* mask */ ,
-                    int /* mskidx */ );
+                    int /* mskidx */,
+                    XephyrContext* /* context */ );
 
 extern void
  RecalculateDeviceDeliverableEvents(WindowPtr /* pWin */ );
 
 extern int
  InputClientGone(WindowPtr /* pWin */ ,
-                 XID /* id */ );
+                 XID /* id */,
+                 XephyrContext* /* context */ );
 
 extern void
- WindowGone(WindowPtr /* win */ );
+ WindowGone(WindowPtr /* win */,
+            XephyrContext* /* context */ );
 
 extern int
  SendEvent(ClientPtr /* client */ ,
@@ -229,7 +240,8 @@ extern int
            Bool /* propagate */ ,
            xEvent * /* ev */ ,
            Mask /* mask */ ,
-           int /* count */ );
+           int /* count */,
+           XephyrContext* /* context */ );
 
 extern int
  SetButtonMapping(ClientPtr /* client */ ,
@@ -245,7 +257,8 @@ extern int
                   KeyCode /* firstKeyCode */ ,
                   CARD8 /* keyCodes */ ,
                   CARD8 /* keySymsPerKeyCode */ ,
-                  KeySym * /* map */ );
+                  KeySym * /* map */,
+                  XephyrContext* /* context */ );
 
 extern void
  DeleteWindowFromAnyExtEvents(WindowPtr /* pWin */ ,
@@ -253,7 +266,8 @@ extern void
 
 extern int
  MaybeSendDeviceMotionNotifyHint(deviceKeyButtonPointer * /* pEvents */ ,
-                                 Mask /* mask */ );
+                                 Mask /* mask */,
+                                 XephyrContext* /* context */ );
 
 extern void
  CheckDeviceGrabAndHintWindow(WindowPtr /* pWin */ ,
@@ -261,7 +275,8 @@ extern void
                               deviceKeyButtonPointer * /* xE */ ,
                               GrabPtr /* grab */ ,
                               ClientPtr /* client */ ,
-                              Mask /* deliveryMask */ );
+                              Mask /* deliveryMask */,
+                              XephyrContext* /* context */ );
 
 extern void
  MaybeStopDeviceHint(DeviceIntPtr /* dev */ ,
@@ -271,19 +286,22 @@ extern int
  DeviceEventSuppressForWindow(WindowPtr /* pWin */ ,
                               ClientPtr /* client */ ,
                               Mask /* mask */ ,
-                              int /* maskndx */ );
+                              int /* maskndx */,
+                              XephyrContext* /* context */ );
 
 extern void
  SendEventToAllWindows(DeviceIntPtr /* dev */ ,
                        Mask /* mask */ ,
                        xEvent * /* ev */ ,
-                       int /* count */ );
+                       int /* count */,
+                       XephyrContext* /* context */ );
 
 extern void
  TouchRejected(DeviceIntPtr /* sourcedev */ ,
                TouchPointInfoPtr /* ti */ ,
                XID /* resource */ ,
-               TouchOwnershipEvent * /* ev */ );
+               TouchOwnershipEvent * /* ev */,
+               XephyrContext* /* context */ );
 
 extern _X_HIDDEN void XI2EventSwap(xGenericEvent * /* from */ ,
                                    xGenericEvent * /* to */ );
@@ -300,7 +318,7 @@ extern void
 extern int
 
 XISetEventMask(DeviceIntPtr dev, WindowPtr win, ClientPtr client,
-               unsigned int len, unsigned char *mask);
+               unsigned int len, unsigned char *mask, XephyrContext* context);
 
 extern int
  XICheckInvalidMaskBits(ClientPtr client, unsigned char *mask, int len);

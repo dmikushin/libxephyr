@@ -36,8 +36,8 @@ int
 XIDestroyPointerBarrier(ClientPtr client,
                         xXFixesDestroyPointerBarrierReq * stuff);
 
-Bool XIBarrierInit(void);
-void XIBarrierReset(void);
+Bool XIBarrierInit(XephyrContext* context);
+void XIBarrierReset(XephyrContext* context);
 
 int SProcXIBarrierReleasePointer(ClientPtr client);
 int ProcXIBarrierReleasePointer(ClientPtr client);

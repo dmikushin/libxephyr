@@ -372,7 +372,7 @@ present_flip_notify(present_vblank_ptr vblank, uint64_t ust, uint64_t crtc_msc)
 }
 
 void
-present_event_notify(uint64_t event_id, uint64_t ust, uint64_t msc)
+present_event_notify(uint64_t event_id, uint64_t ust, uint64_t msc, XephyrContext* context)
 {
     present_vblank_ptr  vblank;
     int                 s;

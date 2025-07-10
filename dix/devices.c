@@ -346,7 +346,7 @@ SendDevicePresenceEvent(int deviceid, int type, XephyrContext* context)
     ev.deviceid = deviceid;
 
     SendEventToAllWindows(&dummyDev, DevicePresenceNotifyMask,
-                          (xEvent *) &ev, 1);
+                          (xEvent *) &ev, 1, context);
 }
 
 /**
@@ -421,7 +421,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     SendDevicePresenceEvent(dev->id, DeviceEnabled, dev->context);
     if (sendevent) {
         flags[dev->id] |= XIDeviceEnabled;
-        XISendDeviceHierarchyEvent(flags);
+        XISendDeviceHierarchyEvent(flags, dev->context);
     }
 
     if (!IsMaster(dev) && !IsFloating(dev))
@@ -520,7 +520,7 @@ DisableDevice(DeviceIntPtr dev, BOOL sendevent)
     SendDevicePresenceEvent(dev->id, DeviceDisabled, dev->context);
     if (sendevent) {
         flags[dev->id] = XIDeviceDisabled;
-        XISendDeviceHierarchyEvent(flags);
+        XISendDeviceHierarchyEvent(flags, dev->context);
     }
 
     RecalculateMasterButtons(dev);
@@ -589,7 +589,7 @@ ActivateDevice(DeviceIntPtr dev, BOOL sendevent)
     if (sendevent) {
         int flags[MAXDEVICES] = { 0 };
         flags[dev->id] = XISlaveAdded;
-        XISendDeviceHierarchyEvent(flags);
+        XISendDeviceHierarchyEvent(flags, dev->context);
     }
     return ret;
 }
@@ -1208,7 +1208,7 @@ RemoveDevice(DeviceIntPtr dev, BOOL sendevent)
         dev->context->inputInfo.numDevices--;
         SendDevicePresenceEvent(deviceid, DeviceRemoved, dev->context);
         if (sendevent)
-            XISendDeviceHierarchyEvent(flags);
+            XISendDeviceHierarchyEvent(flags, dev->context);
     }
 
     return ret;

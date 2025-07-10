@@ -124,7 +124,7 @@ CopySwapDeviceCore(ClientPtr client, DeviceIntPtr dev, char *buf)
     c->control = DEVICE_CORE;
     c->length = sizeof(xDeviceCoreState);
     c->status = dev->coreEvents;
-    c->iscore = (dev == inputInfo.keyboard || dev == inputInfo.pointer);
+    c->iscore = (dev == dev->context->inputInfo.keyboard || dev == dev->context->inputInfo.pointer);
 
     if (client->swapped) {
         swaps(&c->control);

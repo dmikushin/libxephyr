@@ -36,22 +36,22 @@
 #include "systemd-logind.h"
 
 void
-config_pre_init(void)
+config_pre_init(XephyrContext* context)
 {
 #ifdef CONFIG_UDEV
-    if (!config_udev_pre_init())
+    if (!config_udev_pre_init(context))
         ErrorF("[config] failed to pre-init udev\n");
 #endif
 }
 
 void
-config_init(void)
+config_init(XephyrContext* context)
 {
 #ifdef CONFIG_UDEV
-    if (!config_udev_init())
+    if (!config_udev_init(context))
         ErrorF("[config] failed to initialise udev\n");
 #elif defined(CONFIG_HAL)
-    if (!config_hal_init())
+    if (!config_hal_init(context))
         ErrorF("[config] failed to initialise HAL\n");
 #elif defined(CONFIG_WSCONS)
     if (!config_wscons_init())
@@ -60,10 +60,10 @@ config_init(void)
 }
 
 void
-config_fini(void)
+config_fini(XephyrContext* context)
 {
 #if defined(CONFIG_UDEV)
-    config_udev_fini();
+    config_udev_fini(context);
 #elif defined(CONFIG_HAL)
     config_hal_fini();
 #elif defined(CONFIG_WSCONS)
@@ -94,16 +94,16 @@ remove_device(const char *backend, DeviceIntPtr dev)
 }
 
 void
-remove_devices(const char *backend, const char *config_info)
+remove_devices(const char *backend, const char *config_info, XephyrContext* context)
 {
     DeviceIntPtr dev, next;
 
-    for (dev = inputInfo.devices; dev; dev = next) {
+    for (dev = context->inputInfo.devices; dev; dev = next) {
         next = dev->next;
         if (dev->config_info && strcmp(dev->config_info, config_info) == 0)
             remove_device(backend, dev);
     }
-    for (dev = inputInfo.off_devices; dev; dev = next) {
+    for (dev = context->inputInfo.off_devices; dev; dev = next) {
         next = dev->next;
         if (dev->config_info && strcmp(dev->config_info, config_info) == 0)
             remove_device(backend, dev);
@@ -113,16 +113,16 @@ remove_devices(const char *backend, const char *config_info)
 }
 
 BOOL
-device_is_duplicate(const char *config_info)
+device_is_duplicate(const char *config_info, XephyrContext* context)
 {
     DeviceIntPtr dev;
 
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (dev->config_info && (strcmp(dev->config_info, config_info) == 0))
             return TRUE;
     }
 
-    for (dev = inputInfo.off_devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.off_devices; dev; dev = dev->next) {
         if (dev->config_info && (strcmp(dev->config_info, config_info) == 0))
             return TRUE;
     }

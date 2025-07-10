@@ -103,7 +103,7 @@ ProcXOpenDevice(ClientPtr client)
     status = dixLookupDevice(&dev, stuff->deviceid, client, DixUseAccess);
 
     if (status == BadDevice) {  /* not open */
-        for (dev = inputInfo.off_devices; dev; dev = dev->next)
+        for (dev = client->context->inputInfo.off_devices; dev; dev = dev->next)
             if (dev->id == stuff->deviceid)
                 break;
         if (dev == NULL)

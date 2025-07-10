@@ -77,6 +77,6 @@ enum {
 extern int __glXGetExtensionString(const unsigned char *enable_bits,
                                    char *buffer);
 extern void __glXEnableExtension(unsigned char *enable_bits, const char *ext);
-extern void __glXInitExtensionEnableBits(unsigned char *enable_bits);
+extern void __glXInitExtensionEnableBits(unsigned char *enable_bits, XephyrContext* context);
 
 #endif                          /* GLX_EXTENSION_STRING_H */

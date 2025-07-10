@@ -148,7 +148,7 @@ ProcXGrabDeviceButton(ClientPtr client)
     };
     mask.xi = tmp[stuff->grabbed_device].mask;
 
-    ret = GrabButton(client, dev, mdev, stuff->button, &param, XI, &mask);
+    ret = GrabButton(client, dev, mdev, stuff->button, &param, XI, &mask, client->context);
 
     return ret;
 }

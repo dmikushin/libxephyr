@@ -159,7 +159,7 @@ KdEnableScreen(ScreenPtr pScreen)
     pScreenPriv->card->selected = pScreenPriv->screen->mynum;
     if (!pScreenPriv->screen->dumb && pScreenPriv->card->cfuncs->enableAccel)
         (*pScreenPriv->card->cfuncs->enableAccel) (pScreen);
-    KdEnableColormap(pScreen);
+    KdEnableColormap(pScreen, pScreen->context);
     SetRootClip(pScreen, ROOT_CLIP_FULL);
     return TRUE;
 }
@@ -515,14 +515,14 @@ KdProcessArgument(int argc, char **argv, int i)
 }
 
 static Bool
-KdAllocatePrivates(ScreenPtr pScreen)
+KdAllocatePrivates(ScreenPtr pScreen, XephyrContext* context)
 {
     KdPrivScreenPtr pScreenPriv;
 
     if (kdGeneration != context->serverGeneration)
         kdGeneration = context->serverGeneration;
 
-    if (!dixRegisterPrivateKey(&kdScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&kdScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
     pScreenPriv = calloc(1, sizeof(*pScreenPriv));
@@ -695,7 +695,7 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
     Bool rotated = (screen->randr & (RR_Rotate_90 | RR_Rotate_270)) != 0;
     int width, height, *width_mmp, *height_mmp;
 
-    KdAllocatePrivates(pScreen);
+    KdAllocatePrivates(pScreen, pScreen->context);
 
     pScreenPriv = KdGetScreenPriv(pScreen);
 
@@ -719,8 +719,8 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
     pScreen->x = screen->origin.x;
     pScreen->y = screen->origin.y;
 
-    if (!context->monitorResolution)
-        context->monitorResolution = 75;
+    if (!pScreen->context->monitorResolution)
+        pScreen->context->monitorResolution = 75;
     /*
      * This is done in this order so that backing store wraps
      * our GC functions; fbFinishScreenInit initializes MI
@@ -729,7 +729,7 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
     if (!fbSetupScreen(pScreen,
                        screen->fb.frameBuffer,
                        width, height,
-                       context->monitorResolution, context->monitorResolution,
+                       pScreen->context->monitorResolution, pScreen->context->monitorResolution,
                        screen->fb.pixelStride, screen->fb.bitsPerPixel)) {
         return FALSE;
     }
@@ -748,7 +748,7 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
     if (!fbFinishScreenInit(pScreen,
                             screen->fb.frameBuffer,
                             width, height,
-                            context->monitorResolution, context->monitorResolution,
+                            pScreen->context->monitorResolution, pScreen->context->monitorResolution,
                             screen->fb.pixelStride, screen->fb.bitsPerPixel)) {
         return FALSE;
     }
@@ -818,7 +818,7 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
     if (screen->mynum == card->selected) {
         pScreenPriv->enabled = TRUE;
-        KdEnableColormap(pScreen);
+        KdEnableColormap(pScreen, pScreen->context);
         if (!screen->dumb && card->cfuncs->enableAccel)
             (*card->cfuncs->enableAccel) (pScreen);
     }
@@ -900,7 +900,7 @@ KdSetPixmapFormats(ScreenInfo * pScreenInfo)
 
 static void
 KdAddScreen(ScreenInfo * pScreenInfo,
-            KdScreenInfo * screen, int argc, char **argv)
+            KdScreenInfo * screen, int argc, char **argv, XephyrContext* context)
 {
     int i;
 
@@ -925,11 +925,11 @@ KdAddScreen(ScreenInfo * pScreenInfo,
 
     kdCurrentScreen = screen;
 
-    AddScreen(KdScreenInit, argc, argv);
+    AddScreen(KdScreenInit, argc, argv, context);
 }
 
 void
-KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv)
+KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* context)
 {
     KdCardInfo *card;
     KdScreenInfo *screen;
@@ -967,13 +967,13 @@ KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv)
      */
     for (card = kdCardInfo; card; card = card->next)
         for (screen = card->screenList; screen; screen = screen->next)
-            KdAddScreen(pScreenInfo, screen, argc, argv);
+            KdAddScreen(pScreenInfo, screen, argc, argv, context);
 
-    xorgGlxCreateVendor();
+    xorgGlxCreateVendor(context);
 
 #if defined(CONFIG_UDEV) || defined(CONFIG_HAL)
     if (SeatId) /* Enable input hot-plugging */
-        config_pre_init();
+        config_pre_init(context);
 #endif
 }
 

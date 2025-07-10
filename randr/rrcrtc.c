@@ -61,7 +61,7 @@ RRCrtcCreate(ScreenPtr pScreen, void *devPrivate)
     RRCrtcPtr *crtcs;
     rrScrPrivPtr pScrPriv;
 
-    if (!RRInit())
+    if (!RRInit(pScreen->context))
         return NULL;
 
     pScrPriv = rrGetScrPriv(pScreen);
@@ -870,7 +870,7 @@ RRCrtcDestroy(RRCrtcPtr crtc)
 }
 
 static int
-RRCrtcDestroyResource(void *value, XID pid)
+RRCrtcDestroyResource(void *value, XID pid, XephyrContext* context)
 {
     RRCrtcPtr crtc = (RRCrtcPtr) value;
     ScreenPtr pScreen = crtc->pScreen;
@@ -1371,10 +1371,10 @@ ProcRRSetCrtcConfig(ClientPtr client)
     pScreen = crtc->pScreen;
     pScrPriv = rrGetScrPriv(pScreen);
 
-    time = ClientTimeToServerTime(stuff->timestamp);
+    time = ClientTimeToServerTime(stuff->timestamp, client->context);
 
     if (!pScrPriv) {
-        time = context->currentTime;
+        time = client->context->currentTime;
         status = RRSetConfigFailed;
         goto sendReply;
     }
@@ -1582,12 +1582,12 @@ ProcRRSetPanning(ClientPtr client)
     pScrPriv = rrGetScrPriv(pScreen);
 
     if (!pScrPriv) {
-        time = context->currentTime;
+        time = client->context->currentTime;
         status = RRSetConfigFailed;
         goto sendReply;
     }
 
-    time = ClientTimeToServerTime(stuff->timestamp);
+    time = ClientTimeToServerTime(stuff->timestamp, client->context);
 
     if (!pScrPriv->rrGetPanning)
         return RRErrorBase + BadRRCrtc;

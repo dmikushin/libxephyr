@@ -55,44 +55,44 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #ifdef COMPOSITE
 extern _X_EXPORT Bool noCompositeExtension;
-extern void CompositeExtensionInit(void);
+extern void CompositeExtensionInit(XephyrContext* context);
 #endif
 
 #ifdef DAMAGE
 extern _X_EXPORT Bool noDamageExtension;
-extern void DamageExtensionInit(void);
+extern void DamageExtensionInit(XephyrContext* context);
 #endif
 
 #if defined(DBE)
 extern _X_EXPORT Bool noDbeExtension;
-extern void DbeExtensionInit(void);
+extern void DbeExtensionInit(XephyrContext* context);
 #endif
 
 #if defined(DPMSExtension)
 extern _X_EXPORT Bool noDPMSExtension;
-extern void DPMSExtensionInit(void);
+extern void DPMSExtensionInit(XephyrContext* context);
 #endif
 
 extern Bool noGEExtension;
-extern void GEExtensionInit(void);
+extern void GEExtensionInit(XephyrContext* context);
 
 #ifdef GLXEXT
 extern _X_EXPORT Bool noGlxExtension;
-extern void GlxExtensionInit(void);
+extern void GlxExtensionInit(XephyrContext* context);
 #endif
 
 #ifdef PANORAMIX
 extern _X_EXPORT Bool noPanoramiXExtension;
-extern void PanoramiXExtensionInit(void);
+extern void PanoramiXExtensionInit(XephyrContext* context);
 #endif
 
 #ifdef RANDR
 extern _X_EXPORT Bool noRRExtension;
-extern void RRExtensionInit(void);
+extern void RRExtensionInit(XephyrContext* context);
 #endif
 
 #if defined(XRECORD)
-extern void RecordExtensionInit(void);
+extern void RecordExtensionInit(XephyrContext* context);
 #endif
 
 extern _X_EXPORT Bool noRenderExtension;
@@ -105,17 +105,17 @@ extern void ResExtensionInit(void);
 
 #if defined(SCREENSAVER)
 extern _X_EXPORT Bool noScreenSaverExtension;
-extern void ScreenSaverExtensionInit(void);
+extern void ScreenSaverExtensionInit(XephyrContext* context);
 #endif
 
 extern void ShapeExtensionInit(void);
 
 #ifdef MITSHM
 extern _X_EXPORT Bool noMITShmExtension;
-extern void ShmExtensionInit(void);
+extern void ShmExtensionInit(XephyrContext* context);
 #endif
 
-extern void SyncExtensionInit(void);
+extern void SyncExtensionInit(XephyrContext* context);
 
 extern void XCMiscExtensionInit(void);
 
@@ -132,11 +132,11 @@ extern void XFree86BigfontExtensionInit(void);
 extern void BigReqExtensionInit(void);
 
 extern _X_EXPORT Bool noXFixesExtension;
-extern void XFixesExtensionInit(void);
+extern void XFixesExtensionInit(XephyrContext* context);
 
-extern void XInputExtensionInit(void);
+extern void XInputExtensionInit(XephyrContext* context);
 
-extern void XkbExtensionInit(void);
+extern void XkbExtensionInit(XephyrContext* context);
 
 #if defined(XSELINUX)
 extern _X_EXPORT Bool noSELinuxExtension;
@@ -149,7 +149,7 @@ extern void XTestExtensionInit(void);
 
 #if defined(XV)
 extern _X_EXPORT Bool noXvExtension;
-extern void XvExtensionInit(void);
+extern void XvExtensionInit(XephyrContext* context);
 extern void XvMCExtensionInit(void);
 #endif
 

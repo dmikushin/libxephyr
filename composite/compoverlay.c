@@ -115,7 +115,7 @@ compCreateOverlayClient(ScreenPtr pScreen, ClientPtr pClient)
      * Create a resource for this element so it can be deleted
      * when the client goes away.
      */
-    if (!AddResource(pOc->resource, CompositeClientOverlayType, (void *) pOc))
+    if (!AddResource(pOc->resource, CompositeClientOverlayType, (void *) pOc, pClient->context))
         return NULL;
 
     return pOc;
@@ -149,14 +149,14 @@ compCreateOverlayWindow(ScreenPtr pScreen)
         CreateWindow(cs->overlayWid, pRoot, x, y, w, h, 0,
                      InputOutput, CWBackPixmap | CWOverrideRedirect, &attrs[0],
                      pRoot->drawable.depth,
-                     context->serverClient, pScreen->rootVisual, &result);
+                     pScreen->context->serverClient, pScreen->rootVisual, &result);
     if (pWin == NULL)
         return FALSE;
 
-    if (!AddResource(pWin->drawable.id, RT_WINDOW, (void *) pWin))
+    if (!AddResource(pWin->drawable.id, RT_WINDOW, (void *) pWin, pScreen->context))
         return FALSE;
 
-    MapWindow(pWin, context->serverClient);
+    MapWindow(pWin, pScreen->context->serverClient);
 
     return TRUE;
 }
@@ -170,5 +170,5 @@ compDestroyOverlayWindow(ScreenPtr pScreen)
     CompScreenPtr cs = GetCompScreen(pScreen);
 
     cs->pOverlayWin = NullWindow;
-    FreeResource(cs->overlayWid, RT_NONE);
+    FreeResource(cs->overlayWid, RT_NONE, pScreen->context);
 }

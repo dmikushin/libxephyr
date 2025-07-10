@@ -117,7 +117,7 @@ render_type_is_pbuffer_only(unsigned renderType)
 }
 
 static int
-server_has_depth(int depth)
+server_has_depth(int depth, XephyrContext* context)
 {
     int i;
     for (i = 0; i < context->screenInfo.numPixmapFormats; i++)
@@ -130,7 +130,8 @@ static __GLXconfig *
 createModeFromConfig(const __DRIcoreExtension * core,
                      const __DRIconfig * driConfig,
                      unsigned int visualType,
-                     GLboolean duplicateForComp)
+                     GLboolean duplicateForComp,
+                     XephyrContext* context)
 {
     __GLXDRIconfig *config;
     GLint renderType = 0;
@@ -191,7 +192,7 @@ createModeFromConfig(const __DRIcoreExtension * core,
 
     /* Make sure we don't advertise things the server isn't configured for */
     if ((drawableType & (GLX_PBUFFER_BIT | GLX_PIXMAP_BIT)) &&
-        !server_has_depth(config->config.rgbBits)) {
+        !server_has_depth(config->config.rgbBits, context)) {
         drawableType &= ~(GLX_PBUFFER_BIT | GLX_PIXMAP_BIT);
         if (!drawableType) {
             free(config);
@@ -237,7 +238,8 @@ createModeFromConfig(const __DRIcoreExtension * core,
 
 __GLXconfig *
 glxConvertConfigs(const __DRIcoreExtension * core,
-                  const __DRIconfig ** configs)
+                  const __DRIconfig ** configs,
+                  XephyrContext* context)
 {
     __GLXconfig head, *tail;
     int i;
@@ -247,7 +249,7 @@ glxConvertConfigs(const __DRIcoreExtension * core,
 
     for (i = 0; configs[i]; i++) {
         tail->next = createModeFromConfig(core, configs[i], GLX_TRUE_COLOR,
-                                          GL_FALSE);
+                                          GL_FALSE, context);
         if (tail->next == NULL)
             break;
         tail = tail->next;
@@ -255,7 +257,7 @@ glxConvertConfigs(const __DRIcoreExtension * core,
 
     for (i = 0; configs[i]; i++) {
         tail->next = createModeFromConfig(core, configs[i], GLX_DIRECT_COLOR,
-                                          GL_FALSE);
+                                          GL_FALSE, context);
         if (tail->next == NULL)
             break;
 
@@ -267,7 +269,7 @@ glxConvertConfigs(const __DRIcoreExtension * core,
         /* Duplicate fbconfigs for use with compositing visuals */
         for (i = 0; configs[i]; i++) {
             tail->next = createModeFromConfig(core, configs[i], GLX_TRUE_COLOR,
-                                            GL_TRUE);
+                                            GL_TRUE, context);
             if (tail->next == NULL)
                 continue;
 

@@ -37,7 +37,7 @@ RRDeliverLeaseEvent(ClientPtr client, WindowPtr window)
     rrScrPrivPtr scr_priv = rrGetScrPriv(screen);
     RRLeasePtr lease;
 
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(client->context);
     xorg_list_for_each_entry(lease, &scr_priv->leases, list) {
         if (lease->id != None && (lease->state == RRLeaseCreating ||
                                   lease->state == RRLeaseTerminating))
@@ -45,7 +45,7 @@ RRDeliverLeaseEvent(ClientPtr client, WindowPtr window)
             xRRLeaseNotifyEvent le = (xRRLeaseNotifyEvent) {
                 .type = RRNotify + RREventBase,
                 .subCode = RRNotify_Lease,
-                .timestamp = context->currentTime.milliseconds,
+                .timestamp = client->context->currentTime.milliseconds,
                 .window = window->drawable.id,
                 .lease = lease->id,
                 .created = lease->state == RRLeaseCreating,
@@ -185,7 +185,7 @@ RRTerminateLease(RRLeasePtr lease)
  * so doesn't appear over the protocol anymore.
  */
 static int
-RRLeaseDestroyResource(void *value, XID pid)
+RRLeaseDestroyResource(void *value, XID pid, XephyrContext* context)
 {
     RRLeasePtr lease = value;
 

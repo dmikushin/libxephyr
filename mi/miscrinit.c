@@ -115,7 +115,7 @@ miModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
         if (pPixData)
             pPixmap->devPrivate.ptr = pPixData;
     }
-    pPixmap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+    pPixmap->drawable.serialNumber = NextSerialNumber(pPixmap->drawable.pScreen->context);
     return TRUE;
 }
 
@@ -300,7 +300,7 @@ DevPrivateKeyRec miZeroLineScreenKeyRec;
 void
 miSetZeroLineBias(ScreenPtr pScreen, unsigned int bias)
 {
-    if (!dixRegisterPrivateKey(&miZeroLineScreenKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&miZeroLineScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return;
 
     dixSetPrivate(&pScreen->devPrivates, miZeroLineScreenKey,

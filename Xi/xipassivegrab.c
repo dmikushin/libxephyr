@@ -100,9 +100,9 @@ ProcXIPassiveGrabDevice(ClientPtr client)
         ((uint32_t) stuff->mask_len + stuff->num_modifiers) * 4);
 
     if (stuff->deviceid == XIAllDevices)
-        dev = inputInfo.all_devices;
+        dev = client->context->inputInfo.all_devices;
     else if (stuff->deviceid == XIAllMasterDevices)
-        dev = inputInfo.all_master_devices;
+        dev = client->context->inputInfo.all_master_devices;
     else {
         ret = dixLookupDevice(&dev, stuff->deviceid, client, DixGrabAccess);
         if (ret != Success) {
@@ -205,7 +205,7 @@ ProcXIPassiveGrabDevice(ClientPtr client)
         switch (stuff->grab_type) {
         case XIGrabtypeButton:
             status = GrabButton(client, dev, mod_dev, stuff->detail,
-                                &param, XI2, &mask);
+                                &param, XI2, &mask, client->context);
             break;
         case XIGrabtypeKeycode:
             /* XI2 allows 32-bit keycodes but thanks to XKB we can never
@@ -215,23 +215,23 @@ ProcXIPassiveGrabDevice(ClientPtr client)
                 status = XIAlreadyGrabbed;
             else
                 status = GrabKey(client, dev, mod_dev, stuff->detail,
-                                 &param, XI2, &mask);
+                                 &param, XI2, &mask, client->context);
             break;
         case XIGrabtypeEnter:
         case XIGrabtypeFocusIn:
-            status = GrabWindow(client, dev, stuff->grab_type, &param, &mask);
+            status = GrabWindow(client, dev, stuff->grab_type, &param, &mask, client->context);
             break;
         case XIGrabtypeTouchBegin:
             status = GrabTouchOrGesture(client, dev, mod_dev, XI_TouchBegin,
-                                        &param, &mask);
+                                        &param, &mask, client->context);
             break;
         case XIGrabtypeGesturePinchBegin:
             status = GrabTouchOrGesture(client, dev, mod_dev,
-                                        XI_GesturePinchBegin, &param, &mask);
+                                        XI_GesturePinchBegin, &param, &mask, client->context);
             break;
         case XIGrabtypeGestureSwipeBegin:
             status = GrabTouchOrGesture(client, dev, mod_dev,
-                                        XI_GestureSwipeBegin, &param, &mask);
+                                        XI_GestureSwipeBegin, &param, &mask, client->context);
             break;
         }
 
@@ -308,9 +308,9 @@ ProcXIPassiveUngrabDevice(ClientPtr client)
                        ((uint32_t) stuff->num_modifiers) << 2);
 
     if (stuff->deviceid == XIAllDevices)
-        dev = inputInfo.all_devices;
+        dev = client->context->inputInfo.all_devices;
     else if (stuff->deviceid == XIAllMasterDevices)
-        dev = inputInfo.all_master_devices;
+        dev = client->context->inputInfo.all_master_devices;
     else {
         rc = dixLookupDevice(&dev, stuff->deviceid, client, DixGrabAccess);
         if (rc != Success)
@@ -384,7 +384,7 @@ ProcXIPassiveUngrabDevice(ClientPtr client)
         DeletePassiveGrabFromList(tempGrab);
     }
 
-    FreeGrab(tempGrab);
+    FreeGrab(tempGrab, client->context);
 
     return Success;
 }

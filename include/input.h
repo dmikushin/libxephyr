@@ -287,7 +287,7 @@ extern _X_EXPORT void set_button_up(DeviceIntPtr pDev, int button, int type);
 extern _X_EXPORT int button_is_down(DeviceIntPtr pDev, int button, int type);
 
 extern void InitCoreDevices(XephyrContext* context);
-extern void InitXTestDevices(void);
+extern void InitXTestDevices(XephyrContext* context);
 
 extern _X_EXPORT DeviceIntPtr AddInputDevice(ClientPtr /*client */ ,
                                              DeviceProc /*deviceProc */ ,
@@ -457,7 +457,7 @@ extern _X_EXPORT void ProcessInputEvents(void);
 extern _X_EXPORT void InitInput(int /*argc */ ,
                                 char ** /*argv */ ,
                                 XephyrContext* /*context*/ );
-extern _X_EXPORT void CloseInput(void);
+extern _X_EXPORT void CloseInput(XephyrContext* context);
 
 extern _X_EXPORT int GetMaximumEventsNum(void);
 
@@ -590,7 +590,7 @@ extern int AllocXTestDevice(ClientPtr client, const char *name,
                             DeviceIntPtr *ptr, DeviceIntPtr *keybd,
                             DeviceIntPtr master_ptr, DeviceIntPtr master_keybd);
 extern BOOL IsXTestDevice(DeviceIntPtr dev, DeviceIntPtr master);
-extern DeviceIntPtr GetXTestDevice(DeviceIntPtr master);
+extern DeviceIntPtr GetXTestDevice(DeviceIntPtr master, XephyrContext* context);
 extern void SendDevicePresenceEvent(int deviceid, int type, XephyrContext* context);
 extern void DeliverDeviceClassesChangedEvent(int sourceid, Time time, XephyrContext* context);
 extern _X_EXPORT InputAttributes *DuplicateInputAttributes(InputAttributes *
@@ -659,7 +659,7 @@ extern int TouchGetPointerEventType(const InternalEvent *ev);
 extern void TouchRemovePointerGrab(DeviceIntPtr dev);
 extern void TouchListenerGone(XID resource, XephyrContext* context);
 extern int TouchListenerAcceptReject(DeviceIntPtr dev, TouchPointInfoPtr ti,
-                                     int listener, int mode);
+                                     int listener, int mode, XephyrContext* context);
 extern int TouchAcceptReject(ClientPtr client, DeviceIntPtr dev, int mode,
                              uint32_t touchid, Window grab_window, XID *error);
 extern void TouchEndPhysicallyActiveTouches(DeviceIntPtr dev);
@@ -680,7 +680,7 @@ extern Bool GestureBuildSprite(DeviceIntPtr sourcedev, GestureInfoPtr gi);
 extern void GestureListenerGone(XID resource, XephyrContext* context);
 extern void GestureEndActiveGestures(DeviceIntPtr dev);
 extern void GestureEmitGestureEndToOwner(DeviceIntPtr dev, GestureInfoPtr gi);
-extern void ProcessGestureEvent(InternalEvent *ev, DeviceIntPtr dev);
+extern void ProcessGestureEvent(InternalEvent *ev, DeviceIntPtr dev, XephyrContext* context);
 
 /* misc event helpers */
 extern void CopyPartialInternalEvent(InternalEvent* dst_event, const InternalEvent* src_event);
@@ -721,7 +721,7 @@ enum EventDeliveryState {
 /* Implemented by the DDX. */
 extern _X_EXPORT int NewInputDeviceRequest(InputOption *options,
                                            InputAttributes * attrs,
-                                           DeviceIntPtr *dev);
+                                           DeviceIntPtr *dev, XephyrContext* context);
 extern _X_EXPORT void DeleteInputDeviceRequest(DeviceIntPtr dev);
 extern _X_EXPORT void RemoveInputDeviceTraces(const char *config_info);
 

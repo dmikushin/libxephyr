@@ -524,7 +524,7 @@ glamor_composite_glyphs_init(ScreenPtr screen)
 {
     glamor_screen_private *glamor_priv = glamor_get_screen_private(screen);
 
-    if (!dixRegisterPrivateKey(&glamor_glyph_private_key, PRIVATE_PIXMAP, sizeof (struct glamor_glyph_private)))
+    if (!dixRegisterPrivateKey(&glamor_glyph_private_key, PRIVATE_PIXMAP, sizeof (struct glamor_glyph_private), screen->context))
         return FALSE;
 
     /* Make glyph atlases of a reasonable size, but no larger than the maximum

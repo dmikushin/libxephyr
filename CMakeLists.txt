@@ -258,12 +258,22 @@ if(SYSTEMD_DAEMON_FOUND)
     set(HAVE_SYSTEMD_DAEMON 1)
 endif()
 
+# CONFIG_UDEV option (OFF by default)
+option(CONFIG_UDEV "Enable udev support for input hotplug" OFF)
+
 # udev support
-if(UDEV_FOUND)
+if(CONFIG_UDEV AND UDEV_FOUND)
     set(CMAKE_REQUIRED_LIBRARIES ${UDEV_LIBRARIES})
     check_function_exists(udev_monitor_filter_add_match_tag HAVE_UDEV_MONITOR_FILTER_ADD_MATCH_TAG)
     check_function_exists(udev_enumerate_add_match_tag HAVE_UDEV_ENUMERATE_ADD_MATCH_TAG)
     set(CMAKE_REQUIRED_LIBRARIES)
+    # Set CONFIG_UDEV for dix-config.h
+    set(CONFIG_UDEV 1)
+elseif(CONFIG_UDEV AND NOT UDEV_FOUND)
+    message(FATAL_ERROR "CONFIG_UDEV enabled but libudev not found")
+else()
+    # Ensure CONFIG_UDEV is not set when disabled
+    set(CONFIG_UDEV 0)
 endif()
 
 # xshmfence support

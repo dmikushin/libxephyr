@@ -53,9 +53,9 @@ InitCard(char *name)
 }
 
 void
-InitOutput(ScreenInfo * pScreenInfo, int argc, char **argv)
+InitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* context)
 {
-    KdInitOutput(pScreenInfo, argc, argv);
+    KdInitOutput(pScreenInfo, argc, argv, context);
 }
 
 void
@@ -81,7 +81,7 @@ InitInput(int argc, char **argv, XephyrContext* context)
             if (!pi)
                 FatalError("Couldn't create Xephyr pointer\n");
             pi->driver = &EphyrMouseDriver;
-            KdAddPointer(pi);
+            KdAddPointer(pi, context);
         }
     }
 
@@ -89,9 +89,9 @@ InitInput(int argc, char **argv, XephyrContext* context)
 }
 
 void
-CloseInput(void)
+CloseInput(XephyrContext* context)
 {
-    KdCloseInput();
+    KdCloseInput(context);
 }
 
 #if INPUTTHREAD

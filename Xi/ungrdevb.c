@@ -145,6 +145,6 @@ ProcXUngrabDeviceButton(ClientPtr client)
 
     DeletePassiveGrabFromList(temporaryGrab);
 
-    FreeGrab(temporaryGrab);
+    FreeGrab(temporaryGrab, client->context);
     return Success;
 }

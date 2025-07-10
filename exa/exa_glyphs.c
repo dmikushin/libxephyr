@@ -128,7 +128,7 @@ exaUnrealizeGlyphCaches(ScreenPtr pScreen, unsigned int format)
             continue;
 
         if (cache->picture) {
-            FreePicture((void *) cache->picture, (XID) 0);
+            FreePicture((void *) cache->picture, (XID) 0, pScreen->context);
             cache->picture = NULL;
         }
 
@@ -194,7 +194,7 @@ exaRealizeGlyphCaches(ScreenPtr pScreen, unsigned int format)
 
     component_alpha = NeedsComponent(pPictFormat->format);
     pPicture = CreatePicture(0, &pPixmap->drawable, pPictFormat,
-                             CPComponentAlpha, &component_alpha, context->serverClient,
+                             CPComponentAlpha, &component_alpha, pScreen->context->serverClient,
                              &error);
 
     (*pScreen->DestroyPixmap) (pPixmap);        /* picture holds a refcount */
@@ -226,7 +226,7 @@ exaRealizeGlyphCaches(ScreenPtr pScreen, unsigned int format)
     }
 
     /* Each cache references the picture individually */
-    FreePicture((void *) pPicture, (XID) 0);
+    FreePicture((void *) pPicture, (XID) 0, pScreen->context);
     return TRUE;
 
  bail:
@@ -724,7 +724,7 @@ exaGlyphs(CARD8 op,
         component_alpha = NeedsComponent(maskFormat->format);
         pMask = CreatePicture(0, &pMaskPixmap->drawable,
                               maskFormat, CPComponentAlpha, &component_alpha,
-                              context->serverClient, &error);
+                              pScreen->context->serverClient, &error);
         if (!pMask ||
             (!component_alpha && pExaScr->info->CheckComposite &&
              !(*pExaScr->info->CheckComposite) (PictOpAdd, pSrc, NULL, pMask)))
@@ -738,7 +738,7 @@ exaGlyphs(CARD8 op,
 
             /* The driver can't seem to composite to a8, let's try argb (but
              * without component-alpha) */
-            FreePicture((void *) pMask, (XID) 0);
+            FreePicture((void *) pMask, (XID) 0, pScreen->context);
 
             argbFormat = PictureMatchFormat(pScreen, 32, PICT_a8r8g8b8);
 
@@ -752,7 +752,7 @@ exaGlyphs(CARD8 op,
                 return;
 
             pMask = CreatePicture(0, &pMaskPixmap->drawable, maskFormat, 0, 0,
-                                  context->serverClient, &error);
+                                  pScreen->context->serverClient, &error);
             if (!pMask) {
                 (*pScreen->DestroyPixmap) (pMaskPixmap);
                 return;
@@ -834,7 +834,7 @@ exaGlyphs(CARD8 op,
                          pDst,
                          xSrc + x - first_xOff,
                          ySrc + y - first_yOff, 0, 0, x, y, width, height);
-        FreePicture((void *) pMask, (XID) 0);
+        FreePicture((void *) pMask, (XID) 0, pScreen->context);
         (*pScreen->DestroyPixmap) (pMaskPixmap);
     }
 }

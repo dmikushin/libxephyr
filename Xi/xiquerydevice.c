@@ -89,17 +89,17 @@ ProcXIQueryDevice(ClientPtr client)
         len += SizeDeviceInfo(dev);
     }
     else {
-        skip = calloc(sizeof(Bool), inputInfo.numDevices);
+        skip = calloc(sizeof(Bool), client->context->inputInfo.numDevices);
         if (!skip)
             return BadAlloc;
 
-        for (dev = inputInfo.devices; dev; dev = dev->next, i++) {
+        for (dev = client->context->inputInfo.devices; dev; dev = dev->next, i++) {
             skip[i] = ShouldSkipDevice(client, stuff->deviceid, dev);
             if (!skip[i])
                 len += SizeDeviceInfo(dev);
         }
 
-        for (dev = inputInfo.off_devices; dev; dev = dev->next, i++) {
+        for (dev = client->context->inputInfo.off_devices; dev; dev = dev->next, i++) {
             skip[i] = ShouldSkipDevice(client, stuff->deviceid, dev);
             if (!skip[i])
                 len += SizeDeviceInfo(dev);
@@ -130,7 +130,7 @@ ProcXIQueryDevice(ClientPtr client)
     }
     else {
         i = 0;
-        for (dev = inputInfo.devices; dev; dev = dev->next, i++) {
+        for (dev = client->context->inputInfo.devices; dev; dev = dev->next, i++) {
             if (!skip[i]) {
                 len = ListDeviceInfo(client, dev, (xXIDeviceInfo *) info);
                 if (client->swapped)
@@ -140,7 +140,7 @@ ProcXIQueryDevice(ClientPtr client)
             }
         }
 
-        for (dev = inputInfo.off_devices; dev; dev = dev->next, i++) {
+        for (dev = client->context->inputInfo.off_devices; dev; dev = dev->next, i++) {
             if (!skip[i]) {
                 len = ListDeviceInfo(client, dev, (xXIDeviceInfo *) info);
                 if (client->swapped)

@@ -495,7 +495,7 @@ RootlessGetColormap(ScreenPtr pScreen)
 }
 
 static void
-RootlessInstallColormap(ColormapPtr pMap)
+RootlessInstallColormap(ColormapPtr pMap, XephyrContext* context)
 {
     ScreenPtr pScreen = pMap->pScreen;
     RootlessScreenRec *s = SCREENREC(pScreen);
@@ -508,13 +508,13 @@ RootlessInstallColormap(ColormapPtr pMap)
         RootlessQueueRedisplay(pScreen);
     }
 
-    pScreen->InstallColormap(pMap);
+    pScreen->InstallColormap(pMap, context);
 
     SCREEN_WRAP(pScreen, InstallColormap);
 }
 
 static void
-RootlessUninstallColormap(ColormapPtr pMap)
+RootlessUninstallColormap(ColormapPtr pMap, XephyrContext* context)
 {
     ScreenPtr pScreen = pMap->pScreen;
     RootlessScreenRec *s = SCREENREC(pScreen);
@@ -524,7 +524,7 @@ RootlessUninstallColormap(ColormapPtr pMap)
     if (s->colormap == pMap)
         s->colormap = NULL;
 
-    pScreen->UninstallColormap(pMap);
+    pScreen->UninstallColormap(pMap, context);
 
     SCREEN_WRAP(pScreen, UninstallColormap);
 }

@@ -107,7 +107,7 @@ ephyr_glamor_xv_put_image(KdScreenInfo *screen,
 }
 
 void
-ephyr_glamor_xv_init(ScreenPtr screen)
+ephyr_glamor_xv_init(ScreenPtr screen, XephyrContext* context)
 {
     KdVideoAdaptorRec *adaptor;
     glamor_port_private *port_privates;
@@ -158,5 +158,5 @@ ephyr_glamor_xv_init(ScreenPtr screen)
     adaptor->PutImage = ephyr_glamor_xv_put_image;
     adaptor->QueryImageAttributes = ephyr_glamor_xv_query_image_attributes;
 
-    KdXVScreenInit(screen, adaptor, 1);
+    KdXVScreenInit(screen, adaptor, 1, context);
 }

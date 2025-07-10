@@ -51,7 +51,7 @@ static DevPrivateKeyRec glvXGLVClientPrivKey;
 RESTYPE idResource;
 
 static int
-idResourceDeleteCallback(void *value, XID id)
+idResourceDeleteCallback(void *value, XID id, XephyrContext* context)
 {
     return 0;
 }
@@ -88,7 +88,7 @@ GlxGetScreen(ScreenPtr pScreen)
 }
 
 static void
-GlxMappingReset(void)
+GlxMappingReset(XephyrContext* context)
 {
     int i;
 
@@ -102,13 +102,13 @@ GlxMappingReset(void)
 }
 
 static Bool
-GlxMappingInit(void)
+GlxMappingInit(XephyrContext* context)
 {
     int i;
 
     for (i=0; i<context->screenInfo.numScreens; i++) {
         if (GlxGetScreen(context->screenInfo.screens[i]) == NULL) {
-            GlxMappingReset();
+            GlxMappingReset(context);
             return FALSE;
         }
     }
@@ -117,7 +117,7 @@ GlxMappingInit(void)
                                        "GLXServerIDRes");
     if (idResource == RT_NONE)
     {
-        GlxMappingReset();
+        GlxMappingReset(context);
         return FALSE;
     }
     return TRUE;
@@ -141,14 +141,14 @@ GlxGetClientData(ClientPtr client)
     GlxClientPriv *cl = xglvGetClientPrivate(client);
     if (cl == NULL) {
         cl = calloc(1, sizeof(GlxClientPriv)
-                + context->screenInfo.numScreens * sizeof(GlxServerVendor *));
+                + client->context->screenInfo.numScreens * sizeof(GlxServerVendor *));
         if (cl != NULL) {
             int i;
 
             cl->vendors = (GlxServerVendor **) (cl + 1);
-            for (i=0; i<context->screenInfo.numScreens; i++)
+            for (i=0; i<client->context->screenInfo.numScreens; i++)
             {
-                cl->vendors[i] = GlxGetVendorForScreen(NULL, context->screenInfo.screens[i]);
+                cl->vendors[i] = GlxGetVendorForScreen(NULL, client->context->screenInfo.screens[i]);
             }
 
             xglvSetClientPrivate(client, cl);
@@ -191,14 +191,30 @@ GLXClientCallback(CallbackListPtr *list, void *closure, void *data)
     }
 }
 
+// Global context for wrapper functions
+static XephyrContext* g_context = NULL;
+
+static Bool
+GlxAddXIDMapWrapper(XID id, GlxServerVendor *vendor)
+{
+    return GlxAddXIDMap(id, vendor, g_context);
+}
+
+static void
+GlxRemoveXIDMapWrapper(XID id)
+{
+    GlxRemoveXIDMap(id, g_context);
+}
+
 static void
 GLXReset(ExtensionEntry *extEntry)
 {
     // xf86Msg(X_INFO, "GLX: GLXReset\n");
+    XephyrContext* context = (XephyrContext*)extEntry->extPrivate;
 
     GlxVendorExtensionReset(extEntry);
     GlxDispatchReset();
-    GlxMappingReset();
+    GlxMappingReset(context);
 
     if ((dispatchException & DE_TERMINATE) == DE_TERMINATE) {
         while (vndInitCallbackList.list != NULL) {
@@ -210,18 +226,19 @@ GLXReset(ExtensionEntry *extEntry)
 }
 
 void
-GlxExtensionInit(void)
+GlxExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
     GlxExtensionEntry = NULL;
+    g_context = context;
 
     // Init private keys, per-screen data
-    if (!dixRegisterPrivateKey(&glvXGLVScreenPrivKey, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&glvXGLVScreenPrivKey, PRIVATE_SCREEN, 0, NULL))
         return;
-    if (!dixRegisterPrivateKey(&glvXGLVClientPrivKey, PRIVATE_CLIENT, 0))
+    if (!dixRegisterPrivateKey(&glvXGLVClientPrivKey, PRIVATE_CLIENT, 0, NULL))
         return;
 
-    if (!GlxMappingInit()) {
+    if (!GlxMappingInit(context)) {
         return;
     }
 
@@ -242,6 +259,7 @@ GlxExtensionInit(void)
 
     GlxExtensionEntry = extEntry;
     GlxErrorBase = extEntry->errorBase;
+    extEntry->extPrivate = context;
     CallCallbacks(&vndInitCallbackListPtr, extEntry);
 
     /* We'd better have found at least one vendor */
@@ -317,9 +335,9 @@ _X_EXPORT const GlxServerExports glxServer = {
     .destroyVendor = GlxDestroyVendor,
     .setScreenVendor = GlxSetScreenVendor,
 
-    .addXIDMap = GlxAddXIDMap,
+    .addXIDMap = GlxAddXIDMapWrapper,
     .getXIDMap = GlxGetXIDMap,
-    .removeXIDMap = GlxRemoveXIDMap,
+    .removeXIDMap = GlxRemoveXIDMapWrapper,
     .getContextTag = GlxGetContextTag,
     .setContextTagPrivate = GlxSetContextTagPrivate,
     .getContextTagPrivate = GlxGetContextTagPrivate,

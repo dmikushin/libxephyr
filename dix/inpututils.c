@@ -101,7 +101,7 @@ do_butmap_change(DeviceIntPtr dev, CARD8 *map, int len, ClientPtr client)
         .time = GetTimeInMillis()
     };
 
-    SendEventToAllWindows(dev, DeviceMappingNotifyMask, (xEvent *) &xi_mn, 1);
+    SendEventToAllWindows(dev, DeviceMappingNotifyMask, (xEvent *) &xi_mn, 1, dev->context);
 }
 
 /*

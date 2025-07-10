@@ -636,7 +636,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
 
     glamor_priv->flags = flags;
 
-    if (!dixRegisterPrivateKey(&glamor_screen_private_key, PRIVATE_SCREEN, 0)) {
+    if (!dixRegisterPrivateKey(&glamor_screen_private_key, PRIVATE_SCREEN, 0, screen->context)) {
         LogMessage(X_WARNING,
                    "glamor%d: Failed to allocate screen private\n",
                    screen->myNum);
@@ -646,7 +646,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
     glamor_set_screen_private(screen, glamor_priv);
 
     if (!dixRegisterPrivateKey(&glamor_pixmap_private_key, PRIVATE_PIXMAP,
-                               sizeof(struct glamor_pixmap_private))) {
+                               sizeof(struct glamor_pixmap_private), screen->context)) {
         LogMessage(X_WARNING,
                    "glamor%d: Failed to allocate pixmap private\n",
                    screen->myNum);
@@ -654,7 +654,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
     }
 
     if (!dixRegisterPrivateKey(&glamor_gc_private_key, PRIVATE_GC,
-                               sizeof (glamor_gc_private))) {
+                               sizeof (glamor_gc_private), screen->context)) {
         LogMessage(X_WARNING,
                    "glamor%d: Failed to allocate gc private\n",
                    screen->myNum);

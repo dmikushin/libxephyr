@@ -47,7 +47,7 @@
  */
 static int
 check_for_touch_selection_conflicts(ClientPtr B, WindowPtr win, int deviceid,
-                                    int evtype)
+                                    int evtype, XephyrContext* context)
 {
     OtherInputMasks *inputMasks = wOtherInputMasks(win);
     InputClients *A = NULL;
@@ -61,22 +61,22 @@ check_for_touch_selection_conflicts(ClientPtr B, WindowPtr win, int deviceid,
             continue;
 
         if (deviceid == XIAllDevices)
-            tmp = inputInfo.all_devices;
+            tmp = context->inputInfo.all_devices;
         else if (deviceid == XIAllMasterDevices)
-            tmp = inputInfo.all_master_devices;
+            tmp = context->inputInfo.all_master_devices;
         else
             dixLookupDevice(&tmp, deviceid, context->serverClient, DixReadAccess);
         if (!tmp)
             return BadImplementation;       /* this shouldn't happen */
 
         /* A has XIAllDevices */
-        if (xi2mask_isset_for_device(A->xi2mask, inputInfo.all_devices, evtype)) {
+        if (xi2mask_isset_for_device(A->xi2mask, context->inputInfo.all_devices, evtype)) {
             if (deviceid == XIAllDevices)
                 return BadAccess;
         }
 
         /* A has XIAllMasterDevices */
-        if (xi2mask_isset_for_device(A->xi2mask, inputInfo.all_master_devices, evtype)) {
+        if (xi2mask_isset_for_device(A->xi2mask, context->inputInfo.all_master_devices, evtype)) {
             if (deviceid == XIAllMasterDevices)
                 return BadAccess;
         }
@@ -267,7 +267,7 @@ ProcXISelectEvents(ClientPtr client)
                 rc = check_for_touch_selection_conflicts(client,
                                                          win,
                                                          evmask->deviceid,
-                                                         XI_TouchBegin);
+                                                         XI_TouchBegin, client->context);
                 if (rc != Success)
                     return rc;
             }
@@ -275,7 +275,7 @@ ProcXISelectEvents(ClientPtr client)
                 rc = check_for_touch_selection_conflicts(client,
                                                          win,
                                                          evmask->deviceid,
-                                                         XI_GesturePinchBegin);
+                                                         XI_GesturePinchBegin, client->context);
                 if (rc != Success)
                     return rc;
             }
@@ -283,7 +283,7 @@ ProcXISelectEvents(ClientPtr client)
                 rc = check_for_touch_selection_conflicts(client,
                                                          win,
                                                          evmask->deviceid,
-                                                         XI_GestureSwipeBegin);
+                                                         XI_GestureSwipeBegin, client->context);
                 if (rc != Success)
                     return rc;
             }
@@ -314,7 +314,7 @@ ProcXISelectEvents(ClientPtr client)
         else
             dixLookupDevice(&dev, evmask->deviceid, client, DixUseAccess);
         if (XISetEventMask(dev, win, client, evmask->mask_len * 4,
-                           (unsigned char *) &evmask[1]) != Success)
+                           (unsigned char *) &evmask[1], client->context) != Success)
             return BadAlloc;
         evmask =
             (xXIEventMask *) (((unsigned char *) evmask) +

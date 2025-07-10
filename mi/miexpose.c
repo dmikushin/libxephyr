@@ -340,7 +340,7 @@ miSendExposures(WindowPtr pWin, RegionPtr pRgn, int dx, int dy)
             PanoramiXRes *win;
 
             win = PanoramiXFindIDByScrnum(XRT_WINDOW,
-                                          pWin->drawable.id, scrnum);
+                                          pWin->drawable.id, scrnum, pWin->drawable.pScreen->context);
             if (!win) {
                 free(pEvent);
                 return;

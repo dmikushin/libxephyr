@@ -59,12 +59,12 @@ validGlxScreen(ClientPtr client, int screen, __GLXscreen ** pGlxScreen,
     /*
      ** Check if screen exists.
      */
-    if (screen < 0 || screen >= context->screenInfo.numScreens) {
+    if (screen < 0 || screen >= client->context->screenInfo.numScreens) {
         client->errorValue = screen;
         *err = BadValue;
         return FALSE;
     }
-    *pGlxScreen = glxGetScreen(context->screenInfo.screens[screen]);
+    *pGlxScreen = glxGetScreen(client->context->screenInfo.screens[screen]);
 
     return TRUE;
 }
@@ -307,7 +307,7 @@ DoCreateContext(__GLXclientState * cl, GLXContextID gcId,
          * it's a massive attack surface for buffer overflow type
          * errors.
          */
-        if (!context->enableIndirectGLX) {
+        if (!client->context->enableIndirectGLX) {
             client->errorValue = isDirect;
             return BadValue;
         }
@@ -361,7 +361,7 @@ DoCreateContext(__GLXclientState * cl, GLXContextID gcId,
 
     /* Add the new context to the various global tables of GLX contexts.
      */
-    if (!__glXAddContext(glxc)) {
+    if (!__glXAddContext(glxc, client->context)) {
         (*glxc->destroy) (glxc);
         client->errorValue = gcId;
         return BadAlloc;
@@ -443,13 +443,13 @@ __glXDisp_DestroyContext(__GLXclientState * cl, GLbyte * pc)
     if (glxc->currentClient) {
         XID ghost = FakeClientID(glxc->currentClient->index, glxc->currentClient->context);
 
-        if (!AddResource(ghost, __glXContextRes, glxc))
+        if (!AddResource(ghost, __glXContextRes, glxc, cl->client->context))
             return BadAlloc;
         ChangeResourceValue(glxc->id, __glXContextRes, NULL);
         glxc->id = ghost;
     }
 
-    FreeResourceByType(req->context, __glXContextRes, FALSE);
+    FreeResourceByType(req->context, __glXContextRes, FALSE, cl->client->context);
 
     return Success;
 }
@@ -562,7 +562,7 @@ __glXGetDrawable(__GLXcontext * glxc, GLXDrawable drawId, ClientPtr client,
     }
 
     /* since we are creating the drawablePrivate, drawId should be new */
-    if (!AddResource(drawId, __glXDrawableRes, pGlxDraw)) {
+    if (!AddResource(drawId, __glXDrawableRes, pGlxDraw, client->context)) {
         *error = BadAlloc;
         return NULL;
     }
@@ -672,7 +672,7 @@ xorgGlxMakeCurrent(ClientPtr client, GLXContextTag tag, XID drawId, XID readId,
     if (prevglxc) {
         prevglxc->currentClient = NULL;
         if (!prevglxc->idExists) {
-            FreeResourceByType(prevglxc->id, __glXContextRes, FALSE);
+            FreeResourceByType(prevglxc->id, __glXContextRes, FALSE, client->context);
         }
     }
 
@@ -1184,7 +1184,7 @@ DoCreateGLXDrawable(ClientPtr client, __GLXscreen * pGlxScreen,
     if (pGlxDraw == NULL)
         return BadAlloc;
 
-    if (!AddResource(glxDrawableId, __glXDrawableRes, pGlxDraw))
+    if (!AddResource(glxDrawableId, __glXDrawableRes, pGlxDraw, client->context))
         return BadAlloc;
 
     /*
@@ -1192,7 +1192,7 @@ DoCreateGLXDrawable(ClientPtr client, __GLXscreen * pGlxScreen,
      * so we get called regardless of destruction order.
      */
     if (drawableId != glxDrawableId && type == GLX_DRAWABLE_WINDOW &&
-        !AddResource(pDraw->id, __glXDrawableRes, pGlxDraw))
+        !AddResource(pDraw->id, __glXDrawableRes, pGlxDraw, client->context))
         return BadAlloc;
 
     return Success;
@@ -1347,7 +1347,7 @@ DoDestroyDrawable(__GLXclientState * cl, XID glxdrawable, int type)
                           DixDestroyAccess, &pGlxDraw, &err))
         return err;
 
-    FreeResource(glxdrawable, FALSE);
+    FreeResource(glxdrawable, FALSE, cl->client->context);
 
     return Success;
 }
@@ -1397,7 +1397,7 @@ DoCreatePbuffer(ClientPtr client, int screenNum, XID fbconfigId,
      * resource so it and the DRI2 drawable will be reclaimed when the
      * pbuffer is destroyed. */
     pPixmap->drawable.id = glxDrawableId;
-    if (!AddResource(pPixmap->drawable.id, RT_PIXMAP, pPixmap))
+    if (!AddResource(pPixmap->drawable.id, RT_PIXMAP, pPixmap, client->context))
         return BadAlloc;
 
     return DoCreateGLXDrawable(client, pGlxScreen, config, &pPixmap->drawable,
@@ -2507,7 +2507,7 @@ void
 __glXsendSwapEvent(__GLXdrawable *drawable, int type, CARD64 ust,
                    CARD64 msc, CARD32 sbc)
 {
-    ClientPtr client = context->clients[CLIENT_ID(drawable->drawId)];
+    ClientPtr client = drawable->pDraw->pScreen->context->clients[CLIENT_ID(drawable->drawId)];
 
     xGLXBufferSwapComplete2 wire =  {
         .type = __glXEventBase + GLX_BufferSwapComplete
@@ -2543,7 +2543,7 @@ __glXpresentCompleteNotify(WindowPtr window, CARD8 present_kind, CARD8 present_m
         return;
 
     rc = dixLookupResourceByType((void **) &drawable, window->drawable.id,
-                                 __glXDrawableRes, context->serverClient, DixGetAttrAccess);
+                                 __glXDrawableRes, window->drawable.pScreen->context->serverClient, DixGetAttrAccess);
 
     if (rc != Success)
         return;

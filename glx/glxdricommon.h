@@ -33,7 +33,8 @@ struct __GLXDRIconfig {
 };
 
 __GLXconfig *glxConvertConfigs(const __DRIcoreExtension * core,
-                               const __DRIconfig ** configs);
+                               const __DRIconfig ** configs,
+                               XephyrContext* context);
 
 void *glxProbeDriver(const char *name,
                      void **coreExt, const char *coreName, int coreVersion,

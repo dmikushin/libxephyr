@@ -637,7 +637,7 @@ CreateRootWindow(ScreenPtr pScreen)
 
     /*  security creation/labeling check
      */
-    if (XaceHook(XACE_RESOURCE_ACCESS, pScreen->pWin->drawable.pScreen->context->serverClient, pWin->drawable.id,
+    if (XaceHook(XACE_RESOURCE_ACCESS, pScreen->context->serverClient, pWin->drawable.id,
                  RT_WINDOW, pWin, RT_NONE, NULL, DixCreateAccess))
         return FALSE;
 
@@ -693,7 +693,7 @@ InitRootWindow(WindowPtr pWin)
     /* We SHOULD check for an error value here XXX */
     (*pScreen->ChangeWindowAttributes) (pWin, backFlag);
 
-    MapWindow(pWin, pScreen->pWin->drawable.pScreen->context->serverClient);
+    MapWindow(pWin, pScreen->context->serverClient);
 }
 
 /* Set the region to the intersection of the rectangle and the
@@ -2797,7 +2797,7 @@ UnrealizeTree(WindowPtr pWin, Bool fromConfigure)
                 int rc = dixLookupResourceByType((void **) &win,
                                                  pChild->drawable.id,
                                                  XRT_WINDOW,
-                                                 pWin->drawable.pScreen->pWin->drawable.pScreen->context->serverClient, DixWriteAccess);
+                                                 pWin->drawable.pScreen->context->serverClient, DixWriteAccess);
 
                 if (rc == Success)
                     win->u.win.visibility = VisibilityNotViewable;
@@ -2870,7 +2870,7 @@ UnmapWindow(WindowPtr pWin, Bool fromConfigure)
     }
     if (wasRealized && !fromConfigure) {
         WindowsRestructured(pScreen->context);
-        WindowGone(pWin);
+        WindowGone(pWin, pScreen->context);
     }
     return Success;
 }
@@ -2938,7 +2938,7 @@ UnmapSubwindows(WindowPtr pWin)
     }
     if (wasRealized) {
         WindowsRestructured(pScreen->context);
-        WindowGone(pWin);
+        WindowGone(pWin, pScreen->context);
     }
 }
 
@@ -3028,7 +3028,7 @@ SendVisibilityNotify(WindowPtr pWin)
 
         Scrnum = pWin->drawable.pScreen->myNum;
 
-        win = PanoramiXFindIDByScrnum(XRT_WINDOW, pWin->drawable.id, Scrnum);
+        win = PanoramiXFindIDByScrnum(XRT_WINDOW, pWin->drawable.id, Scrnum, pWin->drawable.pScreen->context);
 
         if (!win || (win->u.win.visibility == visibility))
             return;
@@ -3124,7 +3124,7 @@ dixSaveScreens(ClientPtr client, int on, int mode)
             (*pScreen->SaveScreen) (pScreen, on);
         if (pScreen->screensaver.ExternalScreenSaver) {
             if ((*pScreen->screensaver.ExternalScreenSaver)
-                (pScreen, type, on == SCREEN_SAVER_FORCER))
+                (pScreen, type, on == SCREEN_SAVER_FORCER, client->context))
                 continue;
         }
         if (type == screenIsSaved)
@@ -3262,7 +3262,7 @@ TileScreenSaver(ScreenPtr pScreen, int kind)
         for (j = 0; j < BitmapBytePad(32) * 16; j++)
             srcbits[j] = mskbits[j] = 0x0;
         result = AllocARGBCursor(srcbits, mskbits, NULL, &cm, 0, 0, 0, 0, 0, 0,
-                                 &cursor, pScreen->pWin->drawable.pScreen->context->serverClient, (XID) 0);
+                                 &cursor, pScreen->context->serverClient, (XID) 0);
         if (cursor) {
             cursorID = FakeClientID(0, pScreen->context);
             if (AddResource(cursorID, RT_CURSOR, (void *) cursor, pScreen->context)) {
@@ -3284,7 +3284,7 @@ TileScreenSaver(ScreenPtr pScreen, int kind)
                      -RANDOM_WIDTH, -RANDOM_WIDTH,
                      (unsigned short) pScreen->width + RANDOM_WIDTH,
                      (unsigned short) pScreen->height + RANDOM_WIDTH,
-                     0, InputOutput, mask, attributes, 0, pScreen->pWin->drawable.pScreen->context->serverClient,
+                     0, InputOutput, mask, attributes, 0, pScreen->context->serverClient,
                      wVisual(pScreen->root), &result);
 
     if (cursor)
@@ -3301,7 +3301,7 @@ TileScreenSaver(ScreenPtr pScreen, int kind)
         MakeRootTile(pWin);
         (*pWin->drawable.pScreen->ChangeWindowAttributes) (pWin, CWBackPixmap);
     }
-    MapWindow(pWin, pScreen->pWin->drawable.pScreen->context->serverClient);
+    MapWindow(pWin, pScreen->context->serverClient);
     return TRUE;
 }
 

@@ -374,7 +374,7 @@ exaDoMoveInPixmap(ExaMigrationPtr migrate)
     pExaPixmap->use_gpu_copy = TRUE;
 
     pPixmap->devKind = pExaPixmap->fb_pitch;
-    pPixmap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+    pPixmap->drawable.serialNumber = NextSerialNumber(pScreen->context);
 }
 
 void
@@ -416,7 +416,7 @@ exaDoMoveOutPixmap(ExaMigrationPtr migrate)
         pExaPixmap->use_gpu_copy = FALSE;
 
         pPixmap->devKind = pExaPixmap->sys_pitch;
-        pPixmap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+        pPixmap->drawable.serialNumber = NextSerialNumber(pPixmap->drawable.pScreen->context);
     }
 }
 

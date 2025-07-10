@@ -151,6 +151,6 @@ ProcXUngrabDeviceKey(ClientPtr client)
     temporaryGrab->detail.pMask = NULL;
 
     DeletePassiveGrabFromList(temporaryGrab);
-    FreeGrab(temporaryGrab);
+    FreeGrab(temporaryGrab, client->context);
     return Success;
 }

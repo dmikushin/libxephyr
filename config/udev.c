@@ -57,7 +57,6 @@
                    "returned \"%s\"\n",                                 \
                    (attr), (path), (val) ? (val) : "(null)")
 
-static struct udev_monitor *udev_monitor;
 
 #ifdef CONFIG_UDEV_KMS
 static void
@@ -75,7 +74,7 @@ static const char *itoa(int i)
 }
 
 static Bool
-check_seat(struct udev_device *udev_device)
+check_seat(struct udev_device *udev_device, XephyrContext* context)
 {
     const char *dev_seat;
 
@@ -93,7 +92,7 @@ check_seat(struct udev_device *udev_device)
 }
 
 static void
-device_added(struct udev_device *udev_device)
+device_added(struct udev_device *udev_device, XephyrContext* context)
 {
     const char *path, *name = NULL;
     char *config_info = NULL;
@@ -118,7 +117,7 @@ device_added(struct udev_device *udev_device)
     if (!path || !syspath)
         return;
 
-    if (!check_seat(udev_device))
+    if (!check_seat(udev_device, context))
         return;
 
     devnum = udev_device_get_devnum(udev_device);
@@ -214,7 +213,7 @@ device_added(struct udev_device *udev_device)
         goto unwind;
     }
 
-    if (device_is_duplicate(config_info)) {
+    if (device_is_duplicate(config_info, context)) {
         LogMessage(X_WARNING, "config/udev: device %s already added. "
                    "Ignoring.\n", name);
         goto unwind;
@@ -289,7 +288,7 @@ device_added(struct udev_device *udev_device)
 
     LogMessage(X_INFO, "config/udev: Adding input device %s (%s)\n",
                name, path);
-    rc = NewInputDeviceRequest(input_options, &attrs, &dev);
+    rc = NewInputDeviceRequest(input_options, &attrs, &dev, context);
     if (rc != Success)
         goto unwind;
 
@@ -316,7 +315,7 @@ device_added(struct udev_device *udev_device)
 }
 
 static void
-device_removed(struct udev_device *device)
+device_removed(struct udev_device *device, XephyrContext* context)
 {
     char *value;
     const char *syspath = udev_device_get_syspath(device);
@@ -345,7 +344,7 @@ device_removed(struct udev_device *device)
     if (asprintf(&value, "udev:%s", syspath) == -1)
         return;
 
-    remove_devices("udev", value);
+    remove_devices("udev", value, context);
 
     free(value);
 }
@@ -357,7 +356,7 @@ socket_handler(int fd, int ready, void *data)
     const char *action;
 
     input_lock();
-    udev_device = udev_monitor_receive_device(udev_monitor);
+    udev_device = udev_monitor_receive_device(((XephyrContext*)data)->udev_monitor);
     if (!udev_device) {
         input_unlock();
         return;
@@ -365,26 +364,26 @@ socket_handler(int fd, int ready, void *data)
     action = udev_device_get_action(udev_device);
     if (action) {
         if (!strcmp(action, "add")) {
-            device_removed(udev_device);
-            device_added(udev_device);
+            device_removed(udev_device, (XephyrContext*)data);
+            device_added(udev_device, (XephyrContext*)data);
         } else if (!strcmp(action, "change")) {
             /* ignore change for the drm devices */
             const char *subsys = udev_device_get_subsystem(udev_device);
 
             if (subsys && strcmp(subsys, "drm")) {
-                device_removed(udev_device);
-                device_added(udev_device);
+                device_removed(udev_device, (XephyrContext*)data);
+                device_added(udev_device, (XephyrContext*)data);
             }
         }
         else if (!strcmp(action, "remove"))
-            device_removed(udev_device);
+            device_removed(udev_device, (XephyrContext*)data);
     }
     udev_device_unref(udev_device);
     input_unlock();
 }
 
 int
-config_udev_pre_init(void)
+config_udev_pre_init(XephyrContext* context)
 {
     struct udev *udev;
 
@@ -392,24 +391,24 @@ config_udev_pre_init(void)
     if (!udev)
         return 0;
 
-    udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
-    if (!udev_monitor)
+    context->udev_monitor = (void*)udev_monitor_new_from_netlink(udev, "udev");
+    if (!context->udev_monitor)
         return 0;
 
-    udev_monitor_filter_add_match_subsystem_devtype(udev_monitor, "input",
+    udev_monitor_filter_add_match_subsystem_devtype((struct udev_monitor*)context->udev_monitor, "input",
                                                     NULL);
     /* For Wacom serial devices */
-    udev_monitor_filter_add_match_subsystem_devtype(udev_monitor, "tty", NULL);
+    udev_monitor_filter_add_match_subsystem_devtype((struct udev_monitor*)context->udev_monitor, "tty", NULL);
 #ifdef CONFIG_UDEV_KMS
     /* For output GPU devices */
-    udev_monitor_filter_add_match_subsystem_devtype(udev_monitor, "drm", NULL);
+    udev_monitor_filter_add_match_subsystem_devtype(context->udev_monitor, "drm", NULL);
 #endif
 
 #ifdef HAVE_UDEV_MONITOR_FILTER_ADD_MATCH_TAG
     if (ServerIsNotSeat0())
-        udev_monitor_filter_add_match_tag(udev_monitor, context->SeatId);
+        udev_monitor_filter_add_match_tag(context->udev_monitor, context->SeatId);
 #endif
-    if (udev_monitor_enable_receiving(udev_monitor)) {
+    if (udev_monitor_enable_receiving(context->udev_monitor)) {
         ErrorF("config/udev: failed to bind the udev monitor\n");
         return 0;
     }
@@ -417,13 +416,13 @@ config_udev_pre_init(void)
 }
 
 int
-config_udev_init(void)
+config_udev_init(XephyrContext* context)
 {
     struct udev *udev;
     struct udev_enumerate *enumerate;
     struct udev_list_entry *devices, *device;
 
-    udev = udev_monitor_get_udev(udev_monitor);
+    udev = udev_monitor_get_udev(context->udev_monitor);
     enumerate = udev_enumerate_new(udev);
     if (!enumerate)
         return 0;
@@ -450,29 +449,29 @@ config_udev_init(void)
         if (!udev_device)
             continue;
 
-        device_added(udev_device);
+        device_added(udev_device, context);
         udev_device_unref(udev_device);
     }
     udev_enumerate_unref(enumerate);
 
-    SetNotifyFd(udev_monitor_get_fd(udev_monitor), socket_handler, X_NOTIFY_READ, NULL);
+    SetNotifyFd(udev_monitor_get_fd(context->udev_monitor), socket_handler, X_NOTIFY_READ, context);
 
     return 1;
 }
 
 void
-config_udev_fini(void)
+config_udev_fini(XephyrContext* context)
 {
     struct udev *udev;
 
-    if (!udev_monitor)
+    if (!context->udev_monitor)
         return;
 
-    udev = udev_monitor_get_udev(udev_monitor);
+    udev = udev_monitor_get_udev(context->udev_monitor);
 
-    RemoveNotifyFd(udev_monitor_get_fd(udev_monitor));
-    udev_monitor_unref(udev_monitor);
-    udev_monitor = NULL;
+    RemoveNotifyFd(udev_monitor_get_fd(context->udev_monitor));
+    udev_monitor_unref(context->udev_monitor);
+    context->udev_monitor = NULL;
     udev_unref(udev);
 }
 
@@ -563,13 +562,13 @@ config_udev_odev_setup_attribs(struct udev_device *udev_device, const char *path
 }
 
 void
-config_udev_odev_probe(config_odev_probe_proc_ptr probe_callback)
+config_udev_odev_probe(config_odev_probe_proc_ptr probe_callback, XephyrContext* context)
 {
     struct udev *udev;
     struct udev_enumerate *enumerate;
     struct udev_list_entry *devices, *device;
 
-    udev = udev_monitor_get_udev(udev_monitor);
+    udev = udev_monitor_get_udev(context->udev_monitor);
     enumerate = udev_enumerate_new(udev);
     if (!enumerate)
         return;
@@ -596,7 +595,7 @@ config_udev_odev_probe(config_odev_probe_proc_ptr probe_callback)
             goto no_probe;
         else if (strncmp(sysname, "card", 4) != 0)
             goto no_probe;
-        else if (!check_seat(udev_device))
+        else if (!check_seat(udev_device, context))
             goto no_probe;
 
         config_udev_odev_setup_attribs(udev_device, path, syspath, major(devnum),

@@ -141,7 +141,7 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
             .time = time
         };
         SendEventToAllWindows(kbd, DeviceMappingNotifyMask, (xEvent *) &xi_mn,
-                              1);
+                              1, kbd->context);
     }
     if (modmap_changed) {
         deviceMappingNotify xi_mn = {
@@ -153,7 +153,7 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
             .time = time
         };
         SendEventToAllWindows(kbd, DeviceMappingNotifyMask, (xEvent *) &xi_mn,
-                              1);
+                              1, kbd->context);
     }
 }
 

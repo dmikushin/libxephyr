@@ -66,7 +66,7 @@ RRModeCreate(xRRModeInfo * modeInfo, const char *name, ScreenPtr userScreen)
 {
     RRModePtr mode, *newModes;
 
-    if (!RRInit())
+    if (!RRInit(userScreen->context))
         return NULL;
 
     mode = malloc(sizeof(RRModeRec) + modeInfo->nameLength + 1);
@@ -251,7 +251,7 @@ RRModeDestroy(RRModePtr mode)
 }
 
 static int
-RRModeDestroyResource(void *value, XID pid)
+RRModeDestroyResource(void *value, XID pid, XephyrContext* context)
 {
     RRModeDestroy((RRModePtr) value);
     return 1;

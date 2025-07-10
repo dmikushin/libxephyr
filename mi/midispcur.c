@@ -94,7 +94,7 @@ miDCInitialize(ScreenPtr pScreen, miPointerScreenFuncPtr screenFuncs)
 {
     miDCScreenPtr pScreenPriv;
 
-    if (!dixRegisterPrivateKey(&miDCScreenKeyRec, PRIVATE_SCREEN, 0) ||
+    if (!dixRegisterPrivateKey(&miDCScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context) ||
         !dixRegisterScreenPrivateKey(&miDCDeviceKeyRec, pScreen, PRIVATE_DEVICE,
                                      0))
         return FALSE;
@@ -129,7 +129,7 @@ miDCSwitchScreenCursor(ScreenPtr pScreen, CursorPtr pCursor, PixmapPtr sourceBit
     pScreenPriv->maskBits = maskBits;
 
     if (pScreenPriv->pPicture)
-        FreePicture(pScreenPriv->pPicture, 0);
+        FreePicture(pScreenPriv->pPicture, 0, pScreen->context);
     pScreenPriv->pPicture = pPicture;
 
     pScreenPriv->pCursor = pCursor;
@@ -502,13 +502,13 @@ miDCDeviceCleanup(DeviceIntPtr pDev, ScreenPtr pScreen)
 
             if (pBuffer) {
                 if (pBuffer->pSourceGC)
-                    FreeGC(pBuffer->pSourceGC, (GContext) 0);
+                    FreeGC(pBuffer->pSourceGC, (GContext) 0, pDev->context);
                 if (pBuffer->pMaskGC)
-                    FreeGC(pBuffer->pMaskGC, (GContext) 0);
+                    FreeGC(pBuffer->pMaskGC, (GContext) 0, pDev->context);
                 if (pBuffer->pSaveGC)
-                    FreeGC(pBuffer->pSaveGC, (GContext) 0);
+                    FreeGC(pBuffer->pSaveGC, (GContext) 0, pDev->context);
                 if (pBuffer->pRestoreGC)
-                    FreeGC(pBuffer->pRestoreGC, (GContext) 0);
+                    FreeGC(pBuffer->pRestoreGC, (GContext) 0, pDev->context);
 
                 /* If a pRootPicture was allocated for a root window, it
                  * is freed when that root window is destroyed, so don't

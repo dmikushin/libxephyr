@@ -59,7 +59,7 @@
  * Send the current state of the device hierarchy to all context->clients.
  */
 void
-XISendDeviceHierarchyEvent(int flags[MAXDEVICES])
+XISendDeviceHierarchyEvent(int flags[MAXDEVICES], XephyrContext* context)
 {
     xXIHierarchyEvent *ev;
     xXIHierarchyInfo *info;
@@ -79,10 +79,10 @@ XISendDeviceHierarchyEvent(int flags[MAXDEVICES])
     ev->evtype = XI_HierarchyChanged;
     ev->time = GetTimeInMillis();
     ev->flags = 0;
-    ev->num_info = inputInfo.numDevices;
+    ev->num_info = context->inputInfo.numDevices;
 
     info = (xXIHierarchyInfo *) &ev[1];
-    for (dev = inputInfo.devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         info->deviceid = dev->id;
         info->enabled = dev->enabled;
         info->use = GetDeviceUse(dev, &info->attachment);
@@ -90,7 +90,7 @@ XISendDeviceHierarchyEvent(int flags[MAXDEVICES])
         ev->flags |= info->flags;
         info++;
     }
-    for (dev = inputInfo.off_devices; dev; dev = dev->next) {
+    for (dev = context->inputInfo.off_devices; dev; dev = dev->next) {
         info->deviceid = dev->id;
         info->enabled = dev->enabled;
         info->use = GetDeviceUse(dev, &info->attachment);
@@ -117,7 +117,7 @@ XISendDeviceHierarchyEvent(int flags[MAXDEVICES])
     dummyDev.id = XIAllDevices;
     dummyDev.type = SLAVE;
     SendEventToAllWindows(&dummyDev, (XI_HierarchyChangedMask >> 8),
-                          (xEvent *) ev, 1);
+                          (xEvent *) ev, 1, context);
     free(ev);
 }
 
@@ -195,8 +195,8 @@ add_master(ClientPtr client, xXIAddMasterInfo * c, int flags[MAXDEVICES])
     flags[XTestptr->id] |= XISlaveAttached;
     flags[XTestkeybd->id] |= XISlaveAttached;
 
-    for (int i = 0; i < context->currentMaxClients; i++)
-        XIBarrierNewMasterDevice(context->clients[i], ptr->id);
+    for (int i = 0; i < client->context->currentMaxClients; i++)
+        XIBarrierNewMasterDevice(client->context->clients[i], ptr->id);
 
  unwind:
     free(name);
@@ -204,7 +204,7 @@ add_master(ClientPtr client, xXIAddMasterInfo * c, int flags[MAXDEVICES])
 }
 
 static void
-disable_clientpointer(DeviceIntPtr dev)
+disable_clientpointer(DeviceIntPtr dev, XephyrContext* context)
 {
     int i;
 
@@ -236,7 +236,7 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
     }
 
     /* XXX: For now, don't allow removal of VCP, VCK */
-    if (ptr == inputInfo.pointer ||ptr == inputInfo.keyboard) {
+    if (ptr == client->context->inputInfo.pointer ||ptr == client->context->inputInfo.keyboard) {
         rc = BadDevice;
         goto unwind;
     }
@@ -250,17 +250,17 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
     if (rc != Success)
         goto unwind;
 
-    XTestptr = GetXTestDevice(ptr);
+    XTestptr = GetXTestDevice(ptr, client->context);
     rc = dixLookupDevice(&XTestptr, XTestptr->id, client, DixDestroyAccess);
     if (rc != Success)
         goto unwind;
 
-    XTestkeybd = GetXTestDevice(keybd);
+    XTestkeybd = GetXTestDevice(keybd, client->context);
     rc = dixLookupDevice(&XTestkeybd, XTestkeybd->id, client, DixDestroyAccess);
     if (rc != Success)
         goto unwind;
 
-    disable_clientpointer(ptr);
+    disable_clientpointer(ptr, client->context);
 
     /* Disabling sends the devices floating, reattach them if
      * desired. */
@@ -288,7 +288,7 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
             goto unwind;
         }
 
-        for (attached = inputInfo.devices; attached; attached = attached->next) {
+        for (attached = client->context->inputInfo.devices; attached; attached = attached->next) {
             if (!IsMaster(attached)) {
                 if (GetMaster(attached, MASTER_ATTACHED) == ptr) {
                     AttachDevice(client, attached, newptr);
@@ -302,8 +302,8 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
         }
     }
 
-    for (int i = 0; i < context->currentMaxClients; i++)
-        XIBarrierRemoveMasterDevice(context->clients[i], ptr->id);
+    for (int i = 0; i < client->context->currentMaxClients; i++)
+        XIBarrierRemoveMasterDevice(client->context->clients[i], ptr->id);
 
     /* disable the remove the devices, XTest devices must be done first
        else the sprites they rely on will be destroyed  */
@@ -506,6 +506,6 @@ ProcXIChangeHierarchy(ClientPtr client)
 
  unwind:
 
-    XISendDeviceHierarchyEvent(flags);
+    XISendDeviceHierarchyEvent(flags, client->context);
     return rc;
 }

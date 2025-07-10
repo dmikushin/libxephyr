@@ -92,7 +92,7 @@ static void KdXVClipNotify(WindowPtr pWin, int dx, int dy);
 static Bool KdXVCloseScreen(ScreenPtr);
 
 /* misc */
-static Bool KdXVInitAdaptors(ScreenPtr, KdVideoAdaptorPtr, int);
+static Bool KdXVInitAdaptors(ScreenPtr, KdVideoAdaptorPtr, int, XephyrContext*);
 
 static DevPrivateKeyRec KdXVWindowKeyRec;
 
@@ -112,7 +112,7 @@ static unsigned long PortResource = 0;
     dixLookupPrivate(&(pWin)->devPrivates, KdXVWindowKey))
 
 Bool
-KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr adaptors, int num)
+KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr adaptors, int num, XephyrContext* context)
 {
     KdXVScreenPtr ScreenPriv;
 
@@ -124,12 +124,12 @@ KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr adaptors, int num)
     if (noXvExtension)
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&KdXVWindowKeyRec, PRIVATE_WINDOW, 0))
+    if (!dixRegisterPrivateKey(&KdXVWindowKeyRec, PRIVATE_WINDOW, 0, context))
         return FALSE;
-    if (!dixRegisterPrivateKey(&KdXVScreenPrivateKey, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&KdXVScreenPrivateKey, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
-    if (Success != XvScreenInit(pScreen))
+    if (Success != XvScreenInit(pScreen, context))
         return FALSE;
 
     KdXvScreenKey = XvGetScreenKey();
@@ -153,7 +153,7 @@ KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr adaptors, int num)
     pScreen->ClipNotify = KdXVClipNotify;
     pScreen->CloseScreen = KdXVCloseScreen;
 
-    if (!KdXVInitAdaptors(pScreen, adaptors, num))
+    if (!KdXVInitAdaptors(pScreen, adaptors, num, context))
         return FALSE;
 
     return TRUE;
@@ -184,7 +184,7 @@ KdXVFreeAdaptor(XvAdaptorPtr pAdaptor)
 }
 
 static Bool
-KdXVInitAdaptors(ScreenPtr pScreen, KdVideoAdaptorPtr infoPtr, int number)
+KdXVInitAdaptors(ScreenPtr pScreen, KdVideoAdaptorPtr infoPtr, int number, XephyrContext* context)
 {
     KdScreenPriv(pScreen);
     KdScreenInfo *screen = pScreenPriv->screen;
@@ -372,7 +372,7 @@ KdXVInitAdaptors(ScreenPtr pScreen, KdVideoAdaptorPtr infoPtr, int number)
             if (!(portPriv = calloc(1, sizeof(XvPortRecPrivate))))
                 continue;
 
-            if (!AddResource(pp->id, PortResource, pp)) {
+            if (!AddResource(pp->id, PortResource, pp, context)) {
                 free(portPriv);
                 continue;
             }

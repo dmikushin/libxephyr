@@ -92,7 +92,7 @@ ProcXIChangeCursor(ClientPtr client)
 
     if (stuff->cursor == None) {
         if (pWin == pWin->drawable.pScreen->root)
-            pCursor = context->rootCursor;
+            pCursor = pWin->drawable.pScreen->context->rootCursor;
         else
             pCursor = (CursorPtr) None;
     }

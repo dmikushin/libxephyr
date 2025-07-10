@@ -48,6 +48,7 @@ in this Software without prior written authorization from the X Consortium.
 #include "colormapst.h"
 #include "xace.h"
 #include "inputstr.h"
+
 #ifdef PANORAMIX
 #include "panoramiX.h"
 #include "panoramiXsrv.h"
@@ -66,19 +67,23 @@ static int ScreenSaverEventBase = 0;
 
 static Bool ScreenSaverHandle(ScreenPtr /* pScreen */ ,
                               int /* xstate */ ,
-                              Bool      /* force */
+                              Bool      /* force */,
+                              XephyrContext* /* context */
     );
 
 static Bool
- CreateSaverWindow(ScreenPtr    /* pScreen */
+ CreateSaverWindow(ScreenPtr    /* pScreen */,
+                   XephyrContext* /* context */
     );
 
 static Bool
- DestroySaverWindow(ScreenPtr   /* pScreen */
+ DestroySaverWindow(ScreenPtr   /* pScreen */,
+                   XephyrContext* /* context */
     );
 
 static void
- UninstallSaverColormap(ScreenPtr       /* pScreen */
+ UninstallSaverColormap(ScreenPtr       /* pScreen */,
+                        XephyrContext*  /* context */
     );
 
 static void
@@ -109,7 +114,7 @@ typedef struct _ScreenSaverSuspension {
     int count;
 } ScreenSaverSuspensionRec;
 
-static int ScreenSaverFreeSuspend(void *value, XID id);
+static int ScreenSaverFreeSuspend(void *value, XID id, XephyrContext* context);
 
 /*
  * each screen has a list of context->clients requesting
@@ -131,7 +136,7 @@ typedef struct _ScreenSaverEvent {
     CARD32 mask;
 } ScreenSaverEventRec;
 
-static int ScreenSaverFreeEvents(void * value, XID id);
+static int ScreenSaverFreeEvents(void * value, XID id, XephyrContext* context);
 
 static Bool setEventMask(ScreenPtr      pScreen,
                          ClientPtr      client,
@@ -164,16 +169,17 @@ typedef struct _ScreenSaverAttr {
     unsigned long *values;
 } ScreenSaverAttrRec, *ScreenSaverAttrPtr;
 
-static int ScreenSaverFreeAttr(void *value, XID id);
+static int ScreenSaverFreeAttr(void *value, XID id, XephyrContext* context);
 
-static void FreeAttrs(ScreenSaverAttrPtr pAttr);
+static void FreeAttrs(ScreenSaverAttrPtr pAttr, XephyrContext* context);
 
-static void FreeScreenAttr(ScreenSaverAttrPtr pAttr);
+static void FreeScreenAttr(ScreenSaverAttrPtr pAttr, XephyrContext* context);
 
 static void
 SendScreenSaverNotify(ScreenPtr pScreen,
                       int       state,
-                      Bool      forced);
+                      Bool      forced,
+                      XephyrContext* context);
 
 typedef struct _ScreenSaverScreenPrivate {
     ScreenSaverEventPtr events;
@@ -261,7 +267,7 @@ setEventMask(ScreenPtr pScreen, ClientPtr client, unsigned long mask)
         if (pEv->client == client)
             break;
     if (mask == 0) {
-        FreeResource(pEv->resource, SaverEventType);
+        FreeResource(pEv->resource, SaverEventType, client->context);
         *pPrev = pEv->next;
         free(pEv);
         CheckScreenPrivate(pScreen);
@@ -278,7 +284,7 @@ setEventMask(ScreenPtr pScreen, ClientPtr client, unsigned long mask)
             pEv->client = client;
             pEv->screen = pScreen;
             pEv->resource = FakeClientID(client->index, client->context);
-            if (!AddResource(pEv->resource, SaverEventType, (void *) pEv))
+            if (!AddResource(pEv->resource, SaverEventType, (void *) pEv, client->context))
                 return FALSE;
         }
         pEv->mask = mask;
@@ -287,7 +293,7 @@ setEventMask(ScreenPtr pScreen, ClientPtr client, unsigned long mask)
 }
 
 static void
-FreeAttrs(ScreenSaverAttrPtr pAttr)
+FreeAttrs(ScreenSaverAttrPtr pAttr, XephyrContext* context)
 {
     PixmapPtr pPixmap;
     CursorPtr pCursor;
@@ -297,19 +303,19 @@ FreeAttrs(ScreenSaverAttrPtr pAttr)
     if ((pPixmap = pAttr->pBorderPixmap) != 0)
         (*pPixmap->drawable.pScreen->DestroyPixmap) (pPixmap);
     if ((pCursor = pAttr->pCursor) != 0)
-        FreeCursor(pCursor, (Cursor) 0);
+        FreeCursor(pCursor, (Cursor) 0, context);
 }
 
 static void
-FreeScreenAttr(ScreenSaverAttrPtr pAttr)
+FreeScreenAttr(ScreenSaverAttrPtr pAttr, XephyrContext* context)
 {
-    FreeAttrs(pAttr);
+    FreeAttrs(pAttr, context);
     free(pAttr->values);
     free(pAttr);
 }
 
 static int
-ScreenSaverFreeEvents(void *value, XID id)
+ScreenSaverFreeEvents(void *value, XID id, XephyrContext* context)
 {
     ScreenSaverEventPtr pOld = (ScreenSaverEventPtr) value;
     ScreenPtr pScreen = pOld->screen;
@@ -331,7 +337,7 @@ ScreenSaverFreeEvents(void *value, XID id)
 }
 
 static int
-ScreenSaverFreeAttr(void *value, XID id)
+ScreenSaverFreeAttr(void *value, XID id, XephyrContext* context)
 {
     ScreenSaverAttrPtr pOldAttr = (ScreenSaverAttrPtr) value;
     ScreenPtr pScreen = pOldAttr->screen;
@@ -342,7 +348,7 @@ ScreenSaverFreeAttr(void *value, XID id)
         return TRUE;
     if (pPriv->attr != pOldAttr)
         return TRUE;
-    FreeScreenAttr(pOldAttr);
+    FreeScreenAttr(pOldAttr, context);
     pPriv->attr = NULL;
     if (pPriv->hasWindow) {
         dixSaveScreens(context->serverClient, SCREEN_SAVER_FORCER, ScreenSaverReset);
@@ -353,7 +359,7 @@ ScreenSaverFreeAttr(void *value, XID id)
 }
 
 static int
-ScreenSaverFreeSuspend(void *value, XID id)
+ScreenSaverFreeSuspend(void *value, XID id, XephyrContext* context)
 {
     ScreenSaverSuspensionPtr data = (ScreenSaverSuspensionPtr) value;
     ScreenSaverSuspensionPtr *prev, this;
@@ -380,8 +386,8 @@ ScreenSaverFreeSuspend(void *value, XID id)
 #endif
         {
             DeviceIntPtr dev;
-            UpdateCurrentTimeIf();
-            nt_list_for_each_entry(dev, inputInfo.devices, next)
+            UpdateCurrentTimeIf(context);
+            nt_list_for_each_entry(dev, context->inputInfo.devices, next)
                 NoticeTime(dev, context->currentTime);
             SetScreenSaverTimer(context);
         }
@@ -391,14 +397,14 @@ ScreenSaverFreeSuspend(void *value, XID id)
 }
 
 static void
-SendScreenSaverNotify(ScreenPtr pScreen, int state, Bool forced)
+SendScreenSaverNotify(ScreenPtr pScreen, int state, Bool forced, XephyrContext* context)
 {
     ScreenSaverScreenPrivatePtr pPriv;
     ScreenSaverEventPtr pEv;
     unsigned long mask;
     int kind;
 
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(context);
     mask = ScreenSaverNotifyMask;
     if (state == ScreenSaverCycle)
         mask = ScreenSaverCycleMask;
@@ -443,7 +449,7 @@ SScreenSaverNotifyEvent(xScreenSaverNotifyEvent * from,
 }
 
 static void
-UninstallSaverColormap(ScreenPtr pScreen)
+UninstallSaverColormap(ScreenPtr pScreen, XephyrContext* context)
 {
     SetupScreen(pScreen);
     ColormapPtr pCmap;
@@ -454,14 +460,14 @@ UninstallSaverColormap(ScreenPtr pScreen)
                                      RT_COLORMAP, context->serverClient,
                                      DixUninstallAccess);
         if (rc == Success)
-            (*pCmap->pScreen->UninstallColormap) (pCmap);
+            (*pCmap->pScreen->UninstallColormap) (pCmap, context);
         pPriv->installedMap = None;
         CheckScreenPrivate(pScreen);
     }
 }
 
 static Bool
-CreateSaverWindow(ScreenPtr pScreen)
+CreateSaverWindow(ScreenPtr pScreen, XephyrContext* context)
 {
     SetupScreen(pScreen);
     ScreenSaverStuffPtr pSaver;
@@ -475,9 +481,9 @@ CreateSaverWindow(ScreenPtr pScreen)
     pSaver = &pScreen->screensaver;
     if (pSaver->pWindow) {
         pSaver->pWindow = NullWindow;
-        FreeResource(pSaver->wid, RT_NONE);
+        FreeResource(pSaver->wid, RT_NONE, context);
         if (pPriv) {
-            UninstallSaverColormap(pScreen);
+            UninstallSaverColormap(pScreen, context);
             pPriv->hasWindow = FALSE;
             CheckScreenPrivate(pScreen);
         }
@@ -499,7 +505,7 @@ CreateSaverWindow(ScreenPtr pScreen)
     if (!pWin)
         return FALSE;
 
-    if (!AddResource(pWin->drawable.id, RT_WINDOW, pWin))
+    if (!AddResource(pWin->drawable.id, RT_WINDOW, pWin, context))
         return FALSE;
 
     mask = 0;
@@ -519,12 +525,12 @@ CreateSaverWindow(ScreenPtr pScreen)
         CursorPtr cursor;
         if (!pWin->optional)
             if (!MakeWindowOptional(pWin)) {
-                FreeResource(pWin->drawable.id, RT_NONE);
+                FreeResource(pWin->drawable.id, RT_NONE, context);
                 return FALSE;
             }
         cursor = RefCursor(pAttr->pCursor);
         if (pWin->optional->cursor)
-            FreeCursor(pWin->optional->cursor, (Cursor) 0);
+            FreeCursor(pWin->optional->cursor, (Cursor) 0, context);
         pWin->optional->cursor = cursor;
         pWin->cursorIsNone = FALSE;
         CheckWindowOptionalNeed(pWin);
@@ -554,13 +560,13 @@ CreateSaverWindow(ScreenPtr pScreen)
 
     pPriv->installedMap = wantMap;
 
-    (*pCmap->pScreen->InstallColormap) (pCmap);
+    (*pCmap->pScreen->InstallColormap) (pCmap, context);
 
     return TRUE;
 }
 
 static Bool
-DestroySaverWindow(ScreenPtr pScreen)
+DestroySaverWindow(ScreenPtr pScreen, XephyrContext* context)
 {
     SetupScreen(pScreen);
     ScreenSaverStuffPtr pSaver;
@@ -571,16 +577,16 @@ DestroySaverWindow(ScreenPtr pScreen)
     pSaver = &pScreen->screensaver;
     if (pSaver->pWindow) {
         pSaver->pWindow = NullWindow;
-        FreeResource(pSaver->wid, RT_NONE);
+        FreeResource(pSaver->wid, RT_NONE, context);
     }
     pPriv->hasWindow = FALSE;
     CheckScreenPrivate(pScreen);
-    UninstallSaverColormap(pScreen);
+    UninstallSaverColormap(pScreen, context);
     return TRUE;
 }
 
 static Bool
-ScreenSaverHandle(ScreenPtr pScreen, int xstate, Bool force)
+ScreenSaverHandle(ScreenPtr pScreen, int xstate, Bool force, XephyrContext* context)
 {
     int state = 0;
     Bool ret = FALSE;
@@ -589,11 +595,11 @@ ScreenSaverHandle(ScreenPtr pScreen, int xstate, Bool force)
     switch (xstate) {
     case SCREEN_SAVER_ON:
         state = ScreenSaverOn;
-        ret = CreateSaverWindow(pScreen);
+        ret = CreateSaverWindow(pScreen, context);
         break;
     case SCREEN_SAVER_OFF:
         state = ScreenSaverOff;
-        ret = DestroySaverWindow(pScreen);
+        ret = DestroySaverWindow(pScreen, context);
         break;
     case SCREEN_SAVER_CYCLE:
         state = ScreenSaverCycle;
@@ -605,7 +611,7 @@ ScreenSaverHandle(ScreenPtr pScreen, int xstate, Bool force)
 #ifdef PANORAMIX
     if (noPanoramiXExtension || !pScreen->myNum)
 #endif
-        SendScreenSaverNotify(pScreen, state, force);
+        SendScreenSaverNotify(pScreen, state, force, context);
     return ret;
 }
 
@@ -654,7 +660,7 @@ ProcScreenSaverQueryInfo(ClientPtr client)
     pSaver = &pDraw->pScreen->screensaver;
     pPriv = GetScreenPrivate(pDraw->pScreen);
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     lastInput = GetTimeInMillis() - LastEventTime(XIAllDevices).milliseconds;
 
     rep = (xScreenSaverQueryInfoReply) {
@@ -665,18 +671,18 @@ ProcScreenSaverQueryInfo(ClientPtr client)
     };
     if (screenIsSaved != SCREEN_SAVER_OFF) {
         rep.state = ScreenSaverOn;
-        if (context->ScreenSaverTime)
-            rep.tilOrSince = lastInput - context->ScreenSaverTime;
+        if (client->context->ScreenSaverTime)
+            rep.tilOrSince = lastInput - client->context->ScreenSaverTime;
         else
             rep.tilOrSince = 0;
     }
     else {
-        if (context->ScreenSaverTime) {
+        if (client->context->ScreenSaverTime) {
             rep.state = ScreenSaverOff;
-            if (context->ScreenSaverTime < lastInput)
+            if (client->context->ScreenSaverTime < lastInput)
                 rep.tilOrSince = 0;
             else
-                rep.tilOrSince = context->ScreenSaverTime - lastInput;
+                rep.tilOrSince = client->context->ScreenSaverTime - lastInput;
         }
         else {
             rep.state = ScreenSaverDisabled;
@@ -687,7 +693,7 @@ ProcScreenSaverQueryInfo(ClientPtr client)
     rep.eventMask = getEventMask(pDraw->pScreen, client);
     if (pPriv && pPriv->attr)
         rep.kind = ScreenSaverExternal;
-    else if (context->ScreenSaverBlanking != DontPreferBlanking)
+    else if (client->context->ScreenSaverBlanking != DontPreferBlanking)
         rep.kind = ScreenSaverBlanked;
     else
         rep.kind = ScreenSaverInternal;
@@ -1052,14 +1058,14 @@ ScreenSaverSetAttributes(ClientPtr client)
         pVlist++;
     }
     if (pPriv->attr)
-        FreeScreenAttr(pPriv->attr);
+        FreeScreenAttr(pPriv->attr, client->context);
     pPriv->attr = pAttr;
     pAttr->resource = FakeClientID(client->index, client->context);
-    if (!AddResource(pAttr->resource, AttrType, (void *) pAttr))
+    if (!AddResource(pAttr->resource, AttrType, (void *) pAttr, client->context))
         return BadAlloc;
     return Success;
  PatchUp:
-    FreeAttrs(pAttr);
+    FreeAttrs(pAttr, client->context);
  bail:
     CheckScreenPrivate(pScreen);
     if (pAttr)
@@ -1083,8 +1089,8 @@ ScreenSaverUnsetAttributes(ClientPtr client)
         return rc;
     pPriv = GetScreenPrivate(pDraw->pScreen);
     if (pPriv && pPriv->attr && pPriv->attr->client == client) {
-        FreeResource(pPriv->attr->resource, AttrType);
-        FreeScreenAttr(pPriv->attr);
+        FreeResource(pPriv->attr->resource, AttrType, client->context);
+        FreeScreenAttr(pPriv->attr, client->context);
         pPriv->attr = NULL;
         CheckScreenPrivate(pDraw->pScreen);
     }
@@ -1166,7 +1172,7 @@ ProcScreenSaverSetAttributes(ClientPtr client)
                 *((CARD32 *) &stuff[1] + cmap_offset) = cmap->info[i].id;
 
             if (orig_visual != CopyFromParent)
-                stuff->visualID = PanoramiXTranslateVisualID(i, orig_visual);
+                stuff->visualID = PanoramiXTranslateVisualID(i, orig_visual, client->context);
 
             status = ScreenSaverSetAttributes(client);
         }
@@ -1232,7 +1238,7 @@ ProcScreenSaverSuspend(ClientPtr client)
         if (suspend == TRUE)
             this->count++;
         else if (--this->count == 0)
-            FreeResource(this->clientResource, RT_NONE);
+            FreeResource(this->clientResource, RT_NONE, client->context);
 
         return Success;
     }
@@ -1257,14 +1263,14 @@ ProcScreenSaverSuspend(ClientPtr client)
     this->count = 1;
     this->clientResource = FakeClientID(client->index, client->context);
 
-    if (!AddResource(this->clientResource, SuspendType, (void *) this)) {
+    if (!AddResource(this->clientResource, SuspendType, (void *) this, client->context)) {
         free(this);
         return BadAlloc;
     }
 
     *prev = this;
-    if (!context->screenSaverSuspended) {
-        context->screenSaverSuspended = TRUE;
+    if (!client->context->screenSaverSuspended) {
+        client->context->screenSaverSuspended = TRUE;
         FreeScreenSaverTimer();
     }
 
@@ -1375,13 +1381,14 @@ SProcScreenSaverDispatch(ClientPtr client)
 }
 
 void
-ScreenSaverExtensionInit(void)
+ScreenSaverExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
     int i;
     ScreenPtr pScreen;
 
-    if (!dixRegisterPrivateKey(&ScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
+    
+    if (!dixRegisterPrivateKey(&ScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return;
 
     AttrType = CreateNewResourceType(ScreenSaverFreeAttr, "SaverAttr");

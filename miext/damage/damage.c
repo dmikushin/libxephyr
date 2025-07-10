@@ -1626,7 +1626,7 @@ miDamageCreate(DamagePtr pDamage)
 static int
 damageRegisterVisit(WindowPtr pWin, void *data)
 {
-    pWin->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+    pWin->drawable.serialNumber = NextSerialNumber(pWin->drawable.pScreen->context);
     return WT_WALKCHILDREN;
 }
 
@@ -1636,7 +1636,7 @@ miDamageRegister(DrawablePtr pDrawable, DamagePtr pDamage)
     if (pDrawable->type == DRAWABLE_WINDOW)
         TraverseTree((WindowPtr)pDrawable, damageRegisterVisit, NULL);
     else
-        pDrawable->serialNumber = NEXT_SERIAL_NUMBER;
+        pDrawable->serialNumber = NextSerialNumber(pDrawable->pScreen->context);
 }
 
 void
@@ -1645,7 +1645,7 @@ miDamageUnregister(DrawablePtr pDrawable, DamagePtr pDamage)
     if (pDrawable->type == DRAWABLE_WINDOW)
         TraverseTree((WindowPtr)pDrawable, damageRegisterVisit, NULL);
     else
-        pDrawable->serialNumber = NEXT_SERIAL_NUMBER;
+        pDrawable->serialNumber = NextSerialNumber(pDrawable->pScreen->context);
 }
 
 void
@@ -1667,20 +1667,20 @@ DamageSetup(ScreenPtr pScreen)
         miDamageCreate, miDamageRegister, miDamageUnregister, miDamageDestroy
     };
 
-    if (!dixRegisterPrivateKey(&damageScrPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&damageScrPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
     if (dixLookupPrivate(&pScreen->devPrivates, damageScrPrivateKey))
         return TRUE;
 
     if (!dixRegisterPrivateKey
-        (&damageGCPrivateKeyRec, PRIVATE_GC, sizeof(DamageGCPrivRec)))
+        (&damageGCPrivateKeyRec, PRIVATE_GC, sizeof(DamageGCPrivRec), pScreen->context))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&damagePixPrivateKeyRec, PRIVATE_PIXMAP, 0))
+    if (!dixRegisterPrivateKey(&damagePixPrivateKeyRec, PRIVATE_PIXMAP, 0, pScreen->context))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&damageWinPrivateKeyRec, PRIVATE_WINDOW, 0))
+    if (!dixRegisterPrivateKey(&damageWinPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
         return FALSE;
 
     pScrPriv = malloc(sizeof(DamageScrPrivRec));

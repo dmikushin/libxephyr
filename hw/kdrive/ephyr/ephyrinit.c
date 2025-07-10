@@ -60,9 +60,9 @@ InitCard(char *name)
 }
 
 void
-InitOutput(ScreenInfo * pScreenInfo, int argc, char **argv)
+InitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* context)
 {
-    KdInitOutput(pScreenInfo, argc, argv);
+    KdInitOutput(pScreenInfo, argc, argv, context);
 }
 
 void

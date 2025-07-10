@@ -146,7 +146,7 @@ ProcXGrabDeviceKey(ClientPtr client)
     };
     mask.xi = tmp[stuff->grabbed_device].mask;
 
-    ret = GrabKey(client, dev, mdev, stuff->key, &param, XI, &mask);
+    ret = GrabKey(client, dev, mdev, stuff->key, &param, XI, &mask, client->context);
 
     return ret;
 }

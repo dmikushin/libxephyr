@@ -355,8 +355,8 @@ PixmapDirtyCompositeRotate(PixmapPtr dst_pixmap,
         b++;
     }
 
-    FreePicture(src, None);
-    FreePicture(dst, None);
+    FreePicture(src, None, pScreen->context);
+    FreePicture(dst, None, pScreen->context);
 }
 
 /*

@@ -233,7 +233,7 @@ ProcXChangeDeviceControl(ClientPtr client)
             .control = stuff->control
         };
         SendEventToAllWindows(dev, DevicePresenceNotifyMask,
-                              (xEvent *) &dpn, 1);
+                              (xEvent *) &dpn, 1, client->context);
 
         WriteReplyToClient(client, sizeof(xChangeDeviceControlReply), &rep);
     }

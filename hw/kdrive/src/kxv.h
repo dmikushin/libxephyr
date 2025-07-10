@@ -146,7 +146,7 @@ typedef struct {
 } KdVideoAdaptorRec, *KdVideoAdaptorPtr;
 
 Bool
- KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr Adaptors, int num);
+ KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr Adaptors, int num, XephyrContext* context);
 
 /*** These are DDX layer privates ***/
 

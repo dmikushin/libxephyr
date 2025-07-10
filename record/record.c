@@ -138,7 +138,8 @@ static int numEnabledRCAPs;
 }
 
 static int RecordDeleteContext(void     *value,
-                               XID      id);
+                               XID      id,
+                               XephyrContext* context);
 
 /***************************************************************************/
 
@@ -705,7 +706,7 @@ RecordADeliveredEventOrError(CallbackListPtr *pcbl, void *nulldata,
 
 static void
 RecordSendProtocolEvents(RecordClientsAndProtocolPtr pRCAP,
-                         RecordContextPtr pContext, xEvent *pev, int count)
+                         RecordContextPtr pContext, xEvent *pev, int count, XephyrContext* context)
 {
     int ev;                     /* event index */
 
@@ -722,7 +723,7 @@ RecordSendProtocolEvents(RecordClientsAndProtocolPtr pRCAP,
                  pev->u.u.type == ButtonPress ||
                  pev->u.u.type == ButtonRelease ||
                  pev->u.u.type == KeyPress || pev->u.u.type == KeyRelease)) {
-                int scr = XineramaGetCursorScreen(inputInfo.pointer);
+                int scr = XineramaGetCursorScreen(context->inputInfo.pointer);
 
                 memcpy(&shiftedEvent, pev, sizeof(xEvent));
                 shiftedEvent.u.keyButtonPointer.rootX +=
@@ -786,12 +787,12 @@ RecordADeviceEvent(CallbackListPtr *pcbl, void *nulldata, void *calldata)
 
                     EventToCore(pei->event, &core_events, &count);
                     RecordSendProtocolEvents(pRCAP, pContext, core_events,
-                                             count);
+                                             count, pei->device->master->context);
                     free(core_events);
                 }
 
-                EventToXI(pei->event, &xi_events, &count);
-                RecordSendProtocolEvents(pRCAP, pContext, xi_events, count);
+                EventToXI(pei->event, &xi_events, &count, pei->device->master->context);
+                RecordSendProtocolEvents(pRCAP, pContext, xi_events, count, pei->device->master->context);
                 free(xi_events);
             }                   /* end this RCAP selects device events */
         }                       /* end for each RCAP on this context */
@@ -849,7 +850,7 @@ RecordFlushAllContexts(CallbackListPtr *pcbl,
  *	various callback lists.
  */
 static int
-RecordInstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient)
+RecordInstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient, XephyrContext* context)
 {
     int i = 0;
     XID client;
@@ -934,7 +935,7 @@ RecordInstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient)
  *	various callback lists.
  */
 static void
-RecordUninstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient)
+RecordUninstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient, XephyrContext* context)
 {
     int i = 0;
     XID client;
@@ -1027,17 +1028,17 @@ RecordUninstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient)
  *	have at least one client.)
  */
 static void
-RecordDeleteClientFromRCAP(RecordClientsAndProtocolPtr pRCAP, int position)
+RecordDeleteClientFromRCAP(RecordClientsAndProtocolPtr pRCAP, int position, XephyrContext* context)
 {
     if (pRCAP->pContext->pRecordingClient)
-        RecordUninstallHooks(pRCAP, pRCAP->pClientIDs[position]);
+        RecordUninstallHooks(pRCAP, pRCAP->pClientIDs[position], context);
     if (position != pRCAP->numClients - 1)
         pRCAP->pClientIDs[position] = pRCAP->pClientIDs[pRCAP->numClients - 1];
     if (--pRCAP->numClients == 0) {     /* no more context->clients; remove RCAP from context's list */
         RecordContextPtr pContext = pRCAP->pContext;
 
         if (pContext->pRecordingClient)
-            RecordUninstallHooks(pRCAP, 0);
+            RecordUninstallHooks(pRCAP, 0, context);
         if (pContext->pListOfRCAP == pRCAP)
             pContext->pListOfRCAP = pRCAP->pNextRCAP;
         else {
@@ -1071,7 +1072,7 @@ RecordDeleteClientFromRCAP(RecordClientsAndProtocolPtr pRCAP, int position)
  *	is no more room to hold context->clients internal to the RCAP.
  */
 static void
-RecordAddClientToRCAP(RecordClientsAndProtocolPtr pRCAP, XID clientspec)
+RecordAddClientToRCAP(RecordClientsAndProtocolPtr pRCAP, XID clientspec, XephyrContext* context)
 {
     if (pRCAP->numClients == pRCAP->sizeClients) {
         if (pRCAP->clientIDsSeparatelyAllocated) {
@@ -1098,7 +1099,7 @@ RecordAddClientToRCAP(RecordClientsAndProtocolPtr pRCAP, XID clientspec)
     }
     pRCAP->pClientIDs[pRCAP->numClients++] = clientspec;
     if (pRCAP->pContext->pRecordingClient)
-        RecordInstallHooks(pRCAP, clientspec);
+        RecordInstallHooks(pRCAP, clientspec, context);
 }                               /* RecordDeleteClientFromRCAP */
 
 /* RecordDeleteClientFromContext
@@ -1115,13 +1116,13 @@ RecordAddClientToRCAP(RecordClientsAndProtocolPtr pRCAP, XID clientspec)
  *	RCAP.  (A given clientspec can only be on one RCAP of a context.)
  */
 static void
-RecordDeleteClientFromContext(RecordContextPtr pContext, XID clientspec)
+RecordDeleteClientFromContext(RecordContextPtr pContext, XID clientspec, XephyrContext* context)
 {
     RecordClientsAndProtocolPtr pRCAP;
     int position;
 
     if ((pRCAP = RecordFindClientOnContext(pContext, clientspec, &position)))
-        RecordDeleteClientFromRCAP(pRCAP, position);
+        RecordDeleteClientFromRCAP(pRCAP, position, context);
 }                               /* RecordDeleteClientFromContext */
 
 /* RecordSanityCheckClientSpecifiers
@@ -1153,9 +1154,9 @@ RecordSanityCheckClientSpecifiers(ClientPtr client, XID *clientspecs,
         if (errorspec && (CLIENT_BITS(clientspecs[i]) == errorspec))
             return BadMatch;
         clientIndex = CLIENT_ID(clientspecs[i]);
-        if (clientIndex && context->clients[clientIndex] &&
-            context->clients[clientIndex]->clientState == ClientStateRunning) {
-            if (clientspecs[i] == context->clients[clientIndex]->clientAsMask)
+        if (clientIndex && client->context->clients[clientIndex] &&
+            client->context->clients[clientIndex]->clientState == ClientStateRunning) {
+            if (clientspecs[i] == client->context->clients[clientIndex]->clientAsMask)
                 continue;
             rc = dixLookupResourceByClass(&value, clientspecs[i], RC_ANY,
                                           client, DixGetAttrAccess);
@@ -1199,7 +1200,7 @@ RecordSanityCheckClientSpecifiers(ClientPtr client, XID *clientspecs,
  */
 static XID *
 RecordCanonicalizeClientSpecifiers(XID *pClientspecs, int *pNumClientspecs,
-                                   XID excludespec)
+                                   XID excludespec, XephyrContext* context)
 {
     int i;
     int numClients = *pNumClientspecs;
@@ -1575,7 +1576,7 @@ RecordRegisterClients(RecordContextPtr pContext, ClientPtr client,
         pContext->pRecordingClient->clientAsMask : 0;
     pCanonClients = RecordCanonicalizeClientSpecifiers((XID *) &stuff[1],
                                                        &nClients,
-                                                       recordingClient);
+                                                       recordingClient, client->context);
     if (!pCanonClients)
         return BadAlloc;
 
@@ -1701,7 +1702,7 @@ RecordRegisterClients(RecordContextPtr pContext, ClientPtr client,
     pRCAP->sizeClients = sizeClients;
     pRCAP->clientIDsSeparatelyAllocated = 0;
     for (i = 0; i < nClients; i++) {
-        RecordDeleteClientFromContext(pContext, pCanonClients[i]);
+        RecordDeleteClientFromContext(pContext, pCanonClients[i], client->context);
         pRCAP->pClientIDs[i] = pCanonClients[i];
     }
 
@@ -1797,7 +1798,7 @@ RecordRegisterClients(RecordContextPtr pContext, ClientPtr client,
     pContext->pListOfRCAP = pRCAP;
 
     if (pContext->pRecordingClient)     /* context enabled */
-        RecordInstallHooks(pRCAP, 0);
+        RecordInstallHooks(pRCAP, 0, client->context);
 
  bailout:
     if (si) {
@@ -1874,7 +1875,7 @@ ProcRecordCreateContext(ClientPtr client)
     if (err != Success)
         goto bailout;
 
-    if (AddResource(pContext->id, RTContext, pContext)) {
+    if (AddResource(pContext->id, RTContext, pContext, client->context)) {
         ppAllContexts[numContexts++] = pContext;
         return Success;
     }
@@ -1923,12 +1924,12 @@ ProcRecordUnregisterClients(ClientPtr client)
 
     nClients = stuff->nClients;
     pCanonClients = RecordCanonicalizeClientSpecifiers((XID *) &stuff[1],
-                                                       &nClients, 0);
+                                                       &nClients, 0, client->context);
     if (!pCanonClients)
         return BadAlloc;
 
     for (i = 0; i < nClients; i++) {
-        RecordDeleteClientFromContext(pContext, pCanonClients[i]);
+        RecordDeleteClientFromContext(pContext, pCanonClients[i], client->context);
     }
     if (pCanonClients != (XID *) &stuff[1])
         free(pCanonClients);
@@ -2293,7 +2294,7 @@ ProcRecordEnableContext(ClientPtr client)
     /* install record hooks for each RCAP */
 
     for (pRCAP = pContext->pListOfRCAP; pRCAP; pRCAP = pRCAP->pNextRCAP) {
-        int err = RecordInstallHooks(pRCAP, 0);
+        int err = RecordInstallHooks(pRCAP, 0, client->context);
 
         if (err != Success) {   /* undo the previous installs */
             RecordClientsAndProtocolPtr pUninstallRCAP;
@@ -2301,7 +2302,7 @@ ProcRecordEnableContext(ClientPtr client)
             for (pUninstallRCAP = pContext->pListOfRCAP;
                  pUninstallRCAP != pRCAP;
                  pUninstallRCAP = pUninstallRCAP->pNextRCAP) {
-                RecordUninstallHooks(pUninstallRCAP, 0);
+                RecordUninstallHooks(pUninstallRCAP, 0, client->context);
             }
             return err;
         }
@@ -2315,7 +2316,7 @@ ProcRecordEnableContext(ClientPtr client)
 
     /* Don't allow the data connection to record itself; unregister it. */
     RecordDeleteClientFromContext(pContext,
-                                  pContext->pRecordingClient->clientAsMask);
+                                  pContext->pRecordingClient->clientAsMask, client->context);
 
     /* move the newly enabled context to the front part of ppAllContexts,
      * where all the enabled contexts are
@@ -2368,7 +2369,7 @@ RecordDisableContext(RecordContextPtr pContext)
     AttendClient(pContext->pRecordingClient);
 
     for (pRCAP = pContext->pListOfRCAP; pRCAP; pRCAP = pRCAP->pNextRCAP) {
-        RecordUninstallHooks(pRCAP, 0);
+        RecordUninstallHooks(pRCAP, 0, pContext->pRecordingClient->context);
     }
 
     pContext->pRecordingClient = NULL;
@@ -2413,7 +2414,7 @@ ProcRecordDisableContext(ClientPtr client)
  *	it from the ppAllContexts array.
  */
 static int
-RecordDeleteContext(void *value, XID id)
+RecordDeleteContext(void *value, XID id, XephyrContext* context)
 {
     int i;
     RecordContextPtr pContext = (RecordContextPtr) value;
@@ -2430,7 +2431,7 @@ RecordDeleteContext(void *value, XID id)
 
         /* when the last client is deleted, the RCAP will go away. */
         while (numClients--) {
-            RecordDeleteClientFromRCAP(pRCAP, numClients);
+            RecordDeleteClientFromRCAP(pRCAP, numClients, context);
         }
     }
 
@@ -2457,7 +2458,7 @@ ProcRecordFreeContext(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xRecordFreeContextReq);
     VERIFY_CONTEXT(pContext, stuff->context, client);
-    FreeResource(stuff->context, RT_NONE);
+    FreeResource(stuff->context, RT_NONE, client->context);
     return Success;
 }                               /* ProcRecordFreeContext */
 
@@ -2719,7 +2720,7 @@ RecordAClientStateChange(CallbackListPtr *pcbl, void *nulldata,
             if ((pRCAP = RecordFindClientOnContext(pContext,
                                                    XRecordFutureClients, NULL)))
             {
-                RecordAddClientToRCAP(pRCAP, pClient->clientAsMask);
+                RecordAddClientToRCAP(pRCAP, pClient->clientAsMask, pClient->context);
                 if (pContext->pRecordingClient && pRCAP->clientStarted)
                     RecordConnectionSetupInfo(pContext, pci);
             }
@@ -2751,7 +2752,7 @@ RecordAClientStateChange(CallbackListPtr *pcbl, void *nulldata,
                 if (pContext->pRecordingClient && pRCAP->clientDied)
                     RecordAProtocolElement(pContext, pClient,
                                            XRecordClientDied, NULL, 0, 0, 0);
-                RecordDeleteClientFromRCAP(pRCAP, pos);
+                RecordDeleteClientFromRCAP(pRCAP, pos, pClient->context);
             }
         }
 
@@ -2790,7 +2791,7 @@ RecordCloseDown(ExtensionEntry * extEntry)
  *	Enables the RECORD extension if possible.
  */
 void
-RecordExtensionInit(void)
+RecordExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extentry;
 
@@ -2798,7 +2799,7 @@ RecordExtensionInit(void)
     if (!RTContext)
         return;
 
-    if (!dixRegisterPrivateKey(RecordClientPrivateKey, PRIVATE_CLIENT, 0))
+    if (!dixRegisterPrivateKey(RecordClientPrivateKey, PRIVATE_CLIENT, 0, context))
         return;
 
     ppAllContexts = NULL;

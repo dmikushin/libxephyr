@@ -911,7 +911,7 @@ ProcXvShmPutImage(ClientPtr client)
         return BadMatch;
 
     status = dixLookupResourceByType((void **) &shmdesc, stuff->shmseg,
-                                     ShmSegType, context->serverClient, DixReadAccess);
+                                     ShmSegType, client->context->serverClient, DixReadAccess);
     if (status != Success)
         return status;
 
@@ -1105,7 +1105,7 @@ ProcXvDispatch(ClientPtr client)
 {
     REQUEST(xReq);
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     if (stuff->data >= xvNumRequests) {
         return BadRequest;
@@ -1425,7 +1425,7 @@ SProcXvDispatch(ClientPtr client)
 {
     REQUEST(xReq);
 
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
 
     if (stuff->data >= xvNumRequests) {
         return BadRequest;
@@ -1530,8 +1530,8 @@ XineramaXvShmPutImage(ClientPtr client)
             stuff->drw_x = x;
             stuff->drw_y = y;
             if (isRoot) {
-                stuff->drw_x -= context->screenInfo.screens[i]->x;
-                stuff->drw_y -= context->screenInfo.screens[i]->y;
+                stuff->drw_x -= client->context->screenInfo.screens[i]->x;
+                stuff->drw_y -= client->context->screenInfo.screens[i]->y;
             }
             stuff->send_event = (send_event && !i) ? 1 : 0;
 
@@ -1582,8 +1582,8 @@ XineramaXvPutImage(ClientPtr client)
             stuff->drw_x = x;
             stuff->drw_y = y;
             if (isRoot) {
-                stuff->drw_x -= context->screenInfo.screens[i]->x;
-                stuff->drw_y -= context->screenInfo.screens[i]->y;
+                stuff->drw_x -= client->context->screenInfo.screens[i]->x;
+                stuff->drw_y -= client->context->screenInfo.screens[i]->y;
             }
 
             result = ProcXvPutImage(client);
@@ -1630,8 +1630,8 @@ XineramaXvPutVideo(ClientPtr client)
             stuff->drw_x = x;
             stuff->drw_y = y;
             if (isRoot) {
-                stuff->drw_x -= context->screenInfo.screens[i]->x;
-                stuff->drw_y -= context->screenInfo.screens[i]->y;
+                stuff->drw_x -= client->context->screenInfo.screens[i]->x;
+                stuff->drw_y -= client->context->screenInfo.screens[i]->y;
             }
 
             result = ProcXvPutVideo(client);
@@ -1678,8 +1678,8 @@ XineramaXvPutStill(ClientPtr client)
             stuff->drw_x = x;
             stuff->drw_y = y;
             if (isRoot) {
-                stuff->drw_x -= context->screenInfo.screens[i]->x;
-                stuff->drw_y -= context->screenInfo.screens[i]->y;
+                stuff->drw_x -= client->context->screenInfo.screens[i]->x;
+                stuff->drw_y -= client->context->screenInfo.screens[i]->y;
             }
 
             result = ProcXvPutStill(client);
@@ -1746,7 +1746,7 @@ matchAdaptor(ScreenPtr pScreen, XvAdaptorPtr refAdapt, Bool isOverlay)
 }
 
 void
-XineramifyXv(void)
+XineramifyXv(XephyrContext* context)
 {
     XvScreenPtr xvsp0 =
         dixLookupPrivate(&context->screenInfo.screens[0]->devPrivates, XvGetScreenKey());
@@ -1785,7 +1785,7 @@ XineramifyXv(void)
                 else
                     port->info[k].id = 0;
             }
-            AddResource(port->info[0].id, XvXRTPort, port);
+            AddResource(port->info[0].id, XvXRTPort, port, context);
         }
     }
 

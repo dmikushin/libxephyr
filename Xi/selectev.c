@@ -104,7 +104,7 @@ HandleDevicePresenceMask(ClientPtr client, WindowPtr win,
 
     /* We always only use mksidx = AllDevices for events not bound to
      * devices */
-    if (AddExtensionClient(win, client, mask, XIAllDevices) != Success)
+    if (AddExtensionClient(win, client, mask, XIAllDevices, client->context) != Success)
         return BadAlloc;
 
     RecalculateDeviceDeliverableEvents(win);
@@ -174,7 +174,7 @@ ProcXSelectExtensionEvent(ClientPtr client)
             }
             if ((ret =
                  SelectForWindow((DeviceIntPtr) tmp[i].dev, pWin, client,
-                                 tmp[i].mask, DeviceButtonGrabMask)) != Success)
+                                 tmp[i].mask, DeviceButtonGrabMask, client->context)) != Success)
                 return ret;
         }
 

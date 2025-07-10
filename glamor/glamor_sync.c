@@ -91,7 +91,7 @@ glamor_sync_init(ScreenPtr screen)
 	if (!dixPrivateKeyRegistered(&glamor_sync_fence_key)) {
 		if (!dixRegisterPrivateKey(&glamor_sync_fence_key,
 					   PRIVATE_SYNC_FENCE,
-					   sizeof (struct glamor_sync_fence)))
+					   sizeof (struct glamor_sync_fence), screen->context))
 			return FALSE;
 	}
 

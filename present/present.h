@@ -144,7 +144,7 @@ typedef struct present_screen_info {
  * event actually happened
  */
 extern _X_EXPORT void
-present_event_notify(uint64_t event_id, uint64_t ust, uint64_t msc);
+present_event_notify(uint64_t event_id, uint64_t ust, uint64_t msc, XephyrContext* context);
 
 extern _X_EXPORT Bool
 present_screen_init(ScreenPtr screen, present_screen_info_ptr info);

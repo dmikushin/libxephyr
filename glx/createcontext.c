@@ -329,7 +329,7 @@ __glXDisp_CreateContextAttribsARB(__GLXclientState * cl, GLbyte * pc)
          * it's a massive attack surface for buffer overflow type
          * errors.
          */
-        if (!context->enableIndirectGLX) {
+        if (!client->context->enableIndirectGLX) {
             client->errorValue = req->isDirect;
             return BadValue;
         }
@@ -355,7 +355,7 @@ __glXDisp_CreateContextAttribsARB(__GLXclientState * cl, GLbyte * pc)
 
     /* Add the new context to the various global tables of GLX contexts.
      */
-    if (!__glXAddContext(ctx)) {
+    if (!__glXAddContext(ctx, client->context)) {
         (*ctx->destroy) (ctx);
         client->errorValue = req->context;
         return BadAlloc;

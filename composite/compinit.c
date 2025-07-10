@@ -87,7 +87,7 @@ compCloseScreen(ScreenPtr pScreen)
 }
 
 static void
-compInstallColormap(ColormapPtr pColormap)
+compInstallColormap(ColormapPtr pColormap, XephyrContext* context)
 {
     VisualPtr pVisual = pColormap->pVisual;
     ScreenPtr pScreen = pColormap->pScreen;
@@ -98,7 +98,7 @@ compInstallColormap(ColormapPtr pColormap)
         if (pVisual->vid == cs->alternateVisuals[a])
             return;
     pScreen->InstallColormap = cs->InstallColormap;
-    (*pScreen->InstallColormap) (pColormap);
+    (*pScreen->InstallColormap) (pColormap, context);
     cs->InstallColormap = pScreen->InstallColormap;
     pScreen->InstallColormap = compInstallColormap;
 }
@@ -107,10 +107,10 @@ static void
 compCheckBackingStore(WindowPtr pWin)
 {
     if (pWin->backingStore != NotUseful) {
-        compRedirectWindow(context->serverClient, pWin, CompositeRedirectAutomatic);
+        compRedirectWindow(pWin->drawable.pScreen->context->serverClient, pWin, CompositeRedirectAutomatic);
     }
     else {
-        compUnredirectWindow(context->serverClient, pWin,
+        compUnredirectWindow(pWin->drawable.pScreen->context->serverClient, pWin,
                              CompositeRedirectAutomatic);
     }
 }
@@ -333,11 +333,11 @@ compScreenInit(ScreenPtr pScreen)
 {
     CompScreenPtr cs;
 
-    if (!dixRegisterPrivateKey(&CompScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&CompScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
-    if (!dixRegisterPrivateKey(&CompWindowPrivateKeyRec, PRIVATE_WINDOW, 0))
+    if (!dixRegisterPrivateKey(&CompWindowPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
         return FALSE;
-    if (!dixRegisterPrivateKey(&CompSubwindowsPrivateKeyRec, PRIVATE_WINDOW, 0))
+    if (!dixRegisterPrivateKey(&CompSubwindowsPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
         return FALSE;
 
     if (GetCompScreen(pScreen))
@@ -362,7 +362,7 @@ compScreenInit(ScreenPtr pScreen)
         return FALSE;
     }
 
-    if (!context->disableBackingStore)
+    if (!pScreen->context->disableBackingStore)
         pScreen->backingStoreSupport = WhenMapped;
 
     cs->PositionWindow = pScreen->PositionWindow;

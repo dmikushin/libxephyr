@@ -13,6 +13,9 @@
 #include <X11/fonts/font.h>
 #include "cursor.h"
 #include "misc.h"
+#ifdef CONFIG_UDEV
+#include <libudev.h>
+#endif
 
 typedef struct _XephyrContext {
     ScreenInfo screenInfo;
@@ -77,6 +80,10 @@ typedef struct _XephyrContext {
     
     // Seat configuration
     char *SeatId;
+    
+#ifdef CONFIG_UDEV
+    struct udev_monitor *udev_monitor;
+#endif
     
     // GLX configuration
     Bool enableIndirectGLX;

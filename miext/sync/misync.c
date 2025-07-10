@@ -174,7 +174,7 @@ miSyncSetup(ScreenPtr pScreen)
 
     if (!dixPrivateKeyRegistered(&miSyncScreenPrivateKey)) {
         if (!dixRegisterPrivateKey(&miSyncScreenPrivateKey, PRIVATE_SCREEN,
-                                   sizeof(SyncScreenPrivRec)))
+                                   sizeof(SyncScreenPrivRec), pScreen->context))
             return FALSE;
     }
 

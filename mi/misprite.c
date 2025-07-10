@@ -195,7 +195,7 @@ static void miSpriteSourceValidate(DrawablePtr pDrawable, int x, int y,
 static void miSpriteCopyWindow(WindowPtr pWindow,
                                DDXPointRec ptOldOrg, RegionPtr prgnSrc);
 static void miSpriteBlockHandler(ScreenPtr pScreen, void *timeout);
-static void miSpriteInstallColormap(ColormapPtr pMap);
+static void miSpriteInstallColormap(ColormapPtr pMap, XephyrContext* context);
 static void miSpriteStoreColors(ColormapPtr pMap, int ndef, xColorItem * pdef);
 
 static void miSpriteComputeSaved(DeviceIntPtr pDev, ScreenPtr pScreen);
@@ -255,7 +255,7 @@ miSpriteReportDamage(DamagePtr pDamage, RegionPtr pRegion, void *closure)
     miCursorInfoPtr pCursorInfo;
     DeviceIntPtr pDev;
 
-    for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+    for (pDev = pScreen->context->inputInfo.devices; pDev; pDev = pDev->next) {
         if (DevHasCursor(pDev)) {
             pCursorInfo = GetSprite(pDev);
 
@@ -284,11 +284,11 @@ miSpriteInitialize(ScreenPtr pScreen, miPointerScreenFuncPtr screenFuncs)
     if (!DamageSetup(pScreen))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&miSpriteScreenKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&miSpriteScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
     if (!dixRegisterPrivateKey
-        (&miSpriteDevPrivatesKeyRec, PRIVATE_DEVICE, sizeof(miCursorInfoRec)))
+        (&miSpriteDevPrivatesKeyRec, PRIVATE_DEVICE, sizeof(miCursorInfoRec), pScreen->context))
         return FALSE;
 
     pScreenPriv = malloc(sizeof(miSpriteScreenRec));
@@ -378,7 +378,7 @@ miSpriteSourceValidate(DrawablePtr pDrawable, int x, int y, int width,
     SCREEN_PROLOGUE(pPriv, pScreen, SourceValidate);
 
     if (pDrawable->type == DRAWABLE_WINDOW) {
-        for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+        for (pDev = pScreen->context->inputInfo.devices; pDev; pDev = pDev->next) {
             if (DevHasCursor(pDev)) {
                 pCursorInfo = GetSprite(pDev);
                 if (pCursorInfo->isUp && pCursorInfo->pScreen == pScreen &&
@@ -407,7 +407,7 @@ miSpriteCopyWindow(WindowPtr pWindow, DDXPointRec ptOldOrg, RegionPtr prgnSrc)
 
     SCREEN_PROLOGUE(pPriv, pScreen, CopyWindow);
 
-    for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+    for (pDev = pScreen->context->inputInfo.devices; pDev; pDev = pDev->next) {
         if (DevHasCursor(pDev)) {
             pCursorInfo = GetSprite(pDev);
             /*
@@ -435,7 +435,7 @@ miSpriteBlockHandler(ScreenPtr pScreen, void *timeout)
 
     SCREEN_PROLOGUE(pPriv, pScreen, BlockHandler);
 
-    for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+    for (pDev = pScreen->context->inputInfo.devices; pDev; pDev = pDev->next) {
         if (DevHasCursor(pDev)) {
             pCursorInfo = GetSprite(pDev);
             if (pCursorInfo && !pCursorInfo->isUp
@@ -445,7 +445,7 @@ miSpriteBlockHandler(ScreenPtr pScreen, void *timeout)
             }
         }
     }
-    for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+    for (pDev = pScreen->context->inputInfo.devices; pDev; pDev = pDev->next) {
         if (DevHasCursor(pDev)) {
             pCursorInfo = GetSprite(pDev);
             if (pCursorInfo && !pCursorInfo->isUp &&
@@ -467,14 +467,14 @@ miSpriteBlockHandler(ScreenPtr pScreen, void *timeout)
 }
 
 static void
-miSpriteInstallColormap(ColormapPtr pMap)
+miSpriteInstallColormap(ColormapPtr pMap, XephyrContext* context)
 {
     ScreenPtr pScreen = pMap->pScreen;
     miSpriteScreenPtr pPriv = GetSpriteScreen(pScreen);
 
     SCREEN_PROLOGUE(pPriv, pScreen, InstallColormap);
 
-    (*pScreen->InstallColormap) (pMap);
+    (*pScreen->InstallColormap) (pMap, context);
 
     SCREEN_EPILOGUE(pPriv, pScreen, InstallColormap);
 
@@ -484,7 +484,7 @@ miSpriteInstallColormap(ColormapPtr pMap)
         DeviceIntPtr pDev;
         miCursorInfoPtr pCursorInfo;
 
-        for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+        for (pDev = pScreen->context->inputInfo.devices; pDev; pDev = pDev->next) {
             if (DevHasCursor(pDev)) {
                 pCursorInfo = GetSprite(pDev);
                 pCursorInfo->checkPixels = TRUE;
@@ -554,7 +554,7 @@ miSpriteStoreColors(ColormapPtr pMap, int ndef, xColorItem * pdef)
             }
         }
         if (updated) {
-            for (pDev = inputInfo.devices; pDev; pDev = pDev->next) {
+            for (pDev = pScreen->context->inputInfo.devices; pDev; pDev = pDev->next) {
                 if (DevHasCursor(pDev)) {
                     pCursorInfo = GetSprite(pDev);
                     pCursorInfo->checkPixels = TRUE;

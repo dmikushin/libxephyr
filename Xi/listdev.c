@@ -309,7 +309,7 @@ static Bool
 ShouldSkipDevice(ClientPtr client, DeviceIntPtr d)
 {
     /* don't send master devices other than VCP/VCK */
-    if (!IsMaster(d) || d == inputInfo.pointer ||d == inputInfo.keyboard) {
+    if (!IsMaster(d) || d == d->context->inputInfo.pointer ||d == d->context->inputInfo.keyboard) {
         int rc = XaceHook(XACE_DEVICE_ACCESS, client, d, DixGetAttrAccess);
 
         if (rc == Success)
@@ -351,13 +351,13 @@ ProcXListInputDevices(ClientPtr client)
     };
 
     /* allocate space for saving skip value */
-    skip = calloc(sizeof(Bool), inputInfo.numDevices);
+    skip = calloc(sizeof(Bool), client->context->inputInfo.numDevices);
     if (!skip)
         return BadAlloc;
 
     /* figure out which devices to skip */
     numdevs = 0;
-    for (d = inputInfo.devices; d; d = d->next, i++) {
+    for (d = client->context->inputInfo.devices; d; d = d->next, i++) {
         skip[i] = ShouldSkipDevice(client, d);
         if (skip[i])
             continue;
@@ -366,7 +366,7 @@ ProcXListInputDevices(ClientPtr client)
         numdevs++;
     }
 
-    for (d = inputInfo.off_devices; d; d = d->next, i++) {
+    for (d = client->context->inputInfo.off_devices; d; d = d->next, i++) {
         skip[i] = ShouldSkipDevice(client, d);
         if (skip[i])
             continue;
@@ -385,14 +385,14 @@ ProcXListInputDevices(ClientPtr client)
     /* fill in and send reply */
     i = 0;
     dev = (xDeviceInfoPtr) devbuf;
-    for (d = inputInfo.devices; d; d = d->next, i++) {
+    for (d = client->context->inputInfo.devices; d; d = d->next, i++) {
         if (skip[i])
             continue;
 
         ListDeviceInfo(client, d, dev++, &devbuf, &classbuf, &namebuf);
     }
 
-    for (d = inputInfo.off_devices; d; d = d->next, i++) {
+    for (d = client->context->inputInfo.off_devices; d; d = d->next, i++) {
         if (skip[i])
             continue;
 

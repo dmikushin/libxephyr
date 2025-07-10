@@ -120,10 +120,10 @@ miPointerInitialize(ScreenPtr pScreen,
 {
     miPointerScreenPtr pScreenPriv;
 
-    if (!dixRegisterPrivateKey(&miPointerScreenKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&miPointerScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&miPointerPrivKeyRec, PRIVATE_DEVICE, 0))
+    if (!dixRegisterPrivateKey(&miPointerPrivKeyRec, PRIVATE_DEVICE, 0, pScreen->context))
         return FALSE;
 
     pScreenPriv = malloc(sizeof(miPointerScreenRec));

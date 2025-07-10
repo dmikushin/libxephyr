@@ -2,8 +2,8 @@ set(srcs_config
     config.c
 )
 
-# Add udev source if available
-if(UDEV_FOUND)
+# Add udev source if CONFIG_UDEV is enabled and udev is available
+if(CONFIG_UDEV AND UDEV_FOUND)
     list(APPEND srcs_config udev.c)
 endif()
 
@@ -42,7 +42,7 @@ target_compile_options(libxserver_config PRIVATE
     ${XFONT2_CFLAGS}
 )
 
-if(UDEV_FOUND)
+if(CONFIG_UDEV AND UDEV_FOUND)
     target_compile_options(libxserver_config PRIVATE ${UDEV_CFLAGS})
 endif()
 

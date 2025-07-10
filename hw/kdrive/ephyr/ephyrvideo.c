@@ -68,7 +68,7 @@ static void ephyrXVPrivDelete(EphyrXVPriv * a_this);
 static Bool ephyrXVPrivQueryHostAdaptors(EphyrXVPriv * a_this);
 static Bool ephyrXVPrivSetAdaptorsHooks(EphyrXVPriv * a_this);
 static Bool ephyrXVPrivRegisterAdaptors(EphyrXVPriv * a_this,
-                                        ScreenPtr a_screen);
+                                        ScreenPtr a_screen, XephyrContext* context);
 
 static Bool ephyrXVPrivIsAttrValueValid(XvAttributePtr a_attrs,
                                         int a_attrs_len,
@@ -240,7 +240,7 @@ ephyrInitVideo(ScreenPtr pScreen)
         goto out;
     }
 
-    if (!ephyrXVPrivRegisterAdaptors(xv_priv, pScreen)) {
+    if (!ephyrXVPrivRegisterAdaptors(xv_priv, pScreen, pScreen->context)) {
         EPHYR_LOG_ERROR("failed to register adaptors\n");
         goto out;
     }
@@ -616,7 +616,7 @@ ephyrXVPrivSetAdaptorsHooks(EphyrXVPriv * a_this)
 }
 
 static Bool
-ephyrXVPrivRegisterAdaptors(EphyrXVPriv * a_this, ScreenPtr a_screen)
+ephyrXVPrivRegisterAdaptors(EphyrXVPriv * a_this, ScreenPtr a_screen, XephyrContext* context)
 {
     Bool is_ok = FALSE;
 
@@ -627,7 +627,7 @@ ephyrXVPrivRegisterAdaptors(EphyrXVPriv * a_this, ScreenPtr a_screen)
     if (!a_this->num_adaptors)
         goto out;
 
-    if (!KdXVScreenInit(a_screen, a_this->adaptors, a_this->num_adaptors)) {
+    if (!KdXVScreenInit(a_screen, a_this->adaptors, a_this->num_adaptors, context)) {
         EPHYR_LOG_ERROR("failed to register adaptors\n");
         goto out;
     }

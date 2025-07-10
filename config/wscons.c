@@ -82,7 +82,7 @@ struct nameint kbdmodel[] = {
 };
 
 static void
-wscons_add_keyboard(void)
+wscons_add_keyboard(XephyrContext* context)
 {
     InputAttributes attrs = { };
     DeviceIntPtr dev = NULL;
@@ -165,7 +165,7 @@ wscons_add_keyboard(void)
 
  kbd_config_done:
     attrs.flags |= ATTR_KEY | ATTR_KEYBOARD;
-    rc = NewInputDeviceRequest(input_options, &attrs, &dev);
+    rc = NewInputDeviceRequest(input_options, &attrs, &dev, context);
     if (rc != Success)
         goto unwind;
 
@@ -178,7 +178,7 @@ wscons_add_keyboard(void)
 }
 
 static void
-wscons_add_pointer(const char *path, const char *driver, int flags)
+wscons_add_pointer(const char *path, const char *driver, int flags, XephyrContext* context)
 {
     InputAttributes attrs = { };
     DeviceIntPtr dev = NULL;
@@ -199,7 +199,7 @@ wscons_add_pointer(const char *path, const char *driver, int flags)
     input_options = input_option_new(input_options, "device", strdup(path));
     LogMessage(X_INFO, "config/wscons: checking input device %s\n", path);
     attrs.flags |= flags;
-    rc = NewInputDeviceRequest(input_options, &attrs, &dev);
+    rc = NewInputDeviceRequest(input_options, &attrs, &dev, context);
     if (rc != Success)
         goto unwind;
 
@@ -212,7 +212,7 @@ wscons_add_pointer(const char *path, const char *driver, int flags)
 }
 
 static void
-wscons_add_pointers(void)
+wscons_add_pointers(XephyrContext* context)
 {
     char devname[256];
     int fd, i, wsmouse_type;
@@ -235,24 +235,24 @@ wscons_add_pointers(void)
         close(fd);
         switch (wsmouse_type) {
         case WSMOUSE_TYPE_SYNAPTICS:
-            wscons_add_pointer(devname, "synaptics", ATTR_TOUCHPAD);
+            wscons_add_pointer(devname, "synaptics", ATTR_TOUCHPAD, context);
             break;
         case WSMOUSE_TYPE_TPANEL:
-            wscons_add_pointer(devname, "ws", ATTR_TOUCHSCREEN);
+            wscons_add_pointer(devname, "ws", ATTR_TOUCHSCREEN, context);
             break;
         default:
             break;
         }
     }
     /* Add a default entry catching all other mux elements as "mouse" */
-    wscons_add_pointer(WSCONS_MOUSE_PREFIX, "mouse", ATTR_POINTER);
+    wscons_add_pointer(WSCONS_MOUSE_PREFIX, "mouse", ATTR_POINTER, context);
 }
 
 int
-config_wscons_init(void)
+config_wscons_init(XephyrContext* context)
 {
-    wscons_add_keyboard();
-    wscons_add_pointers();
+    wscons_add_keyboard(context);
+    wscons_add_pointers(context);
     return 1;
 }
 

@@ -323,7 +323,7 @@ __glXScreenInit(__GLXscreen * pGlxScreen, ScreenPtr pScreen)
     __GLXconfig *config;
     int i;
 
-    if (!dixRegisterPrivateKey(&glxScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&glxScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return;
 
     pGlxScreen->pScreen = pScreen;

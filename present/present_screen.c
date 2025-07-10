@@ -153,12 +153,12 @@ present_clip_notify(WindowPtr window, int dx, int dy)
 }
 
 Bool
-present_screen_register_priv_keys(void)
+present_screen_register_priv_keys(XephyrContext* context)
 {
-    if (!dixRegisterPrivateKey(&present_screen_private_key, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&present_screen_private_key, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&present_window_private_key, PRIVATE_WINDOW, 0))
+    if (!dixRegisterPrivateKey(&present_window_private_key, PRIVATE_WINDOW, 0, context))
         return FALSE;
 
     return TRUE;
@@ -189,7 +189,7 @@ present_screen_priv_init(ScreenPtr screen)
 int
 present_screen_init(ScreenPtr screen, present_screen_info_ptr info)
 {
-    if (!present_screen_register_priv_keys())
+    if (!present_screen_register_priv_keys(screen->context))
         return FALSE;
 
     if (!present_screen_priv(screen)) {
@@ -210,7 +210,7 @@ present_screen_init(ScreenPtr screen, present_screen_info_ptr info)
  * Initialize the present extension
  */
 void
-present_extension_init(void)
+present_extension_init(XephyrContext* context)
 {
     ExtensionEntry *extension;
     int i;

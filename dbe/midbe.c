@@ -170,13 +170,13 @@ miDbeAllocBackBufferName(WindowPtr pWin, XID bufId, int swapAction)
         }
 
         /* Security creation/labeling check. */
-        rc = XaceHook(XACE_RESOURCE_ACCESS, context->serverClient, bufId,
+        rc = XaceHook(XACE_RESOURCE_ACCESS, pScreen->context->serverClient, bufId,
                       dbeDrawableResType, pDbeWindowPriv->pBackBuffer,
                       RT_WINDOW, pWin, DixCreateAccess);
 
         /* Make the back pixmap a DBE drawable resource. */
         if (rc != Success || !AddResource(bufId, dbeDrawableResType,
-                                          pDbeWindowPriv->pBackBuffer)) {
+                                          pDbeWindowPriv->pBackBuffer, pScreen->context)) {
             /* free the buffer and the drawable resource */
             FreeResource(bufId, RT_NONE, pWin->drawable.pScreen->context);
             return (rc == Success) ? BadAlloc : rc;
@@ -203,7 +203,7 @@ miDbeAllocBackBufferName(WindowPtr pWin, XID bufId, int swapAction)
 
         /* Associate the new ID with an existing pixmap. */
         if (!AddResource(bufId, dbeDrawableResType,
-                         (void *) pDbeWindowPriv->pBackBuffer)) {
+                         (void *) pDbeWindowPriv->pBackBuffer, pScreen->context)) {
             return BadAlloc;
         }
 

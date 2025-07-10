@@ -173,7 +173,7 @@ _X_EXPORT Bool miSyncShmScreenInit(ScreenPtr pScreen)
 
     if (!dixPrivateKeyRegistered(&syncShmFencePrivateKey)) {
         if (!dixRegisterPrivateKey(&syncShmFencePrivateKey, PRIVATE_SYNC_FENCE,
-                                   sizeof(SyncShmFencePrivateRec)))
+                                   sizeof(SyncShmFencePrivateRec), pScreen->context))
             return FALSE;
     }
 

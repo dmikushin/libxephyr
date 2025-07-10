@@ -330,7 +330,7 @@ extern _X_EXPORT int XkbProcessArguments(int /* argc */ ,
                                          int    /* i */
     );
 
-extern _X_EXPORT Bool XkbInitPrivates(void);
+extern _X_EXPORT Bool XkbInitPrivates(XephyrContext* context);
 
 extern _X_EXPORT void XkbSetExtension(DeviceIntPtr device,
                                       ProcessInputProc proc);
@@ -506,7 +506,8 @@ extern _X_EXPORT void XkbUpdateIndicators(DeviceIntPtr /* keybd */ ,
     );
 
 extern _X_EXPORT void XkbUpdateAllDeviceIndicators(XkbChangesPtr /* changes */,
-                                                   XkbEventCausePtr /* cause */
+                                                   XkbEventCausePtr /* cause */,
+                                                   XephyrContext* /* context */
     );
 
 extern _X_EXPORT XkbSrvLedInfoPtr XkbAllocSrvLedInfo(DeviceIntPtr /* dev */ ,

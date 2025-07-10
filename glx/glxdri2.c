@@ -797,7 +797,7 @@ glxDRIEnterVT(ScrnInfoPtr scrn)
     if (!ret)
         return FALSE;
 
-    glxResumeClients();
+    glxResumeClients(xf86ScrnToScreen(scrn)->context);
 
     return TRUE;
 }
@@ -810,7 +810,7 @@ glxDRILeaveVT(ScrnInfoPtr scrn)
 
     LogMessageVerbSigSafe(X_INFO, -1, "AIGLX: Suspending AIGLX context->clients for VT switch\n");
 
-    glxSuspendClients();
+    glxSuspendClients(xf86ScrnToScreen(scrn)->context);
 
     scrn->LeaveVT = screen->leaveVT;
     (*screen->leaveVT) (scrn);
@@ -940,7 +940,7 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
     if (screen == NULL)
         return NULL;
 
-    if (!DRI2Connect(context->serverClient, pScreen, DRI2DriverDRI,
+    if (!DRI2Connect(pScreen->context->serverClient, pScreen, DRI2DriverDRI,
                      &screen->fd, &driverName, &deviceName)) {
         LogMessage(X_INFO,
                    "AIGLX: Screen %d is not DRI2 capable\n", pScreen->myNum);
@@ -953,7 +953,7 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
     screen->base.swapInterval = __glXDRIdrawableSwapInterval;
     screen->base.pScreen = pScreen;
 
-    __glXInitExtensionEnableBits(screen->base.glx_enable_bits);
+    __glXInitExtensionEnableBits(screen->base.glx_enable_bits, pScreen->context);
 
     screen->driver =
         glxProbeDriver(driverName, (void **) &screen->core, __DRI_CORE, 1,
@@ -976,7 +976,8 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
     initializeExtensions(&screen->base);
 
     screen->base.fbconfigs = glxConvertConfigs(screen->core,
-                                               screen->driConfigs);
+                                               screen->driConfigs,
+                                               pScreen->context);
 
     options = xnfalloc(sizeof(GLXOptions));
     memcpy(options, GLXOptions, sizeof(GLXOptions));

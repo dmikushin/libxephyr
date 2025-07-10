@@ -78,7 +78,7 @@ SOFTWARE.
 
 #include "dixstruct.h"
 
-typedef void (*InitExtension) (void);
+typedef void (*InitExtension) (XephyrContext* context);
 
 typedef struct {
     InitExtension initFunc;
@@ -93,11 +93,11 @@ extern _X_EXPORT Bool EnableDisableExtension(const char *name, Bool enable);
 extern _X_EXPORT void EnableDisableExtensionError(const char *name,
                                                   Bool enable);
 
-extern _X_EXPORT void InitExtensions(int argc, char **argv);
+extern _X_EXPORT void InitExtensions(int argc, char **argv, XephyrContext* context);
 
 extern _X_EXPORT void CloseDownExtensions(void);
 
 extern _X_EXPORT void LoadExtensionList(const ExtensionModule ext[],
-                                        int listSize, Bool external);
+                                        int listSize, Bool external, XephyrContext* context);
 
 #endif                          /* EXTENSION_H */

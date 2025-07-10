@@ -127,7 +127,7 @@ ChangeDeviceControl(ClientPtr client, DeviceIntPtr dev, xDeviceCtl * control)
  */
 int
 NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
-                      DeviceIntPtr *pdev)
+                      DeviceIntPtr *pdev, XephyrContext* context)
 {
     return BadValue;
 }

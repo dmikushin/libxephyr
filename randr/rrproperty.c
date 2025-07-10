@@ -33,7 +33,7 @@ DeliverPropertyEvent(WindowPtr pWin, void *value)
     RREventPtr *pHead, pRREvent;
 
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            RREventType, context->serverClient, DixReadAccess);
+                            RREventType, pWin->drawable.pScreen->context->serverClient, DixReadAccess);
     if (!pHead)
         return WT_WALKCHILDREN;
 
@@ -73,7 +73,7 @@ RRDeleteProperty(RROutputRec * output, RRPropertyRec * prop)
         .output = output->id,
         .state = PropertyDelete,
         .atom = prop->propertyName,
-        .timestamp = context->currentTime.milliseconds
+        .timestamp = output->pScreen->context->currentTime.milliseconds
     };
 
     RRDeliverPropertyEvent(output->pScreen, (xEvent *) &event);
@@ -270,7 +270,7 @@ RRChangeOutputProperty(RROutputPtr output, Atom property, Atom type,
             .output = output->id,
             .state = PropertyNewValue,
             .atom = prop->propertyName,
-            .timestamp = context->currentTime.milliseconds
+            .timestamp = output->pScreen->context->currentTime.milliseconds
         };
         RRDeliverPropertyEvent(output->pScreen, (xEvent *) &event);
     }
@@ -535,7 +535,7 @@ ProcRRChangeOutputProperty(ClientPtr client)
     int err;
 
     REQUEST_AT_LEAST_SIZE(xRRChangeOutputPropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     format = stuff->format;
     mode = stuff->mode;
     if ((mode != PropModeReplace) && (mode != PropModeAppend) &&
@@ -583,7 +583,7 @@ ProcRRDeleteOutputProperty(ClientPtr client)
     RRPropertyPtr prop;
 
     REQUEST_SIZE_MATCH(xRRDeleteOutputPropertyReq);
-    UpdateCurrentTime();
+    UpdateCurrentTime(client->context);
     VERIFY_RR_OUTPUT(stuff->output, output, DixReadAccess);
 
     if (RROutputIsLeased(output))
@@ -622,7 +622,7 @@ ProcRRGetOutputProperty(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xRRGetOutputPropertyReq);
     if (stuff->delete)
-        UpdateCurrentTime();
+        UpdateCurrentTime(client->context);
     VERIFY_RR_OUTPUT(stuff->output, output,
                      stuff->delete ? DixWriteAccess : DixReadAccess);
 
@@ -729,7 +729,7 @@ ProcRRGetOutputProperty(ClientPtr client)
             .output = output->id,
             .state = PropertyDelete,
             .atom = prop->propertyName,
-            .timestamp = context->currentTime.milliseconds
+            .timestamp = output->pScreen->context->currentTime.milliseconds
         };
         RRDeliverPropertyEvent(output->pScreen, (xEvent *) &event);
     }

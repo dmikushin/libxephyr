@@ -69,7 +69,7 @@ RROutputCreate(ScreenPtr pScreen,
     rrScrPrivPtr pScrPriv;
     Atom nonDesktopAtom;
 
-    if (!RRInit())
+    if (!RRInit(pScreen->context))
         return NULL;
 
     pScrPriv = rrGetScrPriv(pScreen);
@@ -371,7 +371,7 @@ RROutputDestroy(RROutputPtr output)
 }
 
 static int
-RROutputDestroyResource(void *value, XID pid)
+RROutputDestroyResource(void *value, XID pid, XephyrContext* context)
 {
     RROutputPtr output = (RROutputPtr) value;
     ScreenPtr pScreen = output->pScreen;

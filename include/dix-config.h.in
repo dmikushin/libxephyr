@@ -398,10 +398,10 @@
 #cmakedefine HAVE_DBUS
 
 /* Use libudev for input hotplug */
-#cmakedefine CONFIG_UDEV
+#cmakedefine CONFIG_UDEV @CONFIG_UDEV@
 
 /* Use libudev for kms enumeration */
-#cmakedefine CONFIG_UDEV_KMS
+#cmakedefine CONFIG_UDEV_KMS @CONFIG_UDEV_KMS@
 
 /* Use udev_monitor_filter_add_match_tag() */
 #cmakedefine HAVE_UDEV_MONITOR_FILTER_ADD_MATCH_TAG
@@ -413,7 +413,7 @@
 #cmakedefine NEED_DBUS
 
 /* Support HAL for hotplug */
-#cmakedefine CONFIG_HAL
+#cmakedefine CONFIG_HAL @CONFIG_HAL@
 
 /* Enable systemd-logind integration */
 #cmakedefine SYSTEMD_LOGIND

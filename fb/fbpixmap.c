@@ -61,7 +61,7 @@ fbCreatePixmap(ScreenPtr pScreen, int width, int height, int depth,
     pPixmap->drawable.depth = depth;
     pPixmap->drawable.bitsPerPixel = bpp;
     pPixmap->drawable.id = 0;
-    pPixmap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+    pPixmap->drawable.serialNumber = NextSerialNumber(pScreen->context);
     pPixmap->drawable.x = 0;
     pPixmap->drawable.y = 0;
     pPixmap->drawable.width = width;

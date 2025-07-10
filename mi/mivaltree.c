@@ -298,7 +298,7 @@ miComputeClips(WindowPtr pParent,
                     if (pChild->visibility != VisibilityFullyObscured) {
                         RegionTranslate(&pChild->borderClip, dx, dy);
                         RegionTranslate(&pChild->clipList, dx, dy);
-                        pChild->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+                        pChild->drawable.serialNumber = NextSerialNumber(pScreen->context);
                         if (pScreen->ClipNotify)
                             (*pScreen->ClipNotify) (pChild, dx, dy);
 
@@ -473,7 +473,7 @@ miComputeClips(WindowPtr pParent,
     RegionCopy(&pParent->clipList, universe);
 #endif
 
-    pParent->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+    pParent->drawable.serialNumber = NextSerialNumber(pScreen->context);
 
     if (pScreen->ClipNotify)
         (*pScreen->ClipNotify) (pParent, dx, dy);
@@ -727,7 +727,7 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
         /* fall through */
     case VTMap:
         RegionCopy(&pParent->clipList, &totalClip);
-        pParent->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+        pParent->drawable.serialNumber = NextSerialNumber(pParent->drawable.pScreen->context);
         break;
     }
 

@@ -359,5 +359,5 @@ GestureEmitGestureEndToOwner(DeviceIntPtr dev, GestureInfoPtr gi)
     DeliverDeviceClassesChangedEvent(gi->sourceid, GetTimeInMillis(), dev->context);
     InitGestureEvent(&event, dev, GetTimeInMillis(), GestureTypeToEnd(gi->type),
                      0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-    DeliverGestureEventToOwner(dev, gi, &event);
+    DeliverGestureEventToOwner(dev, gi, &event, dev->context);
 }

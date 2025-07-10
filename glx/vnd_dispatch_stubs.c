@@ -52,8 +52,8 @@ static int dispatch_CreateContext(ClientPtr client)
     screen = GlxCheckSwap(client, stuff->screen);
     context = GlxCheckSwap(client, stuff->context);
     LEGAL_NEW_RESOURCE(context, client);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -150,8 +150,8 @@ static int dispatch_CreateGLXPixmap(ClientPtr client)
     screen = GlxCheckSwap(client, stuff->screen);
     glxpixmap = GlxCheckSwap(client, stuff->glxpixmap);
     LEGAL_NEW_RESOURCE(glxpixmap, client);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -175,8 +175,8 @@ static int dispatch_GetVisualConfigs(ClientPtr client)
     GlxServerVendor *vendor = NULL;
     REQUEST_SIZE_MATCH(*stuff);
     screen = GlxCheckSwap(client, stuff->screen);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -211,8 +211,8 @@ static int dispatch_QueryExtensionsString(ClientPtr client)
     GlxServerVendor *vendor = NULL;
     REQUEST_SIZE_MATCH(*stuff);
     screen = GlxCheckSwap(client, stuff->screen);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -230,8 +230,8 @@ static int dispatch_QueryServerString(ClientPtr client)
     GlxServerVendor *vendor = NULL;
     REQUEST_SIZE_MATCH(*stuff);
     screen = GlxCheckSwap(client, stuff->screen);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -268,8 +268,8 @@ static int dispatch_CreateNewContext(ClientPtr client)
     screen = GlxCheckSwap(client, stuff->screen);
     context = GlxCheckSwap(client, stuff->context);
     LEGAL_NEW_RESOURCE(context, client);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -295,8 +295,8 @@ static int dispatch_CreatePbuffer(ClientPtr client)
     screen = GlxCheckSwap(client, stuff->screen);
     pbuffer = GlxCheckSwap(client, stuff->pbuffer);
     LEGAL_NEW_RESOURCE(pbuffer, client);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -322,8 +322,8 @@ static int dispatch_CreatePixmap(ClientPtr client)
     screen = GlxCheckSwap(client, stuff->screen);
     glxpixmap = GlxCheckSwap(client, stuff->glxpixmap);
     LEGAL_NEW_RESOURCE(glxpixmap, client);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -349,8 +349,8 @@ static int dispatch_CreateWindow(ClientPtr client)
     screen = GlxCheckSwap(client, stuff->screen);
     glxwindow = GlxCheckSwap(client, stuff->glxwindow);
     LEGAL_NEW_RESOURCE(glxwindow, client);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -376,8 +376,8 @@ static int dispatch_CreateContextAttribsARB(ClientPtr client)
     screen = GlxCheckSwap(client, stuff->screen);
     context = GlxCheckSwap(client, stuff->context);
     LEGAL_NEW_RESOURCE(context, client);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;
@@ -478,8 +478,8 @@ static int dispatch_GetFBConfigs(ClientPtr client)
     GlxServerVendor *vendor = NULL;
     REQUEST_SIZE_MATCH(*stuff);
     screen = GlxCheckSwap(client, stuff->screen);
-    if (screen < context->screenInfo.numScreens) {
-        vendor = glxServer.getVendorForScreen(client, context->screenInfo.screens[screen]);
+    if (screen < client->context->screenInfo.numScreens) {
+        vendor = glxServer.getVendorForScreen(client, client->context->screenInfo.screens[screen]);
     }
     if (vendor != NULL) {
         int ret;

@@ -147,7 +147,7 @@ static void
 set_poll_client(ClientPtr client);
 
 static void
-set_poll_clients(void);
+set_poll_clients(XephyrContext* context);
 
 static XtransConnInfo *ListenTransConns = NULL;
 static int *ListenTransFds = NULL;
@@ -197,7 +197,7 @@ InitParentProcess(void)
 }
 
 void
-NotifyParentProcess(void)
+NotifyParentProcess(XephyrContext* context)
 {
 #if !defined(WIN32)
     if (context->displayfd >= 0) {
@@ -241,7 +241,7 @@ TryCreateSocket(int num, int *partial)
  *****************/
 
 void
-CreateWellKnownSockets(void)
+CreateWellKnownSockets(XephyrContext* context)
 {
     int i;
     int partial;
@@ -272,7 +272,7 @@ CreateWellKnownSockets(void)
             FatalError("Failed to find a socket to listen on");
         snprintf(dynamic_display, sizeof(dynamic_display), "%d", i);
         context->display = dynamic_display;
-        LogSetDisplay();
+        LogSetDisplay(context);
     }
 
     ListenTransFds = xallocarray(ListenTransCount, sizeof (int));
@@ -299,7 +299,7 @@ CreateWellKnownSockets(void)
 #endif
     OsSignal(SIGINT, GiveUp);
     OsSignal(SIGTERM, GiveUp);
-    ResetHosts(context->display);
+    ResetHosts(context->display, context);
 
     InitParentProcess();
 
@@ -309,7 +309,7 @@ CreateWellKnownSockets(void)
 }
 
 void
-ResetWellKnownSockets(void)
+ResetWellKnownSockets(XephyrContext* context)
 {
     int i;
 
@@ -347,7 +347,7 @@ ResetWellKnownSockets(void)
                     NULL);
 
     ResetAuthorization();
-    ResetHosts(context->display);
+    ResetHosts(context->display, context);
     /*
      * restart XDMCP
      */
@@ -875,9 +875,9 @@ OnlyListenToOneClient(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    if (!context->GrabInProgress) {
-        context->GrabInProgress = client->index;
-        set_poll_clients();
+    if (!client->context->GrabInProgress) {
+        client->context->GrabInProgress = client->index;
+        set_poll_clients(client->context);
     }
 
     return rc;
@@ -889,11 +889,11 @@ OnlyListenToOneClient(ClientPtr client)
  ****************/
 
 void
-ListenToAllClients(void)
+ListenToAllClients(XephyrContext* context)
 {
     if (context->GrabInProgress) {
         context->GrabInProgress = 0;
-        set_poll_clients();
+        set_poll_clients(context);
     }
 }
 
@@ -992,7 +992,7 @@ MakeClientGrabPervious(ClientPtr client)
 
 /* Add a fd (from launchd or similar) to our listeners */
 void
-ListenOnOpenFD(int fd, int noxauth)
+ListenOnOpenFD(int fd, int noxauth, XephyrContext* context)
 {
     char port[PATH_MAX];
     XtransConnInfo ciptr;
@@ -1089,10 +1089,10 @@ listen_to_client(ClientPtr client)
     if (oc->flags & OS_COMM_IGNORED)
         return FALSE;
 
-    if (!context->GrabInProgress)
+    if (!client->context->GrabInProgress)
         return TRUE;
 
-    if (client->index == context->GrabInProgress)
+    if (client->index == client->context->GrabInProgress)
         return TRUE;
 
     if (oc->flags & OS_COMM_GRAB_IMPERVIOUS)
@@ -1115,7 +1115,7 @@ set_poll_client(ClientPtr client)
 }
 
 static void
-set_poll_clients(void)
+set_poll_clients(XephyrContext* context)
 {
     int i;
 

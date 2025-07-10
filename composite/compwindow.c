@@ -136,7 +136,7 @@ compSetPixmapVisitWindow(WindowPtr pWindow, void *data)
     SetWinSize(pWindow);
     SetBorderSize(pWindow);
     if (pVisit->bw)
-        QueueWorkProc(compRepaintBorder, context->serverClient,
+        QueueWorkProc(compRepaintBorder, pScreen->context->serverClient,
                       (void *) (intptr_t) pWindow->drawable.id);
     return WT_WALKCHILDREN;
 }
@@ -215,7 +215,7 @@ updateOverlayWindow(ScreenPtr pScreen)
         /* Let's resize the overlay window. */
         vlist[0] = w;
         vlist[1] = h;
-        return ConfigureWindow(pWin, CWWidth | CWHeight, vlist, wClient(pWin));
+        return ConfigureWindow(pWin, CWWidth | CWHeight, vlist, wClient(pWin, pScreen->context));
     }
 
     /* Let's be on the safe side and not assume an overlay window is
@@ -250,7 +250,7 @@ compPositionWindow(WindowPtr pWin, int x, int y)
         if (pPixmap->screen_x != nx || pPixmap->screen_y != ny) {
             pPixmap->screen_x = nx;
             pPixmap->screen_y = ny;
-            pPixmap->drawable.serialNumber = NEXT_SERIAL_NUMBER;
+            pPixmap->drawable.serialNumber = NextSerialNumber(pScreen->context);
         }
     }
 
@@ -447,7 +447,7 @@ compReparentWindow(WindowPtr pWin, WindowPtr pPriorParent)
      * Remove any implicit redirect due to synthesized visual
      */
     if (compImplicitRedirect(pWin, pPriorParent))
-        compUnredirectWindow(context->serverClient, pWin, CompositeRedirectAutomatic);
+        compUnredirectWindow(pScreen->context->serverClient, pWin, CompositeRedirectAutomatic);
     /*
      * Handle subwindows redirection
      */
@@ -457,7 +457,7 @@ compReparentWindow(WindowPtr pWin, WindowPtr pPriorParent)
      * Add any implicit redirect due to synthesized visual
      */
     if (compImplicitRedirect(pWin, pWin->parent))
-        compRedirectWindow(context->serverClient, pWin, CompositeRedirectAutomatic);
+        compRedirectWindow(pScreen->context->serverClient, pWin, CompositeRedirectAutomatic);
 
     /*
      * Allocate any necessary redirect pixmap
@@ -586,10 +586,10 @@ compCreateWindow(WindowPtr pWin)
             (*pScreen->SetWindowPixmap) (pWin, parent_pixmap);
         if (csw)
             for (ccw = csw->clients; ccw; ccw = ccw->next)
-                compRedirectWindow(context->clients[CLIENT_ID(ccw->id)],
+                compRedirectWindow(pScreen->context->clients[CLIENT_ID(ccw->id)],
                                    pWin, ccw->update);
         if (compImplicitRedirect(pWin, pWin->parent))
-            compRedirectWindow(context->serverClient, pWin, CompositeRedirectAutomatic);
+            compRedirectWindow(pScreen->context->serverClient, pWin, CompositeRedirectAutomatic);
     }
     cs->CreateWindow = pScreen->CreateWindow;
     pScreen->CreateWindow = compCreateWindow;
@@ -608,9 +608,9 @@ compDestroyWindow(WindowPtr pWin)
 
     pScreen->DestroyWindow = cs->DestroyWindow;
     while ((cw = GetCompWindow(pWin)))
-        FreeResource(cw->clients->id, RT_NONE);
+        FreeResource(cw->clients->id, RT_NONE, pScreen->context);
     while ((csw = GetCompSubwindows(pWin)))
-        FreeResource(csw->clients->id, RT_NONE);
+        FreeResource(csw->clients->id, RT_NONE, pScreen->context);
 
     if (pWin->redirectDraw != RedirectDrawNone) {
         PixmapPtr pPixmap = (*pScreen->GetWindowPixmap) (pWin);
@@ -677,14 +677,14 @@ compWindowUpdateAutomatic(WindowPtr pWin)
     PicturePtr pSrcPicture = CreatePicture(0, &pSrcPixmap->drawable,
                                            pSrcFormat,
                                            0, 0,
-                                           context->serverClient,
+                                           pScreen->context->serverClient,
                                            &error);
     XID subwindowMode = IncludeInferiors;
     PicturePtr pDstPicture = CreatePicture(0, &pParent->drawable,
                                            pDstFormat,
                                            CPSubwindowMode,
                                            &subwindowMode,
-                                           context->serverClient,
+                                           pScreen->context->serverClient,
                                            &error);
 
     /*
@@ -716,8 +716,8 @@ compWindowUpdateAutomatic(WindowPtr pWin)
                      pSrcPixmap->screen_x - pParent->drawable.x,
                      pSrcPixmap->screen_y - pParent->drawable.y,
                      pSrcPixmap->drawable.width, pSrcPixmap->drawable.height);
-    FreePicture(pSrcPicture, 0);
-    FreePicture(pDstPicture, 0);
+    FreePicture(pSrcPicture, 0, pScreen->context);
+    FreePicture(pDstPicture, 0, pScreen->context);
     /*
      * Empty the damage region.  This has the nice effect of
      * rendering the translations above harmless

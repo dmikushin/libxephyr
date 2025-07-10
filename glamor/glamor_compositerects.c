@@ -272,6 +272,6 @@ glamor_composite_rectangles(CARD8 op,
     if (need_free_region)
         pixman_region_fini(&region);
     if (source)
-        FreePicture(source, 0);
+        FreePicture(source, 0, dst->pDrawable->pScreen->context);
     return;
 }

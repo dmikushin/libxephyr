@@ -89,7 +89,7 @@ ProcRRGetProviders (ClientPtr client)
             .type = X_Reply,
             .sequenceNumber = client->sequence,
             .length = 0,
-            .timestamp = context->currentTime.milliseconds,
+            .timestamp = client->context->currentTime.milliseconds,
             .nProviders = 0
         };
         extra = NULL;
@@ -433,7 +433,7 @@ RRProviderSetCapabilities(RRProviderPtr provider, uint32_t capabilities)
 }
 
 static int
-RRProviderDestroyResource (void *value, XID pid)
+RRProviderDestroyResource (void *value, XID pid, XephyrContext* context)
 {
     RRProviderPtr provider = (RRProviderPtr)value;
     ScreenPtr pScreen = provider->pScreen;

@@ -667,7 +667,7 @@ ephyrInitScreen(ScreenPtr pScreen)
 #ifdef XV
     if (!ephyrNoXV) {
         if (ephyr_glamor)
-            ephyr_glamor_xv_init(pScreen);
+            ephyr_glamor_xv_init(pScreen, pScreen->context);
         else if (!ephyrInitVideo(pScreen)) {
             EPHYR_LOG_ERROR("failed to initialize xvideo\n");
         }

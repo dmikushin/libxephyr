@@ -116,10 +116,10 @@ miInitOverlay(ScreenPtr pScreen,
         return FALSE;
 
     if (!dixRegisterPrivateKey
-        (&miOverlayWindowKeyRec, PRIVATE_WINDOW, sizeof(miOverlayWindowRec)))
+        (&miOverlayWindowKeyRec, PRIVATE_WINDOW, sizeof(miOverlayWindowRec), pScreen->context))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&miOverlayScreenKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&miOverlayScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
     if (!(pScreenPriv = malloc(sizeof(miOverlayScreenRec))))

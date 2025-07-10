@@ -434,7 +434,7 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
     screen->base.swapInterval = NULL;
     screen->base.pScreen = pScreen;
 
-    __glXInitExtensionEnableBits(screen->base.glx_enable_bits);
+    __glXInitExtensionEnableBits(screen->base.glx_enable_bits, pScreen->context);
 
     screen->driver = glxProbeDriver(driverName,
                                     (void **) &screen->core,
@@ -458,7 +458,8 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
     initializeExtensions(&screen->base);
 
     screen->base.fbconfigs = glxConvertConfigs(screen->core,
-                                               screen->driConfigs);
+                                               screen->driConfigs,
+                                               pScreen->context);
 
 #if !defined(XQUARTZ) && !defined(WIN32)
     screen->base.glvnd = strdup("mesa");

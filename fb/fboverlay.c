@@ -277,7 +277,7 @@ fbOverlayFinishScreenInit(ScreenPtr pScreen,
     FbOverlayScrPrivPtr pScrPriv;
 
     if (!dixRegisterPrivateKey
-        (&fbOverlayScreenPrivateKeyRec, PRIVATE_SCREEN, 0))
+        (&fbOverlayScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
     if (bpp1 == 24 || bpp2 == 24)

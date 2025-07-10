@@ -19,8 +19,8 @@ typedef Bool (*miInitVisualsProcPtr) (VisualPtr *, DepthPtr *, int *, int *,
 
 extern _X_EXPORT int miListInstalledColormaps(ScreenPtr pScreen,
                                               Colormap * pmaps);
-extern _X_EXPORT void miInstallColormap(ColormapPtr pmap);
-extern _X_EXPORT void miUninstallColormap(ColormapPtr pmap);
+extern _X_EXPORT void miInstallColormap(ColormapPtr pmap, XephyrContext* context);
+extern _X_EXPORT void miUninstallColormap(ColormapPtr pmap, XephyrContext* context);
 
 extern _X_EXPORT void miResolveColor(unsigned short *, unsigned short *,
                                      unsigned short *, VisualPtr);

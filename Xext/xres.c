@@ -224,11 +224,11 @@ ProcXResQueryClients(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXResQueryClientsReq);
 
-    current_clients = xallocarray(context->currentMaxClients, sizeof(int));
+    current_clients = xallocarray(client->context->currentMaxClients, sizeof(int));
 
     num_clients = 0;
-    for (i = 0; i < context->currentMaxClients; i++) {
-        if (context->clients[i]) {
+    for (i = 0; i < client->context->currentMaxClients; i++) {
+        if (client->context->clients[i]) {
             current_clients[num_clients] = i;
             num_clients++;
         }
@@ -251,7 +251,7 @@ ProcXResQueryClients(ClientPtr client)
         xXResClient scratch;
 
         for (i = 0; i < num_clients; i++) {
-            scratch.resource_base = context->clients[current_clients[i]]->clientAsMask;
+            scratch.resource_base = client->context->clients[current_clients[i]]->clientAsMask;
             scratch.resource_mask = RESOURCE_ID_MASK;
 
             if (client->swapped) {
@@ -305,14 +305,14 @@ ProcXResQueryClientResources(ClientPtr client)
 
     clientID = CLIENT_ID(stuff->xid);
 
-    if ((clientID >= context->currentMaxClients) || !context->clients[clientID]) {
+    if ((clientID >= client->context->currentMaxClients) || !client->context->clients[clientID]) {
         client->errorValue = stuff->xid;
         return BadValue;
     }
 
     counts = calloc(lastResourceType + 1, sizeof(int));
 
-    FindAllClientResources(context->clients[clientID], ResFindAllRes, counts);
+    FindAllClientResources(client->context->clients[clientID], ResFindAllRes, counts, client->context);
 
     num_types = 0;
 
@@ -381,15 +381,15 @@ ProcXResQueryClientPixmapBytes(ClientPtr client)
 
     clientID = CLIENT_ID(stuff->xid);
 
-    if ((clientID >= context->currentMaxClients) || !context->clients[clientID]) {
+    if ((clientID >= client->context->currentMaxClients) || !client->context->clients[clientID]) {
         client->errorValue = stuff->xid;
         return BadValue;
     }
 
     bytes = 0;
 
-    FindAllClientResources(context->clients[clientID], ResFindResourcePixmaps,
-                           (void *) (&bytes));
+    FindAllClientResources(client->context->clients[clientID], ResFindResourcePixmaps,
+                           (void *) (&bytes), client->context);
 
     rep = (xXResQueryClientPixmapBytesReply) {
         .type = X_Reply,
@@ -537,9 +537,9 @@ ConstructClientIds(ClientPtr client,
     for (specIdx = 0; specIdx < numSpecs; ++specIdx) {
         if (specs[specIdx].client == 0) {
             int c;
-            for (c = 0; c < context->currentMaxClients; ++c) {
-                if (context->clients[c]) {
-                    if (!ConstructClientIdValue(client, context->clients[c],
+            for (c = 0; c < client->context->currentMaxClients; ++c) {
+                if (client->context->clients[c]) {
+                    if (!ConstructClientIdValue(client, client->context->clients[c],
                                                 specs[specIdx].mask, ctx)) {
                         return BadAlloc;
                     }
@@ -548,8 +548,8 @@ ConstructClientIds(ClientPtr client,
         } else {
             int clientID = CLIENT_ID(specs[specIdx].client);
 
-            if ((clientID < context->currentMaxClients) && context->clients[clientID]) {
-                if (!ConstructClientIdValue(client, context->clients[clientID],
+            if ((clientID < client->context->currentMaxClients) && client->context->clients[clientID]) {
+                if (!ConstructClientIdValue(client, client->context->clients[clientID],
                                             specs[specIdx].mask, ctx)) {
                     return BadAlloc;
                 }
@@ -857,9 +857,9 @@ ConstructClientResourceBytes(ClientPtr aboutClient,
         } else if (spec->type) {
             ctx->resType = spec->type;
             FindClientResourcesByType(aboutClient, spec->type,
-                                      AddResourceSizeValueWithResType, ctx);
+                                      AddResourceSizeValueWithResType, ctx, ctx->sendClient->context);
         } else {
-            FindAllClientResources(aboutClient, AddResourceSizeValue, ctx);
+            FindAllClientResources(aboutClient, AddResourceSizeValue, ctx, ctx->sendClient->context);
         }
     }
 }
@@ -887,14 +887,14 @@ ConstructResourceBytesByResource(XID aboutClient, ConstructResourceBytesCtx *ctx
         xXResResourceIdSpec *spec = ctx->specs + specIdx;
         if (spec->resource) {
             int cid = CLIENT_ID(spec->resource);
-            if (cid < context->currentMaxClients &&
+            if (cid < ctx->sendClient->context->currentMaxClients &&
                 (aboutClient == None || cid == aboutClient)) {
-                ClientPtr client = context->clients[cid];
+                ClientPtr client = ctx->sendClient->context->clients[cid];
                 if (client) {
                     ctx->curSpec = spec;
                     FindAllClientResources(client,
                                            AddResourceSizeValueByResource,
-                                           ctx);
+                                           ctx, ctx->sendClient->context);
                 }
             }
         }
@@ -917,12 +917,12 @@ ConstructResourceBytes(XID aboutClient,
         int clientIdx = CLIENT_ID(aboutClient);
         ClientPtr client = NullClient;
 
-        if ((clientIdx >= context->currentMaxClients) || !context->clients[clientIdx]) {
+        if ((clientIdx >= ctx->sendClient->context->currentMaxClients) || !ctx->sendClient->context->clients[clientIdx]) {
             ctx->sendClient->errorValue = aboutClient;
             return BadValue;
         }
 
-        client = context->clients[clientIdx];
+        client = ctx->sendClient->context->clients[clientIdx];
 
         ConstructClientResourceBytes(client, ctx);
         ConstructResourceBytesByResource(aboutClient, ctx);
@@ -931,8 +931,8 @@ ConstructResourceBytes(XID aboutClient,
 
         ConstructClientResourceBytes(NULL, ctx);
 
-        for (clientIdx = 0; clientIdx < context->currentMaxClients; ++clientIdx) {
-            ClientPtr client = context->clients[clientIdx];
+        for (clientIdx = 0; clientIdx < ctx->sendClient->context->currentMaxClients; ++clientIdx) {
+            ClientPtr client = ctx->sendClient->context->clients[clientIdx];
 
             if (client) {
                 ConstructClientResourceBytes(client, ctx);

@@ -165,7 +165,7 @@ ProcXSendExtensionEvent(ClientPtr client)
 
     ret = (SendEvent(client, dev, stuff->destination,
                      stuff->propagate, (xEvent *) &stuff[1],
-                     tmp[stuff->deviceid].mask, stuff->num_events));
+                     tmp[stuff->deviceid].mask, stuff->num_events, client->context));
 
     return ret;
 }

@@ -73,8 +73,8 @@ RRClientCallback(CallbackListPtr *list, void *closure, void *data)
 
     pRRClient->major_version = 0;
     pRRClient->minor_version = 0;
-    for (i = 0; i < context->screenInfo.numScreens; i++) {
-        ScreenPtr pScreen = context->screenInfo.screens[i];
+    for (i = 0; i < pClient->context->screenInfo.numScreens; i++) {
+        ScreenPtr pScreen = pClient->context->screenInfo.screens[i];
 
         rrScrPriv(pScreen);
 
@@ -281,8 +281,9 @@ SRRNotifyEvent(xEvent *from, xEvent *to)
 static int RRGeneration;
 
 Bool
-RRInit(void)
+RRInit(XephyrContext* context)
 {
+    
     if (RRGeneration != context->serverGeneration) {
         if (!RRModeInit())
             return FALSE;
@@ -296,7 +297,7 @@ RRInit(void)
             return FALSE;
         RRGeneration = context->serverGeneration;
     }
-    if (!dixRegisterPrivateKey(&rrPrivKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&rrPrivKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
     return TRUE;
@@ -307,7 +308,7 @@ RRScreenInit(ScreenPtr pScreen)
 {
     rrScrPrivPtr pScrPriv;
 
-    if (!RRInit())
+    if (!RRInit(pScreen->context))
         return FALSE;
 
     pScrPriv = (rrScrPrivPtr) calloc(1, sizeof(rrScrPrivRec));
@@ -349,8 +350,8 @@ RRScreenInit(ScreenPtr pScreen)
      * GetScreenInfo before reading it which will automatically update
      * the time
      */
-    pScrPriv->lastSetTime = context->currentTime;
-    pScrPriv->lastConfigTime = context->currentTime;
+    pScrPriv->lastSetTime = pScreen->context->currentTime;
+    pScrPriv->lastConfigTime = pScreen->context->currentTime;
 
     wrap(pScrPriv, pScreen, CloseScreen, RRCloseScreen);
 
@@ -370,7 +371,7 @@ RRScreenInit(ScreenPtr pScreen)
 }
 
  /*ARGSUSED*/ static int
-RRFreeClient(void *data, XID id)
+RRFreeClient(void *data, XID id, XephyrContext* context)
 {
     RREventPtr pRREvent;
     WindowPtr pWin;
@@ -411,16 +412,17 @@ RRFreeEvents(void *data, XID id, XephyrContext* context)
 }
 
 void
-RRExtensionInit(void)
+RRExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
     if (RRNScreens == 0)
         return;
 
+    
     if (!dixRegisterPrivateKey(&RRClientPrivateKeyRec, PRIVATE_CLIENT,
                                sizeof(RRClientRec) +
-                               context->screenInfo.numScreens * sizeof(RRTimesRec)))
+                               1 * sizeof(RRTimesRec), context))
         return;
     if (!AddCallback(&ClientStateCallback, RRClientCallback, 0))
         return;
@@ -491,13 +493,13 @@ TellChanged(WindowPtr pWin, void *value)
     int i;
 
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            RREventType, context->serverClient, DixReadAccess);
+                            RREventType, pScreen->context->serverClient, DixReadAccess);
     if (!pHead)
         return WT_WALKCHILDREN;
 
     for (pRREvent = *pHead; pRREvent; pRREvent = pRREvent->next) {
         client = pRREvent->client;
-        if (client == context->serverClient || client->clientGone)
+        if (client == pScreen->context->serverClient || client->clientGone)
             continue;
 
         if (pRREvent->mask & RRScreenChangeNotifyMask)
@@ -633,9 +635,11 @@ RRTellChanged(ScreenPtr pScreen)
     }
 
     if (primarysp->changed) {
-        UpdateCurrentTimeIf();
+        
+        UpdateCurrentTimeIf(pScreen->context);
         if (primarysp->configChanged) {
-            primarysp->lastConfigTime = context->currentTime;
+            
+            primarysp->lastConfigTime = pScreen->context->currentTime;
             primarysp->configChanged = FALSE;
         }
         pScrPriv->changed = FALSE;
@@ -745,7 +749,7 @@ ProcRRDispatch(ClientPtr client)
     REQUEST(xReq);
     if (stuff->data >= RRNumberRequests || !ProcRandrVector[stuff->data])
         return BadRequest;
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(client->context);
     return (*ProcRandrVector[stuff->data]) (client);
 }
 
@@ -755,6 +759,6 @@ SProcRRDispatch(ClientPtr client)
     REQUEST(xReq);
     if (stuff->data >= RRNumberRequests || !SProcRandrVector[stuff->data])
         return BadRequest;
-    UpdateCurrentTimeIf();
+    UpdateCurrentTimeIf(client->context);
     return (*SProcRandrVector[stuff->data]) (client);
 }

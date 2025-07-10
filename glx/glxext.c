@@ -102,9 +102,9 @@ DrawableGone(__GLXdrawable * glxPriv, XID xid)
         /* If this was created by glXCreateWindow, free the matching resource */
         if (glxPriv->drawId != glxPriv->pDraw->id) {
             if (xid == glxPriv->drawId)
-                FreeResourceByType(glxPriv->pDraw->id, __glXDrawableRes, TRUE);
+                FreeResourceByType(glxPriv->pDraw->id, __glXDrawableRes, TRUE, glxPriv->pDraw->pScreen->context);
             else
-                FreeResourceByType(glxPriv->drawId, __glXDrawableRes, TRUE);
+                FreeResourceByType(glxPriv->drawId, __glXDrawableRes, TRUE, glxPriv->pDraw->pScreen->context);
         }
         /* otherwise this window was implicitly created by MakeCurrent */
     }
@@ -135,11 +135,11 @@ DrawableGone(__GLXdrawable * glxPriv, XID xid)
 }
 
 Bool
-__glXAddContext(__GLXcontext * cx)
+__glXAddContext(__GLXcontext * cx, XephyrContext* context)
 {
     /* Register this context as a resource.
      */
-    if (!AddResource(cx->id, __glXContextRes, (void *)cx)) {
+    if (!AddResource(cx->id, __glXContextRes, (void *)cx, context)) {
 	return FALSE;
     }
 
@@ -283,7 +283,7 @@ GlxPushProvider(__GLXprovider * provider)
 }
 
 static Bool
-checkScreenVisuals(void)
+checkScreenVisuals(XephyrContext* context)
 {
     int i, j;
 
@@ -334,7 +334,7 @@ xorgGlxHandleRequest(ClientPtr client)
 }
 
 static ScreenPtr
-screenNumToScreen(int screen)
+screenNumToScreen(int screen, XephyrContext* context)
 {
     if (screen < 0 || screen >= context->screenInfo.numScreens)
         return NULL;
@@ -353,7 +353,7 @@ vendorForScreen(ClientPtr client, int screen)
 {
     screen = maybe_swap32(client, screen);
 
-    return glxServer.getVendorForScreen(client, screenNumToScreen(screen));
+    return glxServer.getVendorForScreen(client, screenNumToScreen(screen, client->context));
 }
 
 /* this ought to be generated */
@@ -470,11 +470,11 @@ xorgGlxGetDispatchAddress(CARD8 minorOpcode, CARD32 vendorCode)
 }
 
 static Bool
-xorgGlxServerPreInit(const ExtensionEntry *extEntry)
+xorgGlxServerPreInit(const ExtensionEntry *extEntry, XephyrContext* context)
 {
     if (glxGeneration != context->serverGeneration) {
         /* Mesa requires at least one True/DirectColor visual */
-        if (!checkScreenVisuals())
+        if (!checkScreenVisuals(context))
             return FALSE;
 
         __glXContextRes = CreateNewResourceType((DeleteType) ContextGone,
@@ -485,7 +485,7 @@ xorgGlxServerPreInit(const ExtensionEntry *extEntry)
             return FALSE;
 
         if (!dixRegisterPrivateKey
-            (&glxClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(__GLXclientState)))
+            (&glxClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(__GLXclientState), context))
             return FALSE;
         if (!AddCallback(&ClientStateCallback, glxClientCallback, 0))
             return FALSE;
@@ -526,9 +526,10 @@ static void
 xorgGlxServerInit(CallbackListPtr *pcbl, void *param, void *ext)
 {
     const ExtensionEntry *extEntry = ext;
+    XephyrContext* context = (XephyrContext*)param;
     int i;
 
-    if (!xorgGlxServerPreInit(extEntry)) {
+    if (!xorgGlxServerPreInit(extEntry, context)) {
         return;
     }
 
@@ -568,9 +569,9 @@ xorgGlxServerInit(CallbackListPtr *pcbl, void *param, void *ext)
 }
 
 Bool
-xorgGlxCreateVendor(void)
+xorgGlxCreateVendor(XephyrContext* context)
 {
-    return AddCallback(glxServer.extensionInitCallback, xorgGlxServerInit, NULL);
+    return AddCallback(glxServer.extensionInitCallback, xorgGlxServerInit, context);
 }
 
 /************************************************************************/
@@ -650,7 +651,7 @@ __glXForceCurrent(__GLXclientState * cl, GLXContextTag tag, int *error)
 /************************************************************************/
 
 void
-glxSuspendClients(void)
+glxSuspendClients(XephyrContext* context)
 {
     int i;
 
@@ -663,7 +664,7 @@ glxSuspendClients(void)
 }
 
 void
-glxResumeClients(void)
+glxResumeClients(XephyrContext* context)
 {
     __GLXcontext *cx, *next;
     int i;

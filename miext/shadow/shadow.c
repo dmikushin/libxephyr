@@ -117,7 +117,7 @@ shadowSetup(ScreenPtr pScreen)
 {
     shadowBufPtr pBuf;
 
-    if (!dixRegisterPrivateKey(&shadowScrPrivateKeyRec, PRIVATE_SCREEN, 0))
+    if (!dixRegisterPrivateKey(&shadowScrPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
     if (!DamageSetup(pScreen))
