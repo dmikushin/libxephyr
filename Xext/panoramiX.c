@@ -62,7 +62,6 @@ Equipment Corporation.
 #include "extinit.h"
 #include "protocol-versions.h"
 
-static XephyrContext* panoramix_context = NULL;
 
 #ifdef GLXPROXY
 extern VisualPtr glxMatchVisual(ScreenPtr pScreen,
@@ -444,7 +443,6 @@ PanoramiXExtensionInit(XephyrContext* context)
     ScreenPtr pScreen = context->screenInfo.screens[0];
     PanoramiXScreenPtr pScreenPriv;
 
-    panoramix_context = context;
 
     if (noPanoramiXExtension)
         return;
@@ -890,6 +888,7 @@ static void
 PanoramiXResetProc(ExtensionEntry * extEntry)
 {
     int i;
+    XephyrContext* context = (XephyrContext*)extEntry->extPrivate;
 
     PanoramiXRenderReset();
     PanoramiXFixesReset();
@@ -897,7 +896,7 @@ PanoramiXResetProc(ExtensionEntry * extEntry)
 #ifdef COMPOSITE
     PanoramiXCompositeReset ();
 #endif
-    panoramix_context->screenInfo.numScreens = PanoramiXNumScreens;
+    context->screenInfo.numScreens = PanoramiXNumScreens;
     for (i = 256; i--;)
         ProcVector[i] = SavedProcVector[i];
 }

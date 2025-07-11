@@ -108,17 +108,17 @@ SELinuxAtomToSIDLookup(Atom atom, SELinuxObjectRec * obj, int map, int polymap)
         obj->poly = 0;
     }
     else if (errno != ENOENT) {
-        ErrorF("SELinux: a property label lookup failed!\n");
+        ErrorF("SELinux: a property label lookup failed!\n", context);
         return BadValue;
     }
     else if (selabel_lookup_raw(label_hnd, &ctx, name, polymap) < 0) {
-        ErrorF("SELinux: a property label lookup failed!\n");
+        ErrorF("SELinux: a property label lookup failed!\n", context);
         return BadValue;
     }
 
     /* Get a SID for context */
     if (avc_context_to_sid_raw(ctx, &obj->sid) < 0) {
-        ErrorF("SELinux: a context_to_SID_raw call failed!\n");
+        ErrorF("SELinux: a context_to_SID_raw call failed!\n", context);
         rc = BadAlloc;
     }
 
@@ -193,7 +193,7 @@ SELinuxSelectionToSID(Atom selection, SELinuxSubjectRec * subj,
     /* Polyinstantiate if necessary to obtain the final SID */
     if (obj->poly && avc_compute_member(subj->sid, obj->sid,
                                         SECCLASS_X_SELECTION, &tsid) < 0) {
-        ErrorF("SELinux: a compute_member call failed!\n");
+        ErrorF("SELinux: a compute_member call failed!\n", context);
         return BadValue;
     }
  out:
@@ -227,7 +227,7 @@ SELinuxPropertyToSID(Atom property, SELinuxSubjectRec * subj,
 
     /* Perform a transition */
     if (avc_compute_create(subj->sid, obj->sid, SECCLASS_X_PROPERTY, &tsid) < 0) {
-        ErrorF("SELinux: a compute_create call failed!\n");
+        ErrorF("SELinux: a compute_create call failed!\n", context);
         return BadValue;
     }
 
@@ -236,7 +236,7 @@ SELinuxPropertyToSID(Atom property, SELinuxSubjectRec * subj,
         tsid2 = tsid;
         if (avc_compute_member(subj->sid, tsid2,
                                SECCLASS_X_PROPERTY, &tsid) < 0) {
-            ErrorF("SELinux: a compute_member call failed!\n");
+            ErrorF("SELinux: a compute_member call failed!\n", context);
             return BadValue;
         }
     }
@@ -264,12 +264,12 @@ SELinuxEventToSID(unsigned type, security_id_t sid_of_window,
     if (!sid) {
         /* Look in the mappings of event names to contexts */
         if (selabel_lookup_raw(label_hnd, &ctx, name, SELABEL_X_EVENT) < 0) {
-            ErrorF("SELinux: an event label lookup failed!\n");
+            ErrorF("SELinux: an event label lookup failed!\n", context);
             return BadValue;
         }
         /* Get a SID for context */
         if (avc_context_to_sid_raw(ctx, &sid) < 0) {
-            ErrorF("SELinux: a context_to_SID_raw call failed!\n");
+            ErrorF("SELinux: a context_to_SID_raw call failed!\n", context);
             freecon(ctx);
             return BadAlloc;
         }
@@ -282,7 +282,7 @@ SELinuxEventToSID(unsigned type, security_id_t sid_of_window,
     /* Perform a transition to obtain the final SID */
     if (avc_compute_create(sid_of_window, sid, SECCLASS_X_EVENT,
                            &sid_return->sid) < 0) {
-        ErrorF("SELinux: a compute_create call failed!\n");
+        ErrorF("SELinux: a compute_create call failed!\n", context);
         return BadValue;
     }
 
@@ -296,12 +296,12 @@ SELinuxExtensionToSID(const char *name, security_id_t * sid_rtn)
 
     /* Look in the mappings of extension names to contexts */
     if (selabel_lookup_raw(label_hnd, &ctx, name, SELABEL_X_EXT) < 0) {
-        ErrorF("SELinux: a property label lookup failed!\n");
+        ErrorF("SELinux: a property label lookup failed!\n", context);
         return BadValue;
     }
     /* Get a SID for context */
     if (avc_context_to_sid_raw(ctx, sid_rtn) < 0) {
-        ErrorF("SELinux: a context_to_SID_raw call failed!\n");
+        ErrorF("SELinux: a context_to_SID_raw call failed!\n", context);
         freecon(ctx);
         return BadAlloc;
     }

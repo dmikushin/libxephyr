@@ -191,19 +191,18 @@ GLXClientCallback(CallbackListPtr *list, void *closure, void *data)
     }
 }
 
-// Global context for wrapper functions
-static XephyrContext* g_context = NULL;
-
 static Bool
 GlxAddXIDMapWrapper(XID id, GlxServerVendor *vendor)
 {
-    return GlxAddXIDMap(id, vendor, g_context);
+    XephyrContext* context = (XephyrContext*)GlxExtensionEntry->extPrivate;
+    return GlxAddXIDMap(id, vendor, context);
 }
 
 static void
 GlxRemoveXIDMapWrapper(XID id)
 {
-    GlxRemoveXIDMap(id, g_context);
+    XephyrContext* context = (XephyrContext*)GlxExtensionEntry->extPrivate;
+    GlxRemoveXIDMap(id, context);
 }
 
 static void
@@ -230,7 +229,6 @@ GlxExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
     GlxExtensionEntry = NULL;
-    g_context = context;
 
     // Init private keys, per-screen data
     if (!dixRegisterPrivateKey(&glvXGLVScreenPrivKey, PRIVATE_SCREEN, 0, NULL))

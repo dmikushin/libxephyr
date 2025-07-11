@@ -228,13 +228,13 @@ EnableDisableExtensionError(const char *name, Bool enable, XephyrContext* contex
     for (i = 0; i < ARRAY_SIZE(staticExtensions); i++) {
         ext = &staticExtensions[i];
         if ((strcmp(name, ext->name) == 0) && (ext->disablePtr == NULL)) {
-            ErrorF("[mi] Extension \"%s\" can not be disabled\n", context, name);
+            ErrorF("[mi] Extension \", context%s\" can not be disabled\n", name);
             found = TRUE;
             break;
         }
     }
     if (found == FALSE) {
-        ErrorF("[mi] Extension \"%s\" is not recognized\n", context, name);
+        ErrorF("[mi] Extension \", context%s\" is not recognized\n", name);
         /* Disabling a non-existing extension is a no-op anyway */
         if (enable == FALSE)
             return;

@@ -98,7 +98,7 @@ ProcXGetDeviceFocus(ClientPtr client)
     if (rc != Success)
         return rc;
     if (!dev->focus)
-        return BadDevice;
+        return context->BadDevice;
 
     rep = (xGetDeviceFocusReply) {
         .repType = X_Reply,

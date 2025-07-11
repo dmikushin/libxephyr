@@ -95,5 +95,5 @@ ProcXChangeKeyboardDevice(ClientPtr client)
     /* REQUEST(xChangeKeyboardDeviceReq); */
     REQUEST_SIZE_MATCH(xChangeKeyboardDeviceReq);
 
-    return BadDevice;
+    return client->context->BadDevice;
 }

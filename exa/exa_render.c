@@ -116,7 +116,7 @@ exaPrintCompositeFallback(CARD8 op,
     exaCompositeFallbackPictDesc(pMask, maskdesc, 40);
     exaCompositeFallbackPictDesc(pDst, dstdesc, 40);
 
-    ErrorF("Composite fallback: op %s, \n"
+    ErrorF("Composite fallback: op %s, \n", context
            "                    src  %s, \n"
            "                    mask %s, \n"
            "                    dst  %s, \n", sop, srcdesc, maskdesc, dstdesc);

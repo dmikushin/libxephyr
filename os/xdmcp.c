@@ -219,21 +219,20 @@ static const char *xdm_from = NULL;
 void
 XdmcpUseMsg(void)
 {
-    ErrorF("-query host-name       contact named host for XDMCP\n");
-    ErrorF("-broadcast             broadcast for XDMCP\n");
+    ErrorF("-query host-name       contact named host for XDMCP\n", context);
+    ErrorF("-broadcast             broadcast for XDMCP\n", context);
 #if defined(IPv6) && defined(AF_INET6)
-    ErrorF("-multicast [addr [hops]] IPv6 multicast for XDMCP\n");
+    ErrorF("-multicast [addr [hops]] IPv6 multicast for XDMCP\n", context);
 #endif
-    ErrorF("-indirect host-name    contact named host for indirect XDMCP\n");
-    ErrorF("-port port-num         UDP port number to send messages to\n");
-    ErrorF
-        ("-from local-address    specify the local address to connect from\n");
-    ErrorF("-once                  Terminate server after one session\n");
-    ErrorF("-class context->display-class   specify context->display class to send in manage\n");
+    ErrorF("-indirect host-name    contact named host for indirect XDMCP\n", context);
+    ErrorF("-port port-num         UDP port number to send messages to\n", context);
+    ErrorF("-from local-address    specify the local address to connect from\n", context);
+    ErrorF("-once                  Terminate server after one session\n", context);
+    ErrorF("-class context->display-class   specify context->display class to send in manage\n", context);
 #ifdef HASXDMAUTH
-    ErrorF("-cookie xdm-auth-bits  specify the magic cookie for XDMCP\n");
+    ErrorF("-cookie xdm-auth-bits  specify the magic cookie for XDMCP\n", context);
 #endif
-    ErrorF("-displayID context->display-id  manufacturer context->display ID for request\n");
+    ErrorF("-displayID context->display-id  manufacturer context->display ID for request\n", context);
 }
 
 static void
@@ -800,7 +799,7 @@ send_packet(void)
 static void
 XdmcpDeadSession(const char *reason)
 {
-    ErrorF("XDM: %s, declaring session dead\n", NULL, reason);
+    ErrorF("XDM: %s, declaring session dead\n", context, NULL, reason);
     state = XDM_INIT_STATE;
     isItTimeToYield = TRUE;
     dispatchException |= (OneSession ? DE_TERMINATE : DE_RESET);
@@ -825,7 +824,7 @@ timeout(void)
         /* Quit if "-once" specified, otherwise reset and try again. */
         if (OneSession) {
             dispatchException |= DE_TERMINATE;
-            ErrorF("XDM: too many retransmissions\n");
+            ErrorF("XDM: too many retransmissions\n", context);
         }
         else {
             XdmcpDeadSession("too many retransmissions");
@@ -938,8 +937,7 @@ get_xdmcp_sock(void)
     if (socketfd >= 0) {
         if (bind(socketfd, (struct sockaddr *) &FromAddress,
                  FromAddressLen) < 0) {
-            FatalError("Xserver: failed to bind to -from address: %s\n",
-                       xdm_from, context);
+            FatalError("Xserver: failed to bind to -from address: %s\n", xdm_from);
         }
     }
 }
@@ -1340,7 +1338,7 @@ XdmcpFatal(const char *type, ARRAY8Ptr status)
 static void
 XdmcpWarning(const char *str)
 {
-    ErrorF("XDMCP warning: %s\n", NULL, str);
+    ErrorF("XDMCP warning: %s\n", str);
 }
 
 static void
@@ -1370,7 +1368,7 @@ get_addr_by_name(const char *argtype,
         snprintf(portstr, sizeof(portstr), "%d", port);
     }
     else {
-        FatalError("Xserver: port out of range: %d\n", port, context);
+        FatalError("Xserver: port out of range: %d\n", port);
     }
 
     if (*aifirstp != NULL) {
@@ -1427,7 +1425,7 @@ get_manager_by_name(int argc, char **argv, int i)
 {
 
     if ((i + 1) == argc) {
-        FatalError("Xserver: missing %s host name in command line\n", argv[i], context);
+        FatalError("Xserver: missing %s host name in command line\n", argv[i]);
     }
 
     get_addr_by_name(argv[i], argv[i + 1], xdm_udp_port, SOCK_DGRAM,
@@ -1476,8 +1474,7 @@ get_mcast_options(int argc, char **argv, int i)
         if ((i < argc) && (argv[i][0] != '-') && (argv[i][0] != '+')) {
             hopcount = strtol(argv[i++], NULL, 10);
             if ((hopcount < 1) || (hopcount > 255)) {
-                FatalError("Xserver: multicast hop count out of range: %d\n",
-                           hopcount, context);
+                FatalError("Xserver: multicast hop count out of range: %d\n", hopcount);
             }
         }
     }
@@ -1486,7 +1483,7 @@ get_mcast_options(int argc, char **argv, int i)
         snprintf(portstr, sizeof(portstr), "%d", xdm_udp_port);
     }
     else {
-        FatalError("Xserver: port out of range: %d\n", xdm_udp_port, context);
+        FatalError("Xserver: port out of range: %d\n", xdm_udp_port);
     }
     memset(&hints, 0, sizeof(hints));
     hints.ai_socktype = SOCK_DGRAM;
@@ -1502,8 +1499,7 @@ get_mcast_options(int argc, char **argv, int i)
                 break;
         }
         if (ai == NULL) {
-            FatalError("Xserver: address not supported multicast type %s\n",
-                       address, context);
+            FatalError("Xserver: address not supported multicast type %s\n", address);
         }
         else {
             struct multicastinfo *mcastinfo, *mcl;

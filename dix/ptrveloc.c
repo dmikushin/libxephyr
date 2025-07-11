@@ -78,7 +78,7 @@ DeletePredictableAccelerationProperties(DeviceIntPtr,
 /*#define PTRACCEL_DEBUGGING*/
 
 #ifdef PTRACCEL_DEBUGGING
-#define DebugAccelF(...) ErrorFSigSafe("dix/ptraccel: ", NULL, __VA_ARGS__)
+#define DebugAccelF(...) ErrorFSigSafe("dix/ptraccel: ", __VA_ARGS__)
 #else
 #define DebugAccelF(...)        /* */
 #endif
@@ -427,7 +427,7 @@ void
 InitTrackers(DeviceVelocityPtr vel, int ntracker)
 {
     if (ntracker < 1) {
-        ErrorF("invalid number of trackers\n", NULL, NULL);
+        ErrorF("invalid number of trackers\n", NULL);
         return;
     }
     free(vel->tracker);

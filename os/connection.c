@@ -638,7 +638,7 @@ AllocNewConnection(XtransConnInfo trans_conn, int fd, CARD32 conn_time, XephyrCo
     set_poll_client(client);
 
 #ifdef DEBUG
-    ErrorF("AllocNewConnection: client index = %d, socket fd = %d\n",
+    ErrorF("AllocNewConnection: client index = %d, socket fd = %d\n", context,
            client->index, fd);
 #endif
 #ifdef XSERVER_DTRACE

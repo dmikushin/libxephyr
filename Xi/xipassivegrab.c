@@ -40,7 +40,7 @@
 #include <X11/extensions/XI2proto.h>
 #include "swaprep.h"
 
-#include "exglobals.h"          /* BadDevice */
+#include "exglobals.h"          /* context->BadDevice */
 #include "exevents.h"
 #include "xipassivegrab.h"
 #include "dixgrabs.h"

@@ -38,7 +38,7 @@
 #include <X11/extensions/XI2.h>
 #include <X11/extensions/XI2proto.h>
 
-#include "exglobals.h"          /* BadDevice */
+#include "exglobals.h"          /* context->BadDevice */
 #include "xisetdevfocus.h"
 
 int _X_COLD
@@ -80,7 +80,7 @@ ProcXISetFocus(ClientPtr client)
     if (ret != Success)
         return ret;
     if (!dev->focus)
-        return BadDevice;
+        return context->BadDevice;
 
     return SetInputFocus(client, dev, stuff->focus, RevertToParent,
                          stuff->time, TRUE);
@@ -100,7 +100,7 @@ ProcXIGetFocus(ClientPtr client)
     if (ret != Success)
         return ret;
     if (!dev->focus)
-        return BadDevice;
+        return context->BadDevice;
 
     rep = (xXIGetFocusReply) {
         .repType = X_Reply,

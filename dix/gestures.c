@@ -310,7 +310,7 @@ GestureListenerGone(XID resource, XephyrContext* context)
             continue;
 
         if (CLIENT_BITS(gi->listener.listener) == resource)
-            GestureEndGesture(gi, context);
+            GestureEndGesture(gi);
     }
 
     FreeEventList(events, GetMaximumEventsNum());

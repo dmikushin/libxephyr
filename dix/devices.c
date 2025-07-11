@@ -191,17 +191,17 @@ DeviceSetProperty(DeviceIntPtr dev, Atom property, XIPropertyValuePtr prop,
  * pointer sprite. Only applicable for master devices.
  */
 static int
-PairDevices(DeviceIntPtr ptr, DeviceIntPtr kbd)
+PairDevices(DeviceIntPtr ptr, DeviceIntPtr kbd, XephyrContext* context)
 {
     if (!ptr)
-        return BadDevice;
+        return context->BadDevice;
 
     /* Don't allow pairing for slave devices */
     if (!IsMaster(ptr) || !IsMaster(kbd))
-        return BadDevice;
+        return context->BadDevice;
 
     if (ptr->spriteInfo->paired)
-        return BadDevice;
+        return context->BadDevice;
 
     if (kbd->spriteInfo->spriteOwner) {
         free(kbd->spriteInfo->sprite);
@@ -386,7 +386,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
                 other = NextFreePointerDevice(dev->context);
                 BUG_RETURN_VAL_MSG(other == NULL, dev->context, FALSE,
                                    "[dix] cannot find pointer to pair with.\n");
-                PairDevices(other, dev);
+                PairDevices(other, dev, dev->context);
             }
         }
         else {
@@ -402,7 +402,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     input_lock();
     if ((*prev != dev) || !dev->inited ||
         ((ret = (*dev->deviceProc) (dev, DEVICE_ON)) != Success)) {
-        ErrorF("[dix] couldn't enable device %d\n", dev->context, dev->id);
+        ErrorF("[dix] couldn't enable device %d\n", context, dev->context, dev->id);
         input_unlock();
         return FALSE;
     }
@@ -623,7 +623,7 @@ CoreKeyboardProc(DeviceIntPtr pDev, int what)
     case DEVICE_INIT:
         if (!InitKeyboardDeviceStruct(pDev, NULL, CoreKeyboardBell,
                                       CoreKeyboardCtl)) {
-            ErrorF("Keyboard initialization failed. This could be a missing "
+            ErrorF("Keyboard initialization failed. This could be a missing ", context
                    "or incorrect setup of xkeyboard-config.\n", pDev->context);
             return BadValue;
         }
@@ -675,8 +675,8 @@ CorePointerProc(DeviceIntPtr pDev, int what)
             ((DevicePtr) pDev, map, NBUTTONS, btn_labels,
              (PtrCtrlProcPtr) NoopDDA, GetMotionHistorySize(), NAXES,
              axes_labels)) {
-            ErrorF("Could not initialize device '%s'. Out of memory.\n",
-                   pDev->context, pDev->name);
+            ErrorF("Could not initialize device '%s'. Out of memory.\n", context, pDev->context,
+                   pDev->name);
             return BadAlloc;    /* IPDS only fails on allocs */
         }
         /* axisVal is per-screen, last.valuators is desktop-wide */
@@ -1238,7 +1238,7 @@ dixLookupDevice(DeviceIntPtr *pDev, int id, ClientPtr client, Mask access_mode)
         if (dev->id == id)
             goto found;
     }
-    return BadDevice;
+    return client->context->BadDevice;
 
  found:
     rc = XaceHook(XACE_DEVICE_ACCESS, client, dev, access_mode);
@@ -2618,12 +2618,13 @@ int
 AttachDevice(ClientPtr client, DeviceIntPtr dev, DeviceIntPtr master)
 {
     ScreenPtr screen;
+    XephyrContext* context = client ? client->context : dev->context;
 
     if (!dev || IsMaster(dev))
-        return BadDevice;
+        return context->BadDevice;
 
     if (master && !IsMaster(master))    /* can't attach to slaves */
-        return BadDevice;
+        return context->BadDevice;
 
     /* set from floating to floating? */
     if (IsFloating(dev) && !master && dev->enabled)

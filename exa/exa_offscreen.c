@@ -171,7 +171,7 @@ exaOffscreenAlloc(ScreenPtr pScreen, int size, int align,
 #if DEBUG_OFFSCREEN
     static int number = 0;
 
-    ErrorF("================= ============ allocating a new pixmap %d\n", NULL, ++number);
+    ErrorF("================= ============ allocating a new pixmap %d\n", ++number);
 #endif
 
     ExaOffscreenValidate(pScreen);
@@ -598,10 +598,10 @@ ExaOffscreenDefragment(ScreenPtr pScreen)
 
 #if DEBUG_OFFSCREEN
         if (prev->prev == prev || prev->next == prev)
-            ErrorF("Whoops, prev points to itself!\n");
+            ErrorF("Whoops, prev points to itself!\n", context);
 
         if (area->prev == area || area->next == area)
-            ErrorF("Whoops, area points to itself!\n");
+            ErrorF("Whoops, area points to itself!\n", context);
 #endif
 
         pExaSrcPix->fb_ptr = pExaDstPix->fb_ptr;

@@ -39,7 +39,7 @@
 #include <X11/extensions/XI2.h>
 #include <X11/extensions/XI2proto.h>
 
-#include "exglobals.h"          /* BadDevice */
+#include "exglobals.h"          /* context->BadDevice */
 #include "exevents.h"
 #include "xigrabdev.h"
 #include "inpututils.h"

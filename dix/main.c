@@ -123,6 +123,8 @@ extern void Dispatch(XephyrContext* context);
 
 CallbackListPtr RootWindowFinalizeCallback = NULL;
 
+
+
 int
 dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 {
@@ -133,6 +135,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
     if (!context) {
         FatalError("No context provided - server not properly initialized", context);
     }
+    
     
 
     context->display = "0";
@@ -173,7 +176,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         context->currentMaxClients = 1;
 
         /* clear any existing selections */
-        InitSelections();
+        InitSelections(context);
 
         /* Initialize privates before first allocation */
         dixResetPrivates(context);
@@ -185,7 +188,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             FatalError("failed to create server client privates", context);
 
         if (!InitClientResources(context->serverClient)) /* for root resources */
-            FatalError("couldn't init server resources", context);
+            FatalError("couldn't init server resources");
 
         SetInputCheck(&alwaysCheckForInput[0], &alwaysCheckForInput[1], context);
         context->screenInfo.numScreens = 0;
@@ -208,7 +211,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
                 FatalError("failed to create scratch pixmaps", context);
             if (pScreen->CreateScreenResources &&
                 !(*pScreen->CreateScreenResources) (pScreen))
-                FatalError("failed to create screen resources", context);
+                FatalError("failed to create screen resources");
         }
 
         for (i = 0; i < context->screenInfo.numScreens; i++) {
@@ -218,19 +221,18 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
                 FatalError("failed to create scratch pixmaps", context);
             if (pScreen->CreateScreenResources &&
                 !(*pScreen->CreateScreenResources) (pScreen))
-                FatalError("failed to create screen resources", context);
+                FatalError("failed to create screen resources");
             if (!CreateGCperDepth(i, context))
                 FatalError("failed to create scratch GCs", context);
-            if (!CreateDefaultStipple(i, context))
+            if (!CreateDefaultStipple(i))
                 FatalError("failed to create default stipple", context);
             if (!CreateRootWindow(pScreen))
-                FatalError("failed to create root window", context);
+                FatalError("failed to create root window");
             CallCallbacks(&RootWindowFinalizeCallback, pScreen);
         }
 
         if (SetDefaultFontPath(context->defaultFontPath, context) != Success) {
-            ErrorF("[dix] failed to set default font path '%s'",
-                   context, context->defaultFontPath);
+            ErrorF("[dix] failed to set default font path '%s'", context->defaultFontPath);
         }
         if (!SetDefaultFont("fixed", context)) {
             FatalError("could not open default font", context);
@@ -270,7 +272,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 #endif
         {
             if (!CreateConnectionBlock(context)) {
-                FatalError("could not create connection block info", context);
+                FatalError("could not create connection block info");
             }
         }
 
@@ -353,7 +355,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
         DeleteCallbackManager();
 
-        ClearWorkQueue();
+        ClearWorkQueue(context);
 
         if (dispatchException & DE_TERMINATE) {
             CloseWellKnownConnections();

@@ -141,15 +141,15 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
             }
             if (!print)
                 continue;
-            ErrorF("      xi2 event mask for device %d: 0x", dev->context, dev->id);
+            ErrorF("      xi2 event mask for device %d: 0x", context, dev->context, dev->id);
             for (j = 0; j < xi2mask_mask_size(grab->xi2mask); j++)
-                ErrorF("%x", dev->context, mask[j]);
-            ErrorF("\n", dev->context);
+                ErrorF("%x", context, dev->context, mask[j]);
+            ErrorF("\n", context, dev->context);
         }
     }
 
     if (devGrab->fromPassiveGrab) {
-        ErrorF("      passive grab type %d, detail 0x%x, "
+        ErrorF("      passive grab type %d, detail 0x%x, ", context
                "activating key %d\n", dev->context, grab->type, grab->detail.exact,
                devGrab->activatingKey);
     }
@@ -167,8 +167,7 @@ UngrabAllDevices(Bool kill_client, XephyrContext* context)
     DeviceIntPtr dev;
     ClientPtr client;
 
-    ErrorF("Ungrabbing all devices%s; grabs listed below:\n", context,
-           kill_client ? " and killing their owners" : "");
+    ErrorF("Ungrabbing all devices%s; grabs listed below:\n", kill_client ? " and killing their owners" : "");
 
     for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (!dev->deviceGrab.grab)

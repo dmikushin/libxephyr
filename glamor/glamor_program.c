@@ -237,7 +237,7 @@ glamor_get_uniform(glamor_program               *prog,
         return -2;
     uniform = glGetUniformLocation(prog->prog, name);
 #if DBG
-    ErrorF("%s uniform %d\n", name, uniform);
+    ErrorF("%s uniform %d\n", context, name, uniform);
 #endif
     return uniform;
 }
@@ -328,8 +328,7 @@ glamor_build_program(ScreenPtr          screen,
 
     prog->prog = glCreateProgram();
 #if DBG
-    ErrorF("\n\tProgram %d for %s %s\n\tVertex shader:\n\n\t================\n%s\n\n\tFragment Shader:\n\n%s\t================\n",
-           prog->prog, prim->name, fill->name, vs_prog_string, fs_prog_string);
+    ErrorF("\n\tProgram %d for %s %s\n\tVertex shader:\n\n\t================\n%s\n\n\tFragment Shader:\n\n%s\t================\n", context, prog->prog, prim->name, fill->name, vs_prog_string, fs_prog_string);
 #endif
 
     prog->flags = flags;
@@ -351,7 +350,7 @@ glamor_build_program(ScreenPtr          screen,
 
     if (prim->source_name) {
 #if DBG
-        ErrorF("Bind GLAMOR_VERTEX_SOURCE to %s\n", NULL, prim->source_name);
+        ErrorF("Bind GLAMOR_VERTEX_SOURCE to %s\n", prim->source_name);
 #endif
         glBindAttribLocation(prog->prog, GLAMOR_VERTEX_SOURCE, prim->source_name);
     }

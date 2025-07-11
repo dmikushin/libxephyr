@@ -142,7 +142,7 @@ _XkbDDXBeepExpire(OsTimerPtr timer, CARD32 now, void *arg)
     name = None;
     switch (xkbInfo->beepType) {
     default:
-        ErrorF("[xkb] Unknown beep type %d\n", NULL, xkbInfo->beepType);
+        ErrorF("[xkb] Unknown beep type %d\n", xkbInfo->beepType);
     case _BEEP_NONE:
         duration = 0;
         break;

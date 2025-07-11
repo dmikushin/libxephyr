@@ -137,7 +137,7 @@ compSetPixmapVisitWindow(WindowPtr pWindow, void *data)
     SetBorderSize(pWindow);
     if (pVisit->bw)
         QueueWorkProc(compRepaintBorder, pScreen->context->serverClient,
-                      (void *) (intptr_t) pWindow->drawable.id);
+                      (void *) (intptr_t) pWindow->drawable.id, pScreen->context);
     return WT_WALKCHILDREN;
 }
 

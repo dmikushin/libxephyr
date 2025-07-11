@@ -121,7 +121,7 @@ glamor_set_pixmap_texture(PixmapPtr pixmap, unsigned int tex)
                                      pixmap->drawable.height, tex, 0);
 
     if (fbo == NULL) {
-        ErrorF("XXX fail to create fbo.\n", screen->context);
+        ErrorF("XXX fail to create fbo.\n", context, screen->context);
         return FALSE;
     }
 
@@ -496,7 +496,7 @@ glamor_add_format(ScreenPtr screen, int depth, CARD32 render_format,
                                GL_TEXTURE_2D, tex, 0);
         status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (status != GL_FRAMEBUFFER_COMPLETE) {
-            ErrorF("glamor: Test fbo for depth %d incomplete.  "
+            ErrorF("glamor: Test fbo for depth %d incomplete.  ", context
                    "Falling back to software.\n", screen->context, depth);
             glDeleteTextures(1, &tex);
             glDeleteFramebuffers(1, &fbo);
@@ -510,7 +510,7 @@ glamor_add_format(ScreenPtr screen, int depth, CARD32 render_format,
         glDeleteFramebuffers(1, &fbo);
 
         if (format != read_format || type != read_type) {
-            ErrorF("glamor: Implementation returned 0x%x/0x%x read format/type "
+            ErrorF("glamor: Implementation returned 0x%x/0x%x read format/type ", context
                    "for depth %d, expected 0x%x/0x%x.  "
                    "Falling back to software.\n",
                    screen->context, read_format, read_type, depth, format, type);
@@ -627,7 +627,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
     PictureScreenPtr ps = GetPictureScreenIfSet(screen);
 
     if (flags & ~GLAMOR_VALID_FLAGS) {
-        ErrorF("glamor_init: Invalid flags %x\n", screen->context, flags);
+        ErrorF("glamor_init: Invalid flags %x\n", context, screen->context, flags);
         return FALSE;
     }
     glamor_priv = calloc(1, sizeof(*glamor_priv));
@@ -737,13 +737,13 @@ glamor_init(ScreenPtr screen, unsigned int flags)
      */
     if (!glamor_priv->is_gles) {
         if (gl_version < 21) {
-            ErrorF("Require OpenGL version 2.1 or later.\n", screen->context);
+            ErrorF("Require OpenGL version 2.1 or later.\n", context, screen->context);
             goto fail;
         }
 
         if (!glamor_priv->is_core_profile &&
             !epoxy_has_gl_extension("GL_ARB_texture_border_clamp")) {
-            ErrorF("GL_ARB_texture_border_clamp required\n", screen->context);
+            ErrorF("GL_ARB_texture_border_clamp required\n", context, screen->context);
             goto fail;
         }
 
@@ -759,24 +759,24 @@ glamor_init(ScreenPtr screen, unsigned int flags)
                 glamor_priv->glsl_version = 120;
     } else {
         if (gl_version < 20) {
-            ErrorF("Require Open GLES2.0 or later.\n", screen->context);
+            ErrorF("Require Open GLES2.0 or later.\n", context, screen->context);
             goto fail;
         }
 
         if (!epoxy_has_gl_extension("GL_EXT_texture_format_BGRA8888")) {
-            ErrorF("GL_EXT_texture_format_BGRA8888 required\n", screen->context);
+            ErrorF("GL_EXT_texture_format_BGRA8888 required\n", context, screen->context);
             goto fail;
         }
 
         if (!epoxy_has_gl_extension("GL_OES_texture_border_clamp")) {
-            ErrorF("GL_OES_texture_border_clamp required\n", screen->context);
+            ErrorF("GL_OES_texture_border_clamp required\n", context, screen->context);
             goto fail;
         }
     }
 
     if (!epoxy_has_gl_extension("GL_ARB_vertex_array_object") &&
         !epoxy_has_gl_extension("GL_OES_vertex_array_object")) {
-        ErrorF("GL_{ARB,OES}_vertex_array_object required\n", screen->context);
+        ErrorF("GL_{ARB,OES}_vertex_array_object required\n", context, screen->context);
         goto fail;
     }
 
@@ -857,7 +857,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
     screen->BlockHandler = _glamor_block_handler;
 
     if (!glamor_composite_glyphs_init(screen)) {
-        ErrorF("Failed to initialize composite masks\n", screen->context);
+        ErrorF("Failed to initialize composite masks\n", context, screen->context);
         goto fail;
     }
 

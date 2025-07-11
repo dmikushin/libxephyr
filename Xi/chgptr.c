@@ -96,5 +96,5 @@ ProcXChangePointerDevice(ClientPtr client)
     /* REQUEST(xChangePointerDeviceReq); */
     REQUEST_SIZE_MATCH(xChangePointerDeviceReq);
 
-    return BadDevice;
+    return client->context->BadDevice;
 }

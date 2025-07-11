@@ -91,7 +91,7 @@ typedef struct {
  *  Selection server internals
  */
 
-extern _X_EXPORT void InitSelections(void);
+extern _X_EXPORT void InitSelections(XephyrContext* context);
 
 extern _X_EXPORT void DeleteWindowFromAnySelections(WindowPtr pWin);
 

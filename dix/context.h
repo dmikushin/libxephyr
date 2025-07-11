@@ -150,10 +150,17 @@ typedef struct _XephyrContext {
     Bool noXFixesExtension;
     Bool noXvExtension;
     Bool PanoramiXExtensionDisabledHack;
+    
+    // Input device error codes
+    int BadDevice;
+    int BadShmSegCode;
+    int ChangeDeviceNotify;
+    Bool DPMSEnabled;
 } XephyrContext;
 
 
 void InitGlobalsForContext(XephyrContext* context);
+
 
 /* Main function with context parameter */
 int dix_main(int argc, char *argv[], char *envp[], XephyrContext* context);

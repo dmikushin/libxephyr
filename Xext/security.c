@@ -921,7 +921,7 @@ SecurityReceive(CallbackListPtr *pcbl, void *unused, void *calldata)
 /* SecurityClientStateCallback
  *
  * Arguments:
- *	pcbl is &ClientStateCallback.
+ *	pcbl is &context->ClientStateCallback.
  *	nullata is NULL.
  *	calldata is a pointer to a NewClientInfoRec (include/dixstruct.h)
  *	which contains information about client state changes.
@@ -1008,17 +1008,20 @@ static void
 SecurityResetProc(ExtensionEntry * extEntry)
 {
     /* Unregister callbacks */
-    DeleteCallback(&ClientStateCallback, SecurityClientState, NULL);
-
-    XaceDeleteCallback(XACE_EXT_DISPATCH, SecurityExtension, NULL);
-    XaceDeleteCallback(XACE_RESOURCE_ACCESS, SecurityResource, NULL);
-    XaceDeleteCallback(XACE_DEVICE_ACCESS, SecurityDevice, NULL);
-    XaceDeleteCallback(XACE_PROPERTY_ACCESS, SecurityProperty, NULL);
-    XaceDeleteCallback(XACE_SEND_ACCESS, SecuritySend, NULL);
-    XaceDeleteCallback(XACE_RECEIVE_ACCESS, SecurityReceive, NULL);
-    XaceDeleteCallback(XACE_CLIENT_ACCESS, SecurityClient, NULL);
-    XaceDeleteCallback(XACE_EXT_ACCESS, SecurityExtension, NULL);
-    XaceDeleteCallback(XACE_SERVER_ACCESS, SecurityServer, NULL);
+    XephyrContext* context = get_current_context();
+    if (context) {
+        DeleteCallback(&context->ClientStateCallback, SecurityClientState, NULL);
+        
+        XaceDeleteCallback(XACE_EXT_DISPATCH, SecurityExtension, NULL);
+        XaceDeleteCallback(XACE_RESOURCE_ACCESS, SecurityResource, NULL);
+        XaceDeleteCallback(XACE_DEVICE_ACCESS, SecurityDevice, NULL);
+        XaceDeleteCallback(XACE_PROPERTY_ACCESS, SecurityProperty, NULL);
+        XaceDeleteCallback(XACE_SEND_ACCESS, SecuritySend, NULL);
+        XaceDeleteCallback(XACE_RECEIVE_ACCESS, SecurityReceive, NULL);
+        XaceDeleteCallback(XACE_CLIENT_ACCESS, SecurityClient, NULL);
+        XaceDeleteCallback(XACE_EXT_ACCESS, SecurityExtension, NULL);
+        XaceDeleteCallback(XACE_SERVER_ACCESS, SecurityServer, NULL);
+    }
 }
 
 /* SecurityExtensionInit
@@ -1056,7 +1059,7 @@ SecurityExtensionInit(void)
         FatalError("SecurityExtensionSetup: Can't allocate client private.\n", context);
 
     /* Register callbacks */
-    ret &= AddCallback(&ClientStateCallback, SecurityClientState, NULL);
+    ret &= AddCallback(&context->ClientStateCallback, SecurityClientState, NULL);
 
     ret &= XaceRegisterCallback(XACE_EXT_DISPATCH, SecurityExtension, NULL);
     ret &= XaceRegisterCallback(XACE_RESOURCE_ACCESS, SecurityResource, NULL);

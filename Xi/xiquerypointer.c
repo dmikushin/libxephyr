@@ -106,7 +106,7 @@ ProcXIQueryPointer(ClientPtr client)
 
     if (pDev->valuator == NULL || IsKeyboardDevice(pDev) || (!IsMaster(pDev) && !IsFloating(pDev))) {   /* no attached devices */
         client->errorValue = stuff->deviceid;
-        return BadDevice;
+        return context->BadDevice;
     }
 
     rc = dixLookupWindow(&pWin, stuff->win, client, DixGetAttrAccess);

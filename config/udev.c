@@ -409,7 +409,7 @@ config_udev_pre_init(XephyrContext* context)
         udev_monitor_filter_add_match_tag(context->udev_monitor, context->SeatId);
 #endif
     if (udev_monitor_enable_receiving(context->udev_monitor)) {
-        ErrorF("config/udev: failed to bind the udev monitor\n");
+        ErrorF("config/udev: failed to bind the udev monitor\n", context);
         return 0;
     }
     return 1;

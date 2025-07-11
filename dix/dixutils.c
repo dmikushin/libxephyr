@@ -505,28 +505,25 @@ InitBlockAndWakeupHandlers(void)
  * sleeps for input.
  */
 
-WorkQueuePtr workQueue;
-static WorkQueuePtr *workQueueLast = &workQueue;
 
 void
-ClearWorkQueue(void)
+ClearWorkQueue(XephyrContext* context)
 {
     WorkQueuePtr q, *p;
 
-    p = &workQueue;
+    p = &context->workQueue;
     while ((q = *p)) {
         *p = q->next;
         free(q);
     }
-    workQueueLast = p;
 }
 
 void
-ProcessWorkQueue(void)
+ProcessWorkQueue(XephyrContext* context)
 {
     WorkQueuePtr q, *p;
 
-    p = &workQueue;
+    p = &context->workQueue;
     /*
      * Scan the work queue once, calling each function.  Those
      * which return TRUE are removed from the queue, otherwise
@@ -543,15 +540,14 @@ ProcessWorkQueue(void)
             p = &q->next;       /* don't fetch until after func called */
         }
     }
-    workQueueLast = p;
 }
 
 void
-ProcessWorkQueueZombies(void)
+ProcessWorkQueueZombies(XephyrContext* context)
 {
     WorkQueuePtr q, *p;
 
-    p = &workQueue;
+    p = &context->workQueue;
     while ((q = *p)) {
         if (q->client && q->client->clientGone) {
             (void) (*q->function) (q->client, q->closure);
@@ -563,14 +559,13 @@ ProcessWorkQueueZombies(void)
             p = &q->next;       /* don't fetch until after func called */
         }
     }
-    workQueueLast = p;
 }
 
 Bool
 QueueWorkProc(Bool (*function) (ClientPtr pClient, void *closure),
-              ClientPtr client, void *closure)
+              ClientPtr client, void *closure, XephyrContext* context)
 {
-    WorkQueuePtr q;
+    WorkQueuePtr q, *p;
 
     q = malloc(sizeof *q);
     if (!q)
@@ -579,8 +574,13 @@ QueueWorkProc(Bool (*function) (ClientPtr pClient, void *closure),
     q->client = client;
     q->closure = closure;
     q->next = NULL;
-    *workQueueLast = q;
-    workQueueLast = &q->next;
+    
+    /* Find the end of the queue */
+    p = &context->workQueue;
+    while (*p)
+        p = &(*p)->next;
+    *p = q;
+    
     return TRUE;
 }
 
@@ -626,7 +626,7 @@ ClientSignal(ClientPtr client)
 
     for (q = sleepQueue; q; q = q->next)
         if (q->client == client) {
-            return QueueWorkProc(q->function, q->client, q->closure);
+            return QueueWorkProc(q->function, q->client, q->closure, client->context);
         }
     return FALSE;
 }
@@ -647,7 +647,7 @@ ClientSignalAll(ClientPtr client, ClientSleepProcPtr function, void *closure)
         if (!(closure == CLIENT_SIGNAL_ANY || q->closure == closure))
             continue;
 
-        count += QueueWorkProc(q->function, q->client, q->closure);
+        count += QueueWorkProc(q->function, q->client, q->closure, q->client->context);
     }
 
     return count;

@@ -550,8 +550,7 @@ appendScrollInfo(DeviceChangedEvent *dce, xXIScrollInfo * info, int axisnumber, 
         info->scroll_type = XIScrollTypeHorizontal;
         break;
     default:
-        ErrorF("[Xi] Unknown scroll type %d. This is a bug.\n", context,
-               dce->valuators[axisnumber].scroll.type);
+        ErrorF("[Xi] Unknown scroll type %d. This is a bug.\n", context, dce->valuators[axisnumber].scroll.type);
         break;
     }
     info->increment =

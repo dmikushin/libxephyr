@@ -162,12 +162,12 @@ XkbWriteRulesProp(XephyrContext* context)
     name =
         MakeAtom(_XKB_RF_NAMES_PROP_ATOM, strlen(_XKB_RF_NAMES_PROP_ATOM), 1);
     if (name == None) {
-        ErrorF("[xkb] Atom error: %s not created\n", NULL, _XKB_RF_NAMES_PROP_ATOM);
+        ErrorF("[xkb] Atom error: %s not created\n", _XKB_RF_NAMES_PROP_ATOM);
         return TRUE;
     }
     pval = (char *) malloc(len);
     if (!pval) {
-        ErrorF("[xkb] Allocation error: %s proprerty not created\n", NULL, _XKB_RF_NAMES_PROP_ATOM);
+        ErrorF("[xkb] Allocation error: %s proprerty not created\n", _XKB_RF_NAMES_PROP_ATOM);
         return TRUE;
     }
     out = 0;
@@ -541,20 +541,20 @@ InitKeyboardDeviceStructInternal(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
 
     dev->key = calloc(1, sizeof(*dev->key));
     if (!dev->key) {
-        ErrorF("XKB: Failed to allocate key class\n", dev->context);
+        ErrorF("XKB: Failed to allocate key class\n", context, dev->context);
         return FALSE;
     }
     dev->key->sourceid = dev->id;
 
     dev->kbdfeed = calloc(1, sizeof(*dev->kbdfeed));
     if (!dev->kbdfeed) {
-        ErrorF("XKB: Failed to allocate key feedback class\n", dev->context);
+        ErrorF("XKB: Failed to allocate key feedback class\n", context, dev->context);
         goto unwind_key;
     }
 
     xkbi = calloc(1, sizeof(*xkbi));
     if (!xkbi) {
-        ErrorF("XKB: Failed to allocate XKB info\n", dev->context);
+        ErrorF("XKB: Failed to allocate XKB info\n", context, dev->context);
         goto unwind_kbdfeed;
     }
     dev->key->xkbInfo = xkbi;
@@ -573,19 +573,19 @@ InitKeyboardDeviceStructInternal(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
             xkb_cached_map = XkbCompileKeymapFromString(dev, keymap, keymap_length);
 
         if (!xkb_cached_map) {
-            ErrorF("XKB: Failed to compile keymap\n", dev->context);
+            ErrorF("XKB: Failed to compile keymap\n", context, dev->context);
             goto unwind_info;
         }
     }
 
     xkb = XkbAllocKeyboard();
     if (!xkb) {
-        ErrorF("XKB: Failed to allocate keyboard description\n", dev->context);
+        ErrorF("XKB: Failed to allocate keyboard description\n", context, dev->context);
         goto unwind_info;
     }
 
     if (!XkbCopyKeymap(xkb, xkb_cached_map, dev->context)) {
-        ErrorF("XKB: Failed to copy keymap\n", dev->context);
+        ErrorF("XKB: Failed to copy keymap\n", context, dev->context);
         goto unwind_desc;
     }
     xkb->defined = xkb_cached_map->defined;
@@ -826,8 +826,8 @@ XkbProcessArguments(int argc, char *argv[], int i)
 void
 XkbUseMsg(void)
 {
-    ErrorF("[+-]accessx [ timeout [ timeout_mask [ feedback [ options_mask] ] ] ]\n", NULL);
-    ErrorF("                       enable/disable accessx key sequences\n", NULL);
-    ErrorF("-ardelay               set XKB autorepeat delay\n", NULL);
-    ErrorF("-arinterval            set XKB autorepeat interval\n", NULL);
+    ErrorF("[+-]accessx [ timeout [ timeout_mask [ feedback [ options_mask] ] ] ]\n", context, NULL);
+    ErrorF("                       enable/disable accessx key sequences\n", context, NULL);
+    ErrorF("-ardelay               set XKB autorepeat delay\n", context, NULL);
+    ErrorF("-arinterval            set XKB autorepeat interval\n", context, NULL);
 }

@@ -160,7 +160,6 @@ static int nextFreeClientID;    /* always MIN free client ID */
 
 static int nClients;            /* number of authorized xephyr_context->clients */
 
-CallbackListPtr ClientStateCallback;
 OsTimerPtr dispatchExceptionTimer;
 
 /* dispatchException & isItTimeToYield must be declared volatile since they
@@ -3502,19 +3501,19 @@ CloseDownClient(ClientPtr client)
              */
             FreeClientNeverRetainResources(client);
             client->clientState = ClientStateRetained;
-            if (ClientStateCallback) {
+            if (client->context->ClientStateCallback) {
                 NewClientInfoRec clientinfo;
 
                 clientinfo.client = client;
                 clientinfo.prefix = (xConnSetupPrefix *) NULL;
                 clientinfo.setup = (xConnSetup *) NULL;
-                CallCallbacks((&ClientStateCallback), (void *) &clientinfo);
+                CallCallbacks((&client->context->ClientStateCallback), (void *) &clientinfo);
             }
         }
         client->clientGone = TRUE;      /* so events aren't sent to client */
         if (ClientIsAsleep(client))
             ClientSignal(client);
-        ProcessWorkQueueZombies();
+        ProcessWorkQueueZombies(client->context);
         CloseDownConnection(client);
         output_pending_clear(client);
         mark_client_not_ready(client);
@@ -3534,19 +3533,19 @@ CloseDownClient(ClientPtr client)
             SetDispatchExceptionTimer(client->context);
 
         client->clientState = ClientStateGone;
-        if (ClientStateCallback) {
+        if (client->context->ClientStateCallback) {
             NewClientInfoRec clientinfo;
 
             clientinfo.client = client;
             clientinfo.prefix = (xConnSetupPrefix *) NULL;
             clientinfo.setup = (xConnSetup *) NULL;
-            CallCallbacks((&ClientStateCallback), (void *) &clientinfo);
+            CallCallbacks((&client->context->ClientStateCallback), (void *) &clientinfo);
         }
         TouchListenerGone(client->clientAsMask, client->context);
         GestureListenerGone(client->clientAsMask, client->context);
         FreeClientResources(client);
         /* Disable client ID tracking. This must be done after
-         * ClientStateCallback. */
+         * context->ClientStateCallback. */
         ReleaseClientIds(client);
 #ifdef XSERVER_DTRACE
         XSERVER_CLIENT_DISCONNECT(client->index);
@@ -3634,16 +3633,16 @@ NextAvailableClient(void *ospriv, XephyrContext* context)
         nextFreeClientID++;
 
     /* Enable client ID tracking. This must be done before
-     * ClientStateCallback. */
+     * context->ClientStateCallback. */
     ReserveClientIds(client);
 
-    if (ClientStateCallback) {
+    if (context->ClientStateCallback) {
         NewClientInfoRec clientinfo;
 
         clientinfo.client = client;
         clientinfo.prefix = (xConnSetupPrefix *) NULL;
         clientinfo.setup = (xConnSetup *) NULL;
-        CallCallbacks((&ClientStateCallback), (void *) &clientinfo);
+        CallCallbacks((&context->ClientStateCallback), (void *) &clientinfo);
     }
     return client;
 }
@@ -3757,13 +3756,13 @@ SendConnSetup(ClientPtr client, const char *reason)
 		      lConnectionInfo);
     }
     client->clientState = ClientStateRunning;
-    if (ClientStateCallback) {
+    if (client->context->ClientStateCallback) {
         NewClientInfoRec clientinfo;
 
         clientinfo.client = client;
         clientinfo.prefix = lconnSetupPrefix;
         clientinfo.setup = (xConnSetup *) lConnectionInfo;
-        CallCallbacks((&ClientStateCallback), (void *) &clientinfo);
+        CallCallbacks((&client->context->ClientStateCallback), (void *) &clientinfo);
     }
     CancelDispatchExceptionTimer(client->context);
     return Success;

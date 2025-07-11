@@ -41,7 +41,6 @@ typedef struct _XephyrContext XephyrContext;
  *      translation from client ids to server addresses.
  */
 
-extern _X_EXPORT CallbackListPtr ClientStateCallback;
 
 typedef struct {
     ClientPtr client;

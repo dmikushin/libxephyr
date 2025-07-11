@@ -99,8 +99,7 @@ ephyr_glamor_compile_glsl_prog(GLenum type, const char *source, XephyrContext* c
         info = malloc(size);
         if (info) {
             glGetShaderInfoLog(prog, size, NULL, info);
-            ErrorF("Failed to compile %s: %s\n", context,
-                   type == GL_FRAGMENT_SHADER ? "FS" : "VS", info);
+            ErrorF("Failed to compile %s: %s\n", context, type == GL_FRAGMENT_SHADER ? "FS" : "VS", info);
             ErrorF("Program source:\n%s", context, source);
             free(info);
         }
@@ -358,7 +357,7 @@ ephyr_glamor_glx_screen_init(xcb_window_t win, XephyrContext* context)
     glamor->ctx = ctx;
     glamor->win = win;
     glamor->glx_win = glx_win;
-    ephyr_glamor_setup_texturing_shader(glamor, context);
+    ephyr_glamor_setup_texturing_shader(glamor);
 
     glGenVertexArrays(1, &glamor->vao);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &old_vao);

@@ -189,8 +189,8 @@ WaitForSomething(Bool are_ready, XephyrContext* context)
        crashed connections and the screen saver timeout */
     while (1) {
         /* deal with any blocked jobs */
-        if (workQueue) {
-            ProcessWorkQueue();
+        if (context->workQueue) {
+            ProcessWorkQueue(context);
         }
 
         timeout = check_timers();
@@ -214,8 +214,7 @@ WaitForSomething(Bool are_ready, XephyrContext* context)
                 return FALSE;
             if (i < 0) {
                 if (pollerr != EINTR && !ETEST(pollerr)) {
-                    ErrorF("WaitForSomething(): poll: %s\n", context,
-                           strerror(pollerr));
+                    ErrorF("WaitForSomething(): poll: %s\n", strerror(pollerr));
                 }
             }
         } else
@@ -444,7 +443,7 @@ ScreenSaverTimeoutExpire(OsTimerPtr timer, CARD32 now, void *arg)
      * Check each mode lowest to highest, since a lower mode can
      * have the same timeout as a higher one.
      */
-    if (DPMSEnabled) {
+    if (context->DPMSEnabled) {
         DPMS_CHECK_MODE(DPMSModeOff, DPMSOffTime)
             DPMS_CHECK_MODE(DPMSModeSuspend, DPMSSuspendTime)
             DPMS_CHECK_MODE(DPMSModeStandby, DPMSStandbyTime)
@@ -497,7 +496,7 @@ SetScreenSaverTimer(XephyrContext* context)
     CARD32 timeout = 0;
 
 #ifdef DPMSExtension
-    if (DPMSEnabled) {
+    if (context->DPMSEnabled) {
         /*
          * A higher DPMS level has a timeout that's either less
          * than or equal to that of a lower DPMS level.

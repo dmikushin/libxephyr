@@ -431,7 +431,7 @@ GetEventFilter(DeviceIntPtr dev, xEvent *event)
         return event_get_filter_from_type(dev, event->u.u.type);
     else if ((evtype = xi2_get_type(event)))
         return event_get_filter_from_xi2type(evtype);
-    ErrorF("[dix] Unknown event type %d. No filter\n", dev->context, event->u.u.type);
+    ErrorF("[dix] Unknown event type %d. No filter\n", context, dev->context, event->u.u.type);
     return 0;
 }
 
@@ -2026,21 +2026,21 @@ TryClientEvents(ClientPtr client, DeviceIntPtr dev, xEvent *pEvents,
 
     if (!client || client == (dev ? dev->context : client->context)->serverClient || client->clientGone) {
 #ifdef DEBUG_EVENTS
-        ErrorF(" not delivered to fake/dead client\n");
+        ErrorF(" not delivered to fake/dead client\n", context);
 #endif
         return 0;
     }
 
     if (filter != CantBeFiltered && !(mask & filter)) {
 #ifdef DEBUG_EVENTS
-        ErrorF(" filtered\n");
+        ErrorF(" filtered\n", context);
 #endif
         return 0;
     }
 
     if (grab && !SameClient(grab, client)) {
 #ifdef DEBUG_EVENTS
-        ErrorF(" not delivered due to grab\n");
+        ErrorF(" not delivered due to grab\n", context);
 #endif
         return -1;              /* don't send, but notify caller */
     }
@@ -2051,8 +2051,8 @@ TryClientEvents(ClientPtr client, DeviceIntPtr dev, xEvent *pEvents,
             if (WID(dev->valuator->motionHintWindow) ==
                 pEvents->u.keyButtonPointer.event) {
 #ifdef DEBUG_EVENTS
-                ErrorF("[dix] \n");
-                ErrorF("[dix] motionHintWindow == keyButtonPointer.event\n");
+                ErrorF("[dix] \n", context);
+                ErrorF("[dix] motionHintWindow == keyButtonPointer.event\n", context);
 #endif
                 return 1;       /* don't send, but pretend we did */
             }
@@ -2075,12 +2075,12 @@ TryClientEvents(ClientPtr client, DeviceIntPtr dev, xEvent *pEvents,
                 release.u.u.type = KeyRelease;
                 WriteEventsToClient(client, 1, &release);
 #ifdef DEBUG_EVENTS
-                ErrorF(" (plus fake core release for repeat)");
+                ErrorF(" (plus fake core release for repeat)", context);
 #endif
             }
             else {
 #ifdef DEBUG_EVENTS
-                ErrorF(" (detectable autorepeat for core)");
+                ErrorF(" (detectable autorepeat for core)", context);
 #endif
             }
         }
@@ -2093,13 +2093,13 @@ TryClientEvents(ClientPtr client, DeviceIntPtr dev, xEvent *pEvents,
                     *(deviceKeyButtonPointer *) pEvents;
                 release.type = DeviceKeyRelease;
 #ifdef DEBUG_EVENTS
-                ErrorF(" (plus fake xi1 release for repeat)");
+                ErrorF(" (plus fake xi1 release for repeat)", context);
 #endif
                 WriteEventsToClient(client, 1, (xEvent *) &release);
             }
             else {
 #ifdef DEBUG_EVENTS
-                ErrorF(" (detectable autorepeat for core)");
+                ErrorF(" (detectable autorepeat for core)", context);
 #endif
             }
         }
@@ -2113,7 +2113,7 @@ TryClientEvents(ClientPtr client, DeviceIntPtr dev, xEvent *pEvents,
 
     WriteEventsToClient(client, count, pEvents);
 #ifdef DEBUG_EVENTS
-    ErrorF("[dix]  delivered\n");
+    ErrorF("[dix]  delivered\n", context);
 #endif
     return 1;
 }
@@ -2453,8 +2453,7 @@ DeliverRawEvent(RawDeviceEvent *ev, DeviceIntPtr device)
 
     rc = EventToXI2((InternalEvent *) ev, (xEvent **) &xi, device->context);
     if (rc != Success) {
-        ErrorF("[Xi] %s: XI2 conversion failed in %s (%d)\n",
-               device->context, __func__, device->name, rc);
+        ErrorF("[Xi] %s: XI2 conversion failed in %s (%d)\n", context, device->context, __func__, device->name, rc);
         return;
     }
 
@@ -4258,9 +4257,8 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
             goto unwind;
     }
     else if (rc != BadMatch)
-        ErrorF
-            ("[dix] %s: XI2 conversion failed in DFE (%d, %d). Skipping delivery.\n",
-             keybd->context, keybd->name, event->any.type, rc);
+        ErrorF("[dix] %s: XI2 conversion failed in DFE (%d, %d). Skipping delivery.\n", context, keybd->context,
+             keybd->name, event->any.type, rc);
 
     rc = EventToXI(event, &xE, &count, keybd->context);
     if (rc == Success &&
@@ -4273,9 +4271,8 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
             goto unwind;
     }
     else if (rc != BadMatch)
-        ErrorF
-            ("[dix] %s: XI conversion failed in DFE (%d, %d). Skipping delivery.\n",
-             keybd->context, keybd->name, event->any.type, rc);
+        ErrorF("[dix] %s: XI conversion failed in DFE (%d, %d). Skipping delivery.\n", context, keybd->context,
+             keybd->name, event->any.type, rc);
 
     if (sendCore) {
         rc = EventToCore(event, &core, &count, keybd->context);
@@ -4291,9 +4288,8 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
             }
         }
         else if (rc != BadMatch)
-            ErrorF
-                ("[dix] %s: core conversion failed DFE (%d, %d). Skipping delivery.\n",
-                 keybd->context, keybd->name, event->any.type, rc);
+            ErrorF("[dix] %s: core conversion failed DFE (%d, %d). Skipping delivery.\n", context, keybd->context,
+                 keybd->name, event->any.type, rc);
     }
 
  unwind:
@@ -6134,7 +6130,7 @@ WriteEventsToClient(ClientPtr pClient, int count, xEvent *events)
      * makes things easier for me right now. (whot) */
     for (i = 1; i < count; i++) {
         if (events[i].u.u.type == GenericEvent) {
-            ErrorF("[dix] TryClientEvents: Only one GenericEvent at a time.\n", pClient->context);
+            ErrorF("[dix] TryClientEvents: Only one GenericEvent at a time.\n", context, pClient->context);
             return;
         }
     }
@@ -6191,13 +6187,13 @@ SetClientPointer(ClientPtr client, DeviceIntPtr device)
         return rc;
 
     if (!IsMaster(device)) {
-        ErrorF("[dix] Need master device for ClientPointer. This is a bug.\n", client->context);
-        return BadDevice;
+        ErrorF("[dix] Need master device for ClientPointer. This is a bug.\n", context, client->context);
+        return client->context->BadDevice;
     }
     else if (!device->spriteInfo->spriteOwner) {
-        ErrorF("[dix] Device %d does not have a sprite. "
+        ErrorF("[dix] Device %d does not have a sprite. ", context
                "Cannot be ClientPointer\n", client->context, device->id);
-        return BadDevice;
+        return client->context->BadDevice;
     }
     client->clientPtr = device;
     return Success;
@@ -6250,7 +6246,7 @@ PickKeyboard(ClientPtr client)
     DeviceIntPtr kbd = GetMaster(ptr, MASTER_KEYBOARD);
 
     if (!kbd) {
-        ErrorF("[dix] ClientPointer not paired with a keyboard. This "
+        ErrorF("[dix] ClientPointer not paired with a keyboard. This ", context
                "is a bug.\n", client->context);
     }
 

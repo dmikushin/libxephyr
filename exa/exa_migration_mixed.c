@@ -210,7 +210,7 @@ exaPrepareAccessReg_mixed(PixmapPtr pPixmap, int index, RegionPtr pReg)
                                               pPixmap->drawable.height);
             if (!pExaPixmap->sys_ptr)
                 FatalError("EXA: malloc failed for size %d bytes\n",
-                           pPixmap->drawable.pScreen->context, pExaPixmap->sys_pitch * pPixmap->drawable.height);
+                           pPixmap->drawable.pScreen->context, pExaPixmap->sys_pitch * pPixmap->drawable.height, context);
         }
 
         if (index == EXA_PREPARE_DEST || index == EXA_PREPARE_AUX_DEST) {

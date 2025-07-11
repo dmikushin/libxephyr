@@ -355,7 +355,7 @@ ProcXTestFakeInput(ClientPtr client)
     case KeyPress:
     case KeyRelease:
         if (!dev->key)
-            return BadDevice;
+            return client->context->BadDevice;
 
         if (ev->u.u.detail < dev->key->xkbInfo->desc->min_key_code ||
             ev->u.u.detail > dev->key->xkbInfo->desc->max_key_code) {
@@ -367,7 +367,7 @@ ProcXTestFakeInput(ClientPtr client)
         break;
     case MotionNotify:
         if (!dev->valuator)
-            return BadDevice;
+            return client->context->BadDevice;
 
         if (!(extension || ev->u.keyButtonPointer.root == None)) {
             rc = dixLookupWindow(&root, ev->u.keyButtonPointer.root,
@@ -398,7 +398,7 @@ ProcXTestFakeInput(ClientPtr client)
     case ButtonPress:
     case ButtonRelease:
         if (!dev->button)
-            return BadDevice;
+            return client->context->BadDevice;
 
         if (!ev->u.u.detail || ev->u.u.detail > dev->button->numButtons) {
             client->errorValue = ev->u.u.detail;

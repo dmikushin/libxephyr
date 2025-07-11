@@ -71,5 +71,14 @@ void InitGlobalsForContext(XephyrContext* context)
     
     // Initialize GLX configuration
     context->enableIndirectGLX = FALSE;
+    
+    // Initialize work queue
+    context->workQueue = NULL;
+    
+    // Initialize input device error codes
+    context->BadDevice = 0; // Will be set later when XI extension loads
+    context->BadShmSegCode = 0; // Will be set later when SHM extension loads
+    context->ChangeDeviceNotify = 0; // Will be set later when XI extension loads
+    context->DPMSEnabled = FALSE;
 }
 

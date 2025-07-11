@@ -154,12 +154,12 @@ Xasprintf(char **ret, const char *_X_RESTRICT_KYWD format, ...)
  * @return        size of allocated buffer
  */
 int
-XNFvasprintf(char **ret, const char *_X_RESTRICT_KYWD format, va_list va)
+XNFvasprintf(char **ret, const char *_X_RESTRICT_KYWD format, va_list va, XephyrContext* context)
 {
     int size = vasprintf(ret, format, va);
 
     if ((size == -1) || (*ret == NULL)) {
-        FatalError("XNFvasprintf failed: %s", strerror(errno));
+        FatalError("XNFvasprintf failed: %s", context, strerror(errno));
     }
     return size;
 }
@@ -176,13 +176,13 @@ XNFvasprintf(char **ret, const char *_X_RESTRICT_KYWD format, va_list va)
  * @return        size of allocated buffer
  */
 int
-XNFasprintf(char **ret, const char *_X_RESTRICT_KYWD format, ...)
+XNFasprintf(char **ret, XephyrContext* context, const char *_X_RESTRICT_KYWD format, ...)
 {
     int size;
     va_list va;
 
     va_start(va, format);
-    size = XNFvasprintf(ret, format, va);
+    size = XNFvasprintf(ret, format, va, context);
     va_end(va);
     return size;
 }
@@ -257,23 +257,23 @@ Xprintf(const char *format, ...)
 }
 
 char *
-XNFvprintf(const char *format, va_list va)
+XNFvprintf(const char *format, va_list va, XephyrContext* context)
 {
     char *ret;
 
-    XNFvasprintf(&ret, format, va);
+    XNFvasprintf(&ret, format, va, context);
 
     return ret;
 }
 
 char *
-XNFprintf(const char *format, ...)
+XNFprintf(XephyrContext* context, const char *format, ...)
 {
     char *ret;
     va_list va;
 
     va_start(va, format);
-    XNFvasprintf(&ret, format, va);
+    XNFvasprintf(&ret, format, va, context);
     va_end(va);
     return ret;
 }

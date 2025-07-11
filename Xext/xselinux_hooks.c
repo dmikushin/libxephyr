@@ -99,7 +99,7 @@ SELinuxDoCheck(SELinuxSubjectRec * subj, SELinuxObjectRec * obj,
             return Success;     /* DixUnknownAccess requests OK ... for now */
         if (errno == EACCES)
             return BadAccess;
-        ErrorF("SELinux: avc_has_perm: unexpected error %d\n", NULL, errno);
+        ErrorF("SELinux: avc_has_perm: unexpected error %d\n", errno);
         return BadValue;
     }
 
@@ -184,7 +184,7 @@ SELinuxLabelInitial(void)
 
     /* Get a SID from the context */
     if (avc_context_to_sid_raw(ctx, &subj->sid) < 0)
-        FatalError("SELinux: context->serverClient: context_to_sid(%s) failed\n", ctx, context);
+        FatalError("SELinux: context->serverClient: context_to_sid(%s) failed\n", ctx);
 
     obj->sid = subj->sid;
     freecon(ctx);
@@ -237,7 +237,7 @@ SELinuxLabelResource(XaceResourceAccessRec * rec, SELinuxSubjectRec * subj,
 
     /* Perform a transition to obtain the final SID */
     if (avc_compute_create(subj->sid, tsid, class, &obj->sid) < 0) {
-        ErrorF("SELinux: a compute_create call failed!\n");
+        ErrorF("SELinux: a compute_create call failed!\n", context);
         return BadValue;
     }
 
@@ -473,7 +473,7 @@ SELinuxExtension(CallbackListPtr *pcbl, void *unused, void *calldata)
         /* Perform a transition to obtain the final SID */
         if (avc_compute_create(serv->sid, sid, SECCLASS_X_EXTENSION,
                                &obj->sid) < 0) {
-            ErrorF("SELinux: a SID transition call failed!\n");
+            ErrorF("SELinux: a SID transition call failed!\n", context);
             rec->status = BadValue;
             return;
         }
@@ -688,7 +688,7 @@ SELinuxScreen(CallbackListPtr *pcbl, void *is_saver, void *calldata)
         /* Perform a transition to obtain the final SID */
         if (avc_compute_create(subj->sid, subj->sid, SECCLASS_X_SCREEN,
                                &obj->sid) < 0) {
-            ErrorF("SELinux: a compute_create call failed!\n");
+            ErrorF("SELinux: a compute_create call failed!\n", context);
             rec->status = BadValue;
             return;
         }
@@ -787,7 +787,7 @@ SELinuxResourceState(CallbackListPtr *pcbl, void *unused, void *calldata)
         freecon(ctx);
     }
     else
-        FatalError("SELinux: Unexpected unlabeled client found\n", context);
+        FatalError("SELinux: Unexpected unlabeled client found\n");
 
     obj = dixLookupPrivate(&pWin->devPrivates, objectKey);
 
@@ -805,7 +805,7 @@ SELinuxResourceState(CallbackListPtr *pcbl, void *unused, void *calldata)
         freecon(ctx);
     }
     else
-        FatalError("SELinux: Unexpected unlabeled window found\n", context);
+        FatalError("SELinux: Unexpected unlabeled window found\n");
 }
 
 static int netlink_fd;
@@ -820,7 +820,7 @@ void
 SELinuxFlaskReset(void)
 {
     /* Unregister callbacks */
-    DeleteCallback(&ClientStateCallback, SELinuxClientState, NULL);
+    DeleteCallback(&context->ClientStateCallback, SELinuxClientState, NULL);
     DeleteCallback(&ResourceStateCallback, SELinuxResourceState, NULL);
 
     XaceDeleteCallback(XACE_EXT_DISPATCH, SELinuxExtension, NULL);
@@ -872,8 +872,7 @@ SELinuxFlaskInit(void)
 
     if (selinux_set_mapping(map) < 0) {
         if (errno == EINVAL) {
-            ErrorF
-                ("SELinux: Invalid object class mapping, disabling SELinux support.\n");
+            ErrorF("SELinux: Invalid object class mapping, disabling SELinux support.\n", context);
             return;
         }
         FatalError("SELinux: Failed to set up security class mapping\n", context);
@@ -891,7 +890,7 @@ SELinuxFlaskInit(void)
     /* Prepare for auditing */
     audit_fd = audit_open();
     if (audit_fd < 0)
-        FatalError("SELinux: Failed to open the system audit log\n", context);
+        FatalError("SELinux: Failed to open the system audit log\n");
 
     /* Allocate private storage */
     if (!dixRegisterPrivateKey
@@ -914,7 +913,7 @@ SELinuxFlaskInit(void)
     SetNotifyFd(netlink_fd, SELinuxNetlinkNotify, X_NOTIFY_READ, NULL);
 
     /* Register callbacks */
-    ret &= AddCallback(&ClientStateCallback, SELinuxClientState, NULL);
+    ret &= AddCallback(&context->ClientStateCallback, SELinuxClientState, NULL);
     ret &= AddCallback(&ResourceStateCallback, SELinuxResourceState, NULL);
 
     ret &= XaceRegisterCallback(XACE_EXT_DISPATCH, SELinuxExtension, NULL);

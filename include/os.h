@@ -288,11 +288,11 @@ Xvprintf(const char *fmt, va_list va)
 _X_ATTRIBUTE_PRINTF(1, 0)
     _X_DEPRECATED;
 extern _X_EXPORT char *
-XNFprintf(const char *fmt, ...)
-_X_ATTRIBUTE_PRINTF(1, 2)
+XNFprintf(XephyrContext* context, const char *fmt, ...)
+_X_ATTRIBUTE_PRINTF(2, 3)
     _X_DEPRECATED;
 extern _X_EXPORT char *
-XNFvprintf(const char *fmt, va_list va)
+XNFvprintf(const char *fmt, va_list va, XephyrContext* context)
 _X_ATTRIBUTE_PRINTF(1, 0)
     _X_DEPRECATED;
 

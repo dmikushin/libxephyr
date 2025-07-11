@@ -307,7 +307,7 @@ LogSetDisplay(XephyrContext* context)
 
         if (rename(saved_log_tempname, logFileName) == 0) {
             LogMessageVerb(X_PROBED, 0,
-                           "Log file renamed from \"%s\" to \"%s\"\n",
+                           "Log file renamed from \"%s\" to \"%s\"\n", context,
                            saved_log_tempname, logFileName);
 
             if (strlen(saved_log_tempname) >= strlen(logFileName))
@@ -315,8 +315,7 @@ LogSetDisplay(XephyrContext* context)
                         strlen(saved_log_tempname));
         }
         else {
-            ErrorF("Failed to rename log file \"%s\" to \"%s\": %s\n",
-                   saved_log_tempname, logFileName, strerror(errno));
+            ErrorF("Failed to rename log file \"%s\" to \"%s\": %s\n", context, saved_log_tempname, logFileName, strerror(errno));
         }
 
         /* free newly allocated string - can't free old one since existing
@@ -333,7 +332,7 @@ LogClose(enum ExitCode error)
     if (logFile) {
         int msgtype = (error == EXIT_NO_ERROR) ? X_INFO : X_ERROR;
         LogMessageVerbSigSafe(msgtype, -1,
-                "Server terminated %s (%d). Closing log file.\n",
+                "Server terminated %s (%d). Closing log file.\n", NULL,
                 (error == EXIT_NO_ERROR) ? "successfully" : "with error",
                 error);
         fclose(logFile);
@@ -566,7 +565,7 @@ vpnprintf(char *string, int size_in, const char *f, va_list args)
             string[s_idx++] = '%';
             break;
         default:
-            BUG_WARN_MSG(f[f_idx], "Unsupported printf directive '%c'\n", f[f_idx]);
+            BUG_WARN_MSG(f[f_idx], NULL, "Unsupported printf directive '%c'\n", f[f_idx]);
             va_arg(args, char*);
             string[s_idx++] = '%';
             if (s_idx < size - 1)
@@ -940,8 +939,7 @@ AuditFlush(OsTimerPtr timer, CARD32 now, void *arg)
 
     if (nrepeat > 0) {
         prefix = AuditPrefix();
-        ErrorF("%slast message repeated %d times\n",
-               prefix != NULL ? prefix : "", nrepeat);
+        ErrorF("%slast message repeated %d times\n", prefix != NULL ? prefix : "", nrepeat);
         nrepeat = 0;
         free(prefix);
         return AUDIT_TIMEOUT;

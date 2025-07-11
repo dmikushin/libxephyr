@@ -590,7 +590,7 @@ CreatePointerBarrierClient(ClientPtr client,
 
         if (!IsMaster (device)) {
             client->errorValue = device_id;
-            err = BadDevice;
+            err = context->BadDevice;
             goto error;
         }
 
@@ -886,7 +886,7 @@ ProcXIBarrierReleasePointer(ClientPtr client)
 
         err = dixLookupDevice(&dev, info->deviceid, client, DixReadAccess);
         if (err != Success) {
-            client->errorValue = BadDevice;
+            client->errorValue = context->BadDevice;
             return err;
         }
 

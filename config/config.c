@@ -40,7 +40,7 @@ config_pre_init(XephyrContext* context)
 {
 #ifdef CONFIG_UDEV
     if (!config_udev_pre_init(context))
-        ErrorF("[config] failed to pre-init udev\n");
+        ErrorF("[config] failed to pre-init udev\n", context);
 #endif
 }
 
@@ -49,13 +49,13 @@ config_init(XephyrContext* context)
 {
 #ifdef CONFIG_UDEV
     if (!config_udev_init(context))
-        ErrorF("[config] failed to initialise udev\n");
+        ErrorF("[config] failed to initialise udev\n", context);
 #elif defined(CONFIG_HAL)
     if (!config_hal_init(context))
-        ErrorF("[config] failed to initialise HAL\n");
+        ErrorF("[config] failed to initialise HAL\n", context);
 #elif defined(CONFIG_WSCONS)
     if (!config_wscons_init())
-        ErrorF("[config] failed to initialise wscons\n");
+        ErrorF("[config] failed to initialise wscons\n", context);
 #endif
 }
 

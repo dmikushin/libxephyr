@@ -156,7 +156,7 @@ exaCopyDirty(ExaMigrationPtr migrate, RegionPtr pValidDst, RegionPtr pValidSrc,
                 static Bool firsttime = TRUE;
 
                 if (firsttime) {
-                    ErrorF("%s: Pending damage region empty!\n", pPixmap->drawable.pScreen->context, __func__);
+                    ErrorF("%s: Pending damage region empty!\n", context, pPixmap->drawable.pScreen->context, __func__);
                     firsttime = FALSE;
                 }
             }
@@ -628,8 +628,7 @@ exaDoMigration_classic(ExaMigrationPtr pixmaps, int npixmaps, Bool can_accel)
         for (i = 0; i < npixmaps; i++) {
             if (!exaPixmapIsDirty(pixmaps[i].pPix) &&
                 !exaAssertNotDirty(pixmaps[i].pPix))
-                ErrorF("%s: Pixmap %d dirty but not marked as such!\n",
-                       pScreen->context, __func__, i);
+                ErrorF("%s: Pixmap %d dirty but not marked as such!\n", context, pScreen->context, __func__, i);
         }
     }
     /* If anything is pinned in system memory, we won't be able to

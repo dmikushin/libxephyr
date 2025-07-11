@@ -145,13 +145,13 @@ connect_to_bus(void)
     dbus_connection_set_exit_on_disconnect(bus_info.connection, FALSE);
 
     if (!dbus_connection_get_unix_fd(bus_info.connection, &bus_info.fd)) {
-        ErrorF("[dbus-core] couldn't get fd for system bus\n");
+        ErrorF("[dbus-core] couldn't get fd for system bus\n", context);
         goto err_unref;
     }
 
     if (!dbus_connection_add_filter(bus_info.connection, message_filter,
                                     &bus_info, NULL)) {
-        ErrorF("[dbus-core] couldn't add filter: %s (%s)\n", error.name,
+        ErrorF("[dbus-core] couldn't add filter: %s (%s)\n", context, error.name,
                error.message);
         goto err_fd;
     }

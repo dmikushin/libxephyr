@@ -66,8 +66,7 @@ glamor_compile_glsl_prog(GLenum type, const char *source, XephyrContext* context
         info = malloc(size);
         if (info) {
             glGetShaderInfoLog(prog, size, NULL, info);
-            ErrorF("Failed to compile %s: %s\n", context,
-                   type == GL_FRAGMENT_SHADER ? "FS" : "VS", info);
+            ErrorF("Failed to compile %s: %s\n", context, type == GL_FRAGMENT_SHADER ? "FS" : "VS", info);
             ErrorF("Program source:\n%s", context, source);
             free(info);
         }
@@ -106,7 +105,7 @@ glamor_link_glsl_prog(ScreenPtr screen, GLint prog, const char *format, ...)
         info = malloc(size);
 
         glGetProgramInfoLog(prog, size, NULL, info);
-        ErrorF("Failed to link: %s\n", screen->context, info);
+        ErrorF("Failed to link: %s\n", context, screen->context, info);
         FatalError("GLSL link failure\n", screen->context);
     }
 }

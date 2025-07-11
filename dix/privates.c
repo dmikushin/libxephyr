@@ -606,7 +606,7 @@ dixRegisterScreenSpecificPrivateKey(ScreenPtr pScreen, DevPrivateKey key,
 
     if (!screen_specific_private[type])
         FatalError("Attempt to allocate screen-specific private storage for type %s\n",
-                   pScreen->context, key_names[type]);
+                   pScreen->context, key_names[type], context);
 
     if (key->initialized) {
         assert(size == key->size);
@@ -776,8 +776,7 @@ dixResetPrivates(XephyrContext* context)
                 free(key);
         }
         if (global_keys[t].created) {
-            ErrorF("%d %ss still allocated at reset\n", context,
-                   global_keys[t].created, key_names[t]);
+            ErrorF("%d %ss still allocated at reset\n", context, global_keys[t].created, key_names[t]);
             dixPrivateUsage(context);
         }
         global_keys[t].key = NULL;

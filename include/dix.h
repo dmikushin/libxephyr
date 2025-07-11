@@ -263,16 +263,16 @@ extern _X_EXPORT void RemoveBlockAndWakeupHandlers(ServerBlockHandlerProcPtr blo
 
 extern _X_EXPORT void InitBlockAndWakeupHandlers(void);
 
-extern _X_EXPORT void ClearWorkQueue(void);
+extern _X_EXPORT void ClearWorkQueue(XephyrContext* context);
 
-extern _X_EXPORT void ProcessWorkQueue(void);
+extern _X_EXPORT void ProcessWorkQueue(XephyrContext* context);
 
-extern _X_EXPORT void ProcessWorkQueueZombies(void);
+extern _X_EXPORT void ProcessWorkQueueZombies(XephyrContext* context);
 
 extern _X_EXPORT Bool QueueWorkProc(Bool (*function)(ClientPtr clientUnused,
                                                      void *closure),
                                     ClientPtr client,
-                                    void *closure);
+                                    void *closure, XephyrContext* context);
 
 typedef Bool (*ClientSleepProcPtr) (ClientPtr client,
                                     void *closure);

@@ -217,17 +217,17 @@ get_window_name(WindowPtr pWin)
 }
 
 static void
-log_window_info(WindowPtr pWin, int depth)
+log_window_info(WindowPtr pWin, int depth, XephyrContext* context)
 {
     int i;
     const char *win_name, *visibility;
     BoxPtr rects;
 
     for (i = 0; i < (depth << 2); i++)
-        ErrorF(" ", NULL, NULL);
+        ErrorF(" ", context);
 
     win_name = get_window_name(pWin);
-    ErrorF("win 0x%.8x (%s), [%d, %d] to [%d, %d]", NULL,
+    ErrorF("win 0x%.8x (%s), [%d, %d] to [%d, %d]", context,
            (unsigned) pWin->drawable.id,
            win_name ? win_name : "no name",
            pWin->drawable.x, pWin->drawable.y,
@@ -235,7 +235,7 @@ log_window_info(WindowPtr pWin, int depth)
            pWin->drawable.y + pWin->drawable.height);
 
     if (pWin->overrideRedirect)
-        ErrorF(" (override redirect)", NULL, NULL);
+        ErrorF(" (override redirect)", context);
 #ifdef COMPOSITE
     if (pWin->redirectDraw)
         ErrorF(" (%s compositing: pixmap %x)", NULL,
@@ -258,20 +258,20 @@ log_window_info(WindowPtr pWin, int depth)
         visibility = "unviewable";
         break;
     }
-    ErrorF(", %s", NULL, visibility);
+    ErrorF(", %s", context, visibility);
 
     if (RegionNotEmpty(&pWin->clipList)) {
-        ErrorF(", clip list:", NULL, NULL);
+        ErrorF(", clip list:", context);
         rects = RegionRects(&pWin->clipList);
         for (i = 0; i < RegionNumRects(&pWin->clipList); i++)
-            ErrorF(" [(%d, %d) to (%d, %d)]", NULL,
+            ErrorF(" [(%d, %d) to (%d, %d)]", context,
                    rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2);
-        ErrorF("; extents [(%d, %d) to (%d, %d)]", NULL,
+        ErrorF("; extents [(%d, %d) to (%d, %d)]", context,
                pWin->clipList.extents.x1, pWin->clipList.extents.y1,
                pWin->clipList.extents.x2, pWin->clipList.extents.y2);
     }
 
-    ErrorF("\n", NULL, NULL);
+    ErrorF("\n", context);
 }
 
 static const char*
@@ -310,27 +310,28 @@ log_grab_info(void *value, XID id, void *cdata)
     int i, j;
     GrabPtr pGrab = (GrabPtr)value;
 
-    ErrorF("  grab 0x%lx (%s), type '%s' on window 0x%lx\n", NULL,
+    XephyrContext* context = (XephyrContext*)cdata;
+    ErrorF("  grab 0x%lx (%s), type '%s' on window 0x%lx\n", context,
            (unsigned long) pGrab->resource,
            grab_grabtype_to_text(pGrab),
            grab_type_to_text(pGrab),
            (unsigned long) pGrab->window->drawable.id);
-    ErrorF("    detail %d (mask %lu), modifiersDetail %d (mask %lu)\n", NULL,
+    ErrorF("    detail %d (mask %lu), modifiersDetail %d (mask %lu)\n", context,
            pGrab->detail.exact,
            pGrab->detail.pMask ? (unsigned long) *(pGrab->detail.pMask) : 0,
            pGrab->modifiersDetail.exact,
            pGrab->modifiersDetail.pMask ?
            (unsigned long) *(pGrab->modifiersDetail.pMask) :
            (unsigned long) 0);
-    ErrorF("    device '%s' (%d), modifierDevice '%s' (%d)\n", NULL,
+    ErrorF("    device '%s' (%d), modifierDevice '%s' (%d)\n", context,
            pGrab->device->name, pGrab->device->id,
            pGrab->modifierDevice->name, pGrab->modifierDevice->id);
     if (pGrab->grabtype == CORE) {
-        ErrorF("    core event mask 0x%lx\n", NULL,
+        ErrorF("    core event mask 0x%lx\n", context,
                (unsigned long) pGrab->eventMask);
     }
     else if (pGrab->grabtype == XI) {
-        ErrorF("    xi1 event mask 0x%lx\n", NULL,
+        ErrorF("    xi1 event mask 0x%lx\n", context,
                (unsigned long) pGrab->eventMask);
     }
     else if (pGrab->grabtype == XI2) {
@@ -348,13 +349,13 @@ log_grab_info(void *value, XID id, void *cdata)
             }
             if (!print)
                 continue;
-            ErrorF("      xi2 event mask 0x", NULL, NULL);
+            ErrorF("      xi2 event mask 0x", context);
             for (j = 0; j < xi2mask_mask_size(pGrab->xi2mask); j++)
-                ErrorF("%x ", NULL, mask[j]);
-            ErrorF("\n", NULL, NULL);
+                ErrorF("%x ", context, mask[j]);
+            ErrorF("\n", context);
         }
     }
-    ErrorF("    owner-events %s, kb %d ptr %d, confine 0x%lx, cursor 0x%lx\n", NULL,
+    ErrorF("    owner-events %s, kb %d ptr %d, confine 0x%lx, cursor 0x%lx\n", context,
            pGrab->ownerEvents ? "true" : "false",
            pGrab->keyboardMode, pGrab->pointerMode,
            pGrab->confineTo ? (unsigned long) pGrab->confineTo->drawable.id : 0,
@@ -370,7 +371,7 @@ PrintPassiveGrabs(XephyrContext* context)
     const char *cmdname;
     const char *cmdargs;
 
-    ErrorF("Printing all currently registered grabs\n", NULL, NULL);
+    ErrorF("Printing all currently registered grabs\n", context);
 
     for (i = 1; i < context->currentMaxClients; i++) {
         if (!context->clients[i] || context->clients[i]->clientState != ClientStateRunning)
@@ -380,23 +381,23 @@ PrintPassiveGrabs(XephyrContext* context)
         cmdname = GetClientCmdName(context->clients[i]);
         cmdargs = GetClientCmdArgs(context->clients[i]);
         if ((clientpid > 0) && (cmdname != NULL)) {
-            ErrorF("  Printing all registered grabs of client pid %ld %s %s\n", NULL,
+            ErrorF("  Printing all registered grabs of client pid %ld %s %s\n", context,
                    (long) clientpid, cmdname, cmdargs ? cmdargs : "");
         } else {
             if (GetLocalClientCreds(context->clients[i], &lcc) == -1) {
-                ErrorF("  GetLocalClientCreds() failed\n", NULL, NULL);
+                ErrorF("  GetLocalClientCreds() failed\n", context);
                 continue;
             }
-            ErrorF("  Printing all registered grabs of client pid %ld uid %ld gid %ld\n", NULL,
+            ErrorF("  Printing all registered grabs of client pid %ld uid %ld gid %ld\n", context,
                    (lcc->fieldsSet & LCC_PID_SET) ? (long) lcc->pid : 0,
                    (lcc->fieldsSet & LCC_UID_SET) ? (long) lcc->euid : 0,
                    (lcc->fieldsSet & LCC_GID_SET) ? (long) lcc->egid : 0);
             FreeLocalClientCreds(lcc);
         }
 
-        FindClientResourcesByType(context->clients[i], RT_PASSIVEGRAB, log_grab_info, NULL, context);
+        FindClientResourcesByType(context->clients[i], RT_PASSIVEGRAB, log_grab_info, context, context);
     }
-    ErrorF("End list of registered passive grabs\n", NULL, NULL);
+    ErrorF("End list of registered passive grabs\n", context);
 }
 
 void
@@ -408,12 +409,12 @@ PrintWindowTree(XephyrContext* context)
 
     for (scrnum = 0; scrnum < context->screenInfo.numScreens; scrnum++) {
         pScreen = context->screenInfo.screens[scrnum];
-        ErrorF("[dix] Dumping windows for screen %d (pixmap %x):\n", NULL, scrnum,
+        ErrorF("[dix] Dumping windows for screen %d (pixmap %x):\n", context, scrnum,
                (unsigned) pScreen->GetScreenPixmap(pScreen)->drawable.id);
         pWin = pScreen->root;
         depth = 1;
         while (pWin) {
-            log_window_info(pWin, depth);
+            log_window_info(pWin, depth, context);
             if (pWin->firstChild) {
                 pWin = pWin->firstChild;
                 depth++;

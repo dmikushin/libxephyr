@@ -116,8 +116,7 @@ ephyrScreenInitialize(KdScreenInfo *screen)
             scrpriv->server_depth = screen->fb.depth;
         }
         else
-            ErrorF
-                ("\nXephyr: requested screen depth not supported, setting to match hosts.\n", 
+            ErrorF("\nXephyr: requested screen depth not supported, setting to match hosts.\n", context, 
                  screen->pScreen ? screen->pScreen->context : NULL);
     }
 
@@ -160,8 +159,7 @@ ephyrScreenInitialize(KdScreenInfo *screen)
             screen->fb.bitsPerPixel = 32;
         }
         else {
-            ErrorF("\nXephyr: Unsupported screen depth %d\n", 
-                   screen->pScreen ? screen->pScreen->context : NULL, screen->fb.depth);
+            ErrorF("\nXephyr: Unsupported screen depth %d\n", context, screen->pScreen ? screen->pScreen->context : NULL, screen->fb.depth);
             return FALSE;
         }
 
@@ -366,7 +364,7 @@ ephyrScreenBlockHandler(ScreenPtr pScreen, void *timeout)
         ephyrInternalDamageRedisplay(pScreen);
 
     if (hostx_has_queued_event()) {
-        if (!QueueWorkProc(ephyrEventWorkProc, NULL, NULL))
+        if (!QueueWorkProc(ephyrEventWorkProc, NULL, NULL, pScreen->context))
             FatalError("cannot queue event processing in ephyr block handler", pScreen->context);
         AdjustWaitForDelay(timeout, 0);
     }
@@ -869,8 +867,7 @@ ephyrProcessErrorEvent(xcb_generic_event_t *xev, XephyrContext* context)
                "Error code: %hhu\n"
                "Sequence number: %hu\n"
                "Major code: %hhu\tMinor code: %hu\n"
-               "Error value: %u\n",
-               context,
+               "Error value: %u\n", context,
                e->error_code,
                e->sequence,
                e->major_code, e->minor_code,

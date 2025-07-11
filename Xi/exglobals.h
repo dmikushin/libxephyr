@@ -38,7 +38,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 extern int IReqCode;
 extern int IEventBase;
-extern int BadDevice;
 extern int BadMode;
 extern int DeviceBusy;
 extern int BadClass;
@@ -69,7 +68,6 @@ extern int DeviceStateNotify;
 extern int DeviceKeyStateNotify;
 extern int DeviceButtonStateNotify;
 extern int DeviceMappingNotify;
-extern int ChangeDeviceNotify;
 extern int DevicePresenceNotify;
 extern int DevicePropertyNotify;
 

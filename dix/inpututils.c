@@ -51,7 +51,7 @@ check_butmap_change(DeviceIntPtr dev, CARD8 *map, int len, CARD32 *errval_out,
 
     if (!dev || !dev->button) {
         client->errorValue = (dev) ? dev->id : 0;
-        return BadDevice;
+        return client->context->BadDevice;
     }
 
     ret = XaceHook(XACE_DEVICE_ACCESS, client, dev, DixManageAccess);

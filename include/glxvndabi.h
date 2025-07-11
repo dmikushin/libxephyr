@@ -222,7 +222,7 @@ typedef struct GlxServerExportsRec {
      * This function is safe to use in __GLXserverImports::makeCurrent to look
      * up the old context private pointer.
      *
-     * However, this function is not safe to use from a ClientStateCallback,
+     * However, this function is not safe to use from a context->ClientStateCallback,
      * because GLVND may have already deleted the tag by that point.
      */
     void * (* getContextTagPrivate)(ClientPtr client, GLXContextTag tag);

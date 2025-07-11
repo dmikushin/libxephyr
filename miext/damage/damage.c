@@ -1463,7 +1463,7 @@ damageRemoveDamage(DamagePtr * pPrev, DamagePtr pDamage)
         pPrev = &(*pPrev)->pNext;
     }
 #if DAMAGE_VALIDATE_ENABLE
-    ErrorF("Damage not on list\n");
+    ErrorF("Damage not on list\n", context);
     OsAbort();
 #endif
 }
@@ -1476,7 +1476,7 @@ damageInsertDamage(DamagePtr * pPrev, DamagePtr pDamage)
 
     for (pOld = *pPrev; pOld; pOld = pOld->pNext)
         if (pOld == pDamage) {
-            ErrorF("Damage already on list\n");
+            ErrorF("Damage already on list\n", context);
             OsAbort();
         }
 #endif
@@ -1750,7 +1750,7 @@ DamageRegister(DrawablePtr pDrawable, DamagePtr pDamage)
 
 #if DAMAGE_VALIDATE_ENABLE
     if (pDrawable->pScreen != pDamage->pScreen) {
-        ErrorF("DamageRegister called with mismatched screens\n");
+        ErrorF("DamageRegister called with mismatched screens\n", context);
         OsAbort();
     }
 #endif
@@ -1765,7 +1765,7 @@ DamageRegister(DrawablePtr pDrawable, DamagePtr pDamage)
 
         for (pOld = *pPrev; pOld; pOld = pOld->pNextWin)
             if (pOld == pDamage) {
-                ErrorF("Damage already on window list\n");
+                ErrorF("Damage already on window list\n", context);
                 OsAbort();
             }
 #endif
@@ -1818,7 +1818,7 @@ DamageUnregister(DamagePtr pDamage)
         }
 #if DAMAGE_VALIDATE_ENABLE
         if (!found) {
-            ErrorF("Damage not on window list\n");
+            ErrorF("Damage not on window list\n", context);
             OsAbort();
         }
 #endif

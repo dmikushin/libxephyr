@@ -83,7 +83,7 @@ compReportDamage(DamagePtr pDamage, RegionPtr pRegion, void *closure)
     CompWindowPtr cw = GetCompWindow(pWin);
 
     if (!cs->pendingScreenUpdate) {
-        QueueWorkProc(compScreenUpdate, pScreen->context->serverClient, pScreen);
+        QueueWorkProc(compScreenUpdate, pScreen->context->serverClient, pScreen, pScreen->context);
         cs->pendingScreenUpdate = TRUE;
     }
     cw->damaged = TRUE;

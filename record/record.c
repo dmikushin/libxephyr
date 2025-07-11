@@ -2681,7 +2681,7 @@ RecordConnectionSetupInfo(RecordContextPtr pContext, NewClientInfoRec * pci)
 /* RecordDeleteContext
  *
  * Arguments:
- *	pcbl is &ClientStateCallback.
+ *	pcbl is &context->ClientStateCallback.
  *	nullata is NULL.
  *	calldata is a pointer to a NewClientInfoRec (include/dixstruct.h)
  *	which contains information about client state changes.
@@ -2778,7 +2778,10 @@ RecordAClientStateChange(CallbackListPtr *pcbl, void *nulldata,
 static void
 RecordCloseDown(ExtensionEntry * extEntry)
 {
-    DeleteCallback(&ClientStateCallback, RecordAClientStateChange, NULL);
+    XephyrContext* context = get_current_context();
+    if (context) {
+        DeleteCallback(&context->ClientStateCallback, RecordAClientStateChange, NULL);
+    }
 }                               /* RecordCloseDown */
 
 /* RecordExtensionInit

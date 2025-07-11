@@ -86,7 +86,7 @@ InitInput(int argc, char **argv)
         if (!kdHasPointer) {
             pi = KdNewPointer();
             if (!pi)
-                FatalError("Couldn't create Xephyr pointer\n", context);
+                FatalError("Couldn't create Xephyr pointer\n");
             pi->driver = &EphyrMouseDriver;
             KdAddPointer(pi);
         }
@@ -122,27 +122,25 @@ ddxUseMsg(void)
 {
     KdUseMsg();
 
-    ErrorF("\nXephyr Option Usage:\n");
-    ErrorF("-parent <XID>        Use existing window as Xephyr root win\n");
-    ErrorF("-sw-cursor           Render cursors in software in Xephyr\n");
-    ErrorF("-fullscreen          Attempt to run Xephyr fullscreen\n");
-    ErrorF("-output <NAME>       Attempt to run Xephyr fullscreen (restricted to given output geometry)\n");
-    ErrorF("-grayscale           Simulate 8bit grayscale\n");
-    ErrorF("-resizeable          Make Xephyr windows resizeable\n");
+    ErrorF("\nXephyr Option Usage:\n", context);
+    ErrorF("-parent <XID>        Use existing window as Xephyr root win\n", context);
+    ErrorF("-sw-cursor           Render cursors in software in Xephyr\n", context);
+    ErrorF("-fullscreen          Attempt to run Xephyr fullscreen\n", context);
+    ErrorF("-output <NAME>       Attempt to run Xephyr fullscreen (restricted to given output geometry)\n", context);
+    ErrorF("-grayscale           Simulate 8bit grayscale\n", context);
+    ErrorF("-resizeable          Make Xephyr windows resizeable\n", context);
 #ifdef GLAMOR
-    ErrorF("-glamor              Enable 2D acceleration using glamor\n");
-    ErrorF("-glamor_gles2        Enable 2D acceleration using glamor (with GLES2 only)\n");
-    ErrorF("-glamor-skip-present Skip presenting the output when using glamor (for internal testing optimization)\n");
+    ErrorF("-glamor              Enable 2D acceleration using glamor\n", context);
+    ErrorF("-glamor_gles2        Enable 2D acceleration using glamor (with GLES2 only)\n", context);
+    ErrorF("-glamor-skip-present Skip presenting the output when using glamor (for internal testing optimization)\n", context);
 #endif
-    ErrorF
-        ("-fakexa              Simulate acceleration using software rendering\n");
-    ErrorF("-verbosity <level>   Set log verbosity level\n");
-    ErrorF("-noxv                do not use XV\n");
-    ErrorF("-name [name]         define the name in the WM_CLASS property\n");
-    ErrorF
-        ("-title [title]       set the window title in the WM_NAME property\n");
-    ErrorF("-no-host-grab        Disable grabbing the keyboard and mouse.\n");
-    ErrorF("\n");
+    ErrorF("-fakexa              Simulate acceleration using software rendering\n", context);
+    ErrorF("-verbosity <level>   Set log verbosity level\n", context);
+    ErrorF("-noxv                do not use XV\n", context);
+    ErrorF("-name [name]         define the name in the WM_CLASS property\n", context);
+    ErrorF("-title [title]       set the window title in the WM_NAME property\n", context);
+    ErrorF("-no-host-grab        Disable grabbing the keyboard and mouse.\n", context);
+    ErrorF("\n", context);
 }
 
 void

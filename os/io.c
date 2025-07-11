@@ -458,7 +458,7 @@ ReadRequestFromClient(ClientPtr client)
     {
         xReq *req = client->requestBuffer;
 
-        ErrorF("REQUEST: ClientIDX: %i, type: 0x%x data: 0x%x len: %i\n",
+        ErrorF("REQUEST: ClientIDX: %i, type: 0x%x data: 0x%x len: %i\n", context,
                client->index, req->reqType, req->data, req->length);
     }
 #endif
@@ -730,7 +730,7 @@ WriteToClient(ClientPtr who, int count, const void *__buf)
                              ev->u.u.sequenceNumber);
                 }
             }
-            ErrorF("REPLY: ClientIDX: %i %s\n", who->index, info);
+            ErrorF("REPLY: ClientIDX: %i %s\n", context, who->index, info);
         }
         else
             multicount = TRUE;

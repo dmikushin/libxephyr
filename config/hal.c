@@ -578,9 +578,7 @@ ownerchanged_handler(DBusConnection * connection, DBusMessage * message,
                               DBUS_TYPE_STRING, &new_owner, DBUS_TYPE_INVALID);
 
         if (dbus_error_is_set(&error)) {
-            ErrorF
-                ("[config/hal] failed to get NameOwnerChanged args: %s (%s)\n",
-                 error.name, error.message);
+            ErrorF("[config/hal] failed to get NameOwnerChanged args: %s (%s)\n", context, error.name, error.message);
         }
         else if (name && strcmp(name, "org.freedesktop.Hal") == 0) {
 
@@ -591,7 +589,7 @@ ownerchanged_handler(DBusConnection * connection, DBusMessage * message,
                     dbus_connection_unregister_object_path(connection,
                                                            "/org/freedesktop/DBus");
                 else
-                    ErrorF("[config/hal] Failed to connect to HAL bus.\n");
+                    ErrorF("[config/hal] Failed to connect to HAL bus.\n", context);
             }
 
             ret = DBUS_HANDLER_RESULT_HANDLED;
@@ -624,12 +622,12 @@ listen_for_startup(DBusConnection * connection, void *data)
                                                  &vtable, data))
             rc = TRUE;
         else
-            ErrorF("[config/hal] cannot register object path.\n");
+            ErrorF("[config/hal] cannot register object path.\n", context);
     }
     else {
-        ErrorF("[config/hal] couldn't add match rule: %s (%s)\n", error.name,
+        ErrorF("[config/hal] couldn't add match rule: %s (%s)\n", context, error.name,
                error.message);
-        ErrorF("[config/hal] cannot detect a HAL startup.\n");
+        ErrorF("[config/hal] cannot detect a HAL startup.\n", context);
     }
 
     dbus_error_free(&error);

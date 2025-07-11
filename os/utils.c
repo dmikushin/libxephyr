@@ -186,7 +186,6 @@ Bool noGEExtension = FALSE;
 
 #include <errno.h>
 
-Bool CoreDump;
 
 #ifdef PANORAMIX
 Bool PanoramiXExtensionDisabledHack = FALSE;
@@ -677,8 +676,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
 
     for (i = 0; defaultNoListenList[i] != NULL; i++) {
         if (_XSERVTransNoListen(defaultNoListenList[i]))
-                    ErrorF("Failed to disable listen for %s transport",
-                           context, defaultNoListenList[i]);
+                    ErrorF("Failed to disable listen for %s transport", context, defaultNoListenList[i]);
     }
 
     for (i = 1; i < argc; i++) {
@@ -692,7 +690,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             context->explicit_display = TRUE;
             context->display++;
             if (!VerifyDisplayName(context->display)) {
-                ErrorF("Bad context->display name: %s\n", context, context->display);
+                ErrorF("Bad context->display name: %s\n", context->display);
                 UseMsg(context);
                 FatalError("Bad context->display name, exiting: %s\n", context, context->display);
             }
@@ -872,7 +870,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         else if (strcmp(argv[i], "-nolisten") == 0) {
             if (++i < argc) {
                 if (_XSERVTransNoListen(argv[i]))
-                    ErrorF("Failed to disable listen for %s transport", NULL, argv[i]);
+                    ErrorF("Failed to disable listen for %s transport", argv[i]);
             }
             else
                 UseMsg(context);
@@ -880,7 +878,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         else if (strcmp(argv[i], "-listen") == 0) {
             if (++i < argc) {
                 if (_XSERVTransListen(argv[i]))
-                    ErrorF("Failed to enable listen for %s transport", NULL, argv[i]);
+                    ErrorF("Failed to enable listen for %s transport", argv[i]);
             }
             else
                 UseMsg(context);
@@ -1697,7 +1695,7 @@ System(const char *cmdline)
             ErrorF("[xkb] Starting '%s' failed!\n", context, cmdline);
         }
         else {
-            ErrorF("[xkb] Starting '%s' failed: %s", context, cmdline, (char *) buffer);
+            ErrorF("[xkb] Starting '%s' failed: %s", cmdline, (char *) buffer);
             LocalFree(buffer);
         }
 
@@ -1962,8 +1960,8 @@ CheckUserParameters(int argc, char **argv, char **envp, XephyrContext* context)
         ErrorF("Command line argument number %d is too long\n", context, i);
         break;
     case UnprintableArg:
-        ErrorF("Command line argument number %d contains unprintable"
-               " characters\n", context, i);
+        ErrorF("Command line argument number %d contains unprintable", context
+               " characters\n", i);
         break;
     case EnvTooLong:
         ErrorF("Environment variable `%s' is too long\n", context, e);
@@ -2020,14 +2018,14 @@ CheckUserAuthorization(XephyrContext* context)
         if (retval != PAM_SUCCESS) {
             pam_end(pamh, retval);
             FatalError("PAM authentication failed, cannot start X server.\n"
-                       "\tPerhaps you do not have console ownership?\n", context);
+                       "\tPerhaps you do not have console ownership?\n");
         }
 
         retval = pam_acct_mgmt(pamh, 0);
         if (retval != PAM_SUCCESS) {
             pam_end(pamh, retval);
             FatalError("PAM authentication failed, cannot start X server.\n"
-                       "\tPerhaps you do not have console ownership?\n", context);
+                       "\tPerhaps you do not have console ownership?\n");
         }
 
         /* this is not a session, so do not do session management */

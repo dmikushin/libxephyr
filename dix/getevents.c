@@ -395,7 +395,7 @@ AllocateMotionHistory(DeviceIntPtr pDev)
     pDev->valuator->first_motion = 0;
     pDev->valuator->last_motion = 0;
     if (!pDev->valuator->motion)
-        ErrorF("[dix] %s: Failed to alloc motion history (%d bytes).\n", pDev->context,
+        ErrorF("[dix] %s: Failed to alloc motion history (%d bytes).\n", context, pDev->context,
                pDev->name, size * pDev->valuator->numMotionEvents);
 }
 
@@ -1357,8 +1357,7 @@ fill_pointer_events(InternalEvent *events, DeviceIntPtr pDev, int type,
     switch (type) {
     case MotionNotify:
         if (!pDev->valuator) {
-            ErrorF("[dix] motion events from device %d without valuators\n",
-                   pDev->context, pDev->id);
+            ErrorF("[dix] motion events from device %d without valuators\n", context, pDev->context, pDev->id);
             return 0;
         }
         if (!mask_in || valuator_mask_num_valuators(mask_in) <= 0)
@@ -1369,9 +1368,7 @@ fill_pointer_events(InternalEvent *events, DeviceIntPtr pDev, int type,
         if (!pDev->button || !buttons)
             return 0;
         if (mask_in && valuator_mask_size(mask_in) > 0 && !pDev->valuator) {
-            ErrorF
-                ("[dix] button event with valuator from device %d without valuators\n",
-                 pDev->context, pDev->id);
+            ErrorF("[dix] button event with valuator from device %d without valuators\n", context, pDev->context, pDev->id);
             return 0;
         }
         break;

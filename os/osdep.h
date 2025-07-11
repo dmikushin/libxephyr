@@ -146,7 +146,6 @@ listen_to_client(ClientPtr client);
 
 extern Bool NewOutputPending;
 
-extern WorkQueuePtr workQueue;
 
 /* in access.c */
 extern Bool ComputeLocalClient(ClientPtr client);

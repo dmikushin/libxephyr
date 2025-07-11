@@ -105,7 +105,6 @@ typedef struct _ShmScrPrivateRec {
 static PixmapPtr fbShmCreatePixmap(XSHM_CREATE_PIXMAP_ARGS);
 static int ShmDetachSegment(void *value, XID shmseg, XephyrContext* context);
 static void ShmResetProc(ExtensionEntry *extEntry);
-static XephyrContext* shm_context = NULL;
 static void SShmCompletionEvent(xShmCompletionEvent *from,
                                 xShmCompletionEvent *to);
 
@@ -113,7 +112,6 @@ static Bool ShmDestroyPixmap(PixmapPtr pPixmap);
 
 static unsigned char ShmReqCode;
 int ShmCompletionCode;
-int BadShmSegCode;
 RESTYPE ShmSegType;
 static ShmDescPtr Shmsegs;
 static Bool sharedPixmaps;
@@ -234,15 +232,16 @@ ShmRegisterPrivates(XephyrContext* context)
 ShmResetProc(ExtensionEntry * extEntry)
 {
     int i;
+    XephyrContext* context = (XephyrContext*)extEntry->extPrivate;
 
-    for (i = 0; i < shm_context->screenInfo.numScreens; i++)
-        ShmRegisterFuncs(shm_context->screenInfo.screens[i], NULL);
+    for (i = 0; i < context->screenInfo.numScreens; i++)
+        ShmRegisterFuncs(context->screenInfo.screens[i], NULL);
 }
 
 void
 ShmRegisterFuncs(ScreenPtr pScreen, ShmFuncsPtr funcs)
 {
-    if (!ShmRegisterPrivates(shm_context))
+    if (!ShmRegisterPrivates(pScreen->context))
         return;
     ShmInitScreenPriv(pScreen)->shmFuncs = funcs;
 }
@@ -1232,7 +1231,7 @@ shm_tmpfile(void)
             return fd;
         }
     }
-    ErrorF ("Not using O_TMPFILE\n");
+    ErrorF("Not using O_TMPFILE\n", context);
 #endif
 
     for (int i = 0; i < ARRAY_SIZE(shmdirs); i++) {
@@ -1535,16 +1534,14 @@ ShmExtensionInit(XephyrContext* context)
     ExtensionEntry *extEntry;
     int i;
     
-    shm_context = context;
-
 #ifdef MUST_CHECK_FOR_SHM_SYSCALL
     if (!CheckForShmSyscall()) {
-        ErrorF("MIT-SHM extension disabled due to lack of kernel support\n");
+        ErrorF("MIT-SHM extension disabled due to lack of kernel support\n", context);
         return;
     }
 #endif
 
-    if (!ShmRegisterPrivates(shm_context))
+    if (!ShmRegisterPrivates(context))
         return;
 
     sharedPixmaps = xFalse;
@@ -1574,8 +1571,8 @@ ShmExtensionInit(XephyrContext* context)
                                  ShmResetProc, StandardMinorOpcode))) {
         ShmReqCode = (unsigned char) extEntry->base;
         ShmCompletionCode = extEntry->eventBase;
-        BadShmSegCode = extEntry->errorBase;
-        SetResourceTypeErrorValue(ShmSegType, BadShmSegCode);
+        context->BadShmSegCode = extEntry->errorBase;
+        SetResourceTypeErrorValue(ShmSegType, context->BadShmSegCode);
         EventSwapVector[ShmCompletionCode] = (EventSwapPtr) SShmCompletionEvent;
     }
 }

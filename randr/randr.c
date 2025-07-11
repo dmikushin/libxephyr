@@ -424,7 +424,7 @@ RRExtensionInit(XephyrContext* context)
                                sizeof(RRClientRec) +
                                1 * sizeof(RRTimesRec), context))
         return;
-    if (!AddCallback(&ClientStateCallback, RRClientCallback, 0))
+    if (!AddCallback(&context->ClientStateCallback, RRClientCallback, 0))
         return;
 
     RRClientType = CreateNewResourceType(RRFreeClient, "RandRClient");

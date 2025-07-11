@@ -65,8 +65,6 @@ SOFTWARE.
  *
  *****************************************************************/
 
-Selection *CurrentSelections;
-CallbackListPtr SelectionCallback;
 
 int
 dixLookupSelection(Selection ** result, Atom selectionName,
@@ -77,7 +75,7 @@ dixLookupSelection(Selection ** result, Atom selectionName,
 
     client->errorValue = selectionName;
 
-    for (pSel = CurrentSelections; pSel; pSel = pSel->next)
+    for (pSel = client->context->CurrentSelections; pSel; pSel = pSel->next)
         if (pSel->selection == selectionName)
             break;
 
@@ -88,26 +86,26 @@ dixLookupSelection(Selection ** result, Atom selectionName,
 }
 
 void
-InitSelections(void)
+InitSelections(XephyrContext* context)
 {
     Selection *pSel, *pNextSel;
 
-    pSel = CurrentSelections;
+    pSel = context->CurrentSelections;
     while (pSel) {
         pNextSel = pSel->next;
         dixFreeObjectWithPrivates(pSel, PRIVATE_SELECTION);
         pSel = pNextSel;
     }
 
-    CurrentSelections = NULL;
+    context->CurrentSelections = NULL;
 }
 
 static _X_INLINE void
 CallSelectionCallback(Selection * pSel, ClientPtr client,
-                      SelectionCallbackKind kind)
+                      SelectionCallbackKind kind, XephyrContext* context)
 {
     SelectionInfoRec info = { pSel, client, kind };
-    CallCallbacks(&SelectionCallback, &info);
+    CallCallbacks(&context->SelectionCallback, &info);
 }
 
 void
@@ -115,9 +113,9 @@ DeleteWindowFromAnySelections(WindowPtr pWin)
 {
     Selection *pSel;
 
-    for (pSel = CurrentSelections; pSel; pSel = pSel->next)
+    for (pSel = pWin->drawable.pScreen->context->CurrentSelections; pSel; pSel = pSel->next)
         if (pSel->pWin == pWin) {
-            CallSelectionCallback(pSel, NULL, SelectionWindowDestroy);
+            CallSelectionCallback(pSel, NULL, SelectionWindowDestroy, pWin->drawable.pScreen->context);
 
             pSel->pWin = (WindowPtr) NULL;
             pSel->window = None;
@@ -130,9 +128,9 @@ DeleteClientFromAnySelections(ClientPtr client)
 {
     Selection *pSel;
 
-    for (pSel = CurrentSelections; pSel; pSel = pSel->next)
+    for (pSel = client->context->CurrentSelections; pSel; pSel = pSel->next)
         if (pSel->client == client) {
-            CallSelectionCallback(pSel, NULL, SelectionClientClose);
+            CallSelectionCallback(pSel, NULL, SelectionClientClose, client->context);
 
             pSel->pWin = (WindowPtr) NULL;
             pSel->window = None;
@@ -209,8 +207,8 @@ ProcSetSelectionOwner(ClientPtr client)
             return rc;
         }
 
-        pSel->next = CurrentSelections;
-        CurrentSelections = pSel;
+        pSel->next = client->context->CurrentSelections;
+        client->context->CurrentSelections = pSel;
     }
     else
         return rc;
@@ -220,7 +218,7 @@ ProcSetSelectionOwner(ClientPtr client)
     pSel->pWin = pWin;
     pSel->client = (pWin ? client : NullClient);
 
-    CallSelectionCallback(pSel, client, SelectionSetOwner);
+    CallSelectionCallback(pSel, client, SelectionSetOwner, client->context);
     return Success;
 }
 

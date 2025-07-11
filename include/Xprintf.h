@@ -55,10 +55,10 @@ extern _X_EXPORT int
 Xvasprintf(char **ret, const char *_X_RESTRICT_KYWD fmt, va_list va)
 _X_ATTRIBUTE_PRINTF(2, 0);
 extern _X_EXPORT int
-XNFasprintf(char **ret, const char *_X_RESTRICT_KYWD fmt, ...)
-_X_ATTRIBUTE_PRINTF(2, 3);
+XNFasprintf(char **ret, XephyrContext* context, const char *_X_RESTRICT_KYWD fmt, ...)
+_X_ATTRIBUTE_PRINTF(3, 4);
 extern _X_EXPORT int
-XNFvasprintf(char **ret, const char *_X_RESTRICT_KYWD fmt, va_list va)
+XNFvasprintf(char **ret, const char *_X_RESTRICT_KYWD fmt, va_list va, XephyrContext* context)
 _X_ATTRIBUTE_PRINTF(2, 0);
 
 #if !defined(HAVE_ASPRINTF) && !defined(HAVE_VASPRINTF)

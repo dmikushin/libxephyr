@@ -218,7 +218,7 @@ xkb_write_keymap_for_names_cb(FILE *out, void *userdata)
     XkbKeymapNamesCtx *ctx = userdata;
 #ifdef DEBUG
     if (xkbDebugFlags) {
-        ErrorF("[xkb] XkbDDXCompileKeymapByNames compiling keymap:\n");
+        ErrorF("[xkb] XkbDDXCompileKeymapByNames compiling keymap:\n", context);
         XkbWriteXKBKeymapForNames(stderr, ctx->names, ctx->xkb, ctx->want, ctx->need);
     }
 #endif

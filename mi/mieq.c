@@ -225,18 +225,18 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
              */
             miEventQueue.dropped++;
             if (miEventQueue.dropped == 1) {
-                ErrorFSigSafe("[mi] EQ overflowing.  Additional events will be ", NULL, "discarded until existing events are processed.\n", pDev->context);
+                ErrorFSigSafe("[mi] EQ overflowing.  Additional events will be ", "discarded until existing events are processed.\n", pDev->context);
                 xorg_backtrace();
-                ErrorFSigSafe("[mi] These backtraces from mieqEnqueue may point to ", NULL, "a culprit higher up the stack.\n", pDev->context);
+                ErrorFSigSafe("[mi] These backtraces from mieqEnqueue may point to ", "a culprit higher up the stack.\n", pDev->context);
                 ErrorFSigSafe("[mi] mieq is *NOT* the cause.  It is a victim.\n", pDev->context);
             }
             else if (miEventQueue.dropped % QUEUE_DROP_BACKTRACE_FREQUENCY == 0 &&
                      miEventQueue.dropped / QUEUE_DROP_BACKTRACE_FREQUENCY <=
                      QUEUE_DROP_BACKTRACE_MAX) {
-                ErrorFSigSafe("[mi] EQ overflow continuing.  %zu events have been ", NULL, "dropped.\n", pDev->context, miEventQueue.dropped);
+                ErrorFSigSafe("[mi] EQ overflow continuing.  %zu events have been ", "dropped.\n", pDev->context, miEventQueue.dropped);
                 if (miEventQueue.dropped / QUEUE_DROP_BACKTRACE_FREQUENCY ==
                     QUEUE_DROP_BACKTRACE_MAX) {
-                    ErrorFSigSafe("[mi] No further overflow reports will be ", NULL, "reported until the clog is cleared.\n", pDev->context);
+                    ErrorFSigSafe("[mi] No further overflow reports will be ", "reported until the clog is cleared.\n", pDev->context);
                 }
                 xorg_backtrace();
             }
@@ -291,8 +291,8 @@ void
 mieqSetHandler(int event, mieqHandler handler, XephyrContext* context)
 {
     if (handler && miEventQueue.handlers[event] != handler)
-        ErrorF("[mi] mieq: warning: overriding existing handler %p with %p for "
-               "event %d\n", context, miEventQueue.handlers[event], handler, event);
+        ErrorF("[mi] mieq: warning: overriding existing handler %p with %p for ", context
+               "event %d\n", miEventQueue.handlers[event], handler, event);
 
     miEventQueue.handlers[event] = handler;
 }
@@ -348,7 +348,7 @@ ChangeDeviceID(DeviceIntPtr dev, InternalEvent *event)
         event->gesture_event.deviceid = dev->id;
         break;
     default:
-        ErrorF("[mi] Unknown event type (%d), cannot change id.\n", dev->context,
+        ErrorF("[mi] Unknown event type (%d), cannot change id.\n", context, dev->context,
                event->any.type);
     }
 }
@@ -527,8 +527,7 @@ mieqProcessInputEvents(XephyrContext* context)
     inProcessInputEvents = TRUE;
 
     if (miEventQueue.dropped) {
-        ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n", context,
-               (unsigned long) miEventQueue.dropped);
+        ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n", (unsigned long) miEventQueue.dropped);
         ErrorF
             ("[mi] This may be caused by a misbehaving driver monopolizing the server's resources.\n", context);
         miEventQueue.dropped = 0;

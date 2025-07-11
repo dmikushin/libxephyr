@@ -44,9 +44,9 @@
  * Users of the framework can query ID information about context->clients at
  * any time. To avoid repeated polling of IDs the users can also
  * subscribe for notifications about the availability of ID
- * information. IDs have been allocated before ClientStateCallback is
+ * information. IDs have been allocated before context->ClientStateCallback is
  * called with ClientStateInitial state. Similarly the IDs will be
- * released after ClientStateCallback is called with ClientStateGone
+ * released after context->ClientStateCallback is called with ClientStateGone
  * state.
  *
  * Author: Rami Ylimäki <rami.ylimaki@vincit.fi>

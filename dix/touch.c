@@ -984,7 +984,7 @@ TouchAcceptReject(ClientPtr client, DeviceIntPtr dev, int mode,
 
     if (!dev->touch) {
         *error = dev->id;
-        return BadDevice;
+        return dev->context->BadDevice;
     }
 
     ti = TouchFindByClientID(dev, touchid);

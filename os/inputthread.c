@@ -166,7 +166,7 @@ InputThreadReadPipe(int readHead)
         return ret;
 
     if (errno != EAGAIN)
-        FatalError("input-thread: draining pipe (%d)", errno, context);
+        FatalError("input-thread: draining pipe (%d)", errno);
 
     return 1;
 }
@@ -407,7 +407,7 @@ InputThreadPreInit(void)
         FatalError("input-thread: could not create pipe", context);
 
      if (pipe(hotplugPipe) < 0)
-        FatalError("input-thread: could not create pipe", context);
+        FatalError("input-thread: could not create pipe");
 
     inputThreadInfo = malloc(sizeof(InputThreadInfo));
     if (!inputThreadInfo)
@@ -478,7 +478,7 @@ InputThreadInit(void)
      * if we are under Linux.
      */
     if (pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM) != 0)
-        ErrorF("input-thread: error setting thread scope\n");
+        ErrorF("input-thread: error setting thread scope\n", context);
 
     DebugF("input-thread: creating thread\n");
     pthread_create(&inputThreadInfo->thread, &attr,

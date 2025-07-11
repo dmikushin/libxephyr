@@ -125,7 +125,7 @@ RRPointerMoved(ScreenPtr pScreen, int x, int y)
     }
 
     /* None contain pointer, find nearest */
-    ErrorF("RRPointerMoved: Untested, may cause \"bogus pointer event\"\n", pScreen->context);
+    ErrorF("RRPointerMoved: Untested, may cause \", contextbogus pointer event\"\n", pScreen->context);
     RRPointerToNearestCrtc(pScreen->context->inputInfo.pointer, pScreen, x, y, pointerCrtc);
 }
 
