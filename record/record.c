@@ -2805,14 +2805,14 @@ RecordExtensionInit(XephyrContext* context)
     ppAllContexts = NULL;
     numContexts = numEnabledContexts = numEnabledRCAPs = 0;
 
-    if (!AddCallback(&ClientStateCallback, RecordAClientStateChange, NULL))
+    if (!AddCallback(&context->ClientStateCallback, RecordAClientStateChange, NULL))
         return;
 
     extentry = AddExtension(RECORD_NAME, RecordNumEvents, RecordNumErrors,
                             ProcRecordDispatch, SProcRecordDispatch,
                             RecordCloseDown, StandardMinorOpcode);
     if (!extentry) {
-        DeleteCallback(&ClientStateCallback, RecordAClientStateChange, NULL);
+        DeleteCallback(&context->ClientStateCallback, RecordAClientStateChange, NULL);
         return;
     }
     SetResourceTypeErrorValue(RTContext,

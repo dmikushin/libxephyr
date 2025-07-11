@@ -932,10 +932,10 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         }
         else if (strcmp(argv[i], "-terminate") == 0) {
             dispatchExceptionAtReset = DE_TERMINATE;
-            terminateDelay = -1;
+            context->terminateDelay = -1;
             if ((i + 1 < argc) && (isdigit(*argv[i + 1])))
-               terminateDelay = atoi(argv[++i]);
-            terminateDelay = max(0, terminateDelay);
+               context->terminateDelay = atoi(argv[++i]);
+            context->terminateDelay = max(0, context->terminateDelay);
         }
         else if (strcmp(argv[i], "-tst") == 0) {
             context->noTestExtensions = TRUE;

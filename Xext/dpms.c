@@ -49,8 +49,6 @@ Bool DPMSDisabledSwitch = FALSE;
 CARD32 DPMSStandbyTime = -1;
 CARD32 DPMSSuspendTime = -1;
 CARD32 DPMSOffTime = -1;
-Bool DPMSEnabled;
-static XephyrContext* dpms_context = NULL;
 
 Bool
 DPMSSupported(XephyrContext* context)
@@ -209,11 +207,11 @@ ProcDPMSSetTimeouts(ClientPtr client)
 static int
 ProcDPMSEnable(ClientPtr client)
 {
-    Bool was_enabled = DPMSEnabled;
+    Bool was_enabled = client->context->DPMSEnabled;
 
     REQUEST_SIZE_MATCH(xDPMSEnableReq);
 
-    DPMSEnabled = TRUE;
+    client->context->DPMSEnabled = TRUE;
     if (!was_enabled)
         SetScreenSaverTimer(client->context);
 
@@ -229,7 +227,7 @@ ProcDPMSDisable(ClientPtr client)
 
     DPMSSet(client, DPMSModeOn);
 
-    DPMSEnabled = FALSE;
+    client->context->DPMSEnabled = FALSE;
 
     return Success;
 }
@@ -241,7 +239,7 @@ ProcDPMSForceLevel(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xDPMSForceLevelReq);
 
-    if (!DPMSEnabled)
+    if (!client->context->DPMSEnabled)
         return BadMatch;
 
     if (stuff->level != DPMSModeOn &&
@@ -265,7 +263,7 @@ ProcDPMSInfo(ClientPtr client)
         .sequenceNumber = client->sequence,
         .length = 0,
         .power_level = DPMSPowerLevel,
-        .state = DPMSEnabled
+        .state = client->context->DPMSEnabled
     };
 
     REQUEST_SIZE_MATCH(xDPMSInfoReq);
@@ -428,13 +426,13 @@ SProcDPMSDispatch(ClientPtr client)
 static void
 DPMSCloseDownExtension(ExtensionEntry *e)
 {
-    DPMSSet(dpms_context->serverClient, DPMSModeOn);
+    XephyrContext* context = (XephyrContext*)e->extPrivate;
+    DPMSSet(context->serverClient, DPMSModeOn);
 }
 
 void
 DPMSExtensionInit(XephyrContext* context)
 {
-    dpms_context = context;
     
 #define CONDITIONALLY_SET_DPMS_TIMEOUT(_timeout_value_)         \
     if (_timeout_value_ == -1) { /* not yet set from config */  \
@@ -446,9 +444,9 @@ DPMSExtensionInit(XephyrContext* context)
     CONDITIONALLY_SET_DPMS_TIMEOUT(DPMSOffTime)
 
     DPMSPowerLevel = DPMSModeOn;
-    DPMSEnabled = DPMSSupported(context);
+    context->DPMSEnabled = DPMSSupported(context);
 
-    if (DPMSEnabled)
+    if (context->DPMSEnabled)
         AddExtension(DPMSExtensionName, 0, 0,
                      ProcDPMSDispatch, SProcDPMSDispatch,
                      DPMSCloseDownExtension, StandardMinorOpcode);

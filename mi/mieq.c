@@ -173,7 +173,7 @@ mieqInit(XephyrContext* context)
         FatalError("Could not allocate event queue.\n", context);
     input_unlock();
 
-    SetInputCheck(&miEventQueue.head, &miEventQueue.tail);
+    SetInputCheck(&miEventQueue.head, &miEventQueue.tail, context);
     return TRUE;
 }
 

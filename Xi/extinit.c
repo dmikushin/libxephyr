@@ -325,7 +325,6 @@ static int (*SProcIVector[]) (ClientPtr) = {
 
 int IReqCode = 0;
 int IEventBase = 0;
-int BadDevice = 0;
 static int BadEvent = 1;
 int BadMode = 2;
 int DeviceBusy = 3;
@@ -345,7 +344,6 @@ int DeviceStateNotify;
 int DeviceKeyStateNotify;
 int DeviceButtonStateNotify;
 int DeviceMappingNotify;
-int ChangeDeviceNotify;
 int DevicePresenceNotify;
 int DevicePropertyNotify;
 
@@ -1051,8 +1049,8 @@ FixExtensionEvents(ExtensionEntry * extEntry, XephyrContext* context)
     ProximityOut = ProximityIn + 1;
     DeviceStateNotify = ProximityOut + 1;
     DeviceMappingNotify = DeviceStateNotify + 1;
-    ChangeDeviceNotify = DeviceMappingNotify + 1;
-    DeviceKeyStateNotify = ChangeDeviceNotify + 1;
+    context->ChangeDeviceNotify = DeviceMappingNotify + 1;
+    DeviceKeyStateNotify = context->ChangeDeviceNotify + 1;
     DeviceButtonStateNotify = DeviceKeyStateNotify + 1;
     DevicePresenceNotify = DeviceButtonStateNotify + 1;
     DevicePropertyNotify = DevicePresenceNotify + 1;
@@ -1064,7 +1062,7 @@ FixExtensionEvents(ExtensionEntry * extEntry, XephyrContext* context)
     event_base[FocusClass] = DeviceFocusIn;
     event_base[OtherClass] = DeviceStateNotify;
 
-    BadDevice += extEntry->errorBase;
+    context->BadDevice += extEntry->errorBase;
     BadEvent += extEntry->errorBase;
     BadMode += extEntry->errorBase;
     DeviceBusy += extEntry->errorBase;
@@ -1102,7 +1100,7 @@ FixExtensionEvents(ExtensionEntry * extEntry, XephyrContext* context)
     SetMaskForExtEvent(DeviceFocusChangeMask, DeviceFocusOut, context);
 
     SetMaskForExtEvent(DeviceMappingNotifyMask, DeviceMappingNotify, context);
-    SetMaskForExtEvent(ChangeDeviceNotifyMask, ChangeDeviceNotify, context);
+    SetMaskForExtEvent(ChangeDeviceNotifyMask, context->ChangeDeviceNotify, context);
 
     SetEventInfo(DeviceButtonGrabMask, _deviceButtonGrab);
     SetEventInfo(DeviceOwnerGrabButtonMask, _deviceOwnerGrabButton);
@@ -1148,13 +1146,13 @@ RestoreExtensionEvents(XephyrContext* context)
     ProximityOut = 9;
     DeviceStateNotify = 10;
     DeviceMappingNotify = 11;
-    ChangeDeviceNotify = 12;
+    context->ChangeDeviceNotify = 12;
     DeviceKeyStateNotify = 13;
     DeviceButtonStateNotify = 13;
     DevicePresenceNotify = 14;
     DevicePropertyNotify = 15;
 
-    BadDevice = 0;
+    context->BadDevice = 0;
     BadEvent = 1;
     BadMode = 2;
     DeviceBusy = 3;
@@ -1284,7 +1282,7 @@ SEventIDispatch(xEvent *from, xEvent *to)
         DO_SWAP(SDeviceButtonStateNotifyEvent, deviceButtonStateNotify);
     else if (type == DeviceMappingNotify)
         DO_SWAP(SDeviceMappingNotifyEvent, deviceMappingNotify);
-    else if (type == ChangeDeviceNotify)
+    else if (type == context->ChangeDeviceNotify)
         DO_SWAP(SChangeDeviceNotifyEvent, changeDeviceNotify);
     else if (type == DevicePresenceNotify)
         DO_SWAP(SDevicePresenceNotifyEvent, devicePresenceNotify);
@@ -1323,7 +1321,7 @@ XInputExtensionInit(XephyrContext* context)
         FatalError("Cannot request private for XI.\n", context);
 
     if (!XIBarrierInit(context))
-        FatalError("Could not initialize barriers.\n", context);
+        FatalError("Could not initialize barriers.\n");
 
     extEntry = AddExtension(INAME, IEVENTS, IERRORS, ProcIDispatch,
                             SProcIDispatch, IResetProc, StandardMinorOpcode);
@@ -1336,7 +1334,7 @@ XInputExtensionInit(XephyrContext* context)
                                                "INPUTCLIENT");
         if (!RT_INPUTCLIENT)
             FatalError("Failed to add resource type for XI.\n", context);
-        FixExtensionEvents(extEntry, context);
+        FixExtensionEvents(extEntry);
         ReplySwapVector[IReqCode] = (ReplySwapPtr) SReplyIDispatch;
         EventSwapVector[DeviceValuator] = SEventIDispatch;
         EventSwapVector[DeviceKeyPress] = SEventIDispatch;
@@ -1352,7 +1350,7 @@ XInputExtensionInit(XephyrContext* context)
         EventSwapVector[DeviceKeyStateNotify] = SEventIDispatch;
         EventSwapVector[DeviceButtonStateNotify] = SEventIDispatch;
         EventSwapVector[DeviceMappingNotify] = SEventIDispatch;
-        EventSwapVector[ChangeDeviceNotify] = SEventIDispatch;
+        EventSwapVector[context->ChangeDeviceNotify] = SEventIDispatch;
         EventSwapVector[DevicePresenceNotify] = SEventIDispatch;
 
         GERegisterExtension(IReqCode, XI2EventSwap, context);

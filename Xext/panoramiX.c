@@ -674,7 +674,7 @@ PanoramiXCreateConnectionBlock(XephyrContext* context)
         length += (depth->nVisuals * sizeof(xVisualType));
     }
 
-    connSetupPrefix.length = bytes_to_int32(length);
+    context->connSetupPrefix.length = bytes_to_int32(length);
 
     for (i = 0; i < PanoramiXNumDepths; i++)
         free(PanoramiXDepths[i].vids);

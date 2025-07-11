@@ -187,7 +187,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         if (!InitClientResources(context->serverClient)) /* for root resources */
             FatalError("couldn't init server resources", context);
 
-        SetInputCheck(&alwaysCheckForInput[0], &alwaysCheckForInput[1]);
+        SetInputCheck(&alwaysCheckForInput[0], &alwaysCheckForInput[1], context);
         context->screenInfo.numScreens = 0;
 
         InitAtoms(context);

@@ -203,14 +203,14 @@ WaitForSomething(Bool are_ready, XephyrContext* context)
         if (NewOutputPending)
             FlushAllOutput();
         /* keep this check close to select() call to minimize race */
-        if (dispatchException)
+        if (context->dispatchException)
             i = -1;
         else
-            i = ospoll_wait(server_poll, timeout);
+            i = ospoll_wait(context->server_poll, timeout);
         pollerr = GetErrno();
         WakeupHandler(i, context);
         if (i <= 0) {           /* An error or timeout occurred */
-            if (dispatchException)
+            if (context->dispatchException)
                 return FALSE;
             if (i < 0) {
                 if (pollerr != EINTR && !ETEST(pollerr)) {

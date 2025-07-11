@@ -16,7 +16,6 @@ extern CARD32 DPMSStandbyTime;
 extern CARD32 DPMSSuspendTime;
 extern CARD32 DPMSOffTime;
 extern CARD16 DPMSPowerLevel;
-extern Bool DPMSEnabled;
 extern Bool DPMSDisabledSwitch;
 
 #endif

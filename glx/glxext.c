@@ -487,7 +487,7 @@ xorgGlxServerPreInit(const ExtensionEntry *extEntry, XephyrContext* context)
         if (!dixRegisterPrivateKey
             (&glxClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(__GLXclientState), context))
             return FALSE;
-        if (!AddCallback(&ClientStateCallback, glxClientCallback, 0))
+        if (!AddCallback(&context->ClientStateCallback, glxClientCallback, 0))
             return FALSE;
 
         __glXErrorBase = extEntry->errorBase;

@@ -246,7 +246,7 @@ GlxExtensionInit(XephyrContext* context)
         return;
     }
 
-    if (!AddCallback(&ClientStateCallback, GLXClientCallback, NULL)) {
+    if (!AddCallback(&context->ClientStateCallback, GLXClientCallback, NULL)) {
         return;
     }
 

@@ -13,6 +13,14 @@
 #include <X11/fonts/font.h>
 #include "cursor.h"
 #include "misc.h"
+#include "regionstr.h"
+#include "selection.h"
+#include "os.h"
+#include <sys/select.h>
+#include "opaque.h"
+#include <X11/Xproto.h>
+#include "../os/ospoll.h"
+#include "servermd.h"
 #ifdef CONFIG_UDEV
 #include <libudev.h>
 #endif
@@ -87,6 +95,61 @@ typedef struct _XephyrContext {
     
     // GLX configuration
     Bool enableIndirectGLX;
+    
+    // Global variables from nm output
+    HWEventQueuePtr checkForInput[2];
+    CallbackListPtr ClientStateCallback;
+    int connBlockScreenStart;
+    xConnSetupPrefix connSetupPrefix;
+    int dispatchException;
+    OsTimerPtr dispatchExceptionTimer;
+    Bool isItTimeToYield;
+    fd_set output_pending_clients;
+    PaddingInfo PixmapWidthPaddingInfo[33];
+    CallbackListPtr ServerGrabCallback;
+    Bool SmartScheduleLatencyLimited;
+    CARD32 SmartScheduleTime;
+    int terminateDelay;
+    void* fontPatternCache;
+    CallbackListPtr RootWindowFinalizeCallback;
+    void* lastGLContext;
+    WorkQueuePtr workQueue;
+    CallbackListPtr DeviceEventCallback;
+    Mask DontPropagateMasks[MAXDEVICES];
+    CallbackListPtr EventCallback;
+    InternalEvent *event_filters[128];
+    Bool syncEvents;
+    InternalEvent *InputEventList;
+    CallbackListPtr PropertyStateCallback;
+    RegionRec RegionBrokenData;
+    BoxRec RegionEmptyBox;
+    RegionRec RegionEmptyData;
+    RESTYPE lastResourceType;
+    CallbackListPtr ResourceStateCallback;
+    RESTYPE TypeMask;
+    Selection *CurrentSelections;
+    CallbackListPtr SelectionCallback;
+    Bool NewOutputPending;
+    Bool NoListenAll;
+    struct ospoll* server_poll;
+    Bool InputThreadEnable;
+    CallbackListPtr FlushCallback;
+    CallbackListPtr ReplyCallback;
+    Bool CoreDump;
+    Bool noCompositeExtension;
+    Bool noDamageExtension;
+    Bool noDbeExtension;
+    Bool noDRI2Extension;
+    Bool noGEExtension;
+    Bool noGlxExtension;
+    Bool noMITShmExtension;
+    Bool noRenderExtension;
+    Bool noResExtension;
+    Bool noRRExtension;
+    Bool noScreenSaverExtension;
+    Bool noXFixesExtension;
+    Bool noXvExtension;
+    Bool PanoramiXExtensionDisabledHack;
 } XephyrContext;
 
 

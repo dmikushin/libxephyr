@@ -149,7 +149,6 @@ typedef struct _WorkQueue *WorkQueuePtr;
 
 
 extern _X_EXPORT char dispatchExceptionAtReset;
-extern _X_EXPORT int terminateDelay;
 extern _X_EXPORT Bool touchEmulatePointer;
 
 typedef int HWEventQueueType;
@@ -172,7 +171,8 @@ typedef struct _TimeStamp {
 extern _X_EXPORT ClientPtr GetCurrentClient(XephyrContext* context);
 
 extern _X_EXPORT void SetInputCheck(HWEventQueuePtr /*c0 */ ,
-                                    HWEventQueuePtr /*c1 */ );
+                                    HWEventQueuePtr /*c1 */ ,
+                                    XephyrContext* /*context*/);
 
 extern _X_EXPORT void CloseDownClient(ClientPtr /*client */ );
 

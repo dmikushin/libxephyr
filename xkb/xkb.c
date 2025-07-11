@@ -191,7 +191,7 @@ ProcXkbUseExtension(ClientPtr client)
     }
     else if (xkbDebugFlags & 0x1) {
         ErrorF
-            ("[xkb] Rejecting client %d (0x%lx) (wants %d.%02d, have %d.%02d)\n",
+            ("[xkb] Rejecting client %d (0x%lx) (wants %d.%02d, have %d.%02d)\n", client->context,
              client->index, (long) client->clientAsMask, stuff->wantedMajor,
              stuff->wantedMinor, SERVER_XKB_MAJOR_VERSION,
              SERVER_XKB_MINOR_VERSION);
@@ -1441,7 +1441,7 @@ XkbSendMap(ClientPtr client, XkbDescPtr xkb, xkbGetMapReply * rep)
         desc = XkbWriteVirtualModMap(xkb, rep, desc, client);
     if ((desc - start) != (len)) {
         ErrorF
-            ("[xkb] BOGUS LENGTH in write keyboard desc, expected %d, got %ld\n",
+            ("[xkb] BOGUS LENGTH in write keyboard desc, expected %d, got %ld\n", client->context,
              len, (unsigned long) (desc - start));
     }
     if (client->swapped) {
@@ -2390,7 +2390,7 @@ SetVirtualModMap(XkbSrvInfoPtr xkbi,
  * Check the length of the SetMap request
  */
 static int
-_XkbSetMapCheckLength(xkbSetMapReq *req)
+_XkbSetMapCheckLength(xkbSetMapReq *req, XephyrContext* context)
 {
     size_t len = sz_xkbSetMapReq, req_len = req->length << 2;
     xkbKeyTypeWireDesc *keytype;
@@ -2461,7 +2461,7 @@ _XkbSetMapCheckLength(xkbSetMapReq *req)
     if (len == req_len)
         return Success;
 bad:
-    ErrorF("[xkb] BOGUS LENGTH in SetMap: expected %ld got %ld\n",
+    ErrorF("[xkb] BOGUS LENGTH in SetMap: expected %ld got %ld\n", context,
            len, req_len);
     return BadLength;
 }
@@ -2726,7 +2726,7 @@ ProcXkbSetMap(ClientPtr client)
     CHK_MASK_LEGAL(0x01, stuff->present, XkbAllMapComponentsMask);
 
     /* first verify the request length carefully */
-    rc = _XkbSetMapCheckLength(stuff);
+    rc = _XkbSetMapCheckLength(stuff, client->context);
     if (rc != Success)
         return rc;
 

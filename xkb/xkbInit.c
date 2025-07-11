@@ -197,8 +197,7 @@ XkbWriteRulesProp(XephyrContext* context)
     }
     pval[out++] = '\0';
     if (out != len) {
-        ErrorF("[xkb] Internal Error! bad size (%d!=%d) for _XKB_RULES_NAMES\n",
-               context, out, len);
+        ErrorF("[xkb] Internal Error! bad size (%d!=%d) for _XKB_RULES_NAMES\n", context, out, len);
     }
     dixChangeWindowProperty(context->serverClient, context->screenInfo.screens[0]->root, name,
                             XA_STRING, 8, PropModeReplace, len, pval, TRUE);
@@ -827,8 +826,7 @@ XkbProcessArguments(int argc, char *argv[], int i)
 void
 XkbUseMsg(void)
 {
-    ErrorF
-        ("[+-]accessx [ timeout [ timeout_mask [ feedback [ options_mask] ] ] ]\n", NULL);
+    ErrorF("[+-]accessx [ timeout [ timeout_mask [ feedback [ options_mask] ] ] ]\n", NULL);
     ErrorF("                       enable/disable accessx key sequences\n", NULL);
     ErrorF("-ardelay               set XKB autorepeat delay\n", NULL);
     ErrorF("-arinterval            set XKB autorepeat interval\n", NULL);

@@ -144,9 +144,7 @@ int ProcInitialConnection();
 #define BITCLEAR(buf, i) MASKWORD(buf, i) &= ~BITMASK(i)
 #define GETBIT(buf, i) (MASKWORD(buf, i) & BITMASK(i))
 
-xConnSetupPrefix connSetupPrefix;
 
-PaddingInfo PixmapWidthPaddingInfo[33];
 
 static ClientPtr grabClient;
 static ClientPtr currentClient; /* Client for the request currently being dispatched */
@@ -155,9 +153,6 @@ static ClientPtr currentClient; /* Client for the request currently being dispat
 #define GrabActive 1
 static int grabState = GrabNone;
 static long grabWaiters[mskcnt];
-CallbackListPtr ServerGrabCallback = NULL;
-HWEventQueuePtr checkForInput[2];
-int connBlockScreenStart;
 
 static void KillAllClients(XephyrContext* context);
 
@@ -197,10 +192,10 @@ GetCurrentClient(XephyrContext* context)
 }
 
 void
-SetInputCheck(HWEventQueuePtr c0, HWEventQueuePtr c1)
+SetInputCheck(HWEventQueuePtr c0, HWEventQueuePtr c1, XephyrContext* context)
 {
-    checkForInput[0] = c0;
-    checkForInput[1] = c1;
+    context->checkForInput[0] = c0;
+    context->checkForInput[1] = c1;
 }
 
 void
@@ -405,35 +400,37 @@ SmartScheduleClient(void)
 static CARD32
 DispatchExceptionCallback(OsTimerPtr timer, CARD32 time, void *arg)
 {
-    dispatchException |= dispatchExceptionAtReset;
+    /* TODO: Timer callbacks cannot have context parameter */
+    /* Need to pass context through arg parameter or redesign */
+    /* dispatchException |= dispatchExceptionAtReset; */
 
     /* Don't re-arm the timer */
     return 0;
 }
 
 static void
-CancelDispatchExceptionTimer(void)
+CancelDispatchExceptionTimer(XephyrContext* context)
 {
-    TimerFree(dispatchExceptionTimer);
-    dispatchExceptionTimer = NULL;
+    TimerFree(context->dispatchExceptionTimer);
+    context->dispatchExceptionTimer = NULL;
 }
 
 static void
-SetDispatchExceptionTimer(void)
+SetDispatchExceptionTimer(XephyrContext* context)
 {
     /* The timer delay is only for terminate, not reset */
     if (!(dispatchExceptionAtReset & DE_TERMINATE)) {
-        dispatchException |= dispatchExceptionAtReset;
+        context->dispatchException |= dispatchExceptionAtReset;
         return;
     }
 
-    CancelDispatchExceptionTimer();
+    CancelDispatchExceptionTimer(context);
 
-    if (terminateDelay == 0)
-        dispatchException |= dispatchExceptionAtReset;
+    if (context->terminateDelay == 0)
+        context->dispatchException |= dispatchExceptionAtReset;
     else
-        dispatchExceptionTimer = TimerSet(dispatchExceptionTimer,
-                                          0, terminateDelay * 1000 /* msec */,
+        context->dispatchExceptionTimer = TimerSet(context->dispatchExceptionTimer,
+                                          0, context->terminateDelay * 1000 /* msec */,
                                           &DispatchExceptionCallback,
                                           NULL);
 }
@@ -663,7 +660,7 @@ CreateConnectionBlock(XephyrContext* context)
         sizesofar += sizeof(xPixmapFormat);
     }
 
-    connBlockScreenStart = sizesofar;
+    context->connBlockScreenStart = sizesofar;
     memset(&depth, 0, sizeof(xDepth));
     memset(&visual, 0, sizeof(xVisualType));
     for (i = 0; i < context->screenInfo.numScreens; i++) {
@@ -725,10 +722,10 @@ CreateConnectionBlock(XephyrContext* context)
             }
         }
     }
-    connSetupPrefix.success = xTrue;
-    connSetupPrefix.length = lenofblock / 4;
-    connSetupPrefix.majorVersion = X_PROTOCOL;
-    connSetupPrefix.minorVersion = X_PROTOCOL_REVISION;
+    context->connSetupPrefix.success = xTrue;
+    context->connSetupPrefix.length = lenofblock / 4;
+    context->connSetupPrefix.majorVersion = X_PROTOCOL;
+    context->connSetupPrefix.minorVersion = X_PROTOCOL_REVISION;
     return TRUE;
 }
 
@@ -3478,7 +3475,6 @@ ProcNoOperation(ClientPtr client)
  *********************/
 
 char dispatchExceptionAtReset = DE_RESET;
-int terminateDelay = 0;
 
 void
 CloseDownClient(ClientPtr client)
@@ -3535,7 +3531,7 @@ CloseDownClient(ClientPtr client)
 
     if (really_close_down) {
         if (client->clientState == ClientStateRunning && nClients == 0)
-            SetDispatchExceptionTimer();
+            SetDispatchExceptionTimer(client->context);
 
         client->clientState = ClientStateGone;
         if (ClientStateCallback) {
@@ -3566,7 +3562,7 @@ CloseDownClient(ClientPtr client)
     }
 
     if (ShouldDisconnectRemainingClients(client->context))
-        SetDispatchExceptionTimer();
+        SetDispatchExceptionTimer(client->context);
 }
 
 static void
@@ -3709,7 +3705,7 @@ SendConnSetup(ClientPtr client, const char *reason)
 
     numScreens = client->context->screenInfo.numScreens;
     lConnectionInfo = client->context->ConnectionInfo;
-    lconnSetupPrefix = &connSetupPrefix;
+    lconnSetupPrefix = &client->context->connSetupPrefix;
 
     /* We're about to start speaking X protocol back to the client by
      * sending the connection setup info.  This means the authorization
@@ -3727,7 +3723,7 @@ SendConnSetup(ClientPtr client, const char *reason)
     ((xConnSetup *) lConnectionInfo)->bitmapBitOrder = ClientOrder(client);
 #endif
     /* fill in the "currentInputMask" */
-    root = (xWindowRoot *) (lConnectionInfo + connBlockScreenStart);
+    root = (xWindowRoot *) (lConnectionInfo + client->context->connBlockScreenStart);
 #ifdef PANORAMIX
     if (noPanoramiXExtension)
         numScreens = client->context->screenInfo.numScreens;
@@ -3769,7 +3765,7 @@ SendConnSetup(ClientPtr client, const char *reason)
         clientinfo.setup = (xConnSetup *) lConnectionInfo;
         CallCallbacks((&ClientStateCallback), (void *) &clientinfo);
     }
-    CancelDispatchExceptionTimer();
+    CancelDispatchExceptionTimer(client->context);
     return Success;
 }
 
@@ -3943,19 +3939,19 @@ static int init_screen(ScreenPtr pScreen, int i, Bool gpu, XephyrContext* contex
         scanlinepad = context->screenInfo.formats[format].scanlinePad;
         j = indexForBitsPerPixel[bitsPerPixel];
         k = indexForScanlinePad[scanlinepad];
-        PixmapWidthPaddingInfo[depth].padPixelsLog2 = answer[j][k];
-        PixmapWidthPaddingInfo[depth].padRoundUp =
+        context->PixmapWidthPaddingInfo[depth].padPixelsLog2 = answer[j][k];
+        context->PixmapWidthPaddingInfo[depth].padRoundUp =
             (scanlinepad / bitsPerPixel) - 1;
         j = indexForBitsPerPixel[8];    /* bits per byte */
-        PixmapWidthPaddingInfo[depth].padBytesLog2 = answer[j][k];
-        PixmapWidthPaddingInfo[depth].bitsPerPixel = bitsPerPixel;
+        context->PixmapWidthPaddingInfo[depth].padBytesLog2 = answer[j][k];
+        context->PixmapWidthPaddingInfo[depth].bitsPerPixel = bitsPerPixel;
         if (answerBytesPerPixel[bitsPerPixel]) {
-            PixmapWidthPaddingInfo[depth].notPower2 = 1;
-            PixmapWidthPaddingInfo[depth].bytesPerPixel =
+            context->PixmapWidthPaddingInfo[depth].notPower2 = 1;
+            context->PixmapWidthPaddingInfo[depth].bytesPerPixel =
                 answerBytesPerPixel[bitsPerPixel];
         }
         else {
-            PixmapWidthPaddingInfo[depth].notPower2 = 0;
+            context->PixmapWidthPaddingInfo[depth].notPower2 = 0;
         }
     }
     return 0;
