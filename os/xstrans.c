@@ -4,6 +4,18 @@
 #endif
 
 #include <X11/Xfuncproto.h>
+#include <stdarg.h>
+
+/* Wrapper for external Xtrans library that expects old VErrorF signature */
+static void XtransVErrorF(const char *f, va_list args)
+{
+    /* Since we're in external library context, we don't have access to context.
+     * This is a compatibility wrapper for Xtrans transport.c */
+    vfprintf(stderr, f, args);
+}
+
+/* Override VErrorF macro for Xtrans */
+#define VErrorF XtransVErrorF
 
 /* ErrorF is used by xtrans */
 #ifndef HAVE_DIX_CONFIG_H

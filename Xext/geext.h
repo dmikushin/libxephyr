@@ -74,7 +74,8 @@ extern _X_EXPORT void GERegisterExtension(int extension,
                                           void (*ev_dispatch) (xGenericEvent
                                                                *from,
                                                                xGenericEvent
-                                                               *to));
+                                                               *to),
+                                          XephyrContext* context);
 
 extern _X_EXPORT void GEInitEvent(xGenericEvent *ev, int extension);
 

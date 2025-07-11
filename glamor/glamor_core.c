@@ -49,7 +49,7 @@ glamor_get_drawable_location(const DrawablePtr drawable)
 }
 
 GLint
-glamor_compile_glsl_prog(GLenum type, const char *source)
+glamor_compile_glsl_prog(GLenum type, const char *source, XephyrContext* context)
 {
     GLint ok;
     GLint prog;
@@ -66,14 +66,14 @@ glamor_compile_glsl_prog(GLenum type, const char *source)
         info = malloc(size);
         if (info) {
             glGetShaderInfoLog(prog, size, NULL, info);
-            ErrorF("Failed to compile %s: %s\n",
+            ErrorF("Failed to compile %s: %s\n", context,
                    type == GL_FRAGMENT_SHADER ? "FS" : "VS", info);
-            ErrorF("Program source:\n%s", source);
+            ErrorF("Program source:\n%s", context, source);
             free(info);
         }
         else
-            ErrorF("Failed to get shader compilation info.\n");
-        FatalError("GLSL compile failure\n");
+            ErrorF("Failed to get shader compilation info.\n", context);
+        FatalError("GLSL compile failure\n", context);
     }
 
     return prog;
@@ -106,8 +106,8 @@ glamor_link_glsl_prog(ScreenPtr screen, GLint prog, const char *format, ...)
         info = malloc(size);
 
         glGetProgramInfoLog(prog, size, NULL, info);
-        ErrorF("Failed to link: %s\n", info);
-        FatalError("GLSL link failure\n");
+        ErrorF("Failed to link: %s\n", screen->context, info);
+        FatalError("GLSL link failure\n", screen->context);
     }
 }
 
@@ -206,7 +206,7 @@ glamor_validate_gc(GCPtr gc, unsigned long changes, DrawablePtr drawable)
                 && FbEvenTile(gc->tile.pixmap->drawable.width *
                               drawable->bitsPerPixel)) {
                 glamor_fallback
-                    ("GC %p tile changed %p.\n", gc, gc->tile.pixmap);
+                    ("GC %p tile changed %p.\n", drawable->pScreen->context, gc, gc->tile.pixmap);
                 if (glamor_prepare_access
                     (&gc->tile.pixmap->drawable, GLAMOR_ACCESS_RW)) {
                     fbPadPixmap(gc->tile.pixmap);
@@ -297,7 +297,7 @@ glamor_bitmap_to_region(PixmapPtr pixmap)
 {
     RegionPtr ret;
 
-    glamor_fallback("pixmap %p \n", pixmap);
+    glamor_fallback("pixmap %p \n", pixmap->drawable.pScreen->context, pixmap);
     if (!glamor_prepare_access(&pixmap->drawable, GLAMOR_ACCESS_RO))
         return NULL;
     ret = fbPixmapToRegion(pixmap);

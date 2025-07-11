@@ -556,7 +556,7 @@ ReadXkmCompatMap(FILE * file, XkbDescPtr xkb, XkbChangesPtr changes)
              */
             if (interp->sym == NoSymbol && interp->match == XkbSI_AnyOfOrNone &&
                 (interp->mods & 0xff) == 0xff) {
-                ErrorF("XKB: Skipping broken Any+AnyOfOrNone(All) -> Private "
+                fprintf(stderr, "XKB: Skipping broken Any+AnyOfOrNone(All) -> Private "
                        "action from compiled keymap\n");
                 continue;
             }

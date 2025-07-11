@@ -796,7 +796,7 @@ FakeClientID(int client, XephyrContext* context)
     GetXIDRange(client, TRUE, &id, &maxid);
     if (!id) {
         if (!client)
-            FatalError("FakeClientID: server internal ids exhausted\n");
+            FatalError("FakeClientID: server internal ids exhausted\n", context);
         MarkClientException(context->clients[client]);
         id = ((Mask) client << CLIENTOFFSET) | (SERVER_BIT * 3);
         maxid = id | RESOURCE_ID_MASK;
@@ -819,9 +819,8 @@ AddResource(XID id, RESTYPE type, void *value, XephyrContext* context)
     client = CLIENT_ID(id);
     rrec = &clientTable[client];
     if (!rrec->buckets) {
-        ErrorF("[dix] AddResource(%lx, %x, %lx), client=%d \n",
-               (unsigned long) id, type, (unsigned long) value, client);
-        FatalError("client not in use\n");
+        ErrorF("[dix] AddResource(%lx, %x, %lx), client=%d \n", NULL, (unsigned long) id, type, (unsigned long) value, client);
+        FatalError("client not in use\n", context);
     }
     if ((rrec->elements >= 4 * rrec->buckets) && (rrec->hashsize < MAXHASHSIZE))
         RebuildTable(client);

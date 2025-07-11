@@ -106,7 +106,7 @@ ProcXIGrabDevice(ClientPtr client)
     mask_len = min(xi2mask_mask_size(mask.xi2mask), stuff->mask_len * 4);
     /* FIXME: I think the old code was broken here */
     xi2mask_set_one_mask(mask.xi2mask, dev->id, (unsigned char *) &stuff[1],
-                         mask_len);
+                         mask_len, dev->context);
 
     ret = GrabDevice(client, dev, pointer_mode,
                      keyboard_mode,

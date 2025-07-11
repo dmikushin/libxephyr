@@ -128,7 +128,7 @@ static void FreePointerBarrierClient(struct PointerBarrierClient *c)
     free(c);
 }
 
-static struct PointerBarrierDevice *GetBarrierDevice(struct PointerBarrierClient *c, int deviceid)
+static struct PointerBarrierDevice *GetBarrierDevice(struct PointerBarrierClient *c, int deviceid, XephyrContext* context)
 {
     struct PointerBarrierDevice *pbd = NULL;
 
@@ -137,7 +137,7 @@ static struct PointerBarrierDevice *GetBarrierDevice(struct PointerBarrierClient
             break;
     }
 
-    BUG_WARN(!pbd);
+    BUG_WARN(!pbd, context);
     return pbd;
 }
 
@@ -327,7 +327,7 @@ barrier_blocks_device(struct PointerBarrierClient *client,
 static struct PointerBarrierClient *
 barrier_find_nearest(BarrierScreenPtr cs, DeviceIntPtr dev,
                      int dir,
-                     int x1, int y1, int x2, int y2)
+                     int x1, int y1, int x2, int y2, XephyrContext* context)
 {
     struct PointerBarrierClient *c, *nearest = NULL;
     double min_distance = INT_MAX;      /* can't get higher than that in X anyway */
@@ -337,7 +337,7 @@ barrier_find_nearest(BarrierScreenPtr cs, DeviceIntPtr dev,
         struct PointerBarrierDevice *pbd;
         double distance;
 
-        pbd = GetBarrierDevice(c, dev->id);
+        pbd = GetBarrierDevice(c, dev->id, context);
         if (pbd->seen)
             continue;
 
@@ -389,7 +389,7 @@ input_constrain_cursor(DeviceIntPtr dev, ScreenPtr screen,
                        int current_x, int current_y,
                        int dest_x, int dest_y,
                        int *out_x, int *out_y,
-                       int *nevents, InternalEvent* events)
+                       int *nevents, InternalEvent* events, XephyrContext* context)
 {
     /* Clamped coordinates here refer to screen edge clamping. */
     BarrierScreenPtr cs = GetBarrierScreen(screen);
@@ -439,13 +439,13 @@ input_constrain_cursor(DeviceIntPtr dev, ScreenPtr screen,
         int new_sequence;
         struct PointerBarrierDevice *pbd;
 
-        c = barrier_find_nearest(cs, master, dir, current_x, current_y, x, y);
+        c = barrier_find_nearest(cs, master, dir, current_x, current_y, x, y, context);
         if (!c)
             break;
 
         nearest = &c->barrier;
 
-        pbd = GetBarrierDevice(c, master->id);
+        pbd = GetBarrierDevice(c, master->id, context);
         new_sequence = !pbd->hit;
 
         pbd->seen = TRUE;
@@ -485,7 +485,7 @@ input_constrain_cursor(DeviceIntPtr dev, ScreenPtr screen,
         struct PointerBarrierDevice *pbd;
         int flags = 0;
 
-        pbd = GetBarrierDevice(c, master->id);
+        pbd = GetBarrierDevice(c, master->id, context);
         pbd->seen = FALSE;
         if (!pbd->hit)
             continue;
@@ -643,7 +643,7 @@ CreatePointerBarrierClient(ClientPtr client,
 }
 
 static int
-BarrierFreeBarrier(void *data, XID id)
+BarrierFreeBarrier(void *data, XID id, XephyrContext* context)
 {
     struct PointerBarrierClient *c;
     Time ms = GetTimeInMillis();
@@ -679,7 +679,7 @@ BarrierFreeBarrier(void *data, XID id)
         if (dev->type != MASTER_POINTER)
             continue;
 
-        pbd = GetBarrierDevice(c, dev->id);
+        pbd = GetBarrierDevice(c, dev->id, screen->context);
         if (!pbd->hit)
             continue;
 
@@ -738,7 +738,7 @@ static void remove_master_func(void *res, XID id, void *devid)
     b = res;
     barrier = container_of(b, struct PointerBarrierClient, barrier);
 
-    pbd = GetBarrierDevice(barrier, *deviceid);
+    pbd = GetBarrierDevice(barrier, *deviceid, dev->context);
 
     if (pbd->hit) {
         BarrierEvent ev = {
@@ -903,7 +903,7 @@ ProcXIBarrierReleasePointer(ClientPtr client)
 
         barrier = container_of(b, struct PointerBarrierClient, barrier);
 
-        pbd = GetBarrierDevice(barrier, dev->id);
+        pbd = GetBarrierDevice(barrier, dev->id, dev->context);
 
         if (pbd->barrier_event_id == event_id)
             pbd->release_event_id = event_id;

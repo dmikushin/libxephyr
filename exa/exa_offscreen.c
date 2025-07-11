@@ -171,8 +171,7 @@ exaOffscreenAlloc(ScreenPtr pScreen, int size, int align,
 #if DEBUG_OFFSCREEN
     static int number = 0;
 
-    ErrorF("================= ============ allocating a new pixmap %d\n",
-           ++number);
+    ErrorF("================= ============ allocating a new pixmap %d\n", NULL, ++number);
 #endif
 
     ExaOffscreenValidate(pScreen);

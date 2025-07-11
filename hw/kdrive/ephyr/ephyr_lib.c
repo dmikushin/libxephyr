@@ -41,9 +41,9 @@ extern Bool ephyr_glamor, ephyr_glamor_gles2, ephyr_glamor_skip_present;
 
 extern Bool ephyrNoXV;
 
-void processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id);
-void processOutputArg(const char *output, char *parent_id);
-void processScreenArg(const char *screen_size, char *parent_id);
+void processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id, XephyrContext* context);
+void processOutputArg(const char *output, char *parent_id, XephyrContext* context);
+void processScreenArg(const char *screen_size, char *parent_id, XephyrContext* context);
 
 void
 InitCard(char *name)
@@ -71,7 +71,7 @@ InitInput(int argc, char **argv, XephyrContext* context)
         if (!kdHasKbd) {
             ki = KdNewKeyboard();
             if (!ki)
-                FatalError("Couldn't create Xephyr keyboard\n");
+                FatalError("Couldn't create Xephyr keyboard\n", context);
             ki->driver = &EphyrKeyboardDriver;
             KdAddKeyboard(ki, context);
         }
@@ -79,7 +79,7 @@ InitInput(int argc, char **argv, XephyrContext* context)
         if (!kdHasPointer) {
             pi = KdNewPointer();
             if (!pi)
-                FatalError("Couldn't create Xephyr pointer\n");
+                FatalError("Couldn't create Xephyr pointer\n", context);
             pi->driver = &EphyrMouseDriver;
             KdAddPointer(pi, context);
         }
@@ -111,35 +111,35 @@ ddxBeforeReset(void)
 #endif
 
 void
-ddxUseMsg(void)
+ddxUseMsg(XephyrContext* context)
 {
-    KdUseMsg();
+    KdUseMsg(context);
 
-    ErrorF("\nXephyr Option Usage:\n");
-    ErrorF("-parent <XID>        Use existing window as Xephyr root win\n");
-    ErrorF("-sw-cursor           Render cursors in software in Xephyr\n");
-    ErrorF("-fullscreen          Attempt to run Xephyr fullscreen\n");
-    ErrorF("-output <NAME>       Attempt to run Xephyr fullscreen (restricted to given output geometry)\n");
-    ErrorF("-grayscale           Simulate 8bit grayscale\n");
-    ErrorF("-resizeable          Make Xephyr windows resizeable\n");
+    ErrorF("\nXephyr Option Usage:\n", context);
+    ErrorF("-parent <XID>        Use existing window as Xephyr root win\n", context);
+    ErrorF("-sw-cursor           Render cursors in software in Xephyr\n", context);
+    ErrorF("-fullscreen          Attempt to run Xephyr fullscreen\n", context);
+    ErrorF("-output <NAME>       Attempt to run Xephyr fullscreen (restricted to given output geometry)\n", context);
+    ErrorF("-grayscale           Simulate 8bit grayscale\n", context);
+    ErrorF("-resizeable          Make Xephyr windows resizeable\n", context);
 #ifdef GLAMOR
-    ErrorF("-glamor              Enable 2D acceleration using glamor\n");
-    ErrorF("-glamor_gles2        Enable 2D acceleration using glamor (with GLES2 only)\n");
-    ErrorF("-glamor-skip-present Skip presenting the output when using glamor (for internal testing optimization)\n");
+    ErrorF("-glamor              Enable 2D acceleration using glamor\n", context);
+    ErrorF("-glamor_gles2        Enable 2D acceleration using glamor (with GLES2 only)\n", context);
+    ErrorF("-glamor-skip-present Skip presenting the output when using glamor (for internal testing optimization)\n", context);
 #endif
     ErrorF
-        ("-fakexa              Simulate acceleration using software rendering\n");
-    ErrorF("-verbosity <level>   Set log verbosity level\n");
-    ErrorF("-noxv                do not use XV\n");
-    ErrorF("-name [name]         define the name in the WM_CLASS property\n");
+        ("-fakexa              Simulate acceleration using software rendering\n", context);
+    ErrorF("-verbosity <level>   Set log verbosity level\n", context);
+    ErrorF("-noxv                do not use XV\n", context);
+    ErrorF("-name [name]         define the name in the WM_CLASS property\n", context);
     ErrorF
-        ("-title [title]       set the window title in the WM_NAME property\n");
-    ErrorF("-no-host-grab        Disable grabbing the keyboard and mouse.\n");
-    ErrorF("\n");
+        ("-title [title]       set the window title in the WM_NAME property\n", context);
+    ErrorF("-no-host-grab        Disable grabbing the keyboard and mouse.\n", context);
+    ErrorF("\n", context);
 }
 
 void
-processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id)
+processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id, XephyrContext* context)
 {
     KdCardInfo *card;
 
@@ -155,7 +155,7 @@ processScreenOrOutputArg(const char *screen_size, const char *output, char *pare
         KdParseScreen(screen, screen_size);
         screen->driver = calloc(1, sizeof(EphyrScrPriv));
         if (!screen->driver)
-            FatalError("Couldn't alloc screen private\n");
+            FatalError("Couldn't alloc screen private\n", context);
 
         if (parent_id) {
             p_id = strtol(parent_id, NULL, 0);
@@ -166,24 +166,24 @@ processScreenOrOutputArg(const char *screen_size, const char *output, char *pare
         hostx_add_screen(screen, p_id, screen->mynum, use_geometry, output);
     }
     else {
-        ErrorF("No matching card found!\n");
+        ErrorF("No matching card found!\n", context);
     }
 }
 
 void
-processScreenArg(const char *screen_size, char *parent_id)
+processScreenArg(const char *screen_size, char *parent_id, XephyrContext* context)
 {
-    processScreenOrOutputArg(screen_size, NULL, parent_id);
+    processScreenOrOutputArg(screen_size, NULL, parent_id, context);
 }
 
 void
-processOutputArg(const char *output, char *parent_id)
+processOutputArg(const char *output, char *parent_id, XephyrContext* context)
 {
-    processScreenOrOutputArg("100x100+0+0", output, parent_id);
+    processScreenOrOutputArg("100x100+0+0", output, parent_id, context);
 }
 
 int
-ddxProcessArgument(int argc, char **argv, int i)
+ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
 {
     static char *parent = NULL;
 
@@ -202,30 +202,30 @@ ddxProcessArgument(int argc, char **argv, int i)
                 }
             }
 
-            processScreenArg("100x100", argv[i + 1]);
+            processScreenArg("100x100", argv[i + 1], context);
             return 2;
         }
 
-        UseMsg();
+        UseMsg(context);
         exit(1);
     }
     else if (!strcmp(argv[i], "-screen")) {
         if ((i + 1) < argc) {
-            processScreenArg(argv[i + 1], parent);
+            processScreenArg(argv[i + 1], parent, context);
             parent = NULL;
             return 2;
         }
 
-        UseMsg();
+        UseMsg(context);
         exit(1);
     }
     else if (!strcmp(argv[i], "-output")) {
         if (i + 1 < argc) {
-            processOutputArg(argv[i + 1], NULL);
+            processOutputArg(argv[i + 1], NULL, context);
             return 2;
         }
 
-        UseMsg();
+        UseMsg(context);
         exit(1);
     }
     else if (!strcmp(argv[i], "-sw-cursor")) {
@@ -287,7 +287,7 @@ ddxProcessArgument(int argc, char **argv, int i)
             return 2;
         }
         else {
-            UseMsg();
+            UseMsg(context);
             exit(1);
         }
     }
@@ -302,7 +302,7 @@ ddxProcessArgument(int argc, char **argv, int i)
             return 2;
         }
         else {
-            UseMsg();
+            UseMsg(context);
             return 0;
         }
     }
@@ -312,7 +312,7 @@ ddxProcessArgument(int argc, char **argv, int i)
             return 2;
         }
         else {
-            UseMsg();
+            UseMsg(context);
             return 0;
         }
     }
@@ -347,7 +347,7 @@ ddxProcessArgument(int argc, char **argv, int i)
         return 2;
     }
 
-    return KdProcessArgument(argc, argv, i);
+    return KdProcessArgument(argc, argv, i, context);
 }
 
 void
@@ -363,9 +363,9 @@ OsVendorInit(XephyrContext* context)
 
     if (context->serverGeneration == 1) {
         if (!KdCardInfoLast()) {
-            processScreenArg("640x480", NULL);
+            processScreenArg("640x480", NULL, context);
         }
-        hostx_init();
+        hostx_init(context);
     }
 }
 

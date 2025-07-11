@@ -137,7 +137,7 @@ OsSigHandler(int signo)
 
 #ifdef SA_SIGINFO
     if (sip->si_code == SI_USER) {
-        ErrorFSigSafe("Received signal %u sent by process %u, uid %u\n", signo,
+        ErrorFSigSafe("Received signal %u sent by process %u, uid %u\n", NULL, signo,
                      sip->si_pid, sip->si_uid);
     }
     else {
@@ -146,7 +146,7 @@ OsSigHandler(int signo)
         case SIGBUS:
         case SIGILL:
         case SIGFPE:
-            ErrorFSigSafe("%s at address %p\n", strsignal(signo), sip->si_addr);
+            ErrorFSigSafe("%s at address %p\n", NULL, strsignal(signo), sip->si_addr);
         }
     }
 #endif
@@ -154,8 +154,9 @@ OsSigHandler(int signo)
     if (signo != SIGQUIT)
         CoreDump = TRUE;
 
-    FatalError("Caught signal %d (%s). Server aborting\n",
+    fprintf(stderr, "Caught signal %d (%s). Server aborting\n",
                signo, strsignal(signo));
+    abort();
 }
 #endif /* !WIN32 || __CYGWIN__ */
 
@@ -195,7 +196,7 @@ OsInit(XephyrContext* context)
 #endif
         for (i = 0; siglist[i] != 0; i++) {
             if (sigaction(siglist[i], &act, &oact)) {
-                ErrorF("failed to install signal handler for signal %d: %s\n",
+                ErrorF("failed to install signal handler for signal %d: %s\n", context,
                        siglist[i], strerror(errno));
             }
         }
@@ -205,7 +206,7 @@ OsInit(XephyrContext* context)
 #endif
         server_poll = ospoll_create();
         if (!server_poll)
-            FatalError("failed to allocate poll structure");
+            FatalError("failed to allocate poll structure", context);
 
 #ifdef HAVE_BACKTRACE
         /*

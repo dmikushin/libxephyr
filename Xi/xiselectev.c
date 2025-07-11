@@ -389,7 +389,7 @@ ProcXIGetSelectedEvents(ClientPtr client)
     evmask = (xXIEventMask *) buffer;
     for (i = 0; i < MAXDEVICES; i++) {
         int j;
-        const unsigned char *devmask = xi2mask_get_one_mask(others->xi2mask, i);
+        const unsigned char *devmask = xi2mask_get_one_mask(others->xi2mask, i, client->context);
 
         if (i > 2) {
             rc = dixLookupDevice(&dev, i, client, DixGetAttrAccess);

@@ -82,7 +82,7 @@ struct ephyr_glamor {
 };
 
 static GLint
-ephyr_glamor_compile_glsl_prog(GLenum type, const char *source)
+ephyr_glamor_compile_glsl_prog(GLenum type, const char *source, XephyrContext* context)
 {
     GLint ok;
     GLint prog;
@@ -99,21 +99,21 @@ ephyr_glamor_compile_glsl_prog(GLenum type, const char *source)
         info = malloc(size);
         if (info) {
             glGetShaderInfoLog(prog, size, NULL, info);
-            ErrorF("Failed to compile %s: %s\n",
+            ErrorF("Failed to compile %s: %s\n", context,
                    type == GL_FRAGMENT_SHADER ? "FS" : "VS", info);
-            ErrorF("Program source:\n%s", source);
+            ErrorF("Program source:\n%s", context, source);
             free(info);
         }
         else
-            ErrorF("Failed to get shader compilation info.\n");
-        FatalError("GLSL compile failure\n");
+            ErrorF("Failed to get shader compilation info.\n", context);
+        FatalError("GLSL compile failure\n", context);
     }
 
     return prog;
 }
 
 static GLuint
-ephyr_glamor_build_glsl_prog(GLuint vs, GLuint fs)
+ephyr_glamor_build_glsl_prog(GLuint vs, GLuint fs, XephyrContext* context)
 {
     GLint ok;
     GLuint prog;
@@ -132,15 +132,15 @@ ephyr_glamor_build_glsl_prog(GLuint vs, GLuint fs)
         info = malloc(size);
 
         glGetProgramInfoLog(prog, size, NULL, info);
-        ErrorF("Failed to link: %s\n", info);
-        FatalError("GLSL link failure\n");
+        ErrorF("Failed to link: %s\n", context, info);
+        FatalError("GLSL link failure\n", context);
     }
 
     return prog;
 }
 
 static void
-ephyr_glamor_setup_texturing_shader(struct ephyr_glamor *glamor)
+ephyr_glamor_setup_texturing_shader(struct ephyr_glamor *glamor, XephyrContext* context)
 {
     const char *vs_source =
         "attribute vec2 texcoord;\n"
@@ -168,9 +168,9 @@ ephyr_glamor_setup_texturing_shader(struct ephyr_glamor *glamor)
 
     GLuint fs, vs, prog;
 
-    vs = ephyr_glamor_compile_glsl_prog(GL_VERTEX_SHADER, vs_source);
-    fs = ephyr_glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, fs_source);
-    prog = ephyr_glamor_build_glsl_prog(vs, fs);
+    vs = ephyr_glamor_compile_glsl_prog(GL_VERTEX_SHADER, vs_source, context);
+    fs = ephyr_glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, fs_source, context);
+    prog = ephyr_glamor_build_glsl_prog(vs, fs, context);
 
     glamor->texture_shader = prog;
     glamor->texture_shader_position_loc = glGetAttribLocation(prog, "position");
@@ -283,7 +283,7 @@ ephyr_glx_error_handler(Display * _dpy, XErrorEvent * ev)
 }
 
 struct ephyr_glamor *
-ephyr_glamor_glx_screen_init(xcb_window_t win)
+ephyr_glamor_glx_screen_init(xcb_window_t win, XephyrContext* context)
 {
     int (*oldErrorHandler) (Display *, XErrorEvent *);
     static const float position[] = {
@@ -304,7 +304,7 @@ ephyr_glamor_glx_screen_init(xcb_window_t win)
 
     glamor = calloc(1, sizeof(struct ephyr_glamor));
     if (!glamor) {
-        FatalError("malloc");
+        FatalError("malloc", context);
         return NULL;
     }
 
@@ -323,7 +323,7 @@ ephyr_glamor_glx_screen_init(xcb_window_t win)
                                              context_attribs);
         } else {
             FatalError("Xephyr -glamor_gles2 requires "
-                       "GLX_EXT_create_context_es2_profile\n");
+                       "GLX_EXT_create_context_es2_profile\n", context);
         }
     } else {
         if (epoxy_has_glx_extension(dpy, DefaultScreen(dpy),
@@ -350,15 +350,15 @@ ephyr_glamor_glx_screen_init(xcb_window_t win)
             ctx = glXCreateContext(dpy, visual_info, NULL, True);
     }
     if (ctx == NULL)
-        FatalError("glXCreateContext failed\n");
+        FatalError("glXCreateContext failed\n", context);
 
     if (!glXMakeCurrent(dpy, glx_win, ctx))
-        FatalError("glXMakeCurrent failed\n");
+        FatalError("glXMakeCurrent failed\n", context);
 
     glamor->ctx = ctx;
     glamor->win = win;
     glamor->glx_win = glx_win;
-    ephyr_glamor_setup_texturing_shader(glamor);
+    ephyr_glamor_setup_texturing_shader(glamor, context);
 
     glGenVertexArrays(1, &glamor->vao);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &old_vao);
@@ -386,7 +386,7 @@ ephyr_glamor_glx_screen_fini(struct ephyr_glamor *glamor)
 }
 
 xcb_visualtype_t *
-ephyr_glamor_get_visual(void)
+ephyr_glamor_get_visual(XephyrContext* context)
 {
     xcb_screen_t *xscreen =
         xcb_aux_get_screen(XGetXCBConnection(dpy), DefaultScreen(dpy));
@@ -403,17 +403,17 @@ ephyr_glamor_get_visual(void)
     GLXFBConfig *fbconfigs;
 
     if (!glXQueryExtension (dpy, &error_base, &event_base))
-        FatalError("Couldn't find GLX extension\n");
+        FatalError("Couldn't find GLX extension\n", context);
 
     fbconfigs = glXChooseFBConfig(dpy, DefaultScreen(dpy), attribs, &nelements);
     if (!nelements)
-        FatalError("Couldn't choose an FBConfig\n");
+        FatalError("Couldn't choose an FBConfig\n", context);
     fb_config = fbconfigs[0];
     free(fbconfigs);
 
     visual_info = glXGetVisualFromFBConfig(dpy, fb_config);
     if (visual_info == NULL)
-        FatalError("Couldn't get RGB visual\n");
+        FatalError("Couldn't get RGB visual\n", context);
 
     return xcb_aux_find_visual_by_id(xscreen, visual_info->visualid);
 }

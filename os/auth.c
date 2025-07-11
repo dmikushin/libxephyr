@@ -110,7 +110,7 @@ InitAuthorization(const char *file_name)
 }
 
 static int
-LoadAuthorization(void)
+LoadAuthorization(XephyrContext* context)
 {
     FILE *f;
     Xauth *auth;
@@ -125,7 +125,7 @@ LoadAuthorization(void)
     f = Fopen(authorization_file, "r");
     if (!f) {
         LogMessageVerb(X_ERROR, 0,
-                       "Failed to open authorization file \"%s\": %s\n",
+                       "Failed to open authorization file \"%s\": %s\n", context,
                        authorization_file,
                        errno != 0 ? strerror(errno) : "Unknown error");
         return -1;
@@ -187,7 +187,7 @@ CheckAuthorization(unsigned int name_length,
         ShouldLoadAuth = TRUE;
     }
     if (ShouldLoadAuth) {
-        int loadauth = LoadAuthorization();
+        int loadauth = LoadAuthorization(client->context);
 
         /*
          * If the authorization file has at least one entry for this server,

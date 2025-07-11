@@ -62,7 +62,7 @@ static struct blendinfo composite_op_info[] = {
 
 #define RepeatFix			10
 static GLuint
-glamor_create_composite_fs(struct shader_key *key)
+glamor_create_composite_fs(struct shader_key *key, XephyrContext* context)
 {
     const char *repeat_define =
         "#define RepeatNone               	      0\n"
@@ -245,7 +245,7 @@ glamor_create_composite_fs(struct shader_key *key)
         source_fetch = source_pixmap_fetch;
         break;
     default:
-        FatalError("Bad composite shader source");
+        FatalError("Bad composite shader source", context);
     }
 
     switch (key->mask) {
@@ -262,7 +262,7 @@ glamor_create_composite_fs(struct shader_key *key)
         mask_fetch = mask_pixmap_fetch;
         break;
     default:
-        FatalError("Bad composite shader mask");
+        FatalError("Bad composite shader mask", context);
     }
 
     /* If we're storing to an a8 texture but our texture format is
@@ -277,7 +277,7 @@ glamor_create_composite_fs(struct shader_key *key)
         dest_swizzle = dest_swizzle_alpha_to_red;
         break;
     default:
-        FatalError("Bad composite shader dest swizzle");
+        FatalError("Bad composite shader dest swizzle", context);
     }
 
     header = header_norm;
@@ -296,7 +296,7 @@ glamor_create_composite_fs(struct shader_key *key)
         header = header_ca_dual_blend;
         break;
     default:
-        FatalError("Bad composite IN type");
+        FatalError("Bad composite IN type", context);
     }
 
     XNFasprintf(&source,
@@ -305,14 +305,14 @@ glamor_create_composite_fs(struct shader_key *key)
                 "%s%s%s%s%s%s%s", header, repeat_define, relocate_texture,
                 rel_sampler, source_fetch, mask_fetch, dest_swizzle, in);
 
-    prog = glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, source);
+    prog = glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, source, context);
     free(source);
 
     return prog;
 }
 
 static GLuint
-glamor_create_composite_vs(struct shader_key *key)
+glamor_create_composite_vs(struct shader_key *key, XephyrContext* context)
 {
     const char *main_opening =
         "attribute vec4 v_position;\n"
@@ -342,7 +342,7 @@ glamor_create_composite_vs(struct shader_key *key)
                 main_opening,
                 source_coords_setup, mask_coords_setup, main_closing);
 
-    prog = glamor_compile_glsl_prog(GL_VERTEX_SHADER, source);
+    prog = glamor_compile_glsl_prog(GL_VERTEX_SHADER, source, context);
     free(source);
 
     return prog;
@@ -357,10 +357,10 @@ glamor_create_composite_shader(ScreenPtr screen, struct shader_key *key,
     glamor_screen_private *glamor_priv = glamor_get_screen_private(screen);
 
     glamor_make_current(glamor_priv);
-    vs = glamor_create_composite_vs(key);
+    vs = glamor_create_composite_vs(key, screen->context);
     if (vs == 0)
         return;
-    fs = glamor_create_composite_fs(key);
+    fs = glamor_create_composite_fs(key, screen->context);
     if (fs == 0)
         return;
 
@@ -452,7 +452,7 @@ glamor_set_composite_op(ScreenPtr screen,
     struct blendinfo *op_info;
 
     if (op >= ARRAY_SIZE(composite_op_info)) {
-        glamor_fallback("unsupported render op %d \n", op);
+        glamor_fallback("unsupported render op %d \n", screen->context, op);
         return GL_FALSE;
     }
 
@@ -829,12 +829,12 @@ glamor_composite_choose_shader(CARD8 op,
     Bool ret = FALSE;
 
     if (!GLAMOR_PIXMAP_PRIV_HAS_FBO(dest_pixmap_priv)) {
-        glamor_fallback("dest has no fbo.\n");
+        glamor_fallback("dest has no fbo.\n", screen->context);
         goto fail;
     }
 
     if (!glamor_render_format_is_supported(dest)) {
-        glamor_fallback("Unsupported dest picture format.\n");
+        glamor_fallback("Unsupported dest picture format.\n", screen->context);
         goto fail;
     }
 
@@ -897,7 +897,7 @@ glamor_composite_choose_shader(CARD8 op,
                 key.in = glamor_program_alpha_ca_first;
             }
             else {
-                glamor_fallback("Unsupported component alpha op: %d\n", op);
+                glamor_fallback("Unsupported component alpha op: %d\n", screen->context, op);
                 goto fail;
             }
         }
@@ -914,11 +914,11 @@ glamor_composite_choose_shader(CARD8 op,
     }
 
     if (source && source->alphaMap) {
-        glamor_fallback("source alphaMap\n");
+        glamor_fallback("source alphaMap\n", screen->context);
         goto fail;
     }
     if (mask && mask->alphaMap) {
-        glamor_fallback("mask alphaMap\n");
+        glamor_fallback("mask alphaMap\n", screen->context);
         goto fail;
     }
 
@@ -927,7 +927,7 @@ glamor_composite_choose_shader(CARD8 op,
         if (source_pixmap == dest_pixmap) {
             /* XXX source and the dest share the same texture.
              * Does it need special handle? */
-            glamor_fallback("source == dest\n");
+            glamor_fallback("source == dest\n", screen->context);
         }
         if (source_pixmap_priv->gl_fbo == GLAMOR_FBO_UNATTACHED) {
             source_needs_upload = TRUE;
@@ -937,7 +937,7 @@ glamor_composite_choose_shader(CARD8 op,
     if (key.mask == SHADER_MASK_TEXTURE ||
         key.mask == SHADER_MASK_TEXTURE_ALPHA) {
         if (mask_pixmap == dest_pixmap) {
-            glamor_fallback("mask == dest\n");
+            glamor_fallback("mask == dest\n", screen->context);
             goto fail;
         }
         if (mask_pixmap_priv->gl_fbo == GLAMOR_FBO_UNATTACHED) {
@@ -954,7 +954,7 @@ glamor_composite_choose_shader(CARD8 op,
             if (!combine_pict_format(&source->format, source->format,
                                      mask->format, key.in)) {
                 glamor_fallback("combine source %x mask %x failed.\n",
-                                source->format, mask->format);
+                                screen->context, source->format, mask->format);
                 goto fail;
             }
 
@@ -984,7 +984,7 @@ glamor_composite_choose_shader(CARD8 op,
         }
 
         if (!glamor_upload_picture_to_texture(source)) {
-            glamor_fallback("Failed to upload source texture.\n");
+            glamor_fallback("Failed to upload source texture.\n", screen->context);
             goto fail;
         }
         mask_needs_upload = FALSE;
@@ -992,24 +992,24 @@ glamor_composite_choose_shader(CARD8 op,
     else {
         if (source_needs_upload) {
             if (!glamor_upload_picture_to_texture(source)) {
-                glamor_fallback("Failed to upload source texture.\n");
+                glamor_fallback("Failed to upload source texture.\n", screen->context);
                 goto fail;
             }
         } else {
             if (source && !glamor_render_format_is_supported(source)) {
-                glamor_fallback("Unsupported source picture format.\n");
+                glamor_fallback("Unsupported source picture format.\n", screen->context);
                 goto fail;
             }
         }
 
         if (mask_needs_upload) {
             if (!glamor_upload_picture_to_texture(mask)) {
-                glamor_fallback("Failed to upload mask texture.\n");
+                glamor_fallback("Failed to upload mask texture.\n", screen->context);
                 goto fail;
             }
         } else if (mask) {
             if (!glamor_render_format_is_supported(mask)) {
-                glamor_fallback("Unsupported mask picture format.\n");
+                glamor_fallback("Unsupported mask picture format.\n", screen->context);
                 goto fail;
             }
         }
@@ -1032,7 +1032,7 @@ glamor_composite_choose_shader(CARD8 op,
 
     *shader = glamor_lookup_composite_shader(screen, &key);
     if ((*shader)->prog == 0) {
-        glamor_fallback("no shader program for this render acccel mode\n");
+        glamor_fallback("no shader program for this render acccel mode\n", screen->context);
         goto fail;
     }
 
@@ -1148,7 +1148,7 @@ glamor_composite_with_shader(CARD8 op,
                                         dest_pixmap_priv,
                                         &key, &shader, &op_info,
                                         &saved_source_format, ca_state)) {
-        glamor_fallback("glamor_composite_choose_shader failed\n");
+        glamor_fallback("glamor_composite_choose_shader failed\n", screen->context);
         goto fail;
     }
     if (ca_state == CA_TWO_PASS) {
@@ -1158,7 +1158,7 @@ glamor_composite_with_shader(CARD8 op,
                                             mask_pixmap_priv, dest_pixmap_priv,
                                             &key_ca, &shader_ca, &op_info_ca,
                                             &saved_source_format, ca_state)) {
-            glamor_fallback("glamor_composite_choose_shader failed\n");
+            glamor_fallback("glamor_composite_choose_shader failed\n", screen->context);
             goto fail;
         }
     }
@@ -1523,7 +1523,7 @@ glamor_composite_clipped_region(CARD8 op,
         } else {
             if (op == PictOpOver) {
                 if (glamor_pixmap_is_memory(mask_pixmap)) {
-                    glamor_fallback("two pass not supported on memory pximaps\n");
+                    glamor_fallback("two pass not supported on memory pximaps\n", screen->context);
                     goto out;
                 }
                 ca_state = CA_TWO_PASS;
@@ -1533,11 +1533,11 @@ glamor_composite_clipped_region(CARD8 op,
     }
 
     if (temp_src_pixmap == dest_pixmap) {
-        glamor_fallback("source and dest pixmaps are the same\n");
+        glamor_fallback("source and dest pixmaps are the same\n", screen->context);
         goto out;
     }
     if (temp_mask_pixmap == dest_pixmap) {
-        glamor_fallback("mask and dest pixmaps are the same\n");
+        glamor_fallback("mask and dest pixmaps are the same\n", screen->context);
         goto out;
     }
 
@@ -1639,7 +1639,7 @@ glamor_composite(CARD8 op,
         goto fail;
 
     if (op >= ARRAY_SIZE(composite_op_info)) {
-        glamor_fallback("Unsupported composite op %x\n", op);
+        glamor_fallback("Unsupported composite op %x\n", screen->context, op);
         goto fail;
     }
 
@@ -1647,14 +1647,14 @@ glamor_composite(CARD8 op,
         if (op == PictOpAtop
             || op == PictOpAtopReverse
             || op == PictOpXor || op >= PictOpSaturate) {
-            glamor_fallback("glamor_composite(): component alpha op %x\n", op);
+            glamor_fallback("glamor_composite(): component alpha op %x\n", screen->context, op);
             goto fail;
         }
     }
 
     if ((source && source->filter >= PictFilterConvolution)
         || (mask && mask->filter >= PictFilterConvolution)) {
-        glamor_fallback("glamor_composite(): unsupported filter\n");
+        glamor_fallback("glamor_composite(): unsupported filter\n", screen->context);
         goto fail;
     }
 
@@ -1733,6 +1733,7 @@ glamor_composite(CARD8 op,
 
     glamor_fallback
         ("from picts %p:%p %dx%d / %p:%p %d x %d (%c,%c)  to pict %p:%p %dx%d (%c)\n",
+         screen->context,
          source, source->pDrawable,
          source->pDrawable ? source->pDrawable->width : 0,
          source->pDrawable ? source->pDrawable->height : 0, mask,

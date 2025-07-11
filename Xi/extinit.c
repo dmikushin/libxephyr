@@ -499,7 +499,8 @@ SReplyIDispatch(ClientPtr client, int len, xGrabDeviceReply * rep)
     else if (rep->RepType == X_XIGetFocus)
         SRepXIGetFocus(client, len, (xXIGetFocusReply *) rep);
     else {
-        FatalError("XINPUT confused sending swapped reply");
+        fprintf(stderr, "XINPUT confused sending swapped reply\n");
+        abort();
     }
 }
 
@@ -983,7 +984,7 @@ XI2EventSwap(xGenericEvent *from, xGenericEvent *to)
                            (xXIGestureSwipeEvent*) to);
         break;
     default:
-        ErrorF("[Xi] Unknown event type to swap. This is a bug.\n");
+        fprintf(stderr, "[Xi] Unknown event type to swap. This is a bug.\n");
         break;
     }
 }
@@ -1015,7 +1016,7 @@ SetEventInfo(Mask mask, int constant)
  */
 
 static void
-SetMaskForExtEvent(Mask mask, int event)
+SetMaskForExtEvent(Mask mask, int event, XephyrContext* context)
 {
     int i;
 
@@ -1023,10 +1024,10 @@ SetMaskForExtEvent(Mask mask, int event)
     EventInfo[ExtEventIndex++].type = event;
 
     if ((event < LASTEvent) || (event >= 128))
-        FatalError("MaskForExtensionEvent: bogus event number");
+        FatalError("MaskForExtensionEvent: bogus event number", context);
 
     for (i = 0; i < MAXDEVICES; i++)
-        SetMaskForEvent(i, mask, event);
+        SetMaskForEvent(i, mask, event, context);
 }
 
 /************************************************************************
@@ -1036,7 +1037,7 @@ SetMaskForExtEvent(Mask mask, int event)
  */
 
 static void
-FixExtensionEvents(ExtensionEntry * extEntry)
+FixExtensionEvents(ExtensionEntry * extEntry, XephyrContext* context)
 {
     DeviceValuator = extEntry->eventBase;
     DeviceKeyPress = DeviceValuator + 1;
@@ -1069,25 +1070,25 @@ FixExtensionEvents(ExtensionEntry * extEntry)
     DeviceBusy += extEntry->errorBase;
     BadClass += extEntry->errorBase;
 
-    SetMaskForExtEvent(KeyPressMask, DeviceKeyPress);
-    SetCriticalEvent(DeviceKeyPress);
+    SetMaskForExtEvent(KeyPressMask, DeviceKeyPress, context);
+    SetCriticalEvent(DeviceKeyPress, context);
 
-    SetMaskForExtEvent(KeyReleaseMask, DeviceKeyRelease);
-    SetCriticalEvent(DeviceKeyRelease);
+    SetMaskForExtEvent(KeyReleaseMask, DeviceKeyRelease, context);
+    SetCriticalEvent(DeviceKeyRelease, context);
 
-    SetMaskForExtEvent(ButtonPressMask, DeviceButtonPress);
-    SetCriticalEvent(DeviceButtonPress);
+    SetMaskForExtEvent(ButtonPressMask, DeviceButtonPress, context);
+    SetCriticalEvent(DeviceButtonPress, context);
 
-    SetMaskForExtEvent(ButtonReleaseMask, DeviceButtonRelease);
-    SetCriticalEvent(DeviceButtonRelease);
+    SetMaskForExtEvent(ButtonReleaseMask, DeviceButtonRelease, context);
+    SetCriticalEvent(DeviceButtonRelease, context);
 
-    SetMaskForExtEvent(DeviceProximityMask, ProximityIn);
-    SetMaskForExtEvent(DeviceProximityMask, ProximityOut);
+    SetMaskForExtEvent(DeviceProximityMask, ProximityIn, context);
+    SetMaskForExtEvent(DeviceProximityMask, ProximityOut, context);
 
-    SetMaskForExtEvent(DeviceStateNotifyMask, DeviceStateNotify);
+    SetMaskForExtEvent(DeviceStateNotifyMask, DeviceStateNotify, context);
 
-    SetMaskForExtEvent(PointerMotionMask, DeviceMotionNotify);
-    SetCriticalEvent(DeviceMotionNotify);
+    SetMaskForExtEvent(PointerMotionMask, DeviceMotionNotify, context);
+    SetCriticalEvent(DeviceMotionNotify, context);
 
     SetEventInfo(DevicePointerMotionHintMask, _devicePointerMotionHint);
     SetEventInfo(DeviceButton1MotionMask, _deviceButton1Motion);
@@ -1097,16 +1098,16 @@ FixExtensionEvents(ExtensionEntry * extEntry)
     SetEventInfo(DeviceButton5MotionMask, _deviceButton5Motion);
     SetEventInfo(DeviceButtonMotionMask, _deviceButtonMotion);
 
-    SetMaskForExtEvent(DeviceFocusChangeMask, DeviceFocusIn);
-    SetMaskForExtEvent(DeviceFocusChangeMask, DeviceFocusOut);
+    SetMaskForExtEvent(DeviceFocusChangeMask, DeviceFocusIn, context);
+    SetMaskForExtEvent(DeviceFocusChangeMask, DeviceFocusOut, context);
 
-    SetMaskForExtEvent(DeviceMappingNotifyMask, DeviceMappingNotify);
-    SetMaskForExtEvent(ChangeDeviceNotifyMask, ChangeDeviceNotify);
+    SetMaskForExtEvent(DeviceMappingNotifyMask, DeviceMappingNotify, context);
+    SetMaskForExtEvent(ChangeDeviceNotifyMask, ChangeDeviceNotify, context);
 
     SetEventInfo(DeviceButtonGrabMask, _deviceButtonGrab);
     SetEventInfo(DeviceOwnerGrabButtonMask, _deviceOwnerGrabButton);
     SetEventInfo(DevicePresenceNotifyMask, _devicePresence);
-    SetMaskForExtEvent(DevicePropertyNotifyMask, DevicePropertyNotify);
+    SetMaskForExtEvent(DevicePropertyNotifyMask, DevicePropertyNotify, context);
 
     SetEventInfo(0, _noExtensionEvent);
 }
@@ -1119,7 +1120,7 @@ FixExtensionEvents(ExtensionEntry * extEntry)
  */
 
 static void
-RestoreExtensionEvents(void)
+RestoreExtensionEvents(XephyrContext* context)
 {
     int i, j;
 
@@ -1129,7 +1130,7 @@ RestoreExtensionEvents(void)
     for (i = 0; i < ExtEventIndex - 1; i++) {
         if ((EventInfo[i].type >= LASTEvent) && (EventInfo[i].type < 128)) {
             for (j = 0; j < MAXDEVICES; j++)
-                SetMaskForEvent(j, 0, EventInfo[i].type);
+                SetMaskForEvent(j, 0, EventInfo[i].type, context);
         }
         EventInfo[i].mask = 0;
         EventInfo[i].type = 0;
@@ -1190,12 +1191,13 @@ IResetProc(ExtensionEntry * unused)
     EventSwapVector[ChangeDeviceNotify] = NotImplemented;
     EventSwapVector[DevicePresenceNotify] = NotImplemented;
     EventSwapVector[DevicePropertyNotify] = NotImplemented;
-    RestoreExtensionEvents();
+    RestoreExtensionEvents(NULL);
 
     free(xi_all_devices.name);
     free(xi_all_master_devices.name);
 
-    XIBarrierReset();
+    /* TODO: Need to get context for XIBarrierReset - for now skip */
+    /* XIBarrierReset(context); */
 }
 
 /***********************************************************************
@@ -1289,7 +1291,8 @@ SEventIDispatch(xEvent *from, xEvent *to)
     else if (type == DevicePropertyNotify)
         DO_SWAP(SDevicePropertyNotifyEvent, devicePropertyNotify);
     else {
-        FatalError("XInputExtension: Impossible event!\n");
+        fprintf(stderr, "XInputExtension: Impossible event!\n");
+        abort();
     }
 }
 
@@ -1317,10 +1320,10 @@ XInputExtensionInit(XephyrContext* context)
 
     if (!dixRegisterPrivateKey
         (&XIClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(XIClientRec), context))
-        FatalError("Cannot request private for XI.\n");
+        FatalError("Cannot request private for XI.\n", context);
 
     if (!XIBarrierInit(context))
-        FatalError("Could not initialize barriers.\n");
+        FatalError("Could not initialize barriers.\n", context);
 
     extEntry = AddExtension(INAME, IEVENTS, IERRORS, ProcIDispatch,
                             SProcIDispatch, IResetProc, StandardMinorOpcode);
@@ -1332,8 +1335,8 @@ XInputExtensionInit(XephyrContext* context)
         RT_INPUTCLIENT = CreateNewResourceType((DeleteType) InputClientGone,
                                                "INPUTCLIENT");
         if (!RT_INPUTCLIENT)
-            FatalError("Failed to add resource type for XI.\n");
-        FixExtensionEvents(extEntry);
+            FatalError("Failed to add resource type for XI.\n", context);
+        FixExtensionEvents(extEntry, context);
         ReplySwapVector[IReqCode] = (ReplySwapPtr) SReplyIDispatch;
         EventSwapVector[DeviceValuator] = SEventIDispatch;
         EventSwapVector[DeviceKeyPress] = SEventIDispatch;
@@ -1352,7 +1355,7 @@ XInputExtensionInit(XephyrContext* context)
         EventSwapVector[ChangeDeviceNotify] = SEventIDispatch;
         EventSwapVector[DevicePresenceNotify] = SEventIDispatch;
 
-        GERegisterExtension(IReqCode, XI2EventSwap);
+        GERegisterExtension(IReqCode, XI2EventSwap, context);
 
         memset(&xi_all_devices, 0, sizeof(xi_all_devices));
         memset(&xi_all_master_devices, 0, sizeof(xi_all_master_devices));
@@ -1367,6 +1370,6 @@ XInputExtensionInit(XephyrContext* context)
         XIResetProperties();
     }
     else {
-        FatalError("IExtensionInit: AddExtensions failed\n");
+        FatalError("IExtensionInit: AddExtensions failed\n", context);
     }
 }

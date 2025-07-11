@@ -148,7 +148,7 @@ ProcXIPassiveGrabDevice(ClientPtr client)
 
     mask_len = min(xi2mask_mask_size(mask.xi2mask), stuff->mask_len * 4);
     xi2mask_set_one_mask(mask.xi2mask, stuff->deviceid,
-                         (unsigned char *) &stuff[1], mask_len * 4);
+                         (unsigned char *) &stuff[1], mask_len * 4, client->context);
 
     memset(&param, 0, sizeof(param));
     param.grabtype = XI2;
@@ -180,7 +180,7 @@ ProcXIPassiveGrabDevice(ClientPtr client)
     if (ret != Success)
         goto out;
 
-    ret = CheckGrabValues(client, &param);
+    ret = CheckGrabValues(client, &param, client->context);
     if (ret != Success)
         goto out;
 
@@ -198,7 +198,7 @@ ProcXIPassiveGrabDevice(ClientPtr client)
         uint8_t status = Success;
 
         param.modifiers = *modifiers;
-        ret = CheckGrabValues(client, &param);
+        ret = CheckGrabValues(client, &param, client->context);
         if (ret != Success)
             goto out;
 
@@ -341,7 +341,7 @@ ProcXIPassiveUngrabDevice(ClientPtr client)
 
     mod_dev = (IsFloating(dev)) ? dev : GetMaster(dev, MASTER_KEYBOARD);
 
-    tempGrab = AllocGrab(NULL);
+    tempGrab = AllocGrab(NULL, client->context);
     if (!tempGrab)
         return BadAlloc;
 

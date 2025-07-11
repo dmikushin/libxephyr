@@ -365,8 +365,7 @@ ProcXkbSelectEvents(ClientPtr client)
             }
         }
         if (dataLeft > 2) {
-            ErrorF("[xkb] Extra data (%d bytes) after SelectEvents\n",
-                   dataLeft);
+            ErrorF("[xkb] Extra data (%d bytes) after SelectEvents\n", NULL, dataLeft);
             return BadLength;
         }
         return Success;
@@ -2581,7 +2580,7 @@ _XkbSetMapChecks(ClientPtr client, DeviceIntPtr dev, xkbSetMapReq * req,
     }
 
     if (((values - ((char *) req)) / 4) != req->length) {
-        ErrorF("[xkb] Internal error! Bad length in XkbSetMap (after check)\n");
+        ErrorF("[xkb] Internal error! Bad length in XkbSetMap (after check)\n", client->context);
         client->errorValue = values - ((char *) &req[1]);
         return BadLength;
     }
@@ -2664,7 +2663,7 @@ _XkbSetMap(ClientPtr client, DeviceIntPtr dev, xkbSetMapReq * req, char *values)
         values =
             SetVirtualModMap(xkbi, req, (xkbVModMapWireDesc *) values, &change);
     if (((values - ((char *) req)) / 4) != req->length) {
-        ErrorF("[xkb] Internal error! Bad length in XkbSetMap (after set)\n");
+        ErrorF("[xkb] Internal error! Bad length in XkbSetMap (after set)\n", client->context);
         client->errorValue = values - ((char *) &req[1]);
         return BadLength;
     }
@@ -3015,7 +3014,7 @@ _XkbSetCompatMap(ClientPtr client, DeviceIntPtr dev,
                 (wire->mods & 0xff) == 0xff &&
                 wire->act.type == XkbSA_XFree86Private) {
                 ErrorF("XKB: Skipping broken Any+AnyOfOrNone(All) -> Private "
-                       "action from client\n");
+                       "action from client\n", client->context);
                 skipped++;
                 continue;
             }
@@ -3065,7 +3064,7 @@ _XkbSetCompatMap(ClientPtr client, DeviceIntPtr dev,
     }
     i = XkbPaddedSize((data - ((char *) req)));
     if ((i / 4) != req->length) {
-        ErrorF("[xkb] Internal length error on read in _XkbSetCompatMap\n");
+        ErrorF("[xkb] Internal length error on read in _XkbSetCompatMap\n", client->context);
         return BadLength;
     }
 
@@ -4774,7 +4773,7 @@ XkbSizeGeomDoodads(int num_doodads, XkbDoodadPtr doodad)
 }
 
 static char *
-XkbWriteGeomDoodads(char *wire, int num_doodads, XkbDoodadPtr doodad, Bool swap)
+XkbWriteGeomDoodads(char *wire, int num_doodads, XkbDoodadPtr doodad, Bool swap, XephyrContext* context)
 {
     register int i;
     xkbDoodadWireDesc *doodadWire;
@@ -4828,9 +4827,8 @@ XkbWriteGeomDoodads(char *wire, int num_doodads, XkbDoodadPtr doodad, Bool swap)
             wire = XkbWriteCountedString(wire, doodad->logo.logo_name, swap);
             break;
         default:
-            ErrorF("[xkb] Unknown doodad type %d in XkbWriteGeomDoodads\n",
-                   doodad->any.type);
-            ErrorF("[xkb] Ignored\n");
+            ErrorF("[xkb] Unknown doodad type %d in XkbWriteGeomDoodads\n", context, doodad->any.type);
+            ErrorF("[xkb] Ignored\n", context);
             break;
         }
     }
@@ -4916,7 +4914,7 @@ XkbSizeGeomSections(XkbGeometryPtr geom)
 }
 
 static char *
-XkbWriteGeomSections(char *wire, XkbGeometryPtr geom, Bool swap)
+XkbWriteGeomSections(char *wire, XkbGeometryPtr geom, Bool swap, XephyrContext* context)
 {
     register int i;
     XkbSectionPtr section;
@@ -4985,7 +4983,7 @@ XkbWriteGeomSections(char *wire, XkbGeometryPtr geom, Bool swap)
         if (section->doodads) {
             wire = XkbWriteGeomDoodads(wire,
                                        section->num_doodads, section->doodads,
-                                       swap);
+                                       swap, context);
         }
         if (section->overlays) {
             register int o;
@@ -5058,10 +5056,10 @@ XkbSendGeometry(ClientPtr client,
         if (rep->nShapes > 0)
             desc = XkbWriteGeomShapes(desc, geom, client->swapped);
         if (rep->nSections > 0)
-            desc = XkbWriteGeomSections(desc, geom, client->swapped);
+            desc = XkbWriteGeomSections(desc, geom, client->swapped, client->context);
         if (rep->nDoodads > 0)
             desc = XkbWriteGeomDoodads(desc, geom->num_doodads, geom->doodads,
-                                       client->swapped);
+                                       client->swapped, client->context);
         if (rep->nKeyAliases > 0)
             desc = XkbWriteGeomKeyAliases(desc, geom, client->swapped);
         if ((desc - start) != (len)) {
@@ -6573,9 +6571,8 @@ ProcXkbGetDeviceInfo(ClientPtr client)
             return status;
     }
     else if (length != 0) {
-        ErrorF("[xkb] Internal Error!  BadLength in ProcXkbGetDeviceInfo\n");
-        ErrorF("[xkb]                  Wrote %d fewer bytes than expected\n",
-               length);
+        ErrorF("[xkb] Internal Error!  BadLength in ProcXkbGetDeviceInfo\n", client->context);
+        ErrorF("[xkb]                  Wrote %d fewer bytes than expected\n", client->context, length);
         return BadLength;
     }
     return Success;
@@ -6948,11 +6945,9 @@ ProcXkbSetDebuggingFlags(ClientPtr client)
     newCtrls = xkbDebugCtrls & (~stuff->affectCtrls);
     newCtrls |= (stuff->ctrls & stuff->affectCtrls);
     if (xkbDebugFlags || newFlags || stuff->msgLength) {
-        ErrorF("[xkb] XkbDebug: Setting debug flags to 0x%lx\n",
-               (long) newFlags);
+        ErrorF("[xkb] XkbDebug: Setting debug flags to 0x%lx\n", client->context, (long) newFlags);
         if (newCtrls != xkbDebugCtrls)
-            ErrorF("[xkb] XkbDebug: Setting debug controls to 0x%lx\n",
-                   (long) newCtrls);
+            ErrorF("[xkb] XkbDebug: Setting debug controls to 0x%lx\n", client->context, (long) newCtrls);
     }
     extraLength = (stuff->length << 2) - sz_xkbSetDebuggingFlagsReq;
     if (stuff->msgLength > 0) {
@@ -6960,17 +6955,17 @@ ProcXkbSetDebuggingFlags(ClientPtr client)
 
         if (extraLength < XkbPaddedSize(stuff->msgLength)) {
             ErrorF
-                ("[xkb] XkbDebug: msgLength= %d, length= %ld (should be %d)\n",
+                ("[xkb] XkbDebug: msgLength= %d, length= %ld (should be %d)\n", client->context,
                  stuff->msgLength, (long) extraLength,
                  XkbPaddedSize(stuff->msgLength));
             return BadLength;
         }
         msg = (char *) &stuff[1];
         if (msg[stuff->msgLength - 1] != '\0') {
-            ErrorF("[xkb] XkbDebug: message not null-terminated\n");
+            ErrorF("[xkb] XkbDebug: message not null-terminated\n", client->context);
             return BadValue;
         }
-        ErrorF("[xkb] XkbDebug: %s\n", msg);
+        ErrorF("[xkb] XkbDebug: %s\n", client->context, msg);
     }
     xkbDebugFlags = newFlags;
     xkbDebugCtrls = newCtrls;
@@ -7066,7 +7061,7 @@ XkbClientGone(void *data, XID id, XephyrContext* context)
 
     if (!XkbRemoveResourceClient(pXDev, id)) {
         ErrorF
-            ("[xkb] Internal Error! bad RemoveResourceClient in XkbClientGone\n");
+            ("[xkb] Internal Error! bad RemoveResourceClient in XkbClientGone\n", context);
     }
     return 1;
 }

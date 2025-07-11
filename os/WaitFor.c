@@ -214,7 +214,7 @@ WaitForSomething(Bool are_ready, XephyrContext* context)
                 return FALSE;
             if (i < 0) {
                 if (pollerr != EINTR && !ETEST(pollerr)) {
-                    ErrorF("WaitForSomething(): poll: %s\n",
+                    ErrorF("WaitForSomething(): poll: %s\n", context,
                            strerror(pollerr));
                 }
             }

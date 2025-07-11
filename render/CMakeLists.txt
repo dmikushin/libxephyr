@@ -1,7 +1,6 @@
 set(srcs_render
     animcur.c
     filter.c
-    glyph.c
     matrix.c
     miindex.c
     mipict.c

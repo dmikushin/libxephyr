@@ -785,7 +785,7 @@ RecordADeviceEvent(CallbackListPtr *pcbl, void *nulldata, void *calldata)
                 if (IsMaster(pei->device)) {
                     xEvent *core_events;
 
-                    EventToCore(pei->event, &core_events, &count);
+                    EventToCore(pei->event, &core_events, &count, pei->device->master->context);
                     RecordSendProtocolEvents(pRCAP, pContext, core_events,
                                              count, pei->device->master->context);
                     free(core_events);

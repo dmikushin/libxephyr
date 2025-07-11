@@ -30,6 +30,7 @@
 
 #include <xcb/xcb.h>
 #include "dix-config.h"
+#include "dix/context.h"
 
 struct ephyr_glamor;
 struct pixman_region16;
@@ -41,10 +42,10 @@ void
 ephyr_glamor_set_texture(struct ephyr_glamor *ephyr_glamor, uint32_t tex);
 
 xcb_visualtype_t *
-ephyr_glamor_get_visual(void);
+ephyr_glamor_get_visual(XephyrContext* context);
 
 struct ephyr_glamor *
-ephyr_glamor_glx_screen_init(xcb_window_t win);
+ephyr_glamor_glx_screen_init(xcb_window_t win, XephyrContext* context);
 
 void
 ephyr_glamor_glx_screen_fini(struct ephyr_glamor *glamor);

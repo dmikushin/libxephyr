@@ -97,13 +97,16 @@ extern _X_EXPORT Bool XkbRF_GetComponents(XkbRF_RulesPtr /* rules */ ,
     );
 
 extern _X_EXPORT Bool XkbRF_LoadRules(FILE * /* file */ ,
-                                      XkbRF_RulesPtr    /* rules */
+                                      XkbRF_RulesPtr /* rules */,
+                                      XephyrContext* /* context */
     );
 
 extern _X_EXPORT Bool XkbRF_LoadRulesByName(char * /* base */ ,
                                             char * /* locale */ ,
-                                            XkbRF_RulesPtr      /* rules */
+                                            XkbRF_RulesPtr /* rules */,
+                                            XephyrContext* /* context */
     );
+
 
 /***====================================================================***/
 

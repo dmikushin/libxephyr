@@ -234,7 +234,7 @@ XIGetDevice(xEvent *xE, XephyrContext* context)
 
         rc = dixLookupDevice(&pDev, id, context->serverClient, DixUnknownAccess);
         if (rc != Success)
-            ErrorF("[dix] XIGetDevice failed on XACE restrictions (%d)\n", rc);
+            ErrorF("[dix] XIGetDevice failed on XACE restrictions (%d)\n", NULL, rc);
     }
     return pDev;
 }
@@ -276,7 +276,7 @@ CopyKeyClass(DeviceIntPtr device, DeviceIntPtr master)
     mk->sourceid = device->id;
 
     if (!XkbDeviceApplyKeymap(master, device->key->xkbInfo->desc))
-        FatalError("Couldn't pivot keymap from device to core!\n");
+        FatalError("Couldn't pivot keymap from device to core!\n", device->context);
 }
 
 /**
@@ -303,7 +303,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*i)) {
                 *i = calloc(1, sizeof(IntegerFeedbackClassRec));
                 if (!(*i)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.");
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
                     return;
                 }
             }
@@ -333,7 +333,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*s)) {
                 *s = calloc(1, sizeof(StringFeedbackClassRec));
                 if (!(*s)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.");
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
                     return;
                 }
             }
@@ -363,7 +363,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*b)) {
                 *b = calloc(1, sizeof(BellFeedbackClassRec));
                 if (!(*b)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.");
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
                     return;
                 }
             }
@@ -394,7 +394,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*l)) {
                 *l = calloc(1, sizeof(LedFeedbackClassRec));
                 if (!(*l)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.");
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
                     return;
                 }
             }
@@ -439,7 +439,7 @@ DeepCopyKeyboardClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*k)) {
                 *k = calloc(1, sizeof(KbdFeedbackClassRec));
                 if (!*k) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.");
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
                     return;
                 }
             }
@@ -509,7 +509,7 @@ DeepCopyKeyboardClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!to->focus) {
                 to->focus = calloc(1, sizeof(FocusClassRec));
                 if (!to->focus)
-                    FatalError("[Xi] no memory for class shift.\n");
+                    FatalError("[Xi] no memory for class shift.\n", from->context);
             }
             else
                 classes->focus = NULL;
@@ -520,7 +520,7 @@ DeepCopyKeyboardClasses(DeviceIntPtr from, DeviceIntPtr to)
                                             to->focus->traceSize,
                                             sizeof(WindowPtr));
             if (!to->focus->trace && to->focus->traceSize)
-                FatalError("[Xi] no memory for trace.\n");
+                FatalError("[Xi] no memory for trace.\n", from->context);
             memcpy(to->focus->trace, from->focus->trace,
                    from->focus->traceSize * sizeof(WindowPtr));
             to->focus->sourceid = from->id;
@@ -556,7 +556,7 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*p)) {
                 *p = calloc(1, sizeof(PtrFeedbackClassRec));
                 if (!*p) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.");
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
                     return;
                 }
             }
@@ -585,7 +585,7 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
         v = AllocValuatorClass(to->valuator, from->valuator->numAxes);
 
         if (!v)
-            FatalError("[Xi] no memory for class shift.\n");
+            FatalError("[Xi] no memory for class shift.\n", from->context);
 
         to->valuator = v;
         memcpy(v->axes, from->valuator->axes, v->numAxes * sizeof(AxisInfo));
@@ -605,7 +605,7 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!to->button) {
                 to->button = calloc(1, sizeof(ButtonClassRec));
                 if (!to->button)
-                    FatalError("[Xi] no memory for class shift.\n");
+                    FatalError("[Xi] no memory for class shift.\n", from->context);
             }
             else
                 classes->button = NULL;
@@ -615,7 +615,7 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!to->button->xkb_acts) {
                 to->button->xkb_acts = calloc(1, sizeof(XkbAction));
                 if (!to->button->xkb_acts)
-                    FatalError("[Xi] not enough memory for xkb_acts.\n");
+                    FatalError("[Xi] not enough memory for xkb_acts.\n", from->context);
             }
             memcpy(to->button->xkb_acts, from->button->xkb_acts,
                    sizeof(XkbAction));
@@ -640,7 +640,7 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!to->proximity) {
                 to->proximity = calloc(1, sizeof(ProximityClassRec));
                 if (!to->proximity)
-                    FatalError("[Xi] no memory for class shift.\n");
+                    FatalError("[Xi] no memory for class shift.\n", from->context);
             }
             else
                 classes->proximity = NULL;
@@ -665,14 +665,14 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
 
                 to->touch = calloc(1, sizeof(TouchClassRec));
                 if (!to->touch)
-                    FatalError("[Xi] no memory for class shift.\n");
+                    FatalError("[Xi] no memory for class shift.\n", from->context);
                 to->touch->num_touches = from->touch->num_touches;
                 to->touch->touches = calloc(to->touch->num_touches,
                                             sizeof(TouchPointInfoRec));
                 for (i = 0; i < to->touch->num_touches; i++)
                     TouchInitTouchPoint(to->touch, to->valuator, i, to->context);
                 if (!to->touch)
-                    FatalError("[Xi] no memory for class shift.\n");
+                    FatalError("[Xi] no memory for class shift.\n", from->context);
             }
             else
                 classes->touch = NULL;
@@ -699,7 +699,7 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
             to->gesture = classes->gesture;
             if (!to->gesture) {
                 if (!InitGestureClassDeviceStruct(to, from->gesture->max_touches))
-                    FatalError("[Xi] no memory for class shift.\n");
+                    FatalError("[Xi] no memory for class shift.\n", from->context);
             }
             else
                 classes->gesture = NULL;
@@ -742,14 +742,14 @@ DeepCopyDeviceClasses(DeviceIntPtr from, DeviceIntPtr to,
  * Send an XI2 DeviceChangedEvent to all interested context->clients.
  */
 void
-XISendDeviceChangedEvent(DeviceIntPtr device, DeviceChangedEvent *dce)
+XISendDeviceChangedEvent(DeviceIntPtr device, DeviceChangedEvent *dce, XephyrContext* context)
 {
     xXIDeviceChangedEvent *dcce;
     int rc;
 
-    rc = EventToXI2((InternalEvent *) dce, (xEvent **) &dcce);
+    rc = EventToXI2((InternalEvent *) dce, (xEvent **) &dcce, context);
     if (rc != Success) {
-        ErrorF("[Xi] event conversion from DCE failed with code %d\n", rc);
+        ErrorF("[Xi] event conversion from DCE failed with code %d\n", context, rc);
         return;
     }
 
@@ -790,7 +790,7 @@ ChangeMasterDeviceClasses(DeviceIntPtr device, DeviceChangedEvent *dce, XephyrCo
     /* FIXME: the classes may have changed since we generated the event. */
     DeepCopyDeviceClasses(slave, device, dce);
     dce->deviceid = device->id;
-    XISendDeviceChangedEvent(device, dce);
+    XISendDeviceChangedEvent(device, dce, context);
 }
 
 /**
@@ -811,8 +811,8 @@ UpdateDeviceMotionMask(DeviceIntPtr device, unsigned short state,
     Mask mask;
 
     mask = PointerMotionMask | state | motion_mask;
-    SetMaskForEvent(device->id, mask, DeviceMotionNotify);
-    SetMaskForEvent(device->id, mask, MotionNotify);
+    SetMaskForEvent(device->id, mask, DeviceMotionNotify, device->context);
+    SetMaskForEvent(device->id, mask, MotionNotify, device->context);
 }
 
 static void
@@ -899,12 +899,12 @@ UpdateDeviceState(DeviceIntPtr device, DeviceEvent *event, XephyrContext* contex
         if (BitIsOn(&event->valuators.mask, i)) {
             if (!v) {
                 ErrorF("[Xi] Valuators reported for non-valuator device '%s'. "
-                       "Ignoring event.\n", device->name);
+                       "Ignoring event.\n", context, device->name);
                 return DONT_PROCESS;
             }
             else if (v->numAxes < i) {
                 ErrorF("[Xi] Too many valuators reported for device '%s'. "
-                       "Ignoring event.\n", device->name);
+                       "Ignoring event.\n", context, device->name);
                 return DONT_PROCESS;
             }
             last_valuator = i;
@@ -993,8 +993,8 @@ UpdateDeviceState(DeviceIntPtr device, DeviceEvent *event, XephyrContext* contex
     else if (event->type == ET_ProximityOut)
         device->proximity->in_proximity = FALSE;
     else if (event->type == ET_TouchBegin) {
-        BUG_RETURN_VAL(!b || !v, DONT_PROCESS);
-        BUG_RETURN_VAL(!t, DONT_PROCESS);
+        BUG_RETURN_VAL(!b || !v, context, DONT_PROCESS);
+        BUG_RETURN_VAL(!t, context, DONT_PROCESS);
 
         if (!b->map[key])
             return DONT_PROCESS;
@@ -1008,8 +1008,8 @@ UpdateDeviceState(DeviceIntPtr device, DeviceEvent *event, XephyrContext* contex
         UpdateDeviceMotionMask(device, t->state, DeviceButtonMotionMask);
     }
     else if (event->type == ET_TouchEnd) {
-        BUG_RETURN_VAL(!b || !v, DONT_PROCESS);
-        BUG_RETURN_VAL(!t, DONT_PROCESS);
+        BUG_RETURN_VAL(!b || !v, context, DONT_PROCESS);
+        BUG_RETURN_VAL(!t, context, DONT_PROCESS);
 
         if (t->buttonsDown <= 0 || !b->map[key])
             return DONT_PROCESS;
@@ -1067,7 +1067,7 @@ TouchSendOwnershipEvent(DeviceIntPtr dev, TouchPointInfoPtr ti, int reason,
  */
 static Bool
 DeliverOneTouchEvent(ClientPtr client, DeviceIntPtr dev, TouchPointInfoPtr ti,
-                     GrabPtr grab, WindowPtr win, InternalEvent *ev)
+                     GrabPtr grab, WindowPtr win, InternalEvent *ev, XephyrContext* context)
 {
     int err;
     xEvent *xi2;
@@ -1083,10 +1083,10 @@ DeliverOneTouchEvent(ClientPtr client, DeviceIntPtr dev, TouchPointInfoPtr ti,
         return TRUE;
 
     /* If we fail here, we're going to leave a client hanging. */
-    err = EventToXI2(ev, &xi2);
+    err = EventToXI2(ev, &xi2, context);
     if (err != Success)
         FatalError("[Xi] %s: XI2 conversion failed in %s"
-                   " (%d)\n", dev->name, __func__, err);
+                   " (%d)\n", context, dev->name, __func__, err);
 
     FixUpEventFromWindow(&ti->sprite, xi2, win, child, FALSE);
     filter = GetEventFilter(dev, xi2);
@@ -1108,14 +1108,14 @@ ActivateEarlyAccept(DeviceIntPtr dev, TouchPointInfoPtr ti, XephyrContext* conte
     GrabPtr grab = ti->listeners[0].grab;
 
     BUG_RETURN(ti->listeners[0].type != TOUCH_LISTENER_GRAB &&
-               ti->listeners[0].type != TOUCH_LISTENER_POINTER_GRAB);
-    BUG_RETURN(!grab);
+               ti->listeners[0].type != TOUCH_LISTENER_POINTER_GRAB, context);
+    BUG_RETURN(!grab, context);
 
     client = rClient(grab, context);
 
     if (TouchAcceptReject(client, dev, XIAcceptTouch, ti->client_id,
                           ti->listeners[0].window->drawable.id, &error) != Success)
-        ErrorF("[Xi] Failed to accept touch grab after early acceptance.\n");
+        ErrorF("[Xi] Failed to accept touch grab after early acceptance.\n", context);
 }
 
 /**
@@ -1361,7 +1361,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
         listener->type == TOUCH_LISTENER_POINTER_GRAB) {
         *grab = listener->grab;
 
-        BUG_RETURN_VAL(!*grab, FALSE);
+        BUG_RETURN_VAL(!*grab, context, FALSE);
 
         *client = rClient(*grab, context);
         *win = (*grab)->window;
@@ -1388,7 +1388,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
                 if (xi2mask_isset(iclients->xi2mask, dev, evtype))
                 break;
 
-            BUG_RETURN_VAL(!iclients, FALSE);
+            BUG_RETURN_VAL(!iclients, context, FALSE);
 
             *mask = iclients->xi2mask;
             *client = rClient(iclients, context);
@@ -1401,7 +1401,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
                                    wOtherInputMasks(*win)->inputClients, next)
                 if (iclients->mask[dev->id] & xi_filter)
                 break;
-            BUG_RETURN_VAL(!iclients, FALSE);
+            BUG_RETURN_VAL(!iclients, context, FALSE);
 
             *client = rClient(iclients, context);
         }
@@ -1455,7 +1455,7 @@ DeliverTouchEmulatedEvent(DeviceIntPtr dev, TouchPointInfoPtr ti,
         return !Success;
 
     nevents = TouchConvertToPointerEvent(ev, &motion, &button);
-    BUG_RETURN_VAL(nevents == 0, BadValue);
+    BUG_RETURN_VAL(nevents == 0, context, BadValue);
 
     /* Note that here we deliver only part of the events that are generated by the touch event:
      *
@@ -1522,8 +1522,8 @@ DeliverTouchEmulatedEvent(DeviceIntPtr dev, TouchPointInfoPtr ti,
             GrabPtr g;
 
             devgrab = dev->deviceGrab.grab;
-            g = AllocGrab(devgrab);
-            BUG_WARN(!g);
+            g = AllocGrab(devgrab, context);
+            BUG_WARN(!g, context);
 
             CopyPartialInternalEvent(dev->deviceGrab.sync.event, ev);
 
@@ -1585,7 +1585,7 @@ DeliverEmulatedMotionEvent(DeviceIntPtr dev, TouchPointInfoPtr ti,
 
         converted = TouchConvertToPointerEvent(ev, (InternalEvent*)&motion, &button);
 
-        BUG_WARN(converted == 0);
+        BUG_WARN(converted == 0, context);
         if (converted)
             ProcessOtherEvent((InternalEvent*)&motion, dev, context);
     }
@@ -1720,9 +1720,9 @@ ProcessBarrierEvent(InternalEvent *e, DeviceIntPtr dev, XephyrContext* context)
     if (grab)
         be->flags |= XIBarrierDeviceIsGrabbed;
 
-    rc = EventToXI2(e, &ev);
+    rc = EventToXI2(e, &ev, context);
     if (rc != Success) {
-        ErrorF("[Xi] event conversion from %s failed with code %d\n", __func__, rc);
+        ErrorF("[Xi] event conversion from %s failed with code %d\n", context, __func__, rc);
         return;
     }
 
@@ -1789,7 +1789,7 @@ ProcessGestureEvent(InternalEvent *ev, DeviceIntPtr dev, XephyrContext* context)
     event_set_state_gesture(kbd, &ev->gesture_event);
 
     if (IsGestureBeginEvent(ev))
-        GestureSetupListener(dev, gi, ev);
+        GestureSetupListener(dev, gi, ev, context);
 
     if (IsGestureEndEvent(ev) &&
             dev->deviceGrab.grab &&
@@ -1875,7 +1875,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* contex
         xEvent *core;
         int count;
 
-        if (EventToCore(ev, &core, &count) == Success && count > 0) {
+        if (EventToCore(ev, &core, &count, context) == Success && count > 0) {
             XaceHook(XACE_KEY_AVAIL, core, device, 0);
             free(core);
         }
@@ -1957,7 +1957,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* contex
             flags = (IsPointerDevice (device)) ?
                 DEVCHANGE_POINTER_EVENT : DEVCHANGE_KEYBOARD_EVENT;
             UpdateFromMaster (&dce, device, flags, &num_events);
-            BUG_WARN(num_events > 1);
+            BUG_WARN(num_events > 1, context);
 
             if (num_events == 1)
                 ChangeMasterDeviceClasses(GetMaster (device, MASTER_ATTACHED),
@@ -1977,7 +1977,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* contex
 void
 ProcessOtherEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* context)
 {
-    verify_internal_event(ev);
+    verify_internal_event(ev, context);
 
     switch (ev->any.type) {
     case ET_RawKeyPress:
@@ -2047,7 +2047,7 @@ DeliverTouchBeginEvent(DeviceIntPtr dev, TouchPointInfoPtr ti,
     has_ownershipmask = xi2mask_isset(xi2mask, dev, XI_TouchOwnership);
 
     if (TouchResourceIsOwner(ti, listener->listener) || has_ownershipmask)
-        rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev);
+        rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev, context);
     if (!TouchResourceIsOwner(ti, listener->listener)) {
         if (has_ownershipmask)
             state = TOUCH_LISTENER_AWAITING_OWNER;
@@ -2109,7 +2109,7 @@ DeliverTouchEndEvent(DeviceIntPtr dev, TouchPointInfoPtr ti, InternalEvent *ev,
         (ev->device_event.flags & TOUCH_ACCEPT && !TouchResourceIsOwner(ti, listener->listener))) {
         /* Touch has been rejected, or accepted by its owner which is not this listener */
         if (listener->state != TOUCH_LISTENER_HAS_END)
-            rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev);
+            rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev, context);
         listener->state = TOUCH_LISTENER_HAS_END;
     }
     else if (TouchResourceIsOwner(ti, listener->listener)) {
@@ -2117,7 +2117,7 @@ DeliverTouchEndEvent(DeviceIntPtr dev, TouchPointInfoPtr ti, InternalEvent *ev,
 
         /* FIXME: what about early acceptance */
         if (normal_end && listener->state != TOUCH_LISTENER_HAS_END)
-            rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev);
+            rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev, context);
 
         if ((ti->num_listeners > 1 ||
              (ti->num_grabs > 0 && listener->state != TOUCH_LISTENER_HAS_ACCEPTED)) &&
@@ -2150,7 +2150,7 @@ DeliverTouchEvent(DeviceIntPtr dev, TouchPointInfoPtr ti, InternalEvent *ev,
         ev->touch_ownership_event.deviceid = dev->id;
         if (!TouchResourceIsOwner(ti, listener->listener))
             goto out;
-        rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev);
+        rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev, context);
         listener->state = TOUCH_LISTENER_IS_OWNER;
     }
     else
@@ -2167,7 +2167,7 @@ DeliverTouchEvent(DeviceIntPtr dev, TouchPointInfoPtr ti, InternalEvent *ev,
                                       xi2mask, context);
         else if (TouchResourceIsOwner(ti, listener->listener) ||
                  has_ownershipmask)
-            rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev);
+            rc = DeliverOneTouchEvent(client, dev, ti, grab, win, ev, context);
     }
     else if (ev->any.type == ET_TouchEnd)
         rc = DeliverTouchEndEvent(dev, ti, ev, listener, client, win, grab,
@@ -2221,7 +2221,7 @@ DeliverTouchEvents(DeviceIntPtr dev, TouchPointInfoPtr ti,
  */
 static Bool
 DeliverOneGestureEvent(ClientPtr client, DeviceIntPtr dev, GestureInfoPtr gi,
-                       GrabPtr grab, WindowPtr win, InternalEvent *ev)
+                       GrabPtr grab, WindowPtr win, InternalEvent *ev, XephyrContext* context)
 {
     int err;
     xEvent *xi2;
@@ -2229,10 +2229,10 @@ DeliverOneGestureEvent(ClientPtr client, DeviceIntPtr dev, GestureInfoPtr gi,
     Window child = DeepestSpriteWin(&gi->sprite)->drawable.id;
 
     /* If we fail here, we're going to leave a client hanging. */
-    err = EventToXI2(ev, &xi2);
+    err = EventToXI2(ev, &xi2, context);
     if (err != Success)
         FatalError("[Xi] %s: XI2 conversion failed in %s"
-                   " (%d)\n", dev->name, __func__, err);
+                   " (%d)\n", context, dev->name, __func__, err);
 
     FixUpEventFromWindow(&gi->sprite, xi2, win, child, FALSE);
     filter = GetEventFilter(dev, xi2);
@@ -2271,7 +2271,7 @@ RetrieveGestureDeliveryData(DeviceIntPtr dev, InternalEvent *ev, GestureListener
         listener->type == GESTURE_LISTENER_NONGESTURE_GRAB) {
         *grab = listener->grab;
 
-        BUG_RETURN_VAL(!*grab, FALSE);
+        BUG_RETURN_VAL(!*grab, context, FALSE);
 
         *client = rClient(*grab, context);
         *win = (*grab)->window;
@@ -2290,7 +2290,7 @@ RetrieveGestureDeliveryData(DeviceIntPtr dev, InternalEvent *ev, GestureListener
             if (xi2mask_isset(iclients->xi2mask, dev, evtype))
                 break;
 
-        BUG_RETURN_VAL(!iclients, FALSE);
+        BUG_RETURN_VAL(!iclients, context, FALSE);
 
         *client = rClient(iclients, context);
     }
@@ -2318,16 +2318,16 @@ DeliverGestureEventToOwner(DeviceIntPtr dev, GestureInfoPtr gi, InternalEvent *e
 
     ev->gesture_event.deviceid = dev->id;
 
-    return DeliverOneGestureEvent(client, dev, gi, grab, win, ev);
+    return DeliverOneGestureEvent(client, dev, gi, grab, win, ev, context);
 }
 
 int
-InitProximityClassDeviceStruct(DeviceIntPtr dev)
+InitProximityClassDeviceStruct(DeviceIntPtr dev, XephyrContext* context)
 {
     ProximityClassPtr proxc;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
-    BUG_RETURN_VAL(dev->proximity != NULL, FALSE);
+    BUG_RETURN_VAL(dev == NULL, context, FALSE);
+    BUG_RETURN_VAL(dev->proximity != NULL, context, FALSE);
 
     proxc = (ProximityClassPtr) malloc(sizeof(ProximityClassRec));
     if (!proxc)
@@ -2350,14 +2350,14 @@ InitProximityClassDeviceStruct(DeviceIntPtr dev)
 Bool
 InitValuatorAxisStruct(DeviceIntPtr dev, int axnum, Atom label, int minval,
                        int maxval, int resolution, int min_res, int max_res,
-                       int mode)
+                       int mode, XephyrContext* context)
 {
     AxisInfoPtr ax;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
-    BUG_RETURN_VAL(dev->valuator == NULL, FALSE);
-    BUG_RETURN_VAL(axnum >= dev->valuator->numAxes, FALSE);
-    BUG_RETURN_VAL(minval > maxval && mode == Absolute, FALSE);
+    BUG_RETURN_VAL(dev == NULL, context, FALSE);
+    BUG_RETURN_VAL(dev->valuator == NULL, context, FALSE);
+    BUG_RETURN_VAL(axnum >= dev->valuator->numAxes, context, FALSE);
+    BUG_RETURN_VAL(minval > maxval && mode == Absolute, context, FALSE);
 
     ax = dev->valuator->axes + axnum;
 
@@ -2387,9 +2387,9 @@ SetScrollValuator(DeviceIntPtr dev, int axnum, enum ScrollType type,
     InternalEvent dce;
     DeviceIntPtr master;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
-    BUG_RETURN_VAL(dev->valuator == NULL, FALSE);
-    BUG_RETURN_VAL(axnum >= dev->valuator->numAxes, FALSE);
+    BUG_RETURN_VAL(dev == NULL, context, FALSE);
+    BUG_RETURN_VAL(dev->valuator == NULL, context, FALSE);
+    BUG_RETURN_VAL(axnum >= dev->valuator->numAxes, context, FALSE);
 
     switch (type) {
     case SCROLL_TYPE_VERTICAL:
@@ -2427,7 +2427,7 @@ SetScrollValuator(DeviceIntPtr dev, int axnum, enum ScrollType type,
     CreateClassesChangedEvent(&dce, master, dev,
                               DEVCHANGE_POINTER_EVENT |
                               DEVCHANGE_DEVICE_CHANGE);
-    XISendDeviceChangedEvent(dev, &dce.changed_event);
+    XISendDeviceChangedEvent(dev, &dce.changed_event, context);
 
     /* if the current slave is us, update the master. If not, we'll update
      * whenever the next slave switch happens anyway. CMDC sends the event
@@ -2439,11 +2439,11 @@ SetScrollValuator(DeviceIntPtr dev, int axnum, enum ScrollType type,
 }
 
 int
-CheckGrabValues(ClientPtr client, GrabParameters *param)
+CheckGrabValues(ClientPtr client, GrabParameters *param, XephyrContext* context)
 {
     if (param->grabtype != CORE &&
         param->grabtype != XI && param->grabtype != XI2) {
-        ErrorF("[Xi] grabtype is invalid. This is a bug.\n");
+        ErrorF("[Xi] grabtype is invalid. This is a bug.\n", context);
         return BadImplementation;
     }
 
@@ -2485,7 +2485,7 @@ GrabButton(ClientPtr client, DeviceIntPtr dev, DeviceIntPtr modifier_device,
     int rc, type = -1;
     Mask access_mode = DixGrabAccess;
 
-    rc = CheckGrabValues(client, param);
+    rc = CheckGrabValues(client, param, context);
     if (rc != Success)
         return rc;
     if (param->confineTo == None)
@@ -2543,7 +2543,7 @@ GrabKey(ClientPtr client, DeviceIntPtr dev, DeviceIntPtr modifier_device,
     Mask access_mode = DixGrabAccess;
     int rc, type = -1;
 
-    rc = CheckGrabValues(client, param);
+    rc = CheckGrabValues(client, param, context);
     if (rc != Success)
         return rc;
     if ((dev->id != XIAllDevices && dev->id != XIAllMasterDevices) && k == NULL)
@@ -2588,7 +2588,7 @@ GrabWindow(ClientPtr client, DeviceIntPtr dev, int type,
     Mask access_mode = DixGrabAccess;
     int rc;
 
-    rc = CheckGrabValues(client, param);
+    rc = CheckGrabValues(client, param, context);
     if (rc != Success)
         return rc;
 
@@ -2633,7 +2633,7 @@ GrabTouchOrGesture(ClientPtr client, DeviceIntPtr dev, DeviceIntPtr mod_dev,
     GrabPtr grab;
     int rc;
 
-    rc = CheckGrabValues(client, param);
+    rc = CheckGrabValues(client, param, context);
     if (rc != Success)
         return rc;
 
@@ -2792,7 +2792,7 @@ RecalculateDeviceDeliverableEvents(WindowPtr pWin)
     pChild = pWin;
     while (1) {
         if ((inputMasks = wOtherInputMasks(pChild)) != 0) {
-            xi2mask_zero(inputMasks->xi2mask, -1);
+            xi2mask_zero(inputMasks->xi2mask, -1, pWin->drawable.pScreen->context);
             for (others = inputMasks->inputClients; others;
                  others = others->next) {
                 for (i = 0; i < EMASKSIZE; i++)
@@ -2862,7 +2862,7 @@ InputClientGone(WindowPtr pWin, XID id, XephyrContext* context)
         }
         prev = other;
     }
-    FatalError("client not on device event list");
+    FatalError("client not on device event list", context);
 }
 
 /**
@@ -3161,7 +3161,7 @@ CheckDeviceGrabAndHintWindow(WindowPtr pWin, int type,
              (deliveryMask & DeviceButtonGrabMask)) {
         GrabPtr tempGrab;
 
-        tempGrab = AllocGrab(NULL);
+        tempGrab = AllocGrab(NULL, context);
         if (!tempGrab)
             return;
 
@@ -3323,7 +3323,7 @@ XISetEventMask(DeviceIntPtr dev, WindowPtr win, ClientPtr client,
         for (others = wOtherInputMasks(win)->inputClients; others;
              others = others->next) {
             if (SameClient(others, client)) {
-                xi2mask_zero(others->xi2mask, dev->id);
+                xi2mask_zero(others->xi2mask, dev->id, dev->context);
                 break;
             }
         }
@@ -3336,12 +3336,12 @@ XISetEventMask(DeviceIntPtr dev, WindowPtr win, ClientPtr client,
     }
 
     if (others) {
-        xi2mask_zero(others->xi2mask, dev->id);
+        xi2mask_zero(others->xi2mask, dev->id, dev->context);
         len = min(len, xi2mask_mask_size(others->xi2mask));
     }
 
     if (len) {
-        xi2mask_set_one_mask(others->xi2mask, dev->id, mask, len);
+        xi2mask_set_one_mask(others->xi2mask, dev->id, mask, len, dev->context);
     }
 
     RecalculateDeviceDeliverableEvents(win);

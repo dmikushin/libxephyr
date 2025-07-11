@@ -169,7 +169,7 @@ typedef struct _TimeStamp {
 } TimeStamp;
 
 /* dispatch.c */
-extern _X_EXPORT ClientPtr GetCurrentClient(void);
+extern _X_EXPORT ClientPtr GetCurrentClient(XephyrContext* context);
 
 extern _X_EXPORT void SetInputCheck(HWEventQueuePtr /*c0 */ ,
                                     HWEventQueuePtr /*c1 */ );
@@ -312,14 +312,14 @@ extern _X_EXPORT Bool ValidAtom(Atom /*atom */ );
 extern _X_EXPORT const char *NameForAtom(Atom /*atom */ );
 
 extern _X_EXPORT void
-AtomError(void)
+AtomError(XephyrContext* context)
     _X_NORETURN;
 
 extern _X_EXPORT void
 FreeAllAtoms(void);
 
 extern _X_EXPORT void
-InitAtoms(void);
+InitAtoms(XephyrContext* context);
 
 /* main.c */
 
@@ -334,7 +334,8 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context);
 extern void
 SetMaskForEvent(int /* deviceid */ ,
                 Mask /* mask */ ,
-                int /* event */ );
+                int /* event */ ,
+                XephyrContext* /* context */ );
 
 extern _X_EXPORT void
 ConfineToShape(DeviceIntPtr /* pDev */ ,
@@ -369,7 +370,8 @@ LastEventTimeToggleResetAll(Bool state, XephyrContext* context);
 
 extern void
 EnqueueEvent(InternalEvent * /* ev */ ,
-             DeviceIntPtr /* device */ );
+             DeviceIntPtr /* device */ ,
+             XephyrContext* /* context */ );
 extern void
 PlayReleasedEvents(XephyrContext* context);
 

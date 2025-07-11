@@ -278,7 +278,7 @@ LockServer(XephyrContext* context)
         strlen(LOCK_TMP_PREFIX);
     len += strlen(tmppath) + strlen(port) + strlen(LOCK_SUFFIX) + 1;
     if (len > sizeof(LockFile))
-        FatalError("Display name `%s' is too long\n", port);
+        FatalError("Display name `%s' is too long\n", context, port);
     (void) sprintf(tmp, "%s" LOCK_TMP_PREFIX "%s" LOCK_SUFFIX, tmppath, port);
     (void) sprintf(LockFile, "%s" LOCK_PREFIX "%s" LOCK_SUFFIX, tmppath, port);
 
@@ -309,10 +309,10 @@ LockServer(XephyrContext* context)
         } while (i < 3);
     }
     if (lfd < 0)
-        FatalError("Could not create lock file in %s\n", tmp);
+        FatalError("Could not create lock file in %s\n", context, tmp);
     snprintf(pid_str, sizeof(pid_str), "%10lu\n", (unsigned long) getpid());
     if (write(lfd, pid_str, 11) != 11)
-        FatalError("Could not write pid to lock file in %s\n", tmp);
+        FatalError("Could not write pid to lock file in %s\n", context, tmp);
     (void) fchmod(lfd, 0444);
     (void) close(lfd);
 
@@ -337,7 +337,7 @@ LockServer(XephyrContext* context)
             lfd = open(LockFile, O_RDONLY | O_NOFOLLOW);
             if (lfd < 0) {
                 unlink(tmp);
-                FatalError("Can't read lock file %s\n", LockFile);
+                FatalError("Can't read lock file %s\n", context, LockFile);
             }
             pid_str[0] = '\0';
             if (read(lfd, pid_str, 11) != 11) {
@@ -370,7 +370,7 @@ LockServer(XephyrContext* context)
                  */
                 unlink(tmp);
                 FatalError
-                    ("Server is already active for context->display %s\n%s %s\n%s\n",
+                    ("Server is already active for display %s\n%s %s\n%s\n", context,
                      port, "\tIf this server is no longer running, remove",
                      LockFile, "\tand start again.");
             }
@@ -378,13 +378,13 @@ LockServer(XephyrContext* context)
         else {
             unlink(tmp);
             FatalError
-                ("Linking lock file (%s) in place failed: %s\n",
+                ("Linking lock file (%s) in place failed: %s\n", context,
                  LockFile, strerror(errno));
         }
     }
     unlink(tmp);
     if (!haslock)
-        FatalError("Could not create server lock file: %s\n", LockFile);
+        FatalError("Could not create server lock file: %s\n", context, LockFile);
     StillLocking = FALSE;
 }
 
@@ -431,17 +431,17 @@ GiveUp(int sig)
 
 #ifdef MONOTONIC_CLOCK
 void
-ForceClockId(clockid_t forced_clockid)
+ForceClockId(clockid_t forced_clockid, XephyrContext* context)
 {
     struct timespec tp;
 
-    BUG_RETURN (clockid);
+    BUG_RETURN (clockid, context);
 
     clockid = forced_clockid;
 
     if (clock_gettime(clockid, &tp) != 0) {
         FatalError("Forced clock id failed to retrieve current time: %s\n",
-                   strerror(errno));
+                   context, strerror(errno));
         return;
     }
 }
@@ -512,86 +512,86 @@ GetTimeInMicros(void)
 #endif
 
 void
-UseMsg(void)
+UseMsg(XephyrContext* context)
 {
-    ErrorF("use: X [:<context->display>] [option]\n");
-    ErrorF("-a #                   default pointer acceleration (factor)\n");
-    ErrorF("-ac                    disable access control restrictions\n");
-    ErrorF("-audit int             set audit trail level\n");
-    ErrorF("-auth file             select authorization file\n");
-    ErrorF("-br                    create root window with black background\n");
-    ErrorF("+bs                    enable any backing store support\n");
-    ErrorF("-bs                    disable any backing store support\n");
-    ErrorF("-c                     turns off key-click\n");
-    ErrorF("c #                    key-click volume (0-100)\n");
-    ErrorF("-cc int                default color visual class\n");
-    ErrorF("-nocursor              disable the cursor\n");
-    ErrorF("-core                  generate core dump on fatal error\n");
-    ErrorF("-context->displayfd fd          file descriptor to write context->display number to when ready to connect\n");
-    ErrorF("-dpi int               screen resolution in dots per inch\n");
+    ErrorF("use: X [:<context->display>] [option]\n", context);
+    ErrorF("-a #                   default pointer acceleration (factor)\n", context);
+    ErrorF("-ac                    disable access control restrictions\n", context);
+    ErrorF("-audit int             set audit trail level\n", context);
+    ErrorF("-auth file             select authorization file\n", context);
+    ErrorF("-br                    create root window with black background\n", context);
+    ErrorF("+bs                    enable any backing store support\n", context);
+    ErrorF("-bs                    disable any backing store support\n", context);
+    ErrorF("-c                     turns off key-click\n", context);
+    ErrorF("c #                    key-click volume (0-100)\n", context);
+    ErrorF("-cc int                default color visual class\n", context);
+    ErrorF("-nocursor              disable the cursor\n", context);
+    ErrorF("-core                  generate core dump on fatal error\n", context);
+    ErrorF("-context->displayfd fd          file descriptor to write context->display number to when ready to connect\n", context);
+    ErrorF("-dpi int               screen resolution in dots per inch\n", context);
 #ifdef DPMSExtension
-    ErrorF("-dpms                  disables VESA DPMS monitor control\n");
+    ErrorF("-dpms                  disables VESA DPMS monitor control\n", context);
 #endif
     ErrorF
-        ("-deferglyphs [none|all|16] defer loading of [no|all|16-bit] glyphs\n");
-    ErrorF("-f #                   bell base (0-100)\n");
-    ErrorF("-fakescreenfps #       fake screen default fps (1-600)\n");
-    ErrorF("-fp string             default font path\n");
-    ErrorF("-help                  prints message with these options\n");
-    ErrorF("+iglx                  Allow creating indirect GLX contexts\n");
-    ErrorF("-iglx                  Prohibit creating indirect GLX contexts (default)\n");
-    ErrorF("-I                     ignore all remaining arguments\n");
+        ("-deferglyphs [none|all|16] defer loading of [no|all|16-bit] glyphs\n", context);
+    ErrorF("-f #                   bell base (0-100)\n", context);
+    ErrorF("-fakescreenfps #       fake screen default fps (1-600)\n", context);
+    ErrorF("-fp string             default font path\n", context);
+    ErrorF("-help                  prints message with these options\n", context);
+    ErrorF("+iglx                  Allow creating indirect GLX contexts\n", context);
+    ErrorF("-iglx                  Prohibit creating indirect GLX contexts (default)\n", context);
+    ErrorF("-I                     ignore all remaining arguments\n", context);
 #ifdef RLIMIT_DATA
-    ErrorF("-ld int                limit data space to N Kb\n");
+    ErrorF("-ld int                limit data space to N Kb\n", context);
 #endif
 #ifdef RLIMIT_NOFILE
-    ErrorF("-lf int                limit number of open files to N\n");
+    ErrorF("-lf int                limit number of open files to N\n", context);
 #endif
 #ifdef RLIMIT_STACK
-    ErrorF("-ls int                limit stack space to N Kb\n");
+    ErrorF("-ls int                limit stack space to N Kb\n", context);
 #endif
 #ifdef LOCK_SERVER
-    ErrorF("-nolock                disable the locking mechanism\n");
+    ErrorF("-nolock                disable the locking mechanism\n", context);
 #endif
-    ErrorF("-maxclients n          set maximum number of context->clients (power of two)\n");
-    ErrorF("-nolisten string       don't listen on protocol\n");
-    ErrorF("-listen string         listen on protocol\n");
-    ErrorF("-noreset               don't reset after last client exists\n");
-    ErrorF("-background [none]     create root window with no background\n");
-    ErrorF("-reset                 reset after last client exists\n");
-    ErrorF("-p #                   screen-saver pattern duration (minutes)\n");
-    ErrorF("-pn                    accept failure to listen on all ports\n");
-    ErrorF("-nopn                  reject failure to listen on all ports\n");
-    ErrorF("-r                     turns off auto-repeat\n");
-    ErrorF("r                      turns on auto-repeat \n");
-    ErrorF("-render [default|mono|gray|color] set render color alloc policy\n");
-    ErrorF("-retro                 start with classic stipple and cursor\n");
-    ErrorF("-s #                   screen-saver timeout (minutes)\n");
-    ErrorF("-seat string           seat to run on\n");
-    ErrorF("-t #                   default pointer threshold (pixels/t)\n");
-    ErrorF("-terminate [delay]     terminate at server reset (optional delay in sec)\n");
-    ErrorF("-tst                   disable testing extensions\n");
-    ErrorF("ttyxx                  server started from init on /dev/ttyxx\n");
-    ErrorF("v                      video blanking for screen-saver\n");
-    ErrorF("-v                     screen-saver without video blanking\n");
-    ErrorF("-wr                    create root window with white background\n");
-    ErrorF("-maxbigreqsize         set maximal bigrequest size \n");
+    ErrorF("-maxclients n          set maximum number of context->clients (power of two)\n", context);
+    ErrorF("-nolisten string       don't listen on protocol\n", context);
+    ErrorF("-listen string         listen on protocol\n", context);
+    ErrorF("-noreset               don't reset after last client exists\n", context);
+    ErrorF("-background [none]     create root window with no background\n", context);
+    ErrorF("-reset                 reset after last client exists\n", context);
+    ErrorF("-p #                   screen-saver pattern duration (minutes)\n", context);
+    ErrorF("-pn                    accept failure to listen on all ports\n", context);
+    ErrorF("-nopn                  reject failure to listen on all ports\n", context);
+    ErrorF("-r                     turns off auto-repeat\n", context);
+    ErrorF("r                      turns on auto-repeat \n", context);
+    ErrorF("-render [default|mono|gray|color] set render color alloc policy\n", context);
+    ErrorF("-retro                 start with classic stipple and cursor\n", context);
+    ErrorF("-s #                   screen-saver timeout (minutes)\n", context);
+    ErrorF("-seat string           seat to run on\n", context);
+    ErrorF("-t #                   default pointer threshold (pixels/t)\n", context);
+    ErrorF("-terminate [delay]     terminate at server reset (optional delay in sec)\n", context);
+    ErrorF("-tst                   disable testing extensions\n", context);
+    ErrorF("ttyxx                  server started from init on /dev/ttyxx\n", context);
+    ErrorF("v                      video blanking for screen-saver\n", context);
+    ErrorF("-v                     screen-saver without video blanking\n", context);
+    ErrorF("-wr                    create root window with white background\n", context);
+    ErrorF("-maxbigreqsize         set maximal bigrequest size \n", context);
 #ifdef PANORAMIX
-    ErrorF("+xinerama              Enable XINERAMA extension\n");
-    ErrorF("-xinerama              Disable XINERAMA extension\n");
+    ErrorF("+xinerama              Enable XINERAMA extension\n", context);
+    ErrorF("-xinerama              Disable XINERAMA extension\n", context);
 #endif
     ErrorF
-        ("-dumbSched             Disable smart scheduling and threaded input, enable old behavior\n");
-    ErrorF("-schedInterval int     Set scheduler interval in msec\n");
-    ErrorF("-sigstop               Enable SIGSTOP based startup\n");
-    ErrorF("+extension name        Enable extension\n");
-    ErrorF("-extension name        Disable extension\n");
-    ListStaticExtensions();
+        ("-dumbSched             Disable smart scheduling and threaded input, enable old behavior\n", context);
+    ErrorF("-schedInterval int     Set scheduler interval in msec\n", context);
+    ErrorF("-sigstop               Enable SIGSTOP based startup\n", context);
+    ErrorF("+extension name        Enable extension\n", context);
+    ErrorF("-extension name        Disable extension\n", context);
+    ListStaticExtensions(context);
 #ifdef XDMCP
-    XdmcpUseMsg();
+    XdmcpUseMsg(context);
 #endif
     XkbUseMsg();
-    ddxUseMsg();
+    ddxUseMsg(context);
 }
 
 /*  This function performs a rudimentary sanity check
@@ -678,12 +678,12 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
     for (i = 0; defaultNoListenList[i] != NULL; i++) {
         if (_XSERVTransNoListen(defaultNoListenList[i]))
                     ErrorF("Failed to disable listen for %s transport",
-                           defaultNoListenList[i]);
+                           context, defaultNoListenList[i]);
     }
 
     for (i = 1; i < argc; i++) {
         /* call ddx first, so it can peek/override if it wants */
-        if ((skip = ddxProcessArgument(argc, argv, i))) {
+        if ((skip = ddxProcessArgument(argc, argv, i, context))) {
             i += (skip - 1);
         }
         else if (argv[i][0] == ':') {
@@ -692,16 +692,16 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             context->explicit_display = TRUE;
             context->display++;
             if (!VerifyDisplayName(context->display)) {
-                ErrorF("Bad context->display name: %s\n", context->display);
-                UseMsg();
-                FatalError("Bad context->display name, exiting: %s\n", context->display);
+                ErrorF("Bad context->display name: %s\n", context, context->display);
+                UseMsg(context);
+                FatalError("Bad context->display name, exiting: %s\n", context, context->display);
             }
         }
         else if (strcmp(argv[i], "-a") == 0) {
             if (++i < argc)
                 context->defaultPointerControl.num = atoi(argv[i]);
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-ac") == 0) {
             context->defeatAccessControl = TRUE;
@@ -710,13 +710,13 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             if (++i < argc)
                 auditTrailLevel = atoi(argv[i]);
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-auth") == 0) {
             if (++i < argc)
                 InitAuthorization(argv[i]);
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-br") == 0);  /* default */
         else if (strcmp(argv[i], "+bs") == 0)
@@ -727,7 +727,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             if (++i < argc)
                 context->defaultKeyboardControl.click = atoi(argv[i]);
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-c") == 0) {
             context->defaultKeyboardControl.click = 0;
@@ -736,7 +736,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             if (++i < argc)
                 context->defaultColorVisualClass = atoi(argv[i]);
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-core") == 0) {
 #if !defined(WIN32) || !defined(__MINGW32__)
@@ -755,7 +755,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             if (++i < argc)
                 context->monitorResolution = atoi(argv[i]);
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-context->displayfd") == 0) {
             if (++i < argc) {
@@ -765,7 +765,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
 #endif
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
 #ifdef DPMSExtension
         else if (strcmp(argv[i], "dpms") == 0)
@@ -775,32 +775,32 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
 #endif
         else if (strcmp(argv[i], "-deferglyphs") == 0) {
             if (++i >= argc || !xfont2_parse_glyph_caching_mode(argv[i]))
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-f") == 0) {
             if (++i < argc)
                 context->defaultKeyboardControl.bell = atoi(argv[i]);
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-fakescreenfps") == 0) {
             if (++i < argc) {
                 FakeScreenFps = (uint32_t) atoi(argv[i]);
                 if (FakeScreenFps < 1 || FakeScreenFps > 600)
-                    FatalError("fakescreenfps must be an integer in [1;600] range\n");
+                    FatalError("fakescreenfps must be an integer in [1;600] range\n", context);
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-fp") == 0) {
             if (++i < argc) {
                 context->defaultFontPath = argv[i];
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-help") == 0) {
-            UseMsg();
+            UseMsg(context);
             exit(0);
         }
         else if (strcmp(argv[i], "+iglx") == 0)
@@ -811,7 +811,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             if (skip > 0)
                 i += skip - 1;
             else
-                UseMsg();
+                UseMsg(context);
         }
 #ifdef RLIMIT_DATA
         else if (strcmp(argv[i], "-ld") == 0) {
@@ -821,7 +821,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                     context->limitDataSpace *= 1024;
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
 #endif
 #ifdef RLIMIT_NOFILE
@@ -829,7 +829,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             if (++i < argc)
                 context->limitNoFile = atoi(argv[i]);
             else
-                UseMsg();
+                UseMsg(context);
         }
 #endif
 #ifdef RLIMIT_STACK
@@ -840,7 +840,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                     context->limitStackSpace *= 1024;
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
 #endif
 #ifdef LOCK_SERVER
@@ -848,7 +848,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
 #if !defined(WIN32) && !defined(__CYGWIN__)
             if (getuid() != 0)
                 ErrorF
-                    ("Warning: the -nolock option can only be used by root\n");
+                    ("Warning: the -nolock option can only be used by root\n", context);
             else
 #endif
                 nolock = TRUE;
@@ -864,28 +864,26 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
 		    LimitClients != 512 &&
                     LimitClients != 1024 &&
                     LimitClients != 2048) {
-		    FatalError("maxclients must be one of 64, 128, 256, 512, 1024 or 2048\n");
+		    FatalError("maxclients must be one of 64, 128, 256, 512, 1024 or 2048\n", context);
 		}
 	    } else
-		UseMsg();
+		UseMsg(context);
 	}
         else if (strcmp(argv[i], "-nolisten") == 0) {
             if (++i < argc) {
                 if (_XSERVTransNoListen(argv[i]))
-                    ErrorF("Failed to disable listen for %s transport",
-                           argv[i]);
+                    ErrorF("Failed to disable listen for %s transport", NULL, argv[i]);
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-listen") == 0) {
             if (++i < argc) {
                 if (_XSERVTransListen(argv[i]))
-                    ErrorF("Failed to enable listen for %s transport",
-                           argv[i]);
+                    ErrorF("Failed to enable listen for %s transport", NULL, argv[i]);
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-noreset") == 0) {
             dispatchExceptionAtReset = 0;
@@ -898,7 +896,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                 context->defaultScreenSaverInterval = ((CARD32) atoi(argv[i])) *
                     MILLI_PER_MIN;
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-pogo") == 0) {
             dispatchException = DE_TERMINATE;
@@ -918,19 +916,19 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                 context->defaultScreenSaverTime = ((CARD32) atoi(argv[i])) *
                     MILLI_PER_MIN;
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-seat") == 0) {
             if (++i < argc)
                 SeatId = argv[i];
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-t") == 0) {
             if (++i < argc)
                 context->defaultPointerControl.threshold = atoi(argv[i]);
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-terminate") == 0) {
             dispatchExceptionAtReset = DE_TERMINATE;
@@ -953,7 +951,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                 if (!strcmp(argv[i], "none"))
                     context->bgNoneRoot = TRUE;
                 else
-                    UseMsg();
+                    UseMsg(context);
             }
         }
         else if (strcmp(argv[i], "-maxbigreqsize") == 0) {
@@ -965,11 +963,11 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                     context->maxBigRequestSize = (reqSizeArg * 1048576L) - 1L;
                 }
                 else {
-                    UseMsg();
+                    UseMsg(context);
                 }
             }
             else {
-                UseMsg();
+                UseMsg(context);
             }
         }
 #ifdef PANORAMIX
@@ -1007,14 +1005,14 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                 SmartScheduleSlice = SmartScheduleInterval;
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-schedMax") == 0) {
             if (++i < argc) {
                 SmartScheduleMaxSlice = atoi(argv[i]);
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-render") == 0) {
             if (++i < argc) {
@@ -1023,10 +1021,10 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                 if (policy != PictureCmapPolicyInvalid)
                     PictureCmapPolicy = policy;
                 else
-                    UseMsg();
+                    UseMsg(context);
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-sigstop") == 0) {
             context->RunFromSigStopParent = TRUE;
@@ -1034,23 +1032,23 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         else if (strcmp(argv[i], "+extension") == 0) {
             if (++i < argc) {
                 if (!EnableDisableExtension(argv[i], TRUE))
-                    EnableDisableExtensionError(argv[i], TRUE);
+                    EnableDisableExtensionError(argv[i], TRUE, context);
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
         else if (strcmp(argv[i], "-extension") == 0) {
             if (++i < argc) {
                 if (!EnableDisableExtension(argv[i], FALSE))
-                    EnableDisableExtensionError(argv[i], FALSE);
+                    EnableDisableExtensionError(argv[i], FALSE, context);
             }
             else
-                UseMsg();
+                UseMsg(context);
         }
         else {
-            ErrorF("Unrecognized option: %s\n", argv[i]);
-            UseMsg();
-            FatalError("Unrecognized option: %s\n", argv[i]);
+            ErrorF("Unrecognized option: %s\n", context, argv[i]);
+            UseMsg(context);
+            FatalError("Unrecognized option: %s\n", context, argv[i]);
         }
     }
 }
@@ -1125,12 +1123,12 @@ set_font_authorizations(char **authorizations, int *authlen, void *client)
 }
 
 void *
-XNFalloc(unsigned long amount)
+XNFalloc(unsigned long amount, XephyrContext* context)
 {
     void *ptr = malloc(amount);
 
     if (!ptr)
-        FatalError("Out of memory");
+        FatalError("Out of memory", context);
     return ptr;
 }
 
@@ -1139,38 +1137,38 @@ XNFalloc(unsigned long amount)
  * XNFcallocarray was added to fix that without breaking ABI.
  */
 void *
-XNFcalloc(unsigned long amount)
+XNFcalloc(unsigned long amount, XephyrContext* context)
 {
-    return XNFcallocarray(1, amount);
+    return XNFcallocarray(1, amount, context);
 }
 
 void *
-XNFcallocarray(size_t nmemb, size_t size)
+XNFcallocarray(size_t nmemb, size_t size, XephyrContext* context)
 {
     void *ret = calloc(nmemb, size);
 
     if (!ret)
-        FatalError("XNFcalloc: Out of memory");
+        FatalError("XNFcalloc: Out of memory", context);
     return ret;
 }
 
 void *
-XNFrealloc(void *ptr, unsigned long amount)
+XNFrealloc(void *ptr, unsigned long amount, XephyrContext* context)
 {
     void *ret = realloc(ptr, amount);
 
     if (!ret)
-        FatalError("XNFrealloc: Out of memory");
+        FatalError("XNFrealloc: Out of memory", context);
     return ret;
 }
 
 void *
-XNFreallocarray(void *ptr, size_t nmemb, size_t size)
+XNFreallocarray(void *ptr, size_t nmemb, size_t size, XephyrContext* context)
 {
     void *ret = reallocarray(ptr, nmemb, size);
 
     if (!ret)
-        FatalError("XNFreallocarray: Out of memory");
+        FatalError("XNFreallocarray: Out of memory", context);
     return ret;
 }
 
@@ -1183,7 +1181,7 @@ Xstrdup(const char *s)
 }
 
 char *
-XNFstrdup(const char *s)
+XNFstrdup(const char *s, XephyrContext* context)
 {
     char *ret;
 
@@ -1192,7 +1190,7 @@ XNFstrdup(const char *s)
 
     ret = strdup(s);
     if (!ret)
-        FatalError("XNFstrdup: Out of memory");
+        FatalError("XNFstrdup: Out of memory", context);
     return ret;
 }
 
@@ -1696,10 +1694,10 @@ System(const char *cmdline)
                            GetLastError(),
                            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                            (LPTSTR) &buffer, 0, NULL)) {
-            ErrorF("[xkb] Starting '%s' failed!\n", cmdline);
+            ErrorF("[xkb] Starting '%s' failed!\n", context, cmdline);
         }
         else {
-            ErrorF("[xkb] Starting '%s' failed: %s", cmdline, (char *) buffer);
+            ErrorF("[xkb] Starting '%s' failed: %s", context, cmdline, (char *) buffer);
             LocalFree(buffer);
         }
 
@@ -1770,7 +1768,9 @@ PrivsElevated(void)
                 }
                 else {
                     if (seteuid(oldeuid) != 0) {
-                        FatalError("Failed to drop privileges.  Exiting\n");
+                        /* Critical error - cannot continue without privileges */
+                        fprintf(stderr, "Failed to drop privileges.  Exiting\n");
+                        abort();
                     }
                     privsElevated = TRUE;
                 }
@@ -1857,7 +1857,7 @@ enum BadCode {
 #endif
 
 void
-CheckUserParameters(int argc, char **argv, char **envp)
+CheckUserParameters(int argc, char **argv, char **envp, XephyrContext* context)
 {
     enum BadCode bad = NotBad;
     int i = 0, j;
@@ -1956,29 +1956,29 @@ CheckUserParameters(int argc, char **argv, char **envp)
     case NotBad:
         return;
     case UnsafeArg:
-        ErrorF("Command line argument number %d is unsafe\n", i);
+        ErrorF("Command line argument number %d is unsafe\n", context, i);
         break;
     case ArgTooLong:
-        ErrorF("Command line argument number %d is too long\n", i);
+        ErrorF("Command line argument number %d is too long\n", context, i);
         break;
     case UnprintableArg:
         ErrorF("Command line argument number %d contains unprintable"
-               " characters\n", i);
+               " characters\n", context, i);
         break;
     case EnvTooLong:
-        ErrorF("Environment variable `%s' is too long\n", e);
+        ErrorF("Environment variable `%s' is too long\n", context, e);
         break;
     case OutputIsPipe:
-        ErrorF("Stdout and/or stderr is a pipe\n");
+        ErrorF("Stdout and/or stderr is a pipe\n", context);
         break;
     case InternalError:
-        ErrorF("Internal Error\n");
+        ErrorF("Internal Error\n", context);
         break;
     default:
-        ErrorF("Unknown error\n");
+        ErrorF("Unknown error\n", context);
         break;
     }
-    FatalError("X server aborted because of unsafe environment\n");
+    FatalError("X server aborted because of unsafe environment\n", context);
 }
 
 /*
@@ -1994,7 +1994,7 @@ CheckUserParameters(int argc, char **argv, char **envp)
 #endif                          /* USE_PAM */
 
 void
-CheckUserAuthorization(void)
+CheckUserAuthorization(XephyrContext* context)
 {
 #ifdef USE_PAM
     static struct pam_conv conv = {
@@ -2009,25 +2009,25 @@ CheckUserAuthorization(void)
     if (getuid() != geteuid()) {
         pw = getpwuid(getuid());
         if (pw == NULL)
-            FatalError("getpwuid() failed for uid %d\n", getuid());
+            FatalError("getpwuid() failed for uid %d\n", context, getuid());
 
         retval = pam_start("xserver", pw->pw_name, &conv, &pamh);
         if (retval != PAM_SUCCESS)
             FatalError("pam_start() failed.\n"
-                       "\tMissing or mangled PAM config file or module?\n");
+                       "\tMissing or mangled PAM config file or module?\n", context);
 
         retval = pam_authenticate(pamh, 0);
         if (retval != PAM_SUCCESS) {
             pam_end(pamh, retval);
             FatalError("PAM authentication failed, cannot start X server.\n"
-                       "\tPerhaps you do not have console ownership?\n");
+                       "\tPerhaps you do not have console ownership?\n", context);
         }
 
         retval = pam_acct_mgmt(pamh, 0);
         if (retval != PAM_SUCCESS) {
             pam_end(pamh, retval);
             FatalError("PAM authentication failed, cannot start X server.\n"
-                       "\tPerhaps you do not have console ownership?\n");
+                       "\tPerhaps you do not have console ownership?\n", context);
         }
 
         /* this is not a session, so do not do session management */

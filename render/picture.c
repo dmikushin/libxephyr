@@ -459,6 +459,14 @@ Bool
 PictureFinishInit(void)
 {
     int s;
+    XephyrContext* context;
+    
+    /* Get context from extern screenInfo - temporary solution */
+    extern ScreenInfo screenInfo;
+    if (screenInfo.numScreens > 0 && screenInfo.screens[0])
+        context = screenInfo.screens[0]->context;
+    else
+        return FALSE;
 
     for (s = 0; s < context->screenInfo.numScreens; s++) {
         if (!PictureInitIndexedFormats(context->screenInfo.screens[s]))

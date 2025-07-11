@@ -96,7 +96,7 @@ extern void RecordExtensionInit(XephyrContext* context);
 #endif
 
 extern _X_EXPORT Bool noRenderExtension;
-extern void RenderExtensionInit(void);
+extern void RenderExtensionInit(XephyrContext* context);
 
 #if defined(RES)
 extern _X_EXPORT Bool noResExtension;

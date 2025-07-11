@@ -273,7 +273,8 @@ static int swapEventLen = 0;
 void
 NotImplemented(xEvent *from, xEvent *to)
 {
-    FatalError("Not implemented");
+    /* TODO: Fix this function to accept context */
+    FatalError("Not implemented", NULL);
 }
 
 /**
@@ -430,7 +431,7 @@ GetEventFilter(DeviceIntPtr dev, xEvent *event)
         return event_get_filter_from_type(dev, event->u.u.type);
     else if ((evtype = xi2_get_type(event)))
         return event_get_filter_from_xi2type(evtype);
-    ErrorF("[dix] Unknown event type %d. No filter\n", event->u.u.type);
+    ErrorF("[dix] Unknown event type %d. No filter\n", dev->context, event->u.u.type);
     return 0;
 }
 
@@ -668,18 +669,18 @@ XineramaConfineCursorToWindow(DeviceIntPtr pDev,
  * @param[in] event Protocol event type.
  */
 void
-SetMaskForEvent(int deviceid, Mask mask, int event)
+SetMaskForEvent(int deviceid, Mask mask, int event, XephyrContext* context)
 {
     if (deviceid < 0 || deviceid >= MAXDEVICES)
-        FatalError("SetMaskForEvent: bogus device id");
+        FatalError("SetMaskForEvent: bogus device id", context);
     event_filters[deviceid][event] = mask;
 }
 
 void
-SetCriticalEvent(int event)
+SetCriticalEvent(int event, XephyrContext* context)
 {
     if (event >= MAXEVENTS)
-        FatalError("SetCriticalEvent: bogus event number");
+        FatalError("SetCriticalEvent: bogus event number", context);
     criticalEvents[event >> 3] |= 1 << (event & 7);
 }
 
@@ -1144,7 +1145,7 @@ LastEventTimeToggleResetAll(Bool state, XephyrContext* context)
  * linked list for later delivery.
  */
 void
-EnqueueEvent(InternalEvent *ev, DeviceIntPtr device)
+EnqueueEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* context)
 {
     QdEventPtr tail = NULL;
     QdEventPtr qe;
@@ -1275,7 +1276,7 @@ PlayReleasedEvents(XephyrContext* context)
 
             }
 #endif
-            (*qe->device->public.processInputProc) (qe->event, qe->device);
+            (*qe->device->public.processInputProc) (qe->event, qe->device, context);
             free(qe);
             for (dev = context->inputInfo.devices; dev && dev->deviceGrab.sync.frozen;
                  dev = dev->next);
@@ -1339,7 +1340,7 @@ ComputeFreezes(XephyrContext* context)
             if (IsTouchEvent(event)) {
                 TouchPointInfoPtr ti =
                     TouchFindByClientID(replayDev, event->device_event.touchid);
-                BUG_WARN(!ti);
+                BUG_WARN(!ti, replayDev->context);
 
                 TouchListenerAcceptReject(replayDev, ti, 0, XIRejectTouch, context);
             }
@@ -1525,7 +1526,7 @@ UpdateTouchesForGrab(DeviceIntPtr mouse)
 
             if (listener->grab)
                 FreeGrab(listener->grab, mouse->context);
-            listener->grab = AllocGrab(grab);
+            listener->grab = AllocGrab(grab, mouse->context);
         }
     }
 }
@@ -1566,7 +1567,7 @@ UpdateGesturesForGrab(DeviceIntPtr mouse)
 
         if (listener->grab)
             FreeGrab(listener->grab, mouse->context);
-        listener->grab = AllocGrab(grab);
+        listener->grab = AllocGrab(grab, mouse->context);
     }
 }
 
@@ -1615,7 +1616,7 @@ ActivatePointerGrab(DeviceIntPtr mouse, GrabPtr grab,
         grabinfo->grabTime = syncEvents.time;
     else
         grabinfo->grabTime = time;
-    grabinfo->grab = AllocGrab(grab);
+    grabinfo->grab = AllocGrab(grab, mouse->context);
     grabinfo->fromPassiveGrab = isPassive;
     grabinfo->implicitGrab = autoGrab & ImplicitGrabMask;
     PostNewCursor(mouse);
@@ -1738,7 +1739,7 @@ ActivateKeyboardGrab(DeviceIntPtr keybd, GrabPtr grab, TimeStamp time,
         grabinfo->grabTime = syncEvents.time;
     else
         grabinfo->grabTime = time;
-    grabinfo->grab = AllocGrab(grab);
+    grabinfo->grab = AllocGrab(grab, keybd->context);
     grabinfo->fromPassiveGrab = passive;
     grabinfo->implicitGrab = passive & ImplicitGrabMask;
     CheckGrabForSyncs(keybd, (Bool) grab->keyboardMode,
@@ -2135,7 +2136,7 @@ ActivateImplicitGrab(DeviceIntPtr dev, ClientPtr client, WindowPtr win,
     else
         return FALSE;
 
-    tempGrab = AllocGrab(NULL);
+    tempGrab = AllocGrab(NULL, dev->context);
     if (!tempGrab)
         return FALSE;
     tempGrab->next = NULL;
@@ -2450,10 +2451,10 @@ DeliverRawEvent(RawDeviceEvent *ev, DeviceIntPtr device)
     int i, rc;
     int filter;
 
-    rc = EventToXI2((InternalEvent *) ev, (xEvent **) &xi);
+    rc = EventToXI2((InternalEvent *) ev, (xEvent **) &xi, device->context);
     if (rc != Success) {
         ErrorF("[Xi] %s: XI2 conversion failed in %s (%d)\n",
-               __func__, device->name, rc);
+               device->context, __func__, device->name, rc);
         return;
     }
 
@@ -2809,14 +2810,14 @@ DeliverOneEvent(InternalEvent *event, DeviceIntPtr dev, enum InputLevel level,
 
     switch (level) {
     case XI2:
-        rc = EventToXI2(event, &xE);
+        rc = EventToXI2(event, &xE, dev->context);
         count = 1;
         break;
     case XI:
         rc = EventToXI(event, &xE, &count, dev->context);
         break;
     case CORE:
-        rc = EventToCore(event, &xE, &count);
+        rc = EventToCore(event, &xE, &count, dev->context);
         break;
     default:
         rc = BadImplementation;
@@ -2828,9 +2829,7 @@ DeliverOneEvent(InternalEvent *event, DeviceIntPtr dev, enum InputLevel level,
         free(xE);
     }
     else
-        BUG_WARN_MSG(rc != BadMatch,
-                     "%s: conversion to level %d failed with rc %d\n",
-                     dev->name, level, rc);
+        BUG_WARN(rc != BadMatch, dev->context);
     return deliveries;
 }
 
@@ -2861,7 +2860,7 @@ DeliverDeviceEvents(WindowPtr pWin, InternalEvent *event, GrabPtr grab,
     int deliveries = 0;
     int mask;
 
-    verify_internal_event(event);
+    verify_internal_event(event, dev->context);
 
     while (pWin) {
         if ((mask = EventIsDeliverable(dev, event->any.type, pWin))) {
@@ -3125,7 +3124,7 @@ CheckMotion(DeviceEvent *ev, DeviceIntPtr pDev)
     WindowPtr prevSpriteWin, newSpriteWin;
     SpritePtr pSprite = pDev->spriteInfo->sprite;
 
-    verify_internal_event((InternalEvent *) ev);
+    verify_internal_event((InternalEvent *) ev, pDev->context);
 
     prevSpriteWin = pSprite->win;
 
@@ -3327,7 +3326,7 @@ InitializeSprite(DeviceIntPtr pDev, WindowPtr pWin)
 
         pDev->spriteInfo->sprite = (SpritePtr) calloc(1, sizeof(SpriteRec));
         if (!pDev->spriteInfo->sprite)
-            FatalError("InitializeSprite: failed to allocate sprite struct");
+            FatalError("InitializeSprite: failed to allocate sprite struct", pDev->context);
 
         /* We may have paired another device with this device before our
          * device had a actual sprite. We need to check for this and reset the
@@ -3363,7 +3362,7 @@ InitializeSprite(DeviceIntPtr pDev, WindowPtr pWin)
         pCursor = wCursor(pWin);
         pSprite->spriteTrace = (WindowPtr *) calloc(1, 32 * sizeof(WindowPtr));
         if (!pSprite->spriteTrace)
-            FatalError("Failed to allocate spriteTrace");
+            FatalError("Failed to allocate spriteTrace", pDev->context);
         pSprite->spriteTraceSize = 32;
 
         RootWindow(pDev->spriteInfo->sprite) = pWin;
@@ -3826,19 +3825,17 @@ ActivatePassiveGrab(DeviceIntPtr device, GrabPtr grab, InternalEvent *event,
     }
 
     if (grab->grabtype == CORE) {
-        rc = EventToCore(event, &xE, &count);
+        rc = EventToCore(event, &xE, &count, device->context);
         if (rc != Success) {
-            BUG_WARN_MSG(rc != BadMatch, "[dix] %s: core conversion failed"
-                         "(%d, %d).\n", device->name, event->any.type, rc);
+            BUG_WARN(rc != BadMatch, device->context);
             return FALSE;
         }
     }
     else if (grab->grabtype == XI2) {
-        rc = EventToXI2(event, &xE);
+        rc = EventToXI2(event, &xE, device->context);
         if (rc != Success) {
             if (rc != BadMatch)
-                BUG_WARN_MSG(rc != BadMatch, "[dix] %s: XI2 conversion failed"
-                             "(%d, %d).\n", device->name, event->any.type, rc);
+                BUG_WARN(rc != BadMatch, device->context);
             return FALSE;
         }
         count = 1;
@@ -3847,8 +3844,7 @@ ActivatePassiveGrab(DeviceIntPtr device, GrabPtr grab, InternalEvent *event,
         rc = EventToXI(event, &xE, &count, device->context);
         if (rc != Success) {
             if (rc != BadMatch)
-                BUG_WARN_MSG(rc != BadMatch, "[dix] %s: XI conversion failed"
-                             "(%d, %d).\n", device->name, event->any.type, rc);
+                BUG_WARN(rc != BadMatch, device->context);
             return FALSE;
         }
     }
@@ -3932,7 +3928,7 @@ enum MatchFlags {
  */
 static enum MatchFlags
 MatchForType(const GrabPtr grab, GrabPtr tmp, enum InputLevel level,
-             int event_type)
+             int event_type, XephyrContext* context)
 {
     enum MatchFlags match;
     BOOL ignore_device = FALSE;
@@ -3943,7 +3939,7 @@ MatchForType(const GrabPtr grab, GrabPtr tmp, enum InputLevel level,
     case XI2:
         grabtype = XI2;
         evtype = GetXI2Type(event_type);
-        BUG_WARN(!evtype);
+        BUG_WARN(!evtype, context);
         match = XI2_MATCH;
         break;
     case XI:
@@ -4011,24 +4007,24 @@ CheckPassiveGrab(DeviceIntPtr device, GrabPtr grab, InternalEvent *event,
     tempGrab->modifiersDetail.exact = xkbi ? xkbi->state.grab_mods : 0;
 
     /* Check for XI2 and XI grabs first */
-    match = MatchForType(grab, tempGrab, XI2, event->any.type);
+    match = MatchForType(grab, tempGrab, XI2, event->any.type, device->context);
 
     if (!match && IsTouchEvent(event) &&
         (event->device_event.flags & TOUCH_POINTER_EMULATED)) {
         emulated_type = TouchGetPointerEventType(event);
-        match = MatchForType(grab, tempGrab, XI2, emulated_type);
+        match = MatchForType(grab, tempGrab, XI2, emulated_type, device->context);
     }
 
     if (!match)
-        match = MatchForType(grab, tempGrab, XI, event->any.type);
+        match = MatchForType(grab, tempGrab, XI, event->any.type, device->context);
 
     if (!match && emulated_type)
-        match = MatchForType(grab, tempGrab, XI, emulated_type);
+        match = MatchForType(grab, tempGrab, XI, emulated_type, device->context);
 
     if (!match && checkCore) {
-        match = MatchForType(grab, tempGrab, CORE, event->any.type);
+        match = MatchForType(grab, tempGrab, CORE, event->any.type, device->context);
         if (!match && emulated_type)
-            match = MatchForType(grab, tempGrab, CORE, emulated_type);
+            match = MatchForType(grab, tempGrab, CORE, emulated_type, device->context);
     }
 
     if (!match || (grab->confineTo &&
@@ -4086,7 +4082,7 @@ CheckPassiveGrabsOnWindow(WindowPtr pWin,
     if (!grab)
         return NULL;
 
-    tempGrab = AllocGrab(NULL);
+    tempGrab = AllocGrab(NULL, device->context);
     if (tempGrab == NULL)
         return NULL;
 
@@ -4250,7 +4246,7 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
     /* just deliver it to the focus window */
     ptr = GetMaster(keybd, POINTER_OR_FLOAT);
 
-    rc = EventToXI2(event, &xi2);
+    rc = EventToXI2(event, &xi2, keybd->context);
     if (rc == Success) {
         /* XXX: XACE */
         int filter = GetEventFilter(keybd, xi2);
@@ -4264,7 +4260,7 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
     else if (rc != BadMatch)
         ErrorF
             ("[dix] %s: XI2 conversion failed in DFE (%d, %d). Skipping delivery.\n",
-             keybd->name, event->any.type, rc);
+             keybd->context, keybd->name, event->any.type, rc);
 
     rc = EventToXI(event, &xE, &count, keybd->context);
     if (rc == Success &&
@@ -4279,10 +4275,10 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
     else if (rc != BadMatch)
         ErrorF
             ("[dix] %s: XI conversion failed in DFE (%d, %d). Skipping delivery.\n",
-             keybd->name, event->any.type, rc);
+             keybd->context, keybd->name, event->any.type, rc);
 
     if (sendCore) {
-        rc = EventToCore(event, &core, &count);
+        rc = EventToCore(event, &core, &count, keybd->context);
         if (rc == Success) {
             if (XaceHook(XACE_SEND_ACCESS, NULL, keybd, focus, core, count) ==
                 Success) {
@@ -4297,7 +4293,7 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
         else if (rc != BadMatch)
             ErrorF
                 ("[dix] %s: core conversion failed DFE (%d, %d). Skipping delivery.\n",
-                 keybd->name, event->any.type, rc);
+                 keybd->context, keybd->name, event->any.type, rc);
     }
 
  unwind:
@@ -4326,7 +4322,7 @@ DeliverOneGrabbedEvent(InternalEvent *event, DeviceIntPtr dev,
 
     switch (level) {
     case XI2:
-        rc = EventToXI2(event, &xE);
+        rc = EventToXI2(event, &xE, dev->context);
         count = 1;
         if (rc == Success) {
             int evtype = xi2_get_type(xE);
@@ -4345,13 +4341,13 @@ DeliverOneGrabbedEvent(InternalEvent *event, DeviceIntPtr dev,
             filter = GetEventFilter(dev, xE);
         break;
     case CORE:
-        rc = EventToCore(event, &xE, &count);
+        rc = EventToCore(event, &xE, &count, dev->context);
         mask = grab->eventMask;
         if (rc == Success)
             filter = GetEventFilter(dev, xE);
         break;
     default:
-        BUG_WARN_MSG(1, "Invalid input level %d\n", level);
+        BUG_WARN(1, dev->context);
         return 0;
     }
 
@@ -4368,9 +4364,7 @@ DeliverOneGrabbedEvent(InternalEvent *event, DeviceIntPtr dev,
         }
     }
     else
-        BUG_WARN_MSG(rc != BadMatch,
-                     "%s: conversion to mode %d failed on %d with %d\n",
-                     dev->name, level, event->any.type, rc);
+        BUG_WARN(rc != BadMatch, dev->context);
 
     free(xE);
     return deliveries;
@@ -4492,7 +4486,7 @@ FixKeyState(DeviceEvent *event, DeviceIntPtr keybd)
     else if (event->type == ET_KeyRelease)
         set_key_up(keybd, key, KEY_PROCESSED);
     else
-        FatalError("Impossible keyboard event");
+        FatalError("Impossible keyboard event", keybd->context);
 }
 
 #define AtMostOneClient \
@@ -4569,7 +4563,7 @@ OtherClientGone(void *value, XID id, XephyrContext* context)
         }
         prev = other;
     }
-    FatalError("client not on event list");
+    FatalError("client not on event list", context);
 }
 
 int
@@ -5269,7 +5263,7 @@ GrabDevice(ClientPtr client, DeviceIntPtr dev,
     else {
         GrabPtr tempGrab;
 
-        tempGrab = AllocGrab(NULL);
+        tempGrab = AllocGrab(NULL, client->context);
         if (tempGrab == NULL)
             return BadAlloc;
 
@@ -5488,7 +5482,7 @@ InitEvents(XephyrContext* context)
 
     InputEventList = InitEventList(GetMaximumEventsNum());
     if (!InputEventList)
-        FatalError("[dix] Failed to allocate input event list.\n");
+        FatalError("[dix] Failed to allocate input event list.\n", context);
 }
 
 void
@@ -5638,7 +5632,7 @@ ProcUngrabKey(ClientPtr client)
         client->errorValue = stuff->modifiers;
         return BadValue;
     }
-    tempGrab = AllocGrab(NULL);
+    tempGrab = AllocGrab(NULL, client->context);
     if (!tempGrab)
         return BadAlloc;
     tempGrab->resource = client->clientAsMask;
@@ -5689,7 +5683,7 @@ ProcGrabKey(ClientPtr client)
         .modifiers = stuff->modifiers
     };
 
-    rc = CheckGrabValues(client, &param);
+    rc = CheckGrabValues(client, &param, client->context);
     if (rc != Success)
         return rc;
 
@@ -5834,7 +5828,7 @@ ProcUngrabButton(ClientPtr client)
 
     ptr = PickPointer(client);
 
-    tempGrab = AllocGrab(NULL);
+    tempGrab = AllocGrab(NULL, client->context);
     if (!tempGrab)
         return BadAlloc;
     tempGrab->resource = client->clientAsMask;
@@ -6140,7 +6134,7 @@ WriteEventsToClient(ClientPtr pClient, int count, xEvent *events)
      * makes things easier for me right now. (whot) */
     for (i = 1; i < count; i++) {
         if (events[i].u.u.type == GenericEvent) {
-            ErrorF("[dix] TryClientEvents: Only one GenericEvent at a time.\n");
+            ErrorF("[dix] TryClientEvents: Only one GenericEvent at a time.\n", pClient->context);
             return;
         }
     }
@@ -6154,7 +6148,7 @@ WriteEventsToClient(ClientPtr pClient, int count, xEvent *events)
             swapEventLen = eventlength;
             swapEvent = realloc(swapEvent, swapEventLen);
             if (!swapEvent) {
-                FatalError("WriteEventsToClient: Out of memory.\n");
+                FatalError("WriteEventsToClient: Out of memory.\n", pClient->context);
                 return;
             }
         }
@@ -6197,12 +6191,12 @@ SetClientPointer(ClientPtr client, DeviceIntPtr device)
         return rc;
 
     if (!IsMaster(device)) {
-        ErrorF("[dix] Need master device for ClientPointer. This is a bug.\n");
+        ErrorF("[dix] Need master device for ClientPointer. This is a bug.\n", client->context);
         return BadDevice;
     }
     else if (!device->spriteInfo->spriteOwner) {
         ErrorF("[dix] Device %d does not have a sprite. "
-               "Cannot be ClientPointer\n", device->id);
+               "Cannot be ClientPointer\n", client->context, device->id);
         return BadDevice;
     }
     client->clientPtr = device;
@@ -6257,7 +6251,7 @@ PickKeyboard(ClientPtr client)
 
     if (!kbd) {
         ErrorF("[dix] ClientPointer not paired with a keyboard. This "
-               "is a bug.\n");
+               "is a bug.\n", client->context);
     }
 
     return kbd;

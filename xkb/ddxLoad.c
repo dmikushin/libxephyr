@@ -58,7 +58,7 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #endif
 
 static unsigned
-LoadXKM(unsigned want, unsigned need, const char *keymap, XkbDescPtr *xkbRtrn);
+LoadXKM(unsigned want, unsigned need, const char *keymap, XkbDescPtr *xkbRtrn, XephyrContext* context);
 
 static void
 OutputDirectory(char *outdir, size_t size)
@@ -157,7 +157,7 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata, XephyrContext* cont
 
     if (!buf) {
         LogMessage(X_ERROR,
-                   "XKB: Could not invoke xkbcomp: not enough memory\n");
+                   "XKB: Could not invoke xkbcomp: not enough memory\n", context);
         return NULL;
     }
 
@@ -183,10 +183,10 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata, XephyrContext* cont
 #ifdef WIN32
             unlink(tmpname);
 #endif
-            return xnfstrdup(keymap);
+            return XNFstrdup(keymap, context);
         }
         else {
-            LogMessage(X_ERROR, "Error compiling keymap (%s) executing '%s'\n",
+            LogMessage(X_ERROR, "Error compiling keymap (%s) executing '%s'\n", context,
                        keymap, buf);
         }
 #ifdef WIN32
@@ -196,9 +196,9 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata, XephyrContext* cont
     }
     else {
 #ifndef WIN32
-        LogMessage(X_ERROR, "XKB: Could not invoke xkbcomp\n");
+        LogMessage(X_ERROR, "XKB: Could not invoke xkbcomp\n", context);
 #else
-        LogMessage(X_ERROR, "Could not open file %s\n", tmpname);
+        LogMessage(X_ERROR, "Could not open file %s\n", context, tmpname);
 #endif
     }
     free(buf);
@@ -284,11 +284,11 @@ XkbDDXLoadKeymapFromString(DeviceIntPtr keybd,
 
     map_name = RunXkbComp(xkb_write_keymap_string_cb, &map, keybd->context);
     if (!map_name) {
-        LogMessage(X_ERROR, "XKB: Couldn't compile keymap\n");
+        LogMessage(X_ERROR, "XKB: Couldn't compile keymap\n", keybd->context);
         return 0;
     }
 
-    have = LoadXKM(want, need, map_name, xkbRtrn);
+    have = LoadXKM(want, need, map_name, xkbRtrn, keybd->context);
     free(map_name);
 
     return have;
@@ -331,7 +331,7 @@ XkbDDXOpenConfigFile(const char *mapName, char *fileNameRtrn, int fileNameRtrnLe
 }
 
 static unsigned
-LoadXKM(unsigned want, unsigned need, const char *keymap, XkbDescPtr *xkbRtrn)
+LoadXKM(unsigned want, unsigned need, const char *keymap, XkbDescPtr *xkbRtrn, XephyrContext* context)
 {
     FILE *file;
     char fileName[PATH_MAX];
@@ -339,13 +339,13 @@ LoadXKM(unsigned want, unsigned need, const char *keymap, XkbDescPtr *xkbRtrn)
 
     file = XkbDDXOpenConfigFile(keymap, fileName, PATH_MAX);
     if (file == NULL) {
-        LogMessage(X_ERROR, "Couldn't open compiled keymap file %s\n",
+        LogMessage(X_ERROR, "Couldn't open compiled keymap file %s\n", context,
                    fileName);
         return 0;
     }
     missing = XkmReadFile(file, need, want, xkbRtrn);
     if (*xkbRtrn == NULL) {
-        LogMessage(X_ERROR, "Error loading keymap %s\n", fileName);
+        LogMessage(X_ERROR, "Error loading keymap %s\n", context, fileName);
         fclose(file);
         (void) unlink(fileName);
         return 0;
@@ -377,17 +377,17 @@ XkbDDXLoadKeymapByNames(DeviceIntPtr keybd,
     if ((names->keycodes == NULL) && (names->types == NULL) &&
         (names->compat == NULL) && (names->symbols == NULL) &&
         (names->geometry == NULL)) {
-        LogMessage(X_ERROR, "XKB: No components provided for device %s\n",
+        LogMessage(X_ERROR, "XKB: No components provided for device %s\n", keybd->context,
                    keybd->name ? keybd->name : "(unnamed keyboard)");
         return 0;
     }
     else if (!XkbDDXCompileKeymapByNames(xkb, names, want, need,
                                          nameRtrn, nameRtrnLen, keybd->context)) {
-        LogMessage(X_ERROR, "XKB: Couldn't compile keymap\n");
+        LogMessage(X_ERROR, "XKB: Couldn't compile keymap\n", keybd->context);
         return 0;
     }
 
-    return LoadXKM(want, need, nameRtrn, xkbRtrn);
+    return LoadXKM(want, need, nameRtrn, xkbRtrn, keybd->context);
 }
 
 Bool
@@ -405,25 +405,25 @@ XkbDDXNamesFromRules(DeviceIntPtr keybd,
 
     if (snprintf(buf, PATH_MAX, "%s/rules/%s", XkbBaseDirectory, rules_name)
         >= PATH_MAX) {
-        LogMessage(X_ERROR, "XKB: Rules name is too long\n");
+        LogMessage(X_ERROR, "XKB: Rules name is too long\n", keybd->context);
         return FALSE;
     }
 
     file = fopen(buf, "r");
     if (!file) {
-        LogMessage(X_ERROR, "XKB: Couldn't open rules file %s\n", buf);
+        LogMessage(X_ERROR, "XKB: Couldn't open rules file %s\n", keybd->context, buf);
         return FALSE;
     }
 
     rules = XkbRF_Create();
     if (!rules) {
-        LogMessage(X_ERROR, "XKB: Couldn't create rules struct\n");
+        LogMessage(X_ERROR, "XKB: Couldn't create rules struct\n", keybd->context);
         fclose(file);
         return FALSE;
     }
 
-    if (!XkbRF_LoadRules(file, rules)) {
-        LogMessage(X_ERROR, "XKB: Couldn't parse rules file %s\n", rules_name);
+    if (!XkbRF_LoadRules(file, rules, keybd->context)) {
+        LogMessage(X_ERROR, "XKB: Couldn't parse rules file %s\n", keybd->context, rules_name);
         fclose(file);
         XkbRF_Free(rules, TRUE);
         return FALSE;
@@ -435,7 +435,7 @@ XkbDDXNamesFromRules(DeviceIntPtr keybd,
     XkbRF_Free(rules, TRUE);
 
     if (!complete)
-        LogMessage(X_ERROR, "XKB: Rules returned no components\n");
+        LogMessage(X_ERROR, "XKB: Rules returned no components\n", keybd->context);
 
     return complete;
 }
@@ -494,7 +494,7 @@ KeymapOrDefaults(DeviceIntPtr dev, XkbDescPtr xkb)
     /* we didn't get what we really needed. And that will likely leave
      * us with a keyboard that doesn't work. Use the defaults instead */
     LogMessage(X_ERROR, "XKB: Failed to load keymap. Loading default "
-                        "keymap instead.\n");
+                        "keymap instead.\n", dev->context);
 
     XkbGetRulesDflts(&dflts);
 
@@ -513,7 +513,7 @@ XkbCompileKeymap(DeviceIntPtr dev, XkbRMLVOSet * rmlvo)
     unsigned int need;
 
     if (!dev || !rmlvo) {
-        LogMessage(X_ERROR, "XKB: No device or RMLVO specified\n");
+        LogMessage(X_ERROR, "XKB: No device or RMLVO specified\n", dev->context);
         return NULL;
     }
 
@@ -534,7 +534,7 @@ XkbCompileKeymapFromString(DeviceIntPtr dev,
     unsigned int need, provided;
 
     if (!dev || !keymap) {
-        LogMessage(X_ERROR, "XKB: No device or keymap specified\n");
+        LogMessage(X_ERROR, "XKB: No device or keymap specified\n", dev->context);
         return NULL;
     }
 

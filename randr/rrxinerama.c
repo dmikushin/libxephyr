@@ -413,7 +413,7 @@ SProcRRXineramaDispatch(ClientPtr client)
 }
 
 void
-RRXineramaExtensionInit(void)
+RRXineramaExtensionInit(XephyrContext* context)
 {
 #ifdef PANORAMIX
     if (!noPanoramiXExtension)

@@ -38,16 +38,15 @@ glamor_fixup_window_pixmap(DrawablePtr pDrawable, PixmapPtr *ppPixmap)
     if (pPixmap->drawable.bitsPerPixel != pDrawable->bitsPerPixel) {
         pixmap_priv = glamor_get_pixmap_private(pPixmap);
         if (!GLAMOR_PIXMAP_PRIV_HAS_FBO(pixmap_priv)) {
-            glamor_fallback("pixmap %p has no fbo\n", pPixmap);
+            glamor_fallback("pixmap %p has no fbo\n", pPixmap->drawable.pScreen->context, pPixmap);
             goto fail;
         }
-        glamor_debug_output(GLAMOR_DEBUG_UNIMPL, "To be implemented.\n");
+        glamor_debug_output(GLAMOR_DEBUG_UNIMPL, "To be implemented.\n", pPixmap->drawable.pScreen->context);
     }
     return;
 
  fail:
-    GLAMOR_PANIC
-        (" We can't fall back to fbFixupWindowPixmap, as the fb24_32ReformatTile"
+    GLAMOR_PANIC(" We can't fall back to fbFixupWindowPixmap, as the fb24_32ReformatTile"
          " is broken for glamor. \n");
 }
 

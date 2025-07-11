@@ -514,7 +514,7 @@ _valuator_mask_set_double(ValuatorMask *mask, int valuator, double data)
 void
 valuator_mask_set_double(ValuatorMask *mask, int valuator, double data)
 {
-    BUG_WARN_MSG(mask->has_unaccelerated,
+    BUG_WARN_MSG(mask->has_unaccelerated, NULL,
                  "Do not mix valuator types, zero mask first\n");
     _valuator_mask_set_double(mask, valuator, data);
 }
@@ -637,7 +637,7 @@ valuator_mask_set_absolute_unaccelerated(ValuatorMask *mask,
                                          int absolute,
                                          double unaccel)
 {
-    BUG_WARN_MSG(mask->last_bit != -1 && !mask->has_unaccelerated,
+    BUG_WARN_MSG(mask->last_bit != -1 && !mask->has_unaccelerated, NULL,
                  "Do not mix valuator types, zero mask first\n");
     _valuator_mask_set_double(mask, valuator, absolute);
     mask->has_unaccelerated = TRUE;
@@ -653,7 +653,7 @@ valuator_mask_set_unaccelerated(ValuatorMask *mask,
                                 double accel,
                                 double unaccel)
 {
-    BUG_WARN_MSG(mask->last_bit != -1 && !mask->has_unaccelerated,
+    BUG_WARN_MSG(mask->last_bit != -1 && !mask->has_unaccelerated, NULL,
                  "Do not mix valuator types, zero mask first\n");
     _valuator_mask_set_double(mask, valuator, accel);
     mask->has_unaccelerated = TRUE;
@@ -710,23 +710,23 @@ CountBits(const uint8_t * mask, int len)
  * the server.
  */
 void
-verify_internal_event(const InternalEvent *ev)
+verify_internal_event(const InternalEvent *ev, XephyrContext* context)
 {
     if (ev && ev->any.header != ET_Internal) {
         int i;
         const unsigned char *data = (const unsigned char *) ev;
 
-        ErrorF("dix: invalid event type %d\n", ev->any.header);
+        ErrorF("dix: invalid event type %d\n", context, ev->any.header);
 
         for (i = 0; i < sizeof(xEvent); i++, data++) {
-            ErrorF("%02hhx ", *data);
+            ErrorF("%02hhx ", context, *data);
 
             if ((i % 8) == 7)
-                ErrorF("\n");
+                ErrorF("\n", context);
         }
 
         xorg_backtrace();
-        FatalError("Wrong event type %d. Aborting server\n", ev->any.header);
+        FatalError("Wrong event type %d. Aborting server\n", context, ev->any.header);
     }
 }
 
@@ -1137,9 +1137,9 @@ xi2mask_free(XI2Mask **mask)
 Bool
 xi2mask_isset_for_device(XI2Mask *mask, const DeviceIntPtr dev, int event_type)
 {
-    BUG_WARN(dev->id < 0);
-    BUG_WARN(dev->id >= mask->nmasks);
-    BUG_WARN(bits_to_bytes(event_type + 1) > mask->mask_size);
+    BUG_WARN(dev->id < 0, dev->context);
+    BUG_WARN(dev->id >= mask->nmasks, dev->context);
+    BUG_WARN(bits_to_bytes(event_type + 1) > mask->mask_size, dev->context);
 
     return BitIsOn(mask->masks[dev->id], event_type);
 }
@@ -1169,11 +1169,11 @@ xi2mask_isset(XI2Mask *mask, const DeviceIntPtr dev, int event_type)
  * Set the mask bit for this event type for this device.
  */
 void
-xi2mask_set(XI2Mask *mask, int deviceid, int event_type)
+xi2mask_set(XI2Mask *mask, int deviceid, int event_type, XephyrContext* context)
 {
-    BUG_WARN(deviceid < 0);
-    BUG_WARN(deviceid >= mask->nmasks);
-    BUG_WARN(bits_to_bytes(event_type + 1) > mask->mask_size);
+    BUG_WARN(deviceid < 0, context);
+    BUG_WARN(deviceid >= mask->nmasks, context);
+    BUG_WARN(bits_to_bytes(event_type + 1) > mask->mask_size, context);
 
     SetBit(mask->masks[deviceid], event_type);
 }
@@ -1183,11 +1183,11 @@ xi2mask_set(XI2Mask *mask, int deviceid, int event_type)
  * masks are zeroed.
  */
 void
-xi2mask_zero(XI2Mask *mask, int deviceid)
+xi2mask_zero(XI2Mask *mask, int deviceid, XephyrContext* context)
 {
     int i;
 
-    BUG_WARN(deviceid > 0 && deviceid >= mask->nmasks);
+    BUG_WARN(deviceid > 0 && deviceid >= mask->nmasks, context);
 
     if (deviceid >= 0)
         memset(mask->masks[deviceid], 0, mask->mask_size);
@@ -1235,10 +1235,10 @@ xi2mask_mask_size(const XI2Mask *mask)
  */
 void
 xi2mask_set_one_mask(XI2Mask *xi2mask, int deviceid, const unsigned char *mask,
-                     size_t mask_size)
+                     size_t mask_size, XephyrContext* context)
 {
-    BUG_WARN(deviceid < 0);
-    BUG_WARN(deviceid >= xi2mask->nmasks);
+    BUG_WARN(deviceid < 0, context);
+    BUG_WARN(deviceid >= xi2mask->nmasks, context);
 
     memcpy(xi2mask->masks[deviceid], mask, min(xi2mask->mask_size, mask_size));
 }
@@ -1247,10 +1247,10 @@ xi2mask_set_one_mask(XI2Mask *xi2mask, int deviceid, const unsigned char *mask,
  * Get a reference to the XI2mask for this particular device.
  */
 const unsigned char *
-xi2mask_get_one_mask(const XI2Mask *mask, int deviceid)
+xi2mask_get_one_mask(const XI2Mask *mask, int deviceid, XephyrContext* context)
 {
-    BUG_WARN(deviceid < 0);
-    BUG_WARN(deviceid >= mask->nmasks);
+    BUG_WARN(deviceid < 0, context);
+    BUG_WARN(deviceid >= mask->nmasks, context);
 
     return mask->masks[deviceid];
 }

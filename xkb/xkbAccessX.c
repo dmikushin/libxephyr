@@ -299,11 +299,11 @@ AccessXKRGExpire(OsTimerPtr timer, CARD32 now, void *arg)
     cn.requestMinor = 0;
     if (xkbi->desc->ctrls->enabled_ctrls & XkbSlowKeysMask) {
         AccessXKRGTurnOff(dev, &cn);
-        LogMessage(X_INFO, "XKB SlowKeys are disabled.\n");
+        LogMessage(X_INFO, "XKB SlowKeys are disabled.\n", dev->context);
     }
     else {
         AccessXKRGTurnOn(dev, XkbSlowKeysMask, &cn);
-        LogMessage(X_INFO, "XKB SlowKeys are now enabled. Hold shift to disable.\n");
+        LogMessage(X_INFO, "XKB SlowKeys are now enabled. Hold shift to disable.\n", dev->context);
     }
 
     xkbi->slowKeyEnableKey = 0;
@@ -708,7 +708,7 @@ AccessXFilterReleaseEvent(DeviceEvent *event, DeviceIntPtr keybd)
 /************************************************************************/
 extern int xkbDevicePrivateIndex;
 void
-ProcessPointerEvent(InternalEvent *ev, DeviceIntPtr mouse)
+ProcessPointerEvent(InternalEvent *ev, DeviceIntPtr mouse, XephyrContext* context)
 {
     DeviceIntPtr dev;
     XkbSrvInfoPtr xkbi = NULL;
@@ -736,8 +736,7 @@ ProcessPointerEvent(InternalEvent *ev, DeviceIntPtr mouse)
             rc = dixLookupDevice(&source, event->sourceid, mouse->context->serverClient,
                     DixWriteAccess);
             if (rc != Success)
-                ErrorF("[xkb] bad sourceid '%d' on button release event.\n",
-                        event->sourceid);
+                ErrorF("[xkb] bad sourceid '%d' on button release event.\n", NULL, event->sourceid);
             else if (!IsXTestDevice(source, GetMaster(dev, MASTER_POINTER))) {
                 DeviceIntPtr xtest_device;
 
@@ -754,7 +753,7 @@ ProcessPointerEvent(InternalEvent *ev, DeviceIntPtr mouse)
     }
 
     UNWRAP_PROCESS_INPUT_PROC(mouse, xkbPrivPtr, backupproc);
-    mouse->public.processInputProc(ev, mouse);
+    mouse->public.processInputProc(ev, mouse, context);
     COND_WRAP_PROCESS_INPUT_PROC(mouse, xkbPrivPtr, backupproc, xkbUnwrapProc);
 
     if (!xkbi)

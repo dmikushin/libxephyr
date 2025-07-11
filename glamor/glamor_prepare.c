@@ -73,7 +73,7 @@ glamor_prep_pixmap_box(PixmapPtr pixmap, glamor_access_t access, BoxPtr box)
             return TRUE;
 
         if (access == GLAMOR_ACCESS_RW)
-            FatalError("attempt to remap buffer as writable");
+            FatalError("attempt to remap buffer as writable", screen->context);
 
         if (priv->pbo) {
             glBindBuffer(GL_PIXEL_PACK_BUFFER, priv->pbo);
@@ -102,6 +102,7 @@ glamor_prep_pixmap_box(PixmapPtr pixmap, glamor_access_t access, BoxPtr box)
                 if (!glamor_priv->logged_any_pbo_allocation_failure) {
                     LogMessageVerb(X_WARNING, 0, "glamor: Failed to allocate %d "
                                    "bytes PBO due to GL_OUT_OF_MEMORY.\n",
+                                   pixmap->drawable.pScreen->context,
                                    pixmap->devKind * pixmap->drawable.height);
                     glamor_priv->logged_any_pbo_allocation_failure = true;
                 }

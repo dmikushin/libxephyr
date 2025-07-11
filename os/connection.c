@@ -202,9 +202,9 @@ NotifyParentProcess(XephyrContext* context)
 #if !defined(WIN32)
     if (context->displayfd >= 0) {
         if (write(context->displayfd, context->display, strlen(context->display)) != strlen(context->display))
-            FatalError("Cannot write context->display number to fd %d\n", context->displayfd);
+            FatalError("Cannot write context->display number to fd %d\n", context, context->displayfd);
         if (write(context->displayfd, "\n", 1) != 1)
-            FatalError("Cannot write context->display number to fd %d\n", context->displayfd);
+            FatalError("Cannot write context->display number to fd %d\n", context, context->displayfd);
         close(context->displayfd);
         context->displayfd = -1;
     }
@@ -256,7 +256,7 @@ CreateWellKnownSockets(XephyrContext* context)
         if (TryCreateSocket(atoi(context->display), &partial) &&
             ListenTransCount >= 1)
             if (!PartialNetwork && partial)
-                FatalError ("Failed to establish all listening sockets");
+                FatalError("Failed to establish all listening sockets", context);
     }
     else { /* -context->displayfd and no explicit context->display number */
         Bool found = 0;
@@ -269,7 +269,7 @@ CreateWellKnownSockets(XephyrContext* context)
                 CloseWellKnownConnections();
         }
         if (!found)
-            FatalError("Failed to find a socket to listen on");
+            FatalError("Failed to find a socket to listen on", context);
         snprintf(dynamic_display, sizeof(dynamic_display), "%d", i);
         context->display = dynamic_display;
         LogSetDisplay(context);
@@ -277,7 +277,7 @@ CreateWellKnownSockets(XephyrContext* context)
 
     ListenTransFds = xallocarray(ListenTransCount, sizeof (int));
     if (ListenTransFds == NULL)
-        FatalError ("Failed to create listening socket array");
+        FatalError("Failed to create listening socket array", context);
 
     for (i = 0; i < ListenTransCount; i++) {
         int fd = _XSERVTransGetConnectionNumber(ListenTransConns[i]);
@@ -286,12 +286,11 @@ CreateWellKnownSockets(XephyrContext* context)
         SetNotifyFd(fd, EstablishNewConnections, X_NOTIFY_READ, NULL);
 
         if (!_XSERVTransIsLocal(ListenTransConns[i]))
-            DefineSelf (fd);
+            DefineSelf (fd, context);
     }
 
     if (ListenTransCount == 0 && !NoListenAll)
-        FatalError
-            ("Cannot establish any listening sockets - Make sure an X server isn't already running");
+        FatalError("Cannot establish any listening sockets - Make sure an X server isn't already running", context);
 
 #if !defined(WIN32)
     OsSignal(SIGPIPE, SIG_IGN);
@@ -1031,7 +1030,7 @@ ListenOnOpenFD(int fd, int noxauth, XephyrContext* context)
      */
     ciptr = _XSERVTransReopenCOTSServer(5, fd, port);
     if (ciptr == NULL) {
-        ErrorF("Got NULL while trying to Reopen listen port.\n");
+        ErrorF("Got NULL while trying to Reopen listen port.\n", context);
         return;
     }
 
@@ -1040,10 +1039,10 @@ ListenOnOpenFD(int fd, int noxauth, XephyrContext* context)
 
     /* Allocate space to store it */
     ListenTransFds =
-        xnfreallocarray(ListenTransFds, ListenTransCount + 1, sizeof(int));
+        XNFreallocarray(ListenTransFds, ListenTransCount + 1, sizeof(int), context);
     ListenTransConns =
-        xnfreallocarray(ListenTransConns, ListenTransCount + 1,
-                        sizeof(XtransConnInfo));
+        XNFreallocarray(ListenTransConns, ListenTransCount + 1,
+                        sizeof(XtransConnInfo), context);
 
     /* Store it */
     ListenTransConns[ListenTransCount] = ciptr;

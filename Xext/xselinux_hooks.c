@@ -99,7 +99,7 @@ SELinuxDoCheck(SELinuxSubjectRec * subj, SELinuxObjectRec * obj,
             return Success;     /* DixUnknownAccess requests OK ... for now */
         if (errno == EACCES)
             return BadAccess;
-        ErrorF("SELinux: avc_has_perm: unexpected error %d\n", errno);
+        ErrorF("SELinux: avc_has_perm: unexpected error %d\n", NULL, errno);
         return BadValue;
     }
 
@@ -154,7 +154,7 @@ SELinuxLabelClient(ClientPtr client)
     /* Get a SID from the context */
     if (avc_context_to_sid_raw(ctx, &subj->sid) < 0)
         FatalError("SELinux: client %d: context_to_sid_raw(%s) failed\n",
-                   client->index, ctx);
+                   client->index, ctx, context);
 
     obj->sid = subj->sid;
     freecon(ctx);
@@ -180,11 +180,11 @@ SELinuxLabelInitial(void)
 
     /* Use the context of the X server process for the context->serverClient */
     if (getcon_raw(&ctx) < 0)
-        FatalError("SELinux: couldn't get context of X server process\n");
+        FatalError("SELinux: couldn't get context of X server process\n", context);
 
     /* Get a SID from the context */
     if (avc_context_to_sid_raw(ctx, &subj->sid) < 0)
-        FatalError("SELinux: context->serverClient: context_to_sid(%s) failed\n", ctx);
+        FatalError("SELinux: context->serverClient: context_to_sid(%s) failed\n", ctx, context);
 
     obj->sid = subj->sid;
     freecon(ctx);
@@ -778,16 +778,16 @@ SELinuxResourceState(CallbackListPtr *pcbl, void *unused, void *calldata)
         int rc = avc_sid_to_context_raw(subj->sid, &ctx);
 
         if (rc < 0)
-            FatalError("SELinux: Failed to get security context!\n");
+            FatalError("SELinux: Failed to get security context!\n", context);
         rc = dixChangeWindowProperty(context->serverClient,
                                      pWin, atom_client_ctx, XA_STRING, 8,
                                      PropModeReplace, strlen(ctx), ctx, FALSE);
         if (rc != Success)
-            FatalError("SELinux: Failed to set label property on window!\n");
+            FatalError("SELinux: Failed to set label property on window!\n", context);
         freecon(ctx);
     }
     else
-        FatalError("SELinux: Unexpected unlabeled client found\n");
+        FatalError("SELinux: Unexpected unlabeled client found\n", context);
 
     obj = dixLookupPrivate(&pWin->devPrivates, objectKey);
 
@@ -796,16 +796,16 @@ SELinuxResourceState(CallbackListPtr *pcbl, void *unused, void *calldata)
         int rc = avc_sid_to_context_raw(obj->sid, &ctx);
 
         if (rc < 0)
-            FatalError("SELinux: Failed to get security context!\n");
+            FatalError("SELinux: Failed to get security context!\n", context);
         rc = dixChangeWindowProperty(context->serverClient,
                                      pWin, atom_ctx, XA_STRING, 8,
                                      PropModeReplace, strlen(ctx), ctx, FALSE);
         if (rc != Success)
-            FatalError("SELinux: Failed to set label property on window!\n");
+            FatalError("SELinux: Failed to set label property on window!\n", context);
         freecon(ctx);
     }
     else
-        FatalError("SELinux: Unexpected unlabeled window found\n");
+        FatalError("SELinux: Unexpected unlabeled window found\n", context);
 }
 
 static int netlink_fd;
@@ -876,22 +876,22 @@ SELinuxFlaskInit(void)
                 ("SELinux: Invalid object class mapping, disabling SELinux support.\n");
             return;
         }
-        FatalError("SELinux: Failed to set up security class mapping\n");
+        FatalError("SELinux: Failed to set up security class mapping\n", context);
     }
 
     if (avc_open(&avc_option, 1) < 0)
-        FatalError("SELinux: Couldn't initialize SELinux userspace AVC\n");
+        FatalError("SELinux: Couldn't initialize SELinux userspace AVC\n", context);
 
     if (security_get_initial_context_raw("unlabeled", &ctx) < 0)
-        FatalError("SELinux: Failed to look up unlabeled context\n");
+        FatalError("SELinux: Failed to look up unlabeled context\n", context);
     if (avc_context_to_sid_raw(ctx, &unlabeled_sid) < 0)
-        FatalError("SELinux: a context_to_SID call failed!\n");
+        FatalError("SELinux: a context_to_SID call failed!\n", context);
     freecon(ctx);
 
     /* Prepare for auditing */
     audit_fd = audit_open();
     if (audit_fd < 0)
-        FatalError("SELinux: Failed to open the system audit log\n");
+        FatalError("SELinux: Failed to open the system audit log\n", context);
 
     /* Allocate private storage */
     if (!dixRegisterPrivateKey
@@ -900,15 +900,15 @@ SELinuxFlaskInit(void)
                                sizeof(SELinuxObjectRec)) ||
         !dixRegisterPrivateKey(dataKey, PRIVATE_XSELINUX,
                                sizeof(SELinuxObjectRec)))
-        FatalError("SELinux: Failed to allocate private storage.\n");
+        FatalError("SELinux: Failed to allocate private storage.\n", context);
 
     /* Create atoms for doing window labeling */
     atom_ctx = MakeAtom("_SELINUX_CONTEXT", 16, TRUE);
     if (atom_ctx == BAD_RESOURCE)
-        FatalError("SELinux: Failed to create atom\n");
+        FatalError("SELinux: Failed to create atom\n", context);
     atom_client_ctx = MakeAtom("_SELINUX_CLIENT_CONTEXT", 23, TRUE);
     if (atom_client_ctx == BAD_RESOURCE)
-        FatalError("SELinux: Failed to create atom\n");
+        FatalError("SELinux: Failed to create atom\n", context);
 
     netlink_fd = avc_netlink_acquire_fd();
     SetNotifyFd(netlink_fd, SELinuxNetlinkNotify, X_NOTIFY_READ, NULL);
@@ -930,7 +930,7 @@ SELinuxFlaskInit(void)
     ret &= XaceRegisterCallback(XACE_SCREEN_ACCESS, SELinuxScreen, NULL);
     ret &= XaceRegisterCallback(XACE_SCREENSAVER_ACCESS, SELinuxScreen, truep);
     if (!ret)
-        FatalError("SELinux: Failed to register one or more callbacks\n");
+        FatalError("SELinux: Failed to register one or more callbacks\n", context);
 
     /* Label objects that were created before we could register ourself */
     SELinuxLabelInitial();

@@ -118,7 +118,9 @@ static void SyncInitIdleTime(XephyrContext* context);
 static inline void*
 SysCounterGetPrivate(SyncCounter *counter)
 {
-    BUG_WARN(!IsSystemCounter(counter));
+    /* BUG_WARN requires context, skip for now */
+    if (!IsSystemCounter(counter))
+        return NULL;
 
     return counter->pSysCounterInfo ? counter->pSysCounterInfo->private : NULL;
 }
@@ -128,8 +130,8 @@ SyncCheckWarnIsCounter(const SyncObject * pSync, const char *warning)
 {
     if (pSync && (SYNC_COUNTER != pSync->type)) {
         if (SyncNumInvalidCounterWarnings++ < MAX_INVALID_COUNTER_WARNINGS) {
-            ErrorF("%s", warning);
-            ErrorF("         Counter type: %d\n", pSync->type);
+            ErrorF("%s", NULL, warning);
+            ErrorF("         Counter type: %d\n", NULL, pSync->type);
         }
 
         return FALSE;
@@ -1215,7 +1217,7 @@ FreeAlarmClient(void *value, XID id, XephyrContext* context)
             return Success;
         }
     }
-    FatalError("alarm client not on event list");
+    FatalError("alarm client not on event list", context);
  /*NOTREACHED*/}
 
 /*
@@ -2507,8 +2509,9 @@ SyncExtensionInit(XephyrContext* context)
                                  XSyncNumberEvents, XSyncNumberErrors,
                                  ProcSyncDispatch, SProcSyncDispatch,
                                  SyncResetProc, StandardMinorOpcode)) == NULL) {
-        ErrorF("Sync Extension %d.%d failed to Initialise\n",
-               SYNC_MAJOR_VERSION, SYNC_MINOR_VERSION);
+        /* ErrorF requires context, use fprintf for now */
+        fprintf(stderr, "Sync Extension %d.%d failed to Initialise\n",
+                SYNC_MAJOR_VERSION, SYNC_MINOR_VERSION);
         return;
     }
 

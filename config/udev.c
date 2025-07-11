@@ -62,7 +62,7 @@
 static void
 config_udev_odev_setup_attribs(struct udev_device *udev_device, const char *path, const char *syspath,
                                int major, int minor,
-                               config_odev_probe_proc_ptr probe_callback);
+                               config_odev_probe_proc_ptr probe_callback, XephyrContext* context);
 #endif
 
 static char itoa_buf[16];
@@ -138,7 +138,7 @@ device_added(struct udev_device *udev_device, XephyrContext* context)
         LogMessage(X_INFO, "config/udev: Adding drm device (%s)\n", path);
 
         config_udev_odev_setup_attribs(udev_device, path, syspath, major(devnum),
-                                       minor(devnum), NewGPUDeviceRequest);
+                                       minor(devnum), NewGPUDeviceRequest, context);
         return;
     }
 #endif
@@ -334,7 +334,7 @@ device_removed(struct udev_device *device, XephyrContext* context)
         LogMessage(X_INFO, "config/udev: removing GPU device %s %s\n",
                    syspath, path);
         config_udev_odev_setup_attribs(device, path, syspath, major(devnum),
-                                       minor(devnum), DeleteGPUDeviceRequest);
+                                       minor(devnum), DeleteGPUDeviceRequest, context);
         /* Retry vtenter after a drm node removal */
         systemd_logind_vtenter();
         return;
@@ -533,9 +533,9 @@ config_udev_get_fallback_bus_id(struct udev_device *udev_device)
 static void
 config_udev_odev_setup_attribs(struct udev_device *udev_device, const char *path, const char *syspath,
                                int major, int minor,
-                               config_odev_probe_proc_ptr probe_callback)
+                               config_odev_probe_proc_ptr probe_callback, XephyrContext* context)
 {
-    struct OdevAttributes *attribs = config_odev_allocate_attributes();
+    struct OdevAttributes *attribs = config_odev_allocate_attributes(context);
     const char *value, *str;
 
     attribs->path = XNFstrdup(path);
@@ -599,7 +599,7 @@ config_udev_odev_probe(config_odev_probe_proc_ptr probe_callback, XephyrContext*
             goto no_probe;
 
         config_udev_odev_setup_attribs(udev_device, path, syspath, major(devnum),
-                                       minor(devnum), probe_callback);
+                                       minor(devnum), probe_callback, context);
     no_probe:
         udev_device_unref(udev_device);
     }

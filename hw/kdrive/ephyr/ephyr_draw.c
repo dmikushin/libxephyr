@@ -37,7 +37,7 @@
 #define EPHYR_TRACE_DRAW 0
 
 #if EPHYR_TRACE_DRAW
-#define TRACE_DRAW() ErrorF("%s\n", __FUNCTION__);
+#define TRACE_DRAW() ErrorF("%s\n", NULL, __FUNCTION__);
 #else
 #define TRACE_DRAW() do { } while (0)
 #endif
@@ -492,11 +492,11 @@ ephyrDrawInit(ScreenPtr pScreen)
 
     success = exaDriverInit(pScreen, fakexa->exa);
     if (success) {
-        ErrorF("Initialized fake EXA acceleration\n");
+        ErrorF("Initialized fake EXA acceleration\n", pScreen->context);
         scrpriv->fakexa = fakexa;
     }
     else {
-        ErrorF("Failed to initialize EXA\n");
+        ErrorF("Failed to initialize EXA\n", pScreen->context);
         free(fakexa->exa);
         free(fakexa);
     }

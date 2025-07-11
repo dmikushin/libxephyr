@@ -81,16 +81,16 @@ typedef struct _FontPathRec *FontPathPtr;
 typedef struct _NewClientRec *NewClientPtr;
 
 #ifndef xnfalloc
-#define xnfalloc(size) XNFalloc((unsigned long)(size))
-#define xnfcalloc(_num, _size) XNFcallocarray((_num), (_size))
-#define xnfrealloc(ptr, size) XNFrealloc((void *)(ptr), (unsigned long)(size))
+#define xnfalloc(size, context) XNFalloc((unsigned long)(size), (context))
+#define xnfcalloc(_num, _size, context) XNFcallocarray((_num), (_size), (context))
+#define xnfrealloc(ptr, size, context) XNFrealloc((void *)(ptr), (unsigned long)(size), (context))
 
 #define xstrdup(s) Xstrdup(s)
-#define xnfstrdup(s) XNFstrdup(s)
+#define xnfstrdup(s, context) XNFstrdup((s), (context))
 
 #define xallocarray(num, size) reallocarray(NULL, (num), (size))
-#define xnfallocarray(num, size) XNFreallocarray(NULL, (num), (size))
-#define xnfreallocarray(ptr, num, size) XNFreallocarray((ptr), (num), (size))
+#define xnfallocarray(num, size, context) XNFreallocarray(NULL, (num), (size), (context))
+#define xnfreallocarray(ptr, num, size, context) XNFreallocarray((ptr), (num), (size), (context))
 #endif
 
 #include <stdio.h>
@@ -180,7 +180,7 @@ extern _X_EXPORT void ListenOnOpenFD(int /* fd */ , int /* noxauth */ , XephyrCo
 extern _X_EXPORT Bool AddClientOnOpenFD(int /* fd */ , XephyrContext* /* context */ );
 
 #ifdef MONOTONIC_CLOCK
-extern void ForceClockId(clockid_t /* forced_clockid */);
+extern void ForceClockId(clockid_t /* forced_clockid */, XephyrContext* /* context */);
 #endif
 
 extern _X_EXPORT CARD32 GetTimeInMillis(void);
@@ -218,7 +218,7 @@ extern _X_EXPORT void AutoResetServer(int /*sig */ );
 
 extern _X_EXPORT void GiveUp(int /*sig */ );
 
-extern _X_EXPORT void UseMsg(void);
+extern _X_EXPORT void UseMsg(XephyrContext* context);
 
 extern _X_EXPORT void ProcessCommandLine(int /*argc */ , char * /*argv */ [], XephyrContext* /*context */ );
 
@@ -231,35 +231,35 @@ extern _X_EXPORT int set_font_authorizations(char **authorizations,
  * enough memory.
  */
 extern _X_EXPORT void *
-XNFalloc(unsigned long /*amount */ );
+XNFalloc(unsigned long /*amount */, XephyrContext* /*context*/ );
 
 /*
  * This function calloc(3)s buffer, terminating the server if there is not
  * enough memory.
  */
 extern _X_EXPORT void *
-XNFcalloc(unsigned long /*amount */ ) _X_DEPRECATED;
+XNFcalloc(unsigned long /*amount */, XephyrContext* /*context*/ ) _X_DEPRECATED;
 
 /*
  * This function calloc(3)s buffer, terminating the server if there is not
  * enough memory or the arguments overflow when multiplied
  */
 extern _X_EXPORT void *
-XNFcallocarray(size_t nmemb, size_t size);
+XNFcallocarray(size_t nmemb, size_t size, XephyrContext* context);
 
 /*
  * This function realloc(3)s passed buffer, terminating the server if there is
  * not enough memory.
  */
 extern _X_EXPORT void *
-XNFrealloc(void * /*ptr */ , unsigned long /*amount */ );
+XNFrealloc(void * /*ptr */ , unsigned long /*amount */, XephyrContext* /*context*/ );
 
 /*
  * This function reallocarray(3)s passed buffer, terminating the server if
  * there is not enough memory or the arguments overflow when multiplied.
  */
 extern _X_EXPORT void *
-XNFreallocarray(void *ptr, size_t nmemb, size_t size);
+XNFreallocarray(void *ptr, size_t nmemb, size_t size, XephyrContext* context);
 
 /*
  * This function strdup(3)s passed string. The only difference from the library
@@ -273,7 +273,7 @@ Xstrdup(const char *s);
  * not enough memory. If NULL is passed to this function, NULL is returned.
  */
 extern _X_EXPORT char *
-XNFstrdup(const char *s);
+XNFstrdup(const char *s, XephyrContext* context);
 
 /* Include new X*asprintf API */
 #include "Xprintf.h"
@@ -372,9 +372,9 @@ extern _X_EXPORT Bool
 PrivsElevated(void);
 
 extern _X_EXPORT void
-CheckUserParameters(int argc, char **argv, char **envp);
+CheckUserParameters(int argc, char **argv, char **envp, XephyrContext* context);
 extern _X_EXPORT void
-CheckUserAuthorization(void);
+CheckUserAuthorization(XephyrContext* context);
 
 extern _X_EXPORT int
 AddHost(ClientPtr /*client */ ,
@@ -473,7 +473,7 @@ extern _X_EXPORT void
 AccessUsingXdmcp(void);
 
 extern _X_EXPORT void
-DefineSelf(int /*fd */ );
+DefineSelf(int /*fd */, XephyrContext* /*context*/);
 
 #ifdef XDMCP
 extern _X_EXPORT void
@@ -528,7 +528,7 @@ GenerateAuthorization(unsigned int /* name_length */ ,
 #endif
 
 extern _X_EXPORT int
-ddxProcessArgument(int /*argc */ , char * /*argv */ [], int /*i */ );
+ddxProcessArgument(int /*argc */ , char * /*argv */ [], int /*i */, XephyrContext* /*context */ );
 
 #define CHECK_FOR_REQUIRED_ARGUMENTS(num)  \
     do if (((i + num) >= argc) || (!argv[i + num])) {                   \
@@ -538,7 +538,7 @@ ddxProcessArgument(int /*argc */ , char * /*argv */ [], int /*i */ );
 
 
 extern _X_EXPORT void
-ddxUseMsg(void);
+ddxUseMsg(XephyrContext* context);
 
 /* stuff for ReplyCallback */
 extern _X_EXPORT CallbackListPtr ReplyCallback;
@@ -644,44 +644,44 @@ LogClose(enum ExitCode error);
 extern _X_EXPORT Bool
 LogSetParameter(LogParameter param, int value);
 extern _X_EXPORT void
-LogVWrite(int verb, const char *f, va_list args)
+LogVWrite(int verb, const char *f, va_list args, XephyrContext* context)
 _X_ATTRIBUTE_PRINTF(2, 0);
 extern _X_EXPORT void
-LogWrite(int verb, const char *f, ...)
-_X_ATTRIBUTE_PRINTF(2, 3);
+LogWrite(int verb, const char *f, XephyrContext* context, ...)
+_X_ATTRIBUTE_PRINTF(2, 4);
 extern _X_EXPORT void
 LogVMessageVerb(MessageType type, int verb, const char *format, va_list args, XephyrContext* context)
 _X_ATTRIBUTE_PRINTF(3, 0);
 extern _X_EXPORT void
-LogMessageVerb(MessageType type, int verb, const char *format, ...)
-_X_ATTRIBUTE_PRINTF(3, 4);
+LogMessageVerb(MessageType type, int verb, const char *format, XephyrContext* context, ...)
+_X_ATTRIBUTE_PRINTF(3, 5);
 extern _X_EXPORT void
-LogMessage(MessageType type, const char *format, ...)
-_X_ATTRIBUTE_PRINTF(2, 3);
+LogMessage(MessageType type, const char *format, XephyrContext* context, ...)
+_X_ATTRIBUTE_PRINTF(2, 4);
 extern _X_EXPORT void
-LogMessageVerbSigSafe(MessageType type, int verb, const char *format, ...)
-_X_ATTRIBUTE_PRINTF(3, 4);
+LogMessageVerbSigSafe(MessageType type, int verb, const char *format, XephyrContext* context, ...)
+_X_ATTRIBUTE_PRINTF(3, 5);
 extern _X_EXPORT void
-LogVMessageVerbSigSafe(MessageType type, int verb, const char *format, va_list args)
+LogVMessageVerbSigSafe(MessageType type, int verb, const char *format, va_list args, XephyrContext* context)
 _X_ATTRIBUTE_PRINTF(3, 0);
 
 extern _X_EXPORT void
 LogVHdrMessageVerb(MessageType type, int verb,
                    const char *msg_format, va_list msg_args,
-                   const char *hdr_format, va_list hdr_args)
+                   const char *hdr_format, va_list hdr_args, XephyrContext* context)
 _X_ATTRIBUTE_PRINTF(3, 0)
 _X_ATTRIBUTE_PRINTF(5, 0);
 extern _X_EXPORT void
 LogHdrMessageVerb(MessageType type, int verb,
                   const char *msg_format, va_list msg_args,
-                  const char *hdr_format, ...)
+                  const char *hdr_format, XephyrContext* context, ...)
 _X_ATTRIBUTE_PRINTF(3, 0)
-_X_ATTRIBUTE_PRINTF(5, 6);
+_X_ATTRIBUTE_PRINTF(5, 7);
 extern _X_EXPORT void
 LogHdrMessage(MessageType type, const char *msg_format,
-              va_list msg_args, const char *hdr_format, ...)
+              va_list msg_args, const char *hdr_format, XephyrContext* context, ...)
 _X_ATTRIBUTE_PRINTF(2, 0)
-_X_ATTRIBUTE_PRINTF(4, 5);
+_X_ATTRIBUTE_PRINTF(4, 6);
 
 extern _X_EXPORT void
 FreeAuditTimer(void);
@@ -692,8 +692,8 @@ extern _X_EXPORT void
 VAuditF(const char *f, va_list args)
 _X_ATTRIBUTE_PRINTF(1, 0);
 extern _X_EXPORT void
-FatalError(const char *f, ...)
-_X_ATTRIBUTE_PRINTF(1, 2)
+FatalError(const char *f, XephyrContext* context, ...)
+_X_ATTRIBUTE_PRINTF(1, 3)
     _X_NORETURN;
 
 #ifdef DEBUG
@@ -703,19 +703,19 @@ _X_ATTRIBUTE_PRINTF(1, 2)
 #endif
 
 extern _X_EXPORT void
-VErrorF(const char *f, va_list args)
+VErrorF(const char *f, va_list args, XephyrContext* context)
 _X_ATTRIBUTE_PRINTF(1, 0);
 extern _X_EXPORT void
-ErrorF(const char *f, ...)
-_X_ATTRIBUTE_PRINTF(1, 2);
+ErrorF(const char *f, XephyrContext* context, ...)
+_X_ATTRIBUTE_PRINTF(1, 3);
 extern _X_EXPORT void
-VErrorFSigSafe(const char *f, va_list args)
+VErrorFSigSafe(const char *f, va_list args, XephyrContext* context)
 _X_ATTRIBUTE_PRINTF(1, 0);
 extern _X_EXPORT void
-ErrorFSigSafe(const char *f, ...)
-_X_ATTRIBUTE_PRINTF(1, 2);
+ErrorFSigSafe(const char *f, XephyrContext* context, ...)
+_X_ATTRIBUTE_PRINTF(1, 3);
 extern _X_EXPORT void
-LogPrintMarkers(void);
+LogPrintMarkers(XephyrContext* context);
 
 extern _X_EXPORT void
 xorg_backtrace(void);

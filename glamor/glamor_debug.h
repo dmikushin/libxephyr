@@ -43,31 +43,34 @@ AbortServer(void)
   do {							\
     LogMessageVerb(X_NONE, 0, "Glamor Fatal Error"	\
 		   " at %32s line %d: " _format_ "\n",	\
-		   __FUNCTION__, __LINE__,		\
+		   NULL, __FUNCTION__, __LINE__,		\
 		   ##__VA_ARGS__ );			\
     exit(1);                                            \
   } while(0)
 
-#define __debug_output_message(_format_, _prefix_, ...) \
+#define __debug_output_message(_format_, _prefix_, _context_, ...) \
   LogMessageVerb(X_NONE, 0,				\
 		 "%32s:\t" _format_ ,		\
+		 _context_,				\
 		 /*_prefix_,*/				\
 		 __FUNCTION__,				\
 		 ##__VA_ARGS__)
 
-#define glamor_debug_output(_level_, _format_,...)	\
+#define glamor_debug_output(_level_, _format_, _context_, ...)	\
   do {							\
     if (glamor_debug_level >= _level_)			\
       __debug_output_message(_format_,			\
 			     "Glamor debug",		\
+			     _context_,			\
 			     ##__VA_ARGS__);		\
   } while(0)
 
-#define glamor_fallback(_format_,...)			\
+#define glamor_fallback(_format_, _context_, ...)			\
   do {							\
     if (glamor_debug_level >= GLAMOR_DEBUG_FALLBACK)	\
       __debug_output_message(_format_,			\
 			     "Glamor fallback",		\
+			     _context_,			\
 			     ##__VA_ARGS__);} while(0)
 
 #define DEBUGF(str, ...)  do {} while(0)

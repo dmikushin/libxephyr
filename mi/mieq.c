@@ -106,13 +106,13 @@ mieqNumEnqueued(EventQueuePtr eventQueue)
 
 /* Pre-condition: Called with input_lock held */
 static Bool
-mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
+mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents, XephyrContext* context)
 {
     size_t i, n_enqueued, first_hunk;
     EventRec *new_events;
 
     if (!eventQueue) {
-        ErrorF("[mi] mieqGrowQueue called with a NULL eventQueue\n");
+        ErrorF("[mi] mieqGrowQueue called with a NULL eventQueue\n", context);
         return FALSE;
     }
 
@@ -121,7 +121,7 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
 
     new_events = calloc(new_nevents, sizeof(EventRec));
     if (new_events == NULL) {
-        ErrorF("[mi] mieqGrowQueue memory allocation error.\n");
+        ErrorF("[mi] mieqGrowQueue memory allocation error.\n", context);
         return FALSE;
     }
 
@@ -163,14 +163,14 @@ mieqGrowQueue(EventQueuePtr eventQueue, size_t new_nevents)
 }
 
 Bool
-mieqInit(void)
+mieqInit(XephyrContext* context)
 {
     memset(&miEventQueue, 0, sizeof(miEventQueue));
     miEventQueue.lastEventTime = GetTimeInMillis();
 
     input_lock();
-    if (!mieqGrowQueue(&miEventQueue, QUEUE_INITIAL_SIZE))
-        FatalError("Could not allocate event queue.\n");
+    if (!mieqGrowQueue(&miEventQueue, QUEUE_INITIAL_SIZE, context))
+        FatalError("Could not allocate event queue.\n", context);
     input_unlock();
 
     SetInputCheck(&miEventQueue.head, &miEventQueue.tail);
@@ -206,7 +206,7 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
     Time time;
     size_t n_enqueued;
 
-    verify_internal_event(e);
+    verify_internal_event(e, pDev->context);
 
     n_enqueued = mieqNumEnqueued(&miEventQueue);
 
@@ -219,28 +219,24 @@ mieqEnqueue(DeviceIntPtr pDev, InternalEvent *e)
         oldtail = (oldtail - 1) % miEventQueue.nevents;
     }
     else if (n_enqueued + 1 == miEventQueue.nevents) {
-        if (!mieqGrowQueue(&miEventQueue, miEventQueue.nevents << 1)) {
+        if (!mieqGrowQueue(&miEventQueue, miEventQueue.nevents << 1, NULL)) {
             /* Toss events which come in late.  Usually this means your server's
              * stuck in an infinite loop in the main thread.
              */
             miEventQueue.dropped++;
             if (miEventQueue.dropped == 1) {
-                ErrorFSigSafe("[mi] EQ overflowing.  Additional events will be "
-                              "discarded until existing events are processed.\n");
+                ErrorFSigSafe("[mi] EQ overflowing.  Additional events will be ", NULL, "discarded until existing events are processed.\n", pDev->context);
                 xorg_backtrace();
-                ErrorFSigSafe("[mi] These backtraces from mieqEnqueue may point to "
-                              "a culprit higher up the stack.\n");
-                ErrorFSigSafe("[mi] mieq is *NOT* the cause.  It is a victim.\n");
+                ErrorFSigSafe("[mi] These backtraces from mieqEnqueue may point to ", NULL, "a culprit higher up the stack.\n", pDev->context);
+                ErrorFSigSafe("[mi] mieq is *NOT* the cause.  It is a victim.\n", pDev->context);
             }
             else if (miEventQueue.dropped % QUEUE_DROP_BACKTRACE_FREQUENCY == 0 &&
                      miEventQueue.dropped / QUEUE_DROP_BACKTRACE_FREQUENCY <=
                      QUEUE_DROP_BACKTRACE_MAX) {
-                ErrorFSigSafe("[mi] EQ overflow continuing.  %zu events have been "
-                              "dropped.\n", miEventQueue.dropped);
+                ErrorFSigSafe("[mi] EQ overflow continuing.  %zu events have been ", NULL, "dropped.\n", pDev->context, miEventQueue.dropped);
                 if (miEventQueue.dropped / QUEUE_DROP_BACKTRACE_FREQUENCY ==
                     QUEUE_DROP_BACKTRACE_MAX) {
-                    ErrorFSigSafe("[mi] No further overflow reports will be "
-                                  "reported until the clog is cleared.\n");
+                    ErrorFSigSafe("[mi] No further overflow reports will be ", NULL, "reported until the clog is cleared.\n", pDev->context);
                 }
                 xorg_backtrace();
             }
@@ -292,11 +288,11 @@ mieqSwitchScreen(DeviceIntPtr pDev, ScreenPtr pScreen, Bool set_dequeue_screen)
 }
 
 void
-mieqSetHandler(int event, mieqHandler handler)
+mieqSetHandler(int event, mieqHandler handler, XephyrContext* context)
 {
     if (handler && miEventQueue.handlers[event] != handler)
         ErrorF("[mi] mieq: warning: overriding existing handler %p with %p for "
-               "event %d\n", miEventQueue.handlers[event], handler, event);
+               "event %d\n", context, miEventQueue.handlers[event], handler, event);
 
     miEventQueue.handlers[event] = handler;
 }
@@ -352,7 +348,7 @@ ChangeDeviceID(DeviceIntPtr dev, InternalEvent *event)
         event->gesture_event.deviceid = dev->id;
         break;
     default:
-        ErrorF("[mi] Unknown event type (%d), cannot change id.\n",
+        ErrorF("[mi] Unknown event type (%d), cannot change id.\n", dev->context,
                event->any.type);
     }
 }
@@ -361,8 +357,8 @@ static void
 FixUpEventForMaster(DeviceIntPtr mdev, DeviceIntPtr sdev,
                     InternalEvent *original, InternalEvent *master)
 {
-    verify_internal_event(original);
-    verify_internal_event(master);
+    verify_internal_event(original, mdev->context);
+    verify_internal_event(master, mdev->context);
     /* Ensure chained button mappings, i.e. that the detail field is the
      * value of the mapped button on the SD, not the physical button */
     if (original->any.type == ET_ButtonPress ||
@@ -392,7 +388,7 @@ CopyGetMasterEvent(DeviceIntPtr sdev,
     int type = original->any.type;
     int mtype;                  /* which master type? */
 
-    verify_internal_event(original);
+    verify_internal_event(original, sdev ? sdev->context : NULL);
 
     /* ET_XQuartz has sdev == NULL */
     if (!sdev || IsMaster(sdev) || IsFloating(sdev))
@@ -453,7 +449,7 @@ mieqProcessDeviceEvent(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
     DeviceIntPtr master;
     InternalEvent mevent;       /* master event */
 
-    verify_internal_event(event);
+    verify_internal_event(event, dev->context);
 
     /* refuse events from disabled devices */
     if (dev && !dev->enabled)
@@ -501,18 +497,18 @@ mieqProcessDeviceEvent(DeviceIntPtr dev, InternalEvent *event, ScreenPtr screen)
     }
     else {
         /* process slave first, then master */
-        dev->public.processInputProc(event, dev);
+        dev->public.processInputProc(event, dev, dev->context);
 
         /* Check for the SD's master in case the device got detached
          * during event processing */
         if (master && !IsFloating(dev))
-            master->public.processInputProc(&mevent, master);
+            master->public.processInputProc(&mevent, master, master->context);
     }
 }
 
 /* Call this from ProcessInputEvents(). */
 void
-mieqProcessInputEvents(void)
+mieqProcessInputEvents(XephyrContext* context)
 {
     EventRec *e = NULL;
     ScreenPtr screen;
@@ -527,14 +523,14 @@ mieqProcessInputEvents(void)
      * this can happen, e.g., if something in the mieqProcessDeviceEvent()
      * call chain calls UpdateCurrentTime() instead of UpdateCurrentTimeIf()
      */
-    BUG_WARN_MSG(inProcessInputEvents, "[mi] mieqProcessInputEvents() called recursively.\n");
+    BUG_WARN_MSG(inProcessInputEvents, context, "[mi] mieqProcessInputEvents() called recursively.\n");
     inProcessInputEvents = TRUE;
 
     if (miEventQueue.dropped) {
-        ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n",
+        ErrorF("[mi] EQ processing has resumed after %lu dropped events.\n", context,
                (unsigned long) miEventQueue.dropped);
         ErrorF
-            ("[mi] This may be caused by a misbehaving driver monopolizing the server's resources.\n");
+            ("[mi] This may be caused by a misbehaving driver monopolizing the server's resources.\n", context);
         miEventQueue.dropped = 0;
     }
 

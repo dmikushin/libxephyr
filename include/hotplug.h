@@ -62,7 +62,7 @@ struct OdevAttributes {
 
 /* Note starting with xserver 1.16 this function never fails */
 struct OdevAttributes *
-config_odev_allocate_attributes(void);
+config_odev_allocate_attributes(XephyrContext* context);
 
 void
 config_odev_free_attributes(struct OdevAttributes *attribs);

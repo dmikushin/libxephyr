@@ -1138,8 +1138,7 @@ ShmBusfaultNotify(void *context)
 {
     ShmDescPtr shmdesc = context;
 
-    ErrorF("shared memory 0x%x truncated by client\n",
-           (unsigned int) shmdesc->resource);
+    ErrorF("shared memory 0x%x truncated by client\n", NULL, (unsigned int) shmdesc->resource);
     busfault_unregister(shmdesc->busfault);
     shmdesc->busfault = NULL;
     FreeResource (shmdesc->resource, RT_NONE);

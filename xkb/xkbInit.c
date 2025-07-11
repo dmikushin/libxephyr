@@ -162,13 +162,12 @@ XkbWriteRulesProp(XephyrContext* context)
     name =
         MakeAtom(_XKB_RF_NAMES_PROP_ATOM, strlen(_XKB_RF_NAMES_PROP_ATOM), 1);
     if (name == None) {
-        ErrorF("[xkb] Atom error: %s not created\n", _XKB_RF_NAMES_PROP_ATOM);
+        ErrorF("[xkb] Atom error: %s not created\n", NULL, _XKB_RF_NAMES_PROP_ATOM);
         return TRUE;
     }
     pval = (char *) malloc(len);
     if (!pval) {
-        ErrorF("[xkb] Allocation error: %s proprerty not created\n",
-               _XKB_RF_NAMES_PROP_ATOM);
+        ErrorF("[xkb] Allocation error: %s proprerty not created\n", NULL, _XKB_RF_NAMES_PROP_ATOM);
         return TRUE;
     }
     out = 0;
@@ -199,7 +198,7 @@ XkbWriteRulesProp(XephyrContext* context)
     pval[out++] = '\0';
     if (out != len) {
         ErrorF("[xkb] Internal Error! bad size (%d!=%d) for _XKB_RULES_NAMES\n",
-               out, len);
+               context, out, len);
     }
     dixChangeWindowProperty(context->serverClient, context->screenInfo.screens[0]->root, name,
                             XA_STRING, 8, PropModeReplace, len, pval, TRUE);
@@ -213,13 +212,14 @@ XkbInitRules(XkbRMLVOSet *rmlvo,
              const char *model,
              const char *layout,
              const char *variant,
-             const char *options)
+             const char *options,
+             XephyrContext* context)
 {
-    rmlvo->rules = rules ? xnfstrdup(rules) : NULL;
-    rmlvo->model = model ? xnfstrdup(model) : NULL;
-    rmlvo->layout = layout ? xnfstrdup(layout) : NULL;
-    rmlvo->variant = variant ? xnfstrdup(variant) : NULL;
-    rmlvo->options = options ? xnfstrdup(options) : NULL;
+    rmlvo->rules = rules ? xnfstrdup(rules, context) : NULL;
+    rmlvo->model = model ? xnfstrdup(model, context) : NULL;
+    rmlvo->layout = layout ? xnfstrdup(layout, context) : NULL;
+    rmlvo->variant = variant ? xnfstrdup(variant, context) : NULL;
+    rmlvo->options = options ? xnfstrdup(options, context) : NULL;
 }
 
 static void
@@ -487,7 +487,7 @@ XkbInitControls(DeviceIntPtr pXDev, XkbSrvInfoPtr xkbi)
     xkb = xkbi->desc;
     /* 12/31/94 (ef) -- XXX! Should check if controls loaded from file */
     if (XkbAllocControls(xkb, XkbAllControlsMask) != Success)
-        FatalError("Couldn't allocate keyboard controls\n");
+        FatalError("Couldn't allocate keyboard controls\n", pXDev->context);
     ctrls = xkb->ctrls;
     if (!(xkb->defined & XkmSymbolsMask))
         ctrls->num_groups = 1;
@@ -527,10 +527,10 @@ InitKeyboardDeviceStructInternal(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
     XkbEventCauseRec cause;
     XkbRMLVOSet rmlvo_dflts = { NULL };
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
-    BUG_RETURN_VAL(dev->key != NULL, FALSE);
-    BUG_RETURN_VAL(dev->kbdfeed != NULL, FALSE);
-    BUG_RETURN_VAL(rmlvo && keymap, FALSE);
+    BUG_RETURN_VAL(dev == NULL, dev ? dev->context : NULL, FALSE);
+    BUG_RETURN_VAL(dev->key != NULL, dev->context, FALSE);
+    BUG_RETURN_VAL(dev->kbdfeed != NULL, dev->context, FALSE);
+    BUG_RETURN_VAL(rmlvo && keymap, dev->context, FALSE);
 
     if (!rmlvo && !keymap) {
         rmlvo = &rmlvo_dflts;
@@ -542,20 +542,20 @@ InitKeyboardDeviceStructInternal(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
 
     dev->key = calloc(1, sizeof(*dev->key));
     if (!dev->key) {
-        ErrorF("XKB: Failed to allocate key class\n");
+        ErrorF("XKB: Failed to allocate key class\n", dev->context);
         return FALSE;
     }
     dev->key->sourceid = dev->id;
 
     dev->kbdfeed = calloc(1, sizeof(*dev->kbdfeed));
     if (!dev->kbdfeed) {
-        ErrorF("XKB: Failed to allocate key feedback class\n");
+        ErrorF("XKB: Failed to allocate key feedback class\n", dev->context);
         goto unwind_key;
     }
 
     xkbi = calloc(1, sizeof(*xkbi));
     if (!xkbi) {
-        ErrorF("XKB: Failed to allocate XKB info\n");
+        ErrorF("XKB: Failed to allocate XKB info\n", dev->context);
         goto unwind_kbdfeed;
     }
     dev->key->xkbInfo = xkbi;
@@ -566,7 +566,7 @@ InitKeyboardDeviceStructInternal(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
     }
 
     if (xkb_cached_map)
-        LogMessageVerb(X_INFO, 4, "XKB: Reusing cached keymap\n");
+        LogMessageVerb(X_INFO, 4, "XKB: Reusing cached keymap\n", dev->context);
     else {
         if (rmlvo)
             xkb_cached_map = XkbCompileKeymap(dev, rmlvo);
@@ -574,19 +574,19 @@ InitKeyboardDeviceStructInternal(DeviceIntPtr dev, XkbRMLVOSet * rmlvo,
             xkb_cached_map = XkbCompileKeymapFromString(dev, keymap, keymap_length);
 
         if (!xkb_cached_map) {
-            ErrorF("XKB: Failed to compile keymap\n");
+            ErrorF("XKB: Failed to compile keymap\n", dev->context);
             goto unwind_info;
         }
     }
 
     xkb = XkbAllocKeyboard();
     if (!xkb) {
-        ErrorF("XKB: Failed to allocate keyboard description\n");
+        ErrorF("XKB: Failed to allocate keyboard description\n", dev->context);
         goto unwind_info;
     }
 
-    if (!XkbCopyKeymap(xkb, xkb_cached_map)) {
-        ErrorF("XKB: Failed to copy keymap\n");
+    if (!XkbCopyKeymap(xkb, xkb_cached_map, dev->context)) {
+        ErrorF("XKB: Failed to copy keymap\n", dev->context);
         goto unwind_desc;
     }
     xkb->defined = xkb_cached_map->defined;
@@ -748,7 +748,7 @@ XkbProcessArguments(int argc, char *argv[], int i)
 #if !defined(WIN32) && !defined(__CYGWIN__)
             if (getuid() != geteuid()) {
                 LogMessage(X_WARNING,
-                           "-xkbdir is not available for setuid X servers\n");
+                           "-xkbdir is not available for setuid X servers\n", NULL);
                 return -1;
             }
             else
@@ -759,7 +759,7 @@ XkbProcessArguments(int argc, char *argv[], int i)
                     return 2;
                 }
                 else {
-                    LogMessage(X_ERROR, "-xkbdir pathname too long\n");
+                    LogMessage(X_ERROR, "-xkbdir pathname too long\n", NULL);
                     return -1;
                 }
             }
@@ -809,14 +809,14 @@ XkbProcessArguments(int argc, char *argv[], int i)
     }
     if ((strcmp(argv[i], "-ardelay") == 0) || (strcmp(argv[i], "-ar1") == 0)) { /* -ardelay int */
         if (++i >= argc)
-            UseMsg();
+            UseMsg(NULL);
         else
             XkbDfltRepeatDelay = (long) atoi(argv[i]);
         return 2;
     }
     if ((strcmp(argv[i], "-arinterval") == 0) || (strcmp(argv[i], "-ar2") == 0)) {      /* -arinterval int */
         if (++i >= argc)
-            UseMsg();
+            UseMsg(NULL);
         else
             XkbDfltRepeatInterval = (long) atoi(argv[i]);
         return 2;
@@ -828,8 +828,8 @@ void
 XkbUseMsg(void)
 {
     ErrorF
-        ("[+-]accessx [ timeout [ timeout_mask [ feedback [ options_mask] ] ] ]\n");
-    ErrorF("                       enable/disable accessx key sequences\n");
-    ErrorF("-ardelay               set XKB autorepeat delay\n");
-    ErrorF("-arinterval            set XKB autorepeat interval\n");
+        ("[+-]accessx [ timeout [ timeout_mask [ feedback [ options_mask] ] ] ]\n", NULL);
+    ErrorF("                       enable/disable accessx key sequences\n", NULL);
+    ErrorF("-ardelay               set XKB autorepeat delay\n", NULL);
+    ErrorF("-arinterval            set XKB autorepeat interval\n", NULL);
 }

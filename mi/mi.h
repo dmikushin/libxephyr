@@ -183,7 +183,7 @@ extern _X_EXPORT void miStepDash(int /*dist */ ,
 typedef struct _DeviceRec *DevicePtr;
 #endif
 
-extern _X_EXPORT Bool mieqInit(void
+extern _X_EXPORT Bool mieqInit(XephyrContext* context
     );
 
 extern _X_EXPORT void mieqFini(void);
@@ -202,7 +202,7 @@ extern _X_EXPORT void mieqProcessDeviceEvent(DeviceIntPtr /* dev */ ,
                                              ScreenPtr  /* screen */
     );
 
-extern _X_EXPORT void mieqProcessInputEvents(void
+extern _X_EXPORT void mieqProcessInputEvents(XephyrContext* context
     );
 
 extern _X_EXPORT void mieqAddCallbackOnDrained(CallbackProcPtr callback,
@@ -223,7 +223,7 @@ extern DeviceIntPtr CopyGetMasterEvent(DeviceIntPtr /* sdev */ ,
  */
 typedef void (*mieqHandler) (int screen, InternalEvent *event,
                              DeviceIntPtr dev);
-void _X_EXPORT mieqSetHandler(int event, mieqHandler handler);
+void _X_EXPORT mieqSetHandler(int event, mieqHandler handler, XephyrContext* context);
 
 /* miexpose.c */
 

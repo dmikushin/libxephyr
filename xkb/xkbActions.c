@@ -624,9 +624,7 @@ _XkbFilterPointerBtn(XkbSrvInfoPtr xkbi,
                 }
                 break;
             default:
-                ErrorF
-                    ("Attempt to change unknown pointer default (%d) ignored\n",
-                     pAction->dflt.affect);
+                ErrorF("Attempt to change unknown pointer default (%d) ignored\n", NULL, pAction->dflt.affect);
                 break;
             }
             if (XkbComputeControlsNotify(xkbi->device,
@@ -904,7 +902,7 @@ _XkbFilterRedirectKey(XkbSrvInfoPtr xkbi,
 
         UNWRAP_PROCESS_INPUT_PROC(xkbi->device, xkbPrivPtr, backupproc);
         xkbi->device->public.processInputProc((InternalEvent *) &ev,
-                                              xkbi->device);
+                                              xkbi->device, xkbi->device->context);
         COND_WRAP_PROCESS_INPUT_PROC(xkbi->device, xkbPrivPtr, backupproc,
                                      xkbUnwrapProc);
 
@@ -951,7 +949,7 @@ _XkbFilterRedirectKey(XkbSrvInfoPtr xkbi,
 
 	UNWRAP_PROCESS_INPUT_PROC(xkbi->device, xkbPrivPtr, backupproc);
 	xkbi->device->public.processInputProc((InternalEvent *) &ev,
-					      xkbi->device);
+					      xkbi->device, xkbi->device->context);
 	COND_WRAP_PROCESS_INPUT_PROC(xkbi->device, xkbPrivPtr, backupproc,
 				     xkbUnwrapProc);
 
@@ -1008,24 +1006,24 @@ XkbHandlePrivate(DeviceIntPtr dev, KeyCode keycode, XkbAction *pAction)
         if (strcasecmp(msgbuf, "prgrbs") == 0) {
             DeviceIntPtr tmp;
 
-            LogMessage(X_INFO, "Printing all currently active device grabs:\n");
+            LogMessage(X_INFO, "Printing all currently active device grabs:\n", dev->context);
             for (tmp = dev->context->inputInfo.devices; tmp; tmp = tmp->next)
                 if (tmp->deviceGrab.grab)
                     PrintDeviceGrabInfo(tmp);
-            LogMessage(X_INFO, "End list of active device grabs\n");
+            LogMessage(X_INFO, "End list of active device grabs\n", dev->context);
 
             PrintPassiveGrabs(dev->context);
         }
         else if (strcasecmp(msgbuf, "ungrab") == 0) {
-            LogMessage(X_INFO, "Ungrabbing devices\n");
+            LogMessage(X_INFO, "Ungrabbing devices\n", dev->context);
             UngrabAllDevices(FALSE, dev->context);
         }
         else if (strcasecmp(msgbuf, "clsgrb") == 0) {
-            LogMessage(X_INFO, "Clear grabs\n");
+            LogMessage(X_INFO, "Clear grabs\n", dev->context);
             UngrabAllDevices(TRUE, dev->context);
         }
         else if (strcasecmp(msgbuf, "prwins") == 0) {
-            LogMessage(X_INFO, "Printing window tree\n");
+            LogMessage(X_INFO, "Printing window tree\n", dev->context);
             PrintWindowTree(dev->context);
         }
     }
@@ -1420,7 +1418,7 @@ XkbHandleActions(DeviceIntPtr dev, DeviceIntPtr kbd, DeviceEvent *event)
             tmpdev = GetMaster(dev, POINTER_OR_FLOAT);
 
         UNWRAP_PROCESS_INPUT_PROC(tmpdev, xkbPrivPtr, backupproc);
-        dev->public.processInputProc((InternalEvent *) event, tmpdev);
+        dev->public.processInputProc((InternalEvent *) event, tmpdev, dev->context);
         COND_WRAP_PROCESS_INPUT_PROC(tmpdev, xkbPrivPtr,
                                      backupproc, xkbUnwrapProc);
     }

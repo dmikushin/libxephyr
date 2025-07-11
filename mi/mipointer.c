@@ -633,7 +633,7 @@ miPointerSetPosition(DeviceIntPtr pDev, int mode, double *screenx,
         input_constrain_cursor(pDev, pScreen,
                                current_x, current_y, x, y,
                                &constrained_x, &constrained_y,
-                               nevents, events);
+                               nevents, events, pDev->context);
 
         x = constrained_x;
         y = constrained_y;
@@ -736,7 +736,7 @@ miPointerMove(DeviceIntPtr pDev, ScreenPtr pScreen, int x, int y)
         mipointermove_events = InitEventList(GetMaximumEventsNum());
 
         if (!mipointermove_events) {
-            FatalError("Could not allocate event store.\n");
+            FatalError("Could not allocate event store.\n", pDev->context);
             return;
         }
     }

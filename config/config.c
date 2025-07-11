@@ -88,7 +88,7 @@ remove_device(const char *backend, DeviceIntPtr dev)
     /* Call PIE here so we don't try to dereference a device that's
      * already been removed. */
     input_lock();
-    ProcessInputEvents();
+    ProcessInputEvents(dev->master->context);
     DeleteInputDeviceRequest(dev);
     input_unlock();
 }
@@ -131,10 +131,10 @@ device_is_duplicate(const char *config_info, XephyrContext* context)
 }
 
 struct OdevAttributes *
-config_odev_allocate_attributes(void)
+config_odev_allocate_attributes(XephyrContext* context)
 {
     struct OdevAttributes *attribs =
-        xnfcalloc(1, sizeof (struct OdevAttributes));
+        xnfcalloc(1, sizeof (struct OdevAttributes), context);
     attribs->fd = -1;
     return attribs;
 }

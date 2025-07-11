@@ -43,7 +43,7 @@ static inline void _transp(CARD32 d[], unsigned int i1, unsigned int i2,
 
 
 static inline void c2p_unsupported(void) {
-    BUG_WARN(1);
+    BUG_WARN(1, NULL);
 }
 
 static inline CARD32 get_mask(unsigned int n)

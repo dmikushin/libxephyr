@@ -116,7 +116,7 @@ XkbProcessKeyboardEvent(DeviceEvent *event, DeviceIntPtr keybd)
                 rg->currentDown = key;
             }
             else
-                ErrorF("[xkb] InternalError! Illegal radio group %d\n", ndx);
+                ErrorF("[xkb] InternalError! Illegal radio group %d\n", NULL, ndx);
             break;
         case XkbKB_Overlay1:
         case XkbKB_Overlay2:
@@ -153,7 +153,7 @@ XkbProcessKeyboardEvent(DeviceEvent *event, DeviceIntPtr keybd)
         }
             break;
         default:
-            ErrorF("[xkb] unknown key behavior 0x%04x\n", behavior.type);
+            ErrorF("[xkb] unknown key behavior 0x%04x\n", NULL, behavior.type);
             break;
         }
     }
@@ -162,7 +162,7 @@ XkbProcessKeyboardEvent(DeviceEvent *event, DeviceIntPtr keybd)
 }
 
 void
-ProcessKeyboardEvent(InternalEvent *ev, DeviceIntPtr keybd)
+ProcessKeyboardEvent(InternalEvent *ev, DeviceIntPtr keybd, XephyrContext* context)
 {
 
     KeyClassPtr keyc = keybd->key;
@@ -176,7 +176,7 @@ ProcessKeyboardEvent(InternalEvent *ev, DeviceIntPtr keybd)
     /* We're only interested in key events. */
     if (!is_press && !is_release) {
         UNWRAP_PROCESS_INPUT_PROC(keybd, xkb_priv, backup_proc);
-        keybd->public.processInputProc(ev, keybd);
+        keybd->public.processInputProc(ev, keybd, context);
         COND_WRAP_PROCESS_INPUT_PROC(keybd, xkb_priv, backup_proc,
                                      xkbUnwrapProc);
         return;

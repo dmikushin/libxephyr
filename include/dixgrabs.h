@@ -32,9 +32,9 @@ typedef struct _XephyrContext XephyrContext;
 extern void PrintDeviceGrabInfo(DeviceIntPtr dev);
 extern void UngrabAllDevices(Bool kill_client, XephyrContext* context);
 
-extern GrabPtr AllocGrab(const GrabPtr src);
+extern GrabPtr AllocGrab(const GrabPtr src, XephyrContext* context);
 extern void FreeGrab(GrabPtr grab, XephyrContext* context);
-extern Bool CopyGrab(GrabPtr dst, const GrabPtr src);
+extern Bool CopyGrab(GrabPtr dst, const GrabPtr src, XephyrContext* context);
 
 extern GrabPtr CreateGrab(int /* client */ ,
                           DeviceIntPtr /* device */ ,

@@ -124,7 +124,7 @@ ephyr_glamor_xv_init(ScreenPtr screen, XephyrContext* context)
 
     glamor_xv_core_init(screen);
 
-    adaptor = xnfcalloc(1, sizeof(*adaptor));
+    adaptor = XNFcallocarray(1, sizeof(*adaptor), context);
 
     adaptor->name = "glamor textured video";
     adaptor->type = XvWindowMask | XvInputMask | XvImageMask;
@@ -136,10 +136,10 @@ ephyr_glamor_xv_init(ScreenPtr screen, XephyrContext* context)
     adaptor->nFormats = NUM_FORMATS;
 
     adaptor->nPorts = 16; /* Some absurd number */
-    port_privates = xnfcalloc(adaptor->nPorts,
-                              sizeof(glamor_port_private));
-    adaptor->pPortPrivates = xnfcalloc(adaptor->nPorts,
-                                       sizeof(glamor_port_private *));
+    port_privates = XNFcallocarray(adaptor->nPorts,
+                              sizeof(glamor_port_private), context);
+    adaptor->pPortPrivates = XNFcallocarray(adaptor->nPorts,
+                                       sizeof(glamor_port_private *), context);
     for (i = 0; i < adaptor->nPorts; i++) {
         adaptor->pPortPrivates[i].ptr = &port_privates[i];
         glamor_xv_init_port(&port_privates[i]);

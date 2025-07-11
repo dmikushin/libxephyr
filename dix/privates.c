@@ -606,7 +606,7 @@ dixRegisterScreenSpecificPrivateKey(ScreenPtr pScreen, DevPrivateKey key,
 
     if (!screen_specific_private[type])
         FatalError("Attempt to allocate screen-specific private storage for type %s\n",
-                   key_names[type]);
+                   pScreen->context, key_names[type]);
 
     if (key->initialized) {
         assert(size == key->size);
@@ -737,7 +737,7 @@ dixScreenSpecificPrivatesSize(ScreenPtr pScreen, DevPrivateType type)
 }
 
 void
-dixPrivateUsage(void)
+dixPrivateUsage(XephyrContext* context)
 {
     int objects = 0;
     int bytes = 0;
@@ -747,7 +747,7 @@ dixPrivateUsage(void)
     for (t = PRIVATE_XSELINUX + 1; t < PRIVATE_LAST; t++) {
         if (global_keys[t].offset) {
             ErrorF
-                ("%s: %d objects of %d bytes = %d total bytes %d private allocs\n",
+                ("%s: %d objects of %d bytes = %d total bytes %d private allocs\n", context,
                  key_names[t], global_keys[t].created, global_keys[t].offset,
                  global_keys[t].created * global_keys[t].offset, global_keys[t].allocated);
             bytes += global_keys[t].created * global_keys[t].offset;
@@ -755,11 +755,11 @@ dixPrivateUsage(void)
             alloc += global_keys[t].allocated;
         }
     }
-    ErrorF("TOTAL: %d objects, %d bytes, %d allocs\n", objects, bytes, alloc);
+    ErrorF("TOTAL: %d objects, %d bytes, %d allocs\n", context, objects, bytes, alloc);
 }
 
 void
-dixResetPrivates(void)
+dixResetPrivates(XephyrContext* context)
 {
     DevPrivateType t;
 
@@ -776,9 +776,9 @@ dixResetPrivates(void)
                 free(key);
         }
         if (global_keys[t].created) {
-            ErrorF("%d %ss still allocated at reset\n",
+            ErrorF("%d %ss still allocated at reset\n", context,
                    global_keys[t].created, key_names[t]);
-            dixPrivateUsage();
+            dixPrivateUsage(context);
         }
         global_keys[t].key = NULL;
         global_keys[t].offset = 0;

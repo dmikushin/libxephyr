@@ -224,10 +224,10 @@ log_window_info(WindowPtr pWin, int depth)
     BoxPtr rects;
 
     for (i = 0; i < (depth << 2); i++)
-        ErrorF(" ");
+        ErrorF(" ", NULL, NULL);
 
     win_name = get_window_name(pWin);
-    ErrorF("win 0x%.8x (%s), [%d, %d] to [%d, %d]",
+    ErrorF("win 0x%.8x (%s), [%d, %d] to [%d, %d]", NULL,
            (unsigned) pWin->drawable.id,
            win_name ? win_name : "no name",
            pWin->drawable.x, pWin->drawable.y,
@@ -235,10 +235,10 @@ log_window_info(WindowPtr pWin, int depth)
            pWin->drawable.y + pWin->drawable.height);
 
     if (pWin->overrideRedirect)
-        ErrorF(" (override redirect)");
+        ErrorF(" (override redirect)", NULL, NULL);
 #ifdef COMPOSITE
     if (pWin->redirectDraw)
-        ErrorF(" (%s compositing: pixmap %x)",
+        ErrorF(" (%s compositing: pixmap %x)", NULL,
                (pWin->redirectDraw == RedirectDrawAutomatic) ?
                "automatic" : "manual",
                (unsigned) pWin->drawable.pScreen->GetWindowPixmap(pWin)->drawable.id);
@@ -258,20 +258,20 @@ log_window_info(WindowPtr pWin, int depth)
         visibility = "unviewable";
         break;
     }
-    ErrorF(", %s", visibility);
+    ErrorF(", %s", NULL, visibility);
 
     if (RegionNotEmpty(&pWin->clipList)) {
-        ErrorF(", clip list:");
+        ErrorF(", clip list:", NULL, NULL);
         rects = RegionRects(&pWin->clipList);
         for (i = 0; i < RegionNumRects(&pWin->clipList); i++)
-            ErrorF(" [(%d, %d) to (%d, %d)]",
+            ErrorF(" [(%d, %d) to (%d, %d)]", NULL,
                    rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2);
-        ErrorF("; extents [(%d, %d) to (%d, %d)]",
+        ErrorF("; extents [(%d, %d) to (%d, %d)]", NULL,
                pWin->clipList.extents.x1, pWin->clipList.extents.y1,
                pWin->clipList.extents.x2, pWin->clipList.extents.y2);
     }
 
-    ErrorF("\n");
+    ErrorF("\n", NULL, NULL);
 }
 
 static const char*
@@ -310,27 +310,27 @@ log_grab_info(void *value, XID id, void *cdata)
     int i, j;
     GrabPtr pGrab = (GrabPtr)value;
 
-    ErrorF("  grab 0x%lx (%s), type '%s' on window 0x%lx\n",
+    ErrorF("  grab 0x%lx (%s), type '%s' on window 0x%lx\n", NULL,
            (unsigned long) pGrab->resource,
            grab_grabtype_to_text(pGrab),
            grab_type_to_text(pGrab),
            (unsigned long) pGrab->window->drawable.id);
-    ErrorF("    detail %d (mask %lu), modifiersDetail %d (mask %lu)\n",
+    ErrorF("    detail %d (mask %lu), modifiersDetail %d (mask %lu)\n", NULL,
            pGrab->detail.exact,
            pGrab->detail.pMask ? (unsigned long) *(pGrab->detail.pMask) : 0,
            pGrab->modifiersDetail.exact,
            pGrab->modifiersDetail.pMask ?
            (unsigned long) *(pGrab->modifiersDetail.pMask) :
            (unsigned long) 0);
-    ErrorF("    device '%s' (%d), modifierDevice '%s' (%d)\n",
+    ErrorF("    device '%s' (%d), modifierDevice '%s' (%d)\n", NULL,
            pGrab->device->name, pGrab->device->id,
            pGrab->modifierDevice->name, pGrab->modifierDevice->id);
     if (pGrab->grabtype == CORE) {
-        ErrorF("    core event mask 0x%lx\n",
+        ErrorF("    core event mask 0x%lx\n", NULL,
                (unsigned long) pGrab->eventMask);
     }
     else if (pGrab->grabtype == XI) {
-        ErrorF("    xi1 event mask 0x%lx\n",
+        ErrorF("    xi1 event mask 0x%lx\n", NULL,
                (unsigned long) pGrab->eventMask);
     }
     else if (pGrab->grabtype == XI2) {
@@ -340,7 +340,7 @@ log_grab_info(void *value, XID id, void *cdata)
 
             print = 0;
             for (j = 0; j < XI2MASKSIZE; j++) {
-                mask = xi2mask_get_one_mask(pGrab->xi2mask, i);
+                mask = xi2mask_get_one_mask(pGrab->xi2mask, i, NULL);
                 if (mask[j]) {
                     print = 1;
                     break;
@@ -348,13 +348,13 @@ log_grab_info(void *value, XID id, void *cdata)
             }
             if (!print)
                 continue;
-            ErrorF("      xi2 event mask 0x");
+            ErrorF("      xi2 event mask 0x", NULL, NULL);
             for (j = 0; j < xi2mask_mask_size(pGrab->xi2mask); j++)
-                ErrorF("%x ", mask[j]);
-            ErrorF("\n");
+                ErrorF("%x ", NULL, mask[j]);
+            ErrorF("\n", NULL, NULL);
         }
     }
-    ErrorF("    owner-events %s, kb %d ptr %d, confine 0x%lx, cursor 0x%lx\n",
+    ErrorF("    owner-events %s, kb %d ptr %d, confine 0x%lx, cursor 0x%lx\n", NULL,
            pGrab->ownerEvents ? "true" : "false",
            pGrab->keyboardMode, pGrab->pointerMode,
            pGrab->confineTo ? (unsigned long) pGrab->confineTo->drawable.id : 0,
@@ -370,7 +370,7 @@ PrintPassiveGrabs(XephyrContext* context)
     const char *cmdname;
     const char *cmdargs;
 
-    ErrorF("Printing all currently registered grabs\n");
+    ErrorF("Printing all currently registered grabs\n", NULL, NULL);
 
     for (i = 1; i < context->currentMaxClients; i++) {
         if (!context->clients[i] || context->clients[i]->clientState != ClientStateRunning)
@@ -380,14 +380,14 @@ PrintPassiveGrabs(XephyrContext* context)
         cmdname = GetClientCmdName(context->clients[i]);
         cmdargs = GetClientCmdArgs(context->clients[i]);
         if ((clientpid > 0) && (cmdname != NULL)) {
-            ErrorF("  Printing all registered grabs of client pid %ld %s %s\n",
+            ErrorF("  Printing all registered grabs of client pid %ld %s %s\n", NULL,
                    (long) clientpid, cmdname, cmdargs ? cmdargs : "");
         } else {
             if (GetLocalClientCreds(context->clients[i], &lcc) == -1) {
-                ErrorF("  GetLocalClientCreds() failed\n");
+                ErrorF("  GetLocalClientCreds() failed\n", NULL, NULL);
                 continue;
             }
-            ErrorF("  Printing all registered grabs of client pid %ld uid %ld gid %ld\n",
+            ErrorF("  Printing all registered grabs of client pid %ld uid %ld gid %ld\n", NULL,
                    (lcc->fieldsSet & LCC_PID_SET) ? (long) lcc->pid : 0,
                    (lcc->fieldsSet & LCC_UID_SET) ? (long) lcc->euid : 0,
                    (lcc->fieldsSet & LCC_GID_SET) ? (long) lcc->egid : 0);
@@ -396,7 +396,7 @@ PrintPassiveGrabs(XephyrContext* context)
 
         FindClientResourcesByType(context->clients[i], RT_PASSIVEGRAB, log_grab_info, NULL, context);
     }
-    ErrorF("End list of registered passive grabs\n");
+    ErrorF("End list of registered passive grabs\n", NULL, NULL);
 }
 
 void
@@ -408,7 +408,7 @@ PrintWindowTree(XephyrContext* context)
 
     for (scrnum = 0; scrnum < context->screenInfo.numScreens; scrnum++) {
         pScreen = context->screenInfo.screens[scrnum];
-        ErrorF("[dix] Dumping windows for screen %d (pixmap %x):\n", scrnum,
+        ErrorF("[dix] Dumping windows for screen %d (pixmap %x):\n", NULL, scrnum,
                (unsigned) pScreen->GetScreenPixmap(pScreen)->drawable.id);
         pWin = pScreen->root;
         depth = 1;
@@ -524,7 +524,7 @@ MakeRootTile(WindowPtr pWin)
     pWin->backgroundState = BackgroundPixmap;
     pGC = GetScratchGC(pScreen->rootDepth, pScreen);
     if (!pWin->background.pixmap || !pGC)
-        FatalError("could not create root tile");
+        FatalError("could not create root tile", NULL);
 
     {
         ChangeGCVal attributes[2];

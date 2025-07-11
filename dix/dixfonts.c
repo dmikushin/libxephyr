@@ -1569,7 +1569,7 @@ find_existing_fpe(FontPathElementPtr * list, int num, unsigned char *name,
 }
 
 static int
-SetFontPathElements(int npaths, unsigned char *paths, int *bad, Bool persist)
+SetFontPathElements(int npaths, unsigned char *paths, int *bad, Bool persist, XephyrContext* context)
 {
     int i, err = 0;
     int valid_paths = 0;
@@ -1592,7 +1592,7 @@ SetFontPathElements(int npaths, unsigned char *paths, int *bad, Bool persist)
         if (len == 0) {
             if (persist)
                 ErrorF
-                    ("[dix] Removing empty element from the valid list of fontpaths\n");
+                    ("[dix] Removing empty element from the valid list of fontpaths\n", context);
             err = BadValue;
         }
         else {
@@ -1681,20 +1681,20 @@ SetFontPath(ClientPtr client, int npaths, unsigned char *paths)
         return err;
 
     if (npaths == 0) {
-        if (SetDefaultFontPath(client->context->defaultFontPath) != Success)
+        if (SetDefaultFontPath(client->context->defaultFontPath, client->context) != Success)
             return BadValue;
     }
     else {
         int bad;
 
-        err = SetFontPathElements(npaths, paths, &bad, FALSE);
+        err = SetFontPathElements(npaths, paths, &bad, FALSE, client->context);
         client->errorValue = bad;
     }
     return err;
 }
 
 int
-SetDefaultFontPath(const char *path)
+SetDefaultFontPath(const char *path, XephyrContext* context)
 {
     const char *start, *end;
     char *temp_path;
@@ -1747,7 +1747,7 @@ SetDefaultFontPath(const char *path)
     }
     *nump = (unsigned char) size;
 
-    err = SetFontPathElements(num, newpath, &bad, TRUE);
+    err = SetFontPathElements(num, newpath, &bad, TRUE, context);
 
     free(newpath);
     free(temp_path);
@@ -1825,15 +1825,19 @@ register_fpe_funcs(const xfont2_fpe_funcs_rec *funcs)
 static unsigned long
 get_server_generation(void)
 {
-    extern XephyrContext* xephyr_context;
-    return xephyr_context->serverGeneration;
+    // TODO: This is a temporary solution for xfont2 compatibility
+    // The xfont2 library API doesn't support context parameters
+    XephyrContext* ctx = get_current_context();
+    return ctx ? ctx->serverGeneration : 1;
 }
 
 static void *
 get_server_client(void)
 {
-    extern XephyrContext* xephyr_context;
-    return xephyr_context->serverClient;
+    // TODO: This is a temporary solution for xfont2 compatibility
+    // The xfont2 library API doesn't support context parameters
+    XephyrContext* ctx = get_current_context();
+    return ctx ? ctx->serverClient : NULL;
 }
 
 static int
@@ -1848,8 +1852,12 @@ get_client_resolutions(int *num)
     static struct _FontResolution res;
     ScreenPtr pScreen;
 
-    extern XephyrContext* xephyr_context;
-    pScreen = xephyr_context->screenInfo.screens[0];
+    XephyrContext* ctx = get_current_context();
+    pScreen = ctx ? ctx->screenInfo.screens[0] : NULL;
+    if (!pScreen) {
+        *num = 0;
+        return NULL;
+    }
     res.x_resolution = (pScreen->width * 25.4) / pScreen->mmWidth;
     /*
      * XXX - we'll want this as long as bitmap instances are prevalent
@@ -1891,30 +1899,33 @@ find_old_font(XID id)
 {
     void *pFont;
 
-    extern XephyrContext* xephyr_context;
-    dixLookupResourceByType(&pFont, id, RT_NONE, xephyr_context->serverClient, DixReadAccess);
+    XephyrContext* ctx = get_current_context();
+    dixLookupResourceByType(&pFont, id, RT_NONE, ctx ? ctx->serverClient : NULL, DixReadAccess);
     return (FontPtr) pFont;
 }
 
 static Font
 get_new_font_client_id(void)
 {
-    extern XephyrContext* xephyr_context;
-    return FakeClientID(0, xephyr_context);
+    // TODO: This needs proper context but xfont2 API doesn't support it
+    XephyrContext* ctx = get_current_context();
+    return FakeClientID(0, ctx);
 }
 
 static int
 store_font_Client_font(FontPtr pfont, Font id)
 {
-    extern XephyrContext* xephyr_context;
-    return AddResource(id, RT_NONE, (void *) pfont, xephyr_context);
+    // TODO: This needs proper context but xfont2 API doesn't support it
+    XephyrContext* ctx = get_current_context();
+    return AddResource(id, RT_NONE, (void *) pfont, ctx);
 }
 
 static void
 delete_font_client_id(Font id)
 {
-    extern XephyrContext* xephyr_context;
-    FreeResource(id, RT_NONE, xephyr_context);
+    // TODO: This needs proper context but xfont2 API doesn't support it
+    XephyrContext* ctx = get_current_context();
+    FreeResource(id, RT_NONE, ctx);
 }
 
 static int
@@ -1994,9 +2005,9 @@ static int
 _init_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handler)
 {
     /* if server has reset, make sure the b&w handlers are reinstalled */
-    extern XephyrContext* xephyr_context;
-    if (last_server_gen < xephyr_context->serverGeneration) {
-        last_server_gen = xephyr_context->serverGeneration;
+    XephyrContext* ctx = get_current_context();
+    if (ctx && last_server_gen < ctx->serverGeneration) {
+        last_server_gen = ctx->serverGeneration;
         fs_handlers_installed = 0;
     }
     if (fs_handlers_installed == 0) {

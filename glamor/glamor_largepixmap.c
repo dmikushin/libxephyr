@@ -1060,11 +1060,11 @@ glamor_composite_largepixmap_region(CARD8 op,
     int ok = TRUE;
 
     if (source_pixmap == dest_pixmap) {
-        glamor_fallback("source and dest pixmaps are the same\n");
+        glamor_fallback("source and dest pixmaps are the same\n", source->pDrawable->pScreen->context);
         return FALSE;
     }
     if (mask_pixmap == dest_pixmap) {
-        glamor_fallback("mask and dest pixmaps are the same\n");
+        glamor_fallback("mask and dest pixmaps are the same\n", source->pDrawable->pScreen->context);
         return FALSE;
     }
 

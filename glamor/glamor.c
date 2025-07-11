@@ -121,7 +121,7 @@ glamor_set_pixmap_texture(PixmapPtr pixmap, unsigned int tex)
                                      pixmap->drawable.height, tex, 0);
 
     if (fbo == NULL) {
-        ErrorF("XXX fail to create fbo.\n");
+        ErrorF("XXX fail to create fbo.\n", screen->context);
         return FALSE;
     }
 
@@ -368,7 +368,7 @@ fallback:
 
 
 static Bool
-glamor_check_instruction_count(int gl_version)
+glamor_check_instruction_count(int gl_version, XephyrContext* context)
 {
     GLint max_native_alu_instructions;
 
@@ -378,7 +378,7 @@ glamor_check_instruction_count(int gl_version)
      */
     if (gl_version < 30) {
         if (!epoxy_has_gl_extension("GL_ARB_fragment_program")) {
-            ErrorF("GL_ARB_fragment_program required\n");
+            ErrorF("GL_ARB_fragment_program required\n", context);
             return FALSE;
         }
 
@@ -388,7 +388,7 @@ glamor_check_instruction_count(int gl_version)
         if (max_native_alu_instructions < GLAMOR_MIN_ALU_INSTRUCTIONS) {
             LogMessage(X_WARNING,
                        "glamor requires at least %d instructions (%d reported)\n",
-                       GLAMOR_MIN_ALU_INSTRUCTIONS, max_native_alu_instructions);
+                       context, GLAMOR_MIN_ALU_INSTRUCTIONS, max_native_alu_instructions);
             return FALSE;
         }
     }
@@ -414,7 +414,7 @@ glamor_debug_output_callback(GLenum source,
     }
 
     LogMessageVerb(X_ERROR, 0, "glamor%d: GL error: %*s\n",
-               screen->myNum, length, message);
+               screen->context, screen->myNum, length, message);
     xorg_backtrace();
 }
 
@@ -497,7 +497,7 @@ glamor_add_format(ScreenPtr screen, int depth, CARD32 render_format,
         status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (status != GL_FRAMEBUFFER_COMPLETE) {
             ErrorF("glamor: Test fbo for depth %d incomplete.  "
-                   "Falling back to software.\n", depth);
+                   "Falling back to software.\n", screen->context, depth);
             glDeleteTextures(1, &tex);
             glDeleteFramebuffers(1, &fbo);
             return;
@@ -513,7 +513,7 @@ glamor_add_format(ScreenPtr screen, int depth, CARD32 render_format,
             ErrorF("glamor: Implementation returned 0x%x/0x%x read format/type "
                    "for depth %d, expected 0x%x/0x%x.  "
                    "Falling back to software.\n",
-                   read_format, read_type, depth, format, type);
+                   screen->context, read_format, read_type, depth, format, type);
             return;
         }
     }
@@ -627,7 +627,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
     PictureScreenPtr ps = GetPictureScreenIfSet(screen);
 
     if (flags & ~GLAMOR_VALID_FLAGS) {
-        ErrorF("glamor_init: Invalid flags %x\n", flags);
+        ErrorF("glamor_init: Invalid flags %x\n", screen->context, flags);
         return FALSE;
     }
     glamor_priv = calloc(1, sizeof(*glamor_priv));
@@ -737,17 +737,17 @@ glamor_init(ScreenPtr screen, unsigned int flags)
      */
     if (!glamor_priv->is_gles) {
         if (gl_version < 21) {
-            ErrorF("Require OpenGL version 2.1 or later.\n");
+            ErrorF("Require OpenGL version 2.1 or later.\n", screen->context);
             goto fail;
         }
 
         if (!glamor_priv->is_core_profile &&
             !epoxy_has_gl_extension("GL_ARB_texture_border_clamp")) {
-            ErrorF("GL_ARB_texture_border_clamp required\n");
+            ErrorF("GL_ARB_texture_border_clamp required\n", screen->context);
             goto fail;
         }
 
-        if (!glamor_check_instruction_count(gl_version))
+        if (!glamor_check_instruction_count(gl_version, screen->context))
             goto fail;
 
         /* Glamor rendering assumes that platforms with GLSL 130+
@@ -759,24 +759,24 @@ glamor_init(ScreenPtr screen, unsigned int flags)
                 glamor_priv->glsl_version = 120;
     } else {
         if (gl_version < 20) {
-            ErrorF("Require Open GLES2.0 or later.\n");
+            ErrorF("Require Open GLES2.0 or later.\n", screen->context);
             goto fail;
         }
 
         if (!epoxy_has_gl_extension("GL_EXT_texture_format_BGRA8888")) {
-            ErrorF("GL_EXT_texture_format_BGRA8888 required\n");
+            ErrorF("GL_EXT_texture_format_BGRA8888 required\n", screen->context);
             goto fail;
         }
 
         if (!epoxy_has_gl_extension("GL_OES_texture_border_clamp")) {
-            ErrorF("GL_OES_texture_border_clamp required\n");
+            ErrorF("GL_OES_texture_border_clamp required\n", screen->context);
             goto fail;
         }
     }
 
     if (!epoxy_has_gl_extension("GL_ARB_vertex_array_object") &&
         !epoxy_has_gl_extension("GL_OES_vertex_array_object")) {
-        ErrorF("GL_{ARB,OES}_vertex_array_object required\n");
+        ErrorF("GL_{ARB,OES}_vertex_array_object required\n", screen->context);
         goto fail;
     }
 
@@ -857,7 +857,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
     screen->BlockHandler = _glamor_block_handler;
 
     if (!glamor_composite_glyphs_init(screen)) {
-        ErrorF("Failed to initialize composite masks\n");
+        ErrorF("Failed to initialize composite masks\n", screen->context);
         goto fail;
     }
 

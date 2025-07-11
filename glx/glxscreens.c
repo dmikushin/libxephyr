@@ -428,7 +428,7 @@ __glXScreenInit(__GLXscreen * pGlxScreen, ScreenPtr pScreen)
 
     i = __glXGetExtensionString(pGlxScreen->glx_enable_bits, NULL);
     if (i > 0) {
-        pGlxScreen->GLXextensions = xnfalloc(i);
+        pGlxScreen->GLXextensions = XNFalloc((unsigned long)i, pScreen->context);
         (void) __glXGetExtensionString(pGlxScreen->glx_enable_bits,
                                        pGlxScreen->GLXextensions);
     }

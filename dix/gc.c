@@ -755,7 +755,7 @@ CopyGC(GC * pgcSrc, GC * pgcDst, BITS32 mask)
             pgcDst->arcMode = pgcSrc->arcMode;
             break;
         default:
-            FatalError("CopyGC: Unhandled mask!\n");
+            FatalError("CopyGC: Unhandled mask!\n", pgcDst->pScreen->context);
         }
     }
     if (pgcDst->fillStyle == FillTiled && pgcDst->tileIsPixel) {

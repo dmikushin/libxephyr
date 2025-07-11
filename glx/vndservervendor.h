@@ -56,7 +56,7 @@ struct GlxServerVendorRec {
  */
 extern struct xorg_list GlxVendorList;
 
-GlxServerVendor *GlxCreateVendor(const GlxServerImports *imports);
+GlxServerVendor *GlxCreateVendor(const GlxServerImports *imports, XephyrContext* context);
 void GlxDestroyVendor(GlxServerVendor *vendor);
 
 void GlxVendorExtensionReset(const ExtensionEntry *extEntry);

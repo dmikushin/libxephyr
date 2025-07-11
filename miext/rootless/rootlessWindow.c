@@ -124,8 +124,7 @@ RootlessNativeWindowMoved(WindowPtr pWin)
         dixLookupClient(&pClient, pWin->drawable.id, context->serverClient,
                         DixUnknownAccess);
     if (err != Success) {
-        ErrorF("RootlessNativeWindowMoved(): Failed to lookup window: 0x%x\n",
-               (unsigned int) pWin->drawable.id);
+        ErrorF("RootlessNativeWindowMoved(): Failed to lookup window: 0x%x\n", NULL, (unsigned int) pWin->drawable.id);
         return;
     }
 

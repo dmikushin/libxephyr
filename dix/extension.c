@@ -84,7 +84,7 @@ AddExtension(const char *name, int NumEvents, int NumErrors,
     if ((lastEvent + NumEvents > MAXEVENTS) ||
         (unsigned) (lastError + NumErrors > LAST_ERROR)) {
         LogMessage(X_ERROR, "Not enabling extension %s: maximum number of "
-                   "events or errors exceeded.\n", name);
+                   "events or errors exceeded.\n", NULL, name);
         return ((ExtensionEntry *) NULL);
     }
 

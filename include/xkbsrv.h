@@ -761,7 +761,8 @@ extern _X_EXPORT void XkbInitRules(XkbRMLVOSet * /* rmlvo   */,
                                    const char *  /* model   */,
                                    const char *  /* layout  */,
                                    const char *  /* variant */,
-                                   const char *  /* options */
+                                   const char *  /* options */,
+                                   XephyrContext* /* context */
     ) ;
 
 extern _X_EXPORT void XkbGetRulesDflts(XkbRMLVOSet *    /* rmlvo */
@@ -836,7 +837,8 @@ extern _X_EXPORT void XkbSendNewKeyboardNotify(DeviceIntPtr /* kbd */ ,
     );
 
 extern Bool XkbCopyKeymap(XkbDescPtr /* dst */ ,
-                          XkbDescPtr /* src */ );
+                          XkbDescPtr /* src */,
+                          XephyrContext* /* context */ );
 
 extern _X_EXPORT Bool XkbCopyDeviceKeymap(DeviceIntPtr /* dst */,
 					  DeviceIntPtr /* src */);

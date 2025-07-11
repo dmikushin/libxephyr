@@ -309,7 +309,7 @@ glamor_upload_picture_to_texture(PicturePtr picture)
                                                     &format,
                                                     &type,
                                                     swizzle)) {
-        glamor_fallback("Unknown pixmap depth %d.\n", pixmap->drawable.depth);
+        glamor_fallback("Unknown pixmap depth %d.\n", pixmap->drawable.pScreen->context, pixmap->drawable.depth);
         return FALSE;
     }
 
@@ -320,7 +320,7 @@ glamor_upload_picture_to_texture(PicturePtr picture)
 
     if (!glamor_priv->has_texture_swizzle && needs_swizzle) {
         glamor_fallback("Couldn't upload temporary picture due to missing "
-                        "GL_ARB_texture_swizzle.\n");
+                        "GL_ARB_texture_swizzle.\n", pixmap->drawable.pScreen->context);
         return FALSE;
     }
 

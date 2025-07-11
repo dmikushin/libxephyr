@@ -41,9 +41,9 @@ extern Bool ephyr_glamor, ephyr_glamor_gles2, ephyr_glamor_skip_present;
 
 extern Bool ephyrNoXV;
 
-void processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id);
-void processOutputArg(const char *output, char *parent_id);
-void processScreenArg(const char *screen_size, char *parent_id);
+void processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id, XephyrContext* context);
+void processOutputArg(const char *output, char *parent_id, XephyrContext* context);
+void processScreenArg(const char *screen_size, char *parent_id, XephyrContext* context);
 
 int
 main(int argc, char *argv[], char *envp[])
@@ -78,7 +78,7 @@ InitInput(int argc, char **argv)
         if (!kdHasKbd) {
             ki = KdNewKeyboard();
             if (!ki)
-                FatalError("Couldn't create Xephyr keyboard\n");
+                FatalError("Couldn't create Xephyr keyboard\n", context);
             ki->driver = &EphyrKeyboardDriver;
             KdAddKeyboard(ki);
         }
@@ -86,7 +86,7 @@ InitInput(int argc, char **argv)
         if (!kdHasPointer) {
             pi = KdNewPointer();
             if (!pi)
-                FatalError("Couldn't create Xephyr pointer\n");
+                FatalError("Couldn't create Xephyr pointer\n", context);
             pi->driver = &EphyrMouseDriver;
             KdAddPointer(pi);
         }
@@ -146,7 +146,7 @@ ddxUseMsg(void)
 }
 
 void
-processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id)
+processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id, XephyrContext* context)
 {
     KdCardInfo *card;
 
@@ -162,7 +162,7 @@ processScreenOrOutputArg(const char *screen_size, const char *output, char *pare
         KdParseScreen(screen, screen_size);
         screen->driver = calloc(1, sizeof(EphyrScrPriv));
         if (!screen->driver)
-            FatalError("Couldn't alloc screen private\n");
+            FatalError("Couldn't alloc screen private\n", context);
 
         if (parent_id) {
             p_id = strtol(parent_id, NULL, 0);
@@ -173,24 +173,24 @@ processScreenOrOutputArg(const char *screen_size, const char *output, char *pare
         hostx_add_screen(screen, p_id, screen->mynum, use_geometry, output);
     }
     else {
-        ErrorF("No matching card found!\n");
+        ErrorF("No matching card found!\n", context);
     }
 }
 
 void
-processScreenArg(const char *screen_size, char *parent_id)
+processScreenArg(const char *screen_size, char *parent_id, XephyrContext* context)
 {
-    processScreenOrOutputArg(screen_size, NULL, parent_id);
+    processScreenOrOutputArg(screen_size, NULL, parent_id, context);
 }
 
 void
-processOutputArg(const char *output, char *parent_id)
+processOutputArg(const char *output, char *parent_id, XephyrContext* context)
 {
-    processScreenOrOutputArg("100x100+0+0", output, parent_id);
+    processScreenOrOutputArg("100x100+0+0", output, parent_id, context);
 }
 
 int
-ddxProcessArgument(int argc, char **argv, int i)
+ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
 {
     static char *parent = NULL;
 
@@ -209,30 +209,30 @@ ddxProcessArgument(int argc, char **argv, int i)
                 }
             }
 
-            processScreenArg("100x100", argv[i + 1]);
+            processScreenArg("100x100", argv[i + 1], context);
             return 2;
         }
 
-        UseMsg();
+        UseMsg(context);
         exit(1);
     }
     else if (!strcmp(argv[i], "-screen")) {
         if ((i + 1) < argc) {
-            processScreenArg(argv[i + 1], parent);
+            processScreenArg(argv[i + 1], parent, context);
             parent = NULL;
             return 2;
         }
 
-        UseMsg();
+        UseMsg(context);
         exit(1);
     }
     else if (!strcmp(argv[i], "-output")) {
         if (i + 1 < argc) {
-            processOutputArg(argv[i + 1], NULL);
+            processOutputArg(argv[i + 1], NULL, context);
             return 2;
         }
 
-        UseMsg();
+        UseMsg(context);
         exit(1);
     }
     else if (!strcmp(argv[i], "-sw-cursor")) {
@@ -294,7 +294,7 @@ ddxProcessArgument(int argc, char **argv, int i)
             return 2;
         }
         else {
-            UseMsg();
+            UseMsg(context);
             exit(1);
         }
     }
@@ -309,7 +309,7 @@ ddxProcessArgument(int argc, char **argv, int i)
             return 2;
         }
         else {
-            UseMsg();
+            UseMsg(context);
             return 0;
         }
     }
@@ -319,7 +319,7 @@ ddxProcessArgument(int argc, char **argv, int i)
             return 2;
         }
         else {
-            UseMsg();
+            UseMsg(context);
             return 0;
         }
     }
@@ -327,7 +327,7 @@ ddxProcessArgument(int argc, char **argv, int i)
         hostx_set_display_name(argv[i]);
     }
     /* Xnest compatibility */
-    else if (!strcmp(argv[i], "-context->display")) {
+    else if (!strcmp(argv[i], "-display")) {
         hostx_set_display_name(argv[i + 1]);
         return 2;
     }
@@ -354,23 +354,23 @@ ddxProcessArgument(int argc, char **argv, int i)
         return 2;
     }
 
-    return KdProcessArgument(argc, argv, i);
+    return KdProcessArgument(argc, argv, i, context);
 }
 
 void
-OsVendorInit(void)
+OsVendorInit(XephyrContext* context)
 {
     EPHYR_DBG("mark");
 
-    if (SeatId)
+    if (context->SeatId)
         hostx_use_sw_cursor();
 
     if (hostx_want_host_cursor())
         ephyrFuncs.initCursor = &ephyrCursorInit;
 
-    if (context->serverGeneration == 1) {
+    if (serverGeneration == 1) {
         if (!KdCardInfoLast()) {
-            processScreenArg("640x480", NULL);
+            processScreenArg("640x480", NULL, context);
         }
         hostx_init();
     }

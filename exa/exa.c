@@ -221,7 +221,7 @@ exaPixmapIsPinned(PixmapPtr pPix)
     ExaPixmapPriv(pPix);
 
     if (pExaPixmap == NULL)
-        EXA_FatalErrorDebugWithRet(("EXA bug: exaPixmapIsPinned was called on a non-exa pixmap.\n"), TRUE);
+        EXA_FatalErrorDebugWithRet(("EXA bug: exaPixmapIsPinned was called on a non-exa pixmap.\n", pPix->drawable.pScreen->context), TRUE);
 
     return pExaPixmap->score == EXA_PIXMAP_SCORE_PINNED;
 }
@@ -294,7 +294,7 @@ ExaDoPrepareAccess(PixmapPtr pPixmap, int index)
         return FALSE;
 
     if (pExaPixmap == NULL)
-        EXA_FatalErrorDebugWithRet(("EXA bug: ExaDoPrepareAccess was called on a non-exa pixmap.\n"), FALSE);
+        EXA_FatalErrorDebugWithRet(("EXA bug: ExaDoPrepareAccess was called on a non-exa pixmap.\n", pPixmap->drawable.pScreen->context), FALSE);
 
     /* Handle repeated / nested calls. */
     for (i = 0; i < EXA_NUM_PREPARE_INDICES; i++) {
@@ -313,7 +313,7 @@ ExaDoPrepareAccess(PixmapPtr pPixmap, int index)
 
     /* Access to this pixmap hasn't been prepared yet, so data pointer should be NULL. */
     if (pPixmap->devPrivate.ptr != NULL) {
-        EXA_FatalErrorDebug(("EXA bug: pPixmap->devPrivate.ptr was %p, but should have been NULL.\n", pPixmap->devPrivate.ptr));
+        EXA_FatalErrorDebug(("EXA bug: pPixmap->devPrivate.ptr was %p, but should have been NULL.\n", pPixmap->drawable.pScreen->context, pPixmap->devPrivate.ptr));
     }
 
     has_gpu_copy = exaPixmapHasGpuCopy(pPixmap);
@@ -342,7 +342,7 @@ ExaDoPrepareAccess(PixmapPtr pPixmap, int index)
     if (index >= EXA_PREPARE_AUX_DEST &&
         !(pExaScr->info->flags & EXA_SUPPORTS_PREPARE_AUX)) {
         if (pExaPixmap->score == EXA_PIXMAP_SCORE_PINNED)
-            FatalError("Unsupported AUX indices used on a pinned pixmap.\n");
+            FatalError("Unsupported AUX indices used on a pinned pixmap.\n", pPixmap->drawable.pScreen->context);
         exaMoveOutPixmap(pPixmap);
         ret = FALSE;
         goto out;
@@ -351,7 +351,7 @@ ExaDoPrepareAccess(PixmapPtr pPixmap, int index)
     if (!(*pExaScr->info->PrepareAccess) (pPixmap, index)) {
         if (pExaPixmap->score == EXA_PIXMAP_SCORE_PINNED &&
             !(pExaScr->info->flags & EXA_MIXED_PIXMAPS))
-            FatalError("Driver failed PrepareAccess on a pinned pixmap.\n");
+            FatalError("Driver failed PrepareAccess on a pinned pixmap.\n", pPixmap->drawable.pScreen->context);
         exaMoveOutPixmap(pPixmap);
         ret = FALSE;
         goto out;
@@ -403,7 +403,7 @@ exaFinishAccess(DrawablePtr pDrawable, int index)
         return;
 
     if (pExaPixmap == NULL)
-        EXA_FatalErrorDebugWithRet(("EXA bug: exaFinishAccesss was called on a non-exa pixmap.\n"),);
+        EXA_FatalErrorDebugWithRet(("EXA bug: exaFinishAccesss was called on a non-exa pixmap.\n", pDrawable->pScreen->context),);
 
     /* Handle repeated / nested calls. */
     for (i = 0; i < EXA_NUM_PREPARE_INDICES; i++) {
@@ -416,7 +416,7 @@ exaFinishAccess(DrawablePtr pDrawable, int index)
 
     /* Catch unbalanced Prepare/FinishAccess calls. */
     if (i == EXA_NUM_PREPARE_INDICES)
-        EXA_FatalErrorDebugWithRet(("EXA bug: FinishAccess called without PrepareAccess for pixmap 0x%p.\n", pPixmap),);
+        EXA_FatalErrorDebugWithRet(("EXA bug: FinishAccess called without PrepareAccess for pixmap 0x%p.\n", pDrawable->pScreen->context, pPixmap),);
 
     pExaScr->access[i].pixmap = NULL;
 
@@ -430,7 +430,7 @@ exaFinishAccess(DrawablePtr pDrawable, int index)
     if (i >= EXA_PREPARE_AUX_DEST &&
         !(pExaScr->info->flags & EXA_SUPPORTS_PREPARE_AUX)) {
         ErrorF("EXA bug: Trying to call driver FinishAccess hook with "
-               "unsupported index EXA_PREPARE_AUX*\n");
+               "unsupported index EXA_PREPARE_AUX*\n", pDrawable->pScreen->context);
         return;
     }
 
@@ -819,7 +819,7 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
         pScreenInfo->exa_minor > EXA_VERSION_MINOR) {
         LogMessage(X_ERROR, "EXA(%d): driver's EXA version requirements "
                    "(%d.%d) are incompatible with EXA version (%d.%d)\n",
-                   pScreen->myNum,
+                   pScreen->context, pScreen->myNum,
                    pScreenInfo->exa_major, pScreenInfo->exa_minor,
                    EXA_VERSION_MAJOR, EXA_VERSION_MINOR);
         return FALSE;
@@ -828,38 +828,38 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
     if (!pScreenInfo->CreatePixmap && !pScreenInfo->CreatePixmap2) {
         if (!pScreenInfo->memoryBase) {
             LogMessage(X_ERROR, "EXA(%d): ExaDriverRec::memoryBase "
-                       "must be non-zero\n", pScreen->myNum);
+                       "must be non-zero\n", pScreen->context, pScreen->myNum);
             return FALSE;
         }
 
         if (!pScreenInfo->memorySize) {
             LogMessage(X_ERROR, "EXA(%d): ExaDriverRec::memorySize must be "
-                       "non-zero\n", pScreen->myNum);
+                       "non-zero\n", pScreen->context, pScreen->myNum);
             return FALSE;
         }
 
         if (pScreenInfo->offScreenBase > pScreenInfo->memorySize) {
             LogMessage(X_ERROR, "EXA(%d): ExaDriverRec::offScreenBase must "
-                       "be <= ExaDriverRec::memorySize\n", pScreen->myNum);
+                       "be <= ExaDriverRec::memorySize\n", pScreen->context, pScreen->myNum);
             return FALSE;
         }
     }
 
     if (!pScreenInfo->PrepareSolid) {
         LogMessage(X_ERROR, "EXA(%d): ExaDriverRec::PrepareSolid must be "
-                   "non-NULL\n", pScreen->myNum);
+                   "non-NULL\n", pScreen->context, pScreen->myNum);
         return FALSE;
     }
 
     if (!pScreenInfo->PrepareCopy) {
         LogMessage(X_ERROR, "EXA(%d): ExaDriverRec::PrepareCopy must be "
-                   "non-NULL\n", pScreen->myNum);
+                   "non-NULL\n", pScreen->context, pScreen->myNum);
         return FALSE;
     }
 
     if (!pScreenInfo->WaitMarker) {
         LogMessage(X_ERROR, "EXA(%d): ExaDriverRec::WaitMarker must be "
-                   "non-NULL\n", pScreen->myNum);
+                   "non-NULL\n", pScreen->context, pScreen->myNum);
         return FALSE;
     }
 
@@ -880,14 +880,14 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
 
     if (!dixRegisterPrivateKey(&exaScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context)) {
         LogMessage(X_WARNING, "EXA(%d): Failed to register screen private\n",
-                   pScreen->myNum);
+                   pScreen->context, pScreen->myNum);
         return FALSE;
     }
 
     pExaScr = calloc(sizeof(ExaScreenPrivRec), 1);
     if (!pExaScr) {
         LogMessage(X_WARNING, "EXA(%d): Failed to allocate screen private\n",
-                   pScreen->myNum);
+                   pScreen->context, pScreen->myNum);
         return FALSE;
     }
 
@@ -902,7 +902,7 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
     if (!dixRegisterScreenSpecificPrivateKey
         (pScreen, &pExaScr->gcPrivateKeyRec, PRIVATE_GC, sizeof(ExaGCPrivRec))) {
         LogMessage(X_WARNING, "EXA(%d): Failed to allocate GC private\n",
-                   pScreen->myNum);
+                   pScreen->context, pScreen->myNum);
         return FALSE;
     }
 
@@ -953,7 +953,7 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
              sizeof(ExaPixmapPrivRec))) {
             LogMessage(X_WARNING,
                        "EXA(%d): Failed to allocate pixmap private\n",
-                       pScreen->myNum);
+                       pScreen->context, pScreen->myNum);
             return FALSE;
         }
         if (pExaScr->info->flags & EXA_HANDLES_PIXMAPS) {
@@ -996,18 +996,18 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
         }
         if (!(pExaScr->info->flags & EXA_HANDLES_PIXMAPS)) {
             LogMessage(X_INFO, "EXA(%d): Offscreen pixmap area of %lu bytes\n",
-                       pScreen->myNum,
+                       pScreen->context, pScreen->myNum,
                        pExaScr->info->memorySize -
                        pExaScr->info->offScreenBase);
         }
         else {
             LogMessage(X_INFO, "EXA(%d): Driver allocated offscreen pixmaps\n",
-                       pScreen->myNum);
+                       pScreen->context, pScreen->myNum);
 
         }
     }
     else
-        LogMessage(X_INFO, "EXA(%d): No offscreen pixmaps\n", pScreen->myNum);
+        LogMessage(X_INFO, "EXA(%d): No offscreen pixmaps\n", pScreen->context, pScreen->myNum);
 
     if (!(pExaScr->info->flags & EXA_HANDLES_PIXMAPS)) {
         DBG_PIXMAP(("============== %ld < %ld\n", pExaScr->info->offScreenBase,
@@ -1016,7 +1016,7 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
             if (!exaOffscreenInit(pScreen)) {
                 LogMessage(X_WARNING,
                            "EXA(%d): Offscreen pixmap setup failed\n",
-                           pScreen->myNum);
+                           pScreen->context, pScreen->myNum);
                 return FALSE;
             }
         }
@@ -1026,19 +1026,19 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
         exaGlyphsInit(pScreen);
 
     LogMessage(X_INFO, "EXA(%d): Driver registered support for the following"
-               " operations:\n", pScreen->myNum);
+               " operations:\n", pScreen->context, pScreen->myNum);
     assert(pScreenInfo->PrepareSolid != NULL);
-    LogMessage(X_INFO, "        Solid\n");
+    LogMessage(X_INFO, "        Solid\n", pScreen->context);
     assert(pScreenInfo->PrepareCopy != NULL);
-    LogMessage(X_INFO, "        Copy\n");
+    LogMessage(X_INFO, "        Copy\n", pScreen->context);
     if (pScreenInfo->PrepareComposite != NULL) {
-        LogMessage(X_INFO, "        Composite (RENDER acceleration)\n");
+        LogMessage(X_INFO, "        Composite (RENDER acceleration)\n", pScreen->context);
     }
     if (pScreenInfo->UploadToScreen != NULL) {
-        LogMessage(X_INFO, "        UploadToScreen\n");
+        LogMessage(X_INFO, "        UploadToScreen\n", pScreen->context);
     }
     if (pScreenInfo->DownloadFromScreen != NULL) {
-        LogMessage(X_INFO, "        DownloadFromScreen\n");
+        LogMessage(X_INFO, "        DownloadFromScreen\n", pScreen->context);
     }
 
     return TRUE;

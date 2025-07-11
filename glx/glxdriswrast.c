@@ -451,7 +451,7 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
                                             &screen->driConfigs, screen);
 
     if (screen->driScreen == NULL) {
-        LogMessage(X_ERROR, "IGLX error: Calling driver entry point failed\n");
+        LogMessage(X_ERROR, "IGLX error: Calling driver entry point failed\n", pScreen->context);
         goto handle_error;
     }
 
@@ -468,7 +468,7 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
 
     __glXsetGetProcAddress(glXGetProcAddressARB);
 
-    LogMessage(X_INFO, "IGLX: Loaded and initialized %s\n", driverName);
+    LogMessage(X_INFO, "IGLX: Loaded and initialized %s\n", pScreen->context, driverName);
 
     return &screen->base;
 
@@ -478,7 +478,7 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
 
     free(screen);
 
-    LogMessage(X_ERROR, "GLX: could not load software renderer\n");
+    LogMessage(X_ERROR, "GLX: could not load software renderer\n", pScreen->context);
 
     return NULL;
 }

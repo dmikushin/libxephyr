@@ -255,7 +255,7 @@ get_index(char *str, int *ndx)
 }
 
 static void
-SetUpRemap(InputLine * line, RemapSpec * remap)
+SetUpRemap(InputLine * line, RemapSpec * remap, XephyrContext* context)
 {
     char *tok, *str;
     unsigned present, l_ndx_present, v_ndx_present;
@@ -319,7 +319,7 @@ SetUpRemap(InputLine * line, RemapSpec * remap)
     if ((present & PART_MASK) == 0) {
         unsigned mask = PART_MASK;
 
-        ErrorF("Mapping needs at least one of ");
+        ErrorF("Mapping needs at least one of ", context);
         for (i = 0; (i < MAX_WORDS); i++) {
             if ((1L << i) & mask) {
                 mask &= ~(1L << i);
@@ -370,7 +370,7 @@ MatchOneOf(const char *wanted, const char *vals_defined)
 
 static Bool
 CheckLine(InputLine * line,
-          RemapSpec * remap, XkbRF_RulePtr rule, XkbRF_GroupPtr group)
+          RemapSpec * remap, XkbRF_RulePtr rule, XkbRF_GroupPtr group, XephyrContext* context)
 {
     char *str, *tok;
     register int nread, i;
@@ -405,7 +405,7 @@ CheckLine(InputLine * line,
             return TRUE;
         }
         else {
-            SetUpRemap(line, remap);
+            SetUpRemap(line, remap, context);
             return FALSE;
         }
     }
@@ -934,7 +934,7 @@ XkbRF_AddGroup(XkbRF_RulesPtr rules)
 }
 
 Bool
-XkbRF_LoadRules(FILE * file, XkbRF_RulesPtr rules)
+XkbRF_LoadRules(FILE * file, XkbRF_RulesPtr rules, XephyrContext* context)
 {
     InputLine line;
     RemapSpec remap;
@@ -947,7 +947,7 @@ XkbRF_LoadRules(FILE * file, XkbRF_RulesPtr rules)
     memset((char *) &tgroup, 0, sizeof(XkbRF_GroupRec));
     InitInputLine(&line);
     while (GetInputLine(file, &line, TRUE)) {
-        if (CheckLine(&line, &remap, &trule, &tgroup)) {
+        if (CheckLine(&line, &remap, &trule, &tgroup, context)) {
             if (tgroup.number) {
                 if ((group = XkbRF_AddGroup(rules)) != NULL) {
                     *group = tgroup;
@@ -968,7 +968,7 @@ XkbRF_LoadRules(FILE * file, XkbRF_RulesPtr rules)
 }
 
 Bool
-XkbRF_LoadRulesByName(char *base, char *locale, XkbRF_RulesPtr rules)
+XkbRF_LoadRulesByName(char *base, char *locale, XkbRF_RulesPtr rules, XephyrContext* context)
 {
     FILE *file;
     char buf[PATH_MAX];
@@ -993,7 +993,7 @@ XkbRF_LoadRulesByName(char *base, char *locale, XkbRF_RulesPtr rules)
     }
     if (!file)
         return FALSE;
-    ok = XkbRF_LoadRules(file, rules);
+    ok = XkbRF_LoadRules(file, rules, context);
     fclose(file);
     return ok;
 }

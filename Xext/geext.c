@@ -172,7 +172,7 @@ SGEGenericEvent(xEvent *from, xEvent *to)
     xGenericEvent *geto = (xGenericEvent *) to;
 
     if ((gefrom->extension & 0x7f) > MAXEXTENSIONS) {
-        ErrorF("GE: Invalid extension offset for event.\n");
+        fprintf(stderr, "GE: Invalid extension offset for event.\n");
         return;
     }
 
@@ -191,7 +191,7 @@ GEExtensionInit(XephyrContext* context)
 
     if (!dixRegisterPrivateKey
         (&GEClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(GEClientInfoRec), context))
-        FatalError("GEExtensionInit: GE private request failed.\n");
+        FatalError("GEExtensionInit: GE private request failed.\n", context);
 
     if ((extEntry = AddExtension(GE_NAME,
                                  0, GENumberErrors,
@@ -202,7 +202,7 @@ GEExtensionInit(XephyrContext* context)
         EventSwapVector[GenericEvent] = (EventSwapPtr) SGEGenericEvent;
     }
     else {
-        FatalError("GEInit: AddExtensions failed.\n");
+        FatalError("GEInit: AddExtensions failed.\n", context);
     }
 
 }
@@ -220,10 +220,11 @@ GEExtensionInit(XephyrContext* context)
  */
 void
 GERegisterExtension(int extension,
-                    void (*ev_swap) (xGenericEvent *from, xGenericEvent *to))
+                    void (*ev_swap) (xGenericEvent *from, xGenericEvent *to),
+                    XephyrContext* context)
 {
     if (EXT_MASK(extension) >= MAXEXTENSIONS)
-        FatalError("GE: extension > MAXEXTENSIONS. This should not happen.\n");
+        FatalError("GE: extension > MAXEXTENSIONS. This should not happen.\n", context);
 
     /* extension opcodes are > 128, might as well save some space here */
     GEExtensions[EXT_MASK(extension)].evswap = ev_swap;

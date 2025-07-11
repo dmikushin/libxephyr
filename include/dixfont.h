@@ -79,7 +79,7 @@ extern _X_EXPORT int SetFontPath(ClientPtr /*client */ ,
                                  int /*npaths */ ,
                                  unsigned char * /*paths */ );
 
-extern _X_EXPORT int SetDefaultFontPath(const char * /*path */ );
+extern _X_EXPORT int SetDefaultFontPath(const char * /*path */, XephyrContext* /*context */ );
 
 extern _X_EXPORT int GetFontPath(ClientPtr client,
                                  int *count,

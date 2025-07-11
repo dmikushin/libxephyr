@@ -134,7 +134,7 @@ panic:
     if (previous_busfault_sigaction)
         (*previous_busfault_sigaction)(sig, info, param);
     else
-        FatalError("bus error\n");
+        FatalError("bus error\n", busfault ? busfault->context : NULL);
 }
 
 Bool

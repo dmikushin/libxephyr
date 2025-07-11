@@ -930,7 +930,7 @@ XkbConvertCase(register KeySym sym, KeySym * lower, KeySym * upper)
 }
 
 static Bool
-_XkbCopyClientMap(XkbDescPtr src, XkbDescPtr dst)
+_XkbCopyClientMap(XkbDescPtr src, XkbDescPtr dst, XephyrContext* context)
 {
     void *tmp = NULL;
     int i;
@@ -1402,7 +1402,7 @@ _XkbCopyCompat(XkbDescPtr src, XkbDescPtr dst)
 }
 
 static Bool
-_XkbCopyGeom(XkbDescPtr src, XkbDescPtr dst)
+_XkbCopyGeom(XkbDescPtr src, XkbDescPtr dst, XephyrContext* context)
 {
     void *tmp = NULL;
     int i = 0, j = 0, k = 0;
@@ -1618,7 +1618,7 @@ _XkbCopyGeom(XkbDescPtr src, XkbDescPtr dst)
                     }
                     else {
                         LogMessage(X_WARNING, "XKB: approx outline "
-                                   "index is out of range\n");
+                                   "index is out of range\n", context);
                     }
                 }
 
@@ -1633,7 +1633,7 @@ _XkbCopyGeom(XkbDescPtr src, XkbDescPtr dst)
                     }
                     else {
                         LogMessage(X_WARNING, "XKB: primary outline "
-                                   "index is out of range\n");
+                                   "index is out of range\n", context);
                     }
                 }
             }
@@ -1955,7 +1955,7 @@ _XkbCopyControls(XkbDescPtr src, XkbDescPtr dst)
  */
 
 Bool
-XkbCopyKeymap(XkbDescPtr dst, XkbDescPtr src)
+XkbCopyKeymap(XkbDescPtr dst, XkbDescPtr src, XephyrContext* context)
 {
 
     if (!src || !dst) {
@@ -1966,7 +1966,7 @@ XkbCopyKeymap(XkbDescPtr dst, XkbDescPtr src)
     if (src == dst)
         return TRUE;
 
-    if (!_XkbCopyClientMap(src, dst)) {
+    if (!_XkbCopyClientMap(src, dst, context)) {
         DebugF("XkbCopyKeymap: failed to copy client map\n");
         return FALSE;
     }
@@ -1990,7 +1990,7 @@ XkbCopyKeymap(XkbDescPtr dst, XkbDescPtr src)
         DebugF("XkbCopyKeymap: failed to copy compat map\n");
         return FALSE;
     }
-    if (!_XkbCopyGeom(src, dst)) {
+    if (!_XkbCopyGeom(src, dst, context)) {
         DebugF("XkbCopyKeymap: failed to copy geometry\n");
         return FALSE;
     }
@@ -2023,7 +2023,7 @@ XkbDeviceApplyKeymap(DeviceIntPtr dst, XkbDescPtr desc)
     if (desc->geom)
         nkn.changed |= XkbNKN_GeometryMask;
 
-    ret = XkbCopyKeymap(dst->key->xkbInfo->desc, desc);
+    ret = XkbCopyKeymap(dst->key->xkbInfo->desc, desc, dst->context);
     if (ret)
         XkbSendNewKeyboardNotify(dst, &nkn);
 

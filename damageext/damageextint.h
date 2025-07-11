@@ -67,7 +67,7 @@ typedef struct _DamageExt {
 void
  DamageExtSetCritical(ClientPtr pClient, Bool critical);
 
-void PanoramiXDamageInit(void);
+void PanoramiXDamageInit(XephyrContext* context);
 void PanoramiXDamageReset(void);
 
 #endif                          /* _DAMAGEEXTINT_H_ */

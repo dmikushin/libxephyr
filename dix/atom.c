@@ -160,9 +160,9 @@ NameForAtom(Atom atom)
 }
 
 void
-AtomError(void)
+AtomError(XephyrContext* context)
 {
-    FatalError("initializing atoms");
+    FatalError("initializing atoms", context);
 }
 
 static void
@@ -195,15 +195,15 @@ FreeAllAtoms(void)
 }
 
 void
-InitAtoms(void)
+InitAtoms(XephyrContext* context)
 {
     FreeAllAtoms();
     tableLength = InitialTableSize;
     nodeTable = xallocarray(InitialTableSize, sizeof(NodePtr));
     if (!nodeTable)
-        AtomError();
+        AtomError(context);
     nodeTable[None] = NULL;
-    MakePredeclaredAtoms();
+    MakePredeclaredAtoms(context);
     if (lastAtom != XA_LAST_PREDEFINED)
-        AtomError();
+        AtomError(context);
 }

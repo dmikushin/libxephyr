@@ -354,7 +354,7 @@ SELinuxDefaultClientLabel(void)
     char *ctx;
 
     if (selabel_lookup_raw(label_hnd, &ctx, "remote", SELABEL_X_CLIENT) < 0)
-        FatalError("SELinux: failed to look up remote-client context\n");
+        FatalError("SELinux: failed to look up remote-client context\n", context);
 
     return ctx;
 }
@@ -366,7 +366,7 @@ SELinuxLabelInit(void)
 
     label_hnd = selabel_open(SELABEL_CTX_X, &selabel_option, 1);
     if (!label_hnd)
-        FatalError("SELinux: Failed to open x_contexts mapping in policy\n");
+        FatalError("SELinux: Failed to open x_contexts mapping in policy\n", context);
 }
 
 void

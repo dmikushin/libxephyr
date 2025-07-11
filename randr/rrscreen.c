@@ -877,7 +877,7 @@ ProcRRGetScreenInfo(ClientPtr client)
         data8 = (CARD8 *) rates;
 
         if (data8 - (CARD8 *) extra != extraLen)
-            FatalError("RRGetScreenInfo bad extra len %ld != %ld\n",
+            FatalError("RRGetScreenInfo bad extra len %ld != %ld\n", client->context,
                        (unsigned long) (data8 - (CARD8 *) extra), extraLen);
         rep.length = bytes_to_int32(extraLen);
     }

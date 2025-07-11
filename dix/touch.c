@@ -470,7 +470,7 @@ TouchEventHistoryReplay(TouchPointInfoPtr ti, DeviceIntPtr dev, XID resource)
            prevents handling of touch events for ownership listeners who
            want the events right here, right now.
          */
-        dev->public.processInputProc((InternalEvent*)ev, dev);
+        dev->public.processInputProc((InternalEvent*)ev, dev, dev->context);
     }
 }
 
@@ -554,8 +554,8 @@ TouchConvertToPointerEvent(const InternalEvent *event,
     int ptrtype;
     int nevents = 0;
 
-    BUG_RETURN_VAL(!event, 0);
-    BUG_RETURN_VAL(!motion_event, 0);
+    BUG_RETURN_VAL(!event, NULL, 0);
+    BUG_RETURN_VAL(!motion_event, NULL, 0);
 
     switch (event->any.type) {
     case ET_TouchUpdate:
@@ -570,11 +570,11 @@ TouchConvertToPointerEvent(const InternalEvent *event,
         ptrtype = ET_ButtonRelease;
         break;
     default:
-        BUG_WARN_MSG(1, "Invalid event type %d\n", event->any.type);
+        BUG_WARN_MSG(1, NULL, "Invalid event type %d\n", event->any.type);
         return 0;
     }
 
-    BUG_WARN_MSG(!(event->device_event.flags & TOUCH_POINTER_EMULATED),
+    BUG_WARN_MSG(!(event->device_event.flags & TOUCH_POINTER_EMULATED), NULL,
                  "Non-emulating touch event\n");
 
     motion_event->device_event = event->device_event;
@@ -583,7 +583,7 @@ TouchConvertToPointerEvent(const InternalEvent *event,
     motion_event->device_event.flags = XIPointerEmulated;
 
     if (nevents > 1) {
-        BUG_RETURN_VAL(!button_event, 0);
+        BUG_RETURN_VAL(!button_event, NULL, 0);
         button_event->device_event = event->device_event;
         button_event->any.type = ptrtype;
         button_event->device_event.flags = XIPointerEmulated;
@@ -643,7 +643,7 @@ TouchAddListener(TouchPointInfoPtr ti, XID resource, int resource_type,
      * deleted by a UngrabButton request and leaves us with a dangling
      * pointer */
     if (grab)
-        g = AllocGrab(grab);
+        g = AllocGrab(grab, NULL);
 
     ti->listeners[ti->num_listeners].listener = resource;
     ti->listeners[ti->num_listeners].resource_type = resource_type;
@@ -912,7 +912,7 @@ TouchListenerGone(XID resource, XephyrContext* context)
     int i, j, k, nev;
 
     if (!events)
-        FatalError("TouchListenerGone: couldn't allocate events\n");
+        FatalError("TouchListenerGone: couldn't allocate events\n", context);
 
     for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (!dev->touch)
@@ -948,8 +948,8 @@ TouchListenerAcceptReject(DeviceIntPtr dev, TouchPointInfoPtr ti, int listener,
     int nev;
     int i;
 
-    BUG_RETURN_VAL(listener < 0, BadMatch);
-    BUG_RETURN_VAL(listener >= ti->num_listeners, BadMatch);
+    BUG_RETURN_VAL(listener < 0, context, BadMatch);
+    BUG_RETURN_VAL(listener >= ti->num_listeners, context, BadMatch);
 
     if (listener > 0) {
         if (mode == XIRejectTouch)
@@ -961,11 +961,11 @@ TouchListenerAcceptReject(DeviceIntPtr dev, TouchPointInfoPtr ti, int listener,
     }
 
     events = InitEventList(GetMaximumEventsNum());
-    BUG_RETURN_VAL_MSG(!events, BadAlloc, "Failed to allocate touch ownership events\n");
+    BUG_RETURN_VAL_MSG(!events, context, BadAlloc, "Failed to allocate touch ownership events\n");
 
     nev = GetTouchOwnershipEvents(events, dev, ti, mode,
                                   ti->listeners[0].listener, 0);
-    BUG_WARN_MSG(nev == 0, "Failed to get touch ownership events\n");
+    BUG_WARN_MSG(nev == 0, context, "Failed to get touch ownership events\n");
 
     for (i = 0; i < nev; i++)
         mieqProcessDeviceEvent(dev, events + i, NULL);
@@ -1014,7 +1014,7 @@ TouchEndPhysicallyActiveTouches(DeviceIntPtr dev)
     int i;
 
     input_lock();
-    mieqProcessInputEvents();
+    mieqProcessInputEvents(dev->context);
     for (i = 0; i < dev->last.num_touches; i++) {
         DDXTouchPointInfoPtr ddxti = dev->last.touches + i;
 

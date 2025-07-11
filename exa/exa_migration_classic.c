@@ -74,7 +74,7 @@ exaPixmapIsDirty(PixmapPtr pPix)
     ExaPixmapPriv(pPix);
 
     if (pExaPixmap == NULL)
-        EXA_FatalErrorDebugWithRet(("EXA bug: exaPixmapIsDirty was called on a non-exa pixmap.\n"), TRUE);
+        EXA_FatalErrorDebugWithRet(("EXA bug: exaPixmapIsDirty was called on a non-exa pixmap.\n", pPix->drawable.pScreen->context), TRUE);
 
     if (!pExaPixmap->pDamage)
         return FALSE;
@@ -156,7 +156,7 @@ exaCopyDirty(ExaMigrationPtr migrate, RegionPtr pValidDst, RegionPtr pValidSrc,
                 static Bool firsttime = TRUE;
 
                 if (firsttime) {
-                    ErrorF("%s: Pending damage region empty!\n", __func__);
+                    ErrorF("%s: Pending damage region empty!\n", pPixmap->drawable.pScreen->context, __func__);
                     firsttime = FALSE;
                 }
             }
@@ -629,7 +629,7 @@ exaDoMigration_classic(ExaMigrationPtr pixmaps, int npixmaps, Bool can_accel)
             if (!exaPixmapIsDirty(pixmaps[i].pPix) &&
                 !exaAssertNotDirty(pixmaps[i].pPix))
                 ErrorF("%s: Pixmap %d dirty but not marked as such!\n",
-                       __func__, i);
+                       pScreen->context, __func__, i);
         }
     }
     /* If anything is pinned in system memory, we won't be able to

@@ -26,7 +26,7 @@
 static RESTYPE present_event_type;
 
 static int
-present_free_event(void *data, XID id)
+present_free_event(void *data, XID id, XephyrContext* context)
 {
     present_event_ptr present_event = (present_event_ptr) data;
     present_window_priv_ptr window_priv = present_window_priv(present_event->window);
@@ -258,12 +258,12 @@ present_select_input(ClientPtr client, XID eid, WindowPtr window, CARD32 mask)
 }
 
 Bool
-present_event_init(void)
+present_event_init(XephyrContext* context)
 {
     present_event_type = CreateNewResourceType(present_free_event, "PresentEvent");
     if (!present_event_type)
         return FALSE;
 
-    GERegisterExtension(present_request, present_event_swap);
+    GERegisterExtension(present_request, present_event_swap, context);
     return TRUE;
 }

@@ -26,7 +26,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef DIXEVENTS_H
 #define DIXEVENTS_H
 
-extern _X_EXPORT void SetCriticalEvent(int /* event */ );
+extern _X_EXPORT void SetCriticalEvent(int /* event */ , XephyrContext* /* context */ );
 
 extern _X_EXPORT CursorPtr GetSpriteCursor(DeviceIntPtr /*pDev */ );
 

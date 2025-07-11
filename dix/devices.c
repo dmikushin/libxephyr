@@ -384,7 +384,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
             }
             else {
                 other = NextFreePointerDevice(dev->context);
-                BUG_RETURN_VAL_MSG(other == NULL, FALSE,
+                BUG_RETURN_VAL_MSG(other == NULL, dev->context, FALSE,
                                    "[dix] cannot find pointer to pair with.\n");
                 PairDevices(other, dev);
             }
@@ -402,7 +402,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     input_lock();
     if ((*prev != dev) || !dev->inited ||
         ((ret = (*dev->deviceProc) (dev, DEVICE_ON)) != Success)) {
-        ErrorF("[dix] couldn't enable device %d\n", dev->id);
+        ErrorF("[dix] couldn't enable device %d\n", dev->context, dev->id);
         input_unlock();
         return FALSE;
     }
@@ -624,7 +624,7 @@ CoreKeyboardProc(DeviceIntPtr pDev, int what)
         if (!InitKeyboardDeviceStruct(pDev, NULL, CoreKeyboardBell,
                                       CoreKeyboardCtl)) {
             ErrorF("Keyboard initialization failed. This could be a missing "
-                   "or incorrect setup of xkeyboard-config.\n");
+                   "or incorrect setup of xkeyboard-config.\n", pDev->context);
             return BadValue;
         }
         return Success;
@@ -676,7 +676,7 @@ CorePointerProc(DeviceIntPtr pDev, int what)
              (PtrCtrlProcPtr) NoopDDA, GetMotionHistorySize(), NAXES,
              axes_labels)) {
             ErrorF("Could not initialize device '%s'. Out of memory.\n",
-                   pDev->name);
+                   pDev->context, pDev->name);
             return BadAlloc;    /* IPDS only fails on allocs */
         }
         /* axisVal is per-screen, last.valuators is desktop-wide */
@@ -716,25 +716,25 @@ InitCoreDevices(XephyrContext* context)
                              &context->inputInfo.pointer, &context->inputInfo.keyboard,
                              CorePointerProc, CoreKeyboardProc, TRUE);
     if (result != Success) {
-        FatalError("Failed to allocate virtual core devices: %d", result);
+        FatalError("Failed to allocate virtual core devices: %d", context, result);
     }
 
     result = ActivateDevice(context->inputInfo.pointer, TRUE);
     if (result != Success) {
-        FatalError("Failed to activate virtual core pointer: %d", result);
+        FatalError("Failed to activate virtual core pointer: %d", context, result);
     }
 
     result = ActivateDevice(context->inputInfo.keyboard, TRUE);
     if (result != Success) {
-        FatalError("Failed to activate virtual core keyboard: %d", result);
+        FatalError("Failed to activate virtual core keyboard: %d", context, result);
     }
 
     if (!EnableDevice(context->inputInfo.pointer, TRUE)) {
-         FatalError("Failed to enable virtual core pointer.");
+         FatalError("Failed to enable virtual core pointer.", context);
     }
 
     if (!EnableDevice(context->inputInfo.keyboard, TRUE)) {
-         FatalError("Failed to enable virtual core keyboard.");
+         FatalError("Failed to enable virtual core keyboard.", context);
     }
 
     InitXTestDevices(context);
@@ -1263,9 +1263,9 @@ InitButtonClassDeviceStruct(DeviceIntPtr dev, int numButtons, Atom *labels,
     ButtonClassPtr butc;
     int i;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
-    BUG_RETURN_VAL(dev->button != NULL, FALSE);
-    BUG_RETURN_VAL(numButtons >= MAX_BUTTONS, FALSE);
+    BUG_RETURN_VAL(dev == NULL, NULL, FALSE);
+    BUG_RETURN_VAL(dev->button != NULL, dev->context, FALSE);
+    BUG_RETURN_VAL(numButtons >= MAX_BUTTONS, dev->context, FALSE);
 
     butc = calloc(1, sizeof(ButtonClassRec));
     if (!butc)
@@ -1327,12 +1327,12 @@ InitValuatorClassDeviceStruct(DeviceIntPtr dev, int numAxes, Atom *labels,
     int i;
     ValuatorClassPtr valc;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
+    BUG_RETURN_VAL(dev == NULL, dev ? dev->context : NULL, FALSE);
 
     if (numAxes > MAX_VALUATORS) {
         LogMessage(X_WARNING,
                    "Device '%s' has %d axes, only using first %d.\n",
-                   dev->name, numAxes, MAX_VALUATORS);
+                   dev->context, dev->name, numAxes, MAX_VALUATORS);
         numAxes = MAX_VALUATORS;
     }
 
@@ -1357,7 +1357,7 @@ InitValuatorClassDeviceStruct(DeviceIntPtr dev, int numAxes, Atom *labels,
     valc->motionHintWindow = NullWindow;
 
     if ((mode & OutOfProximity) && !dev->proximity)
-        InitProximityClassDeviceStruct(dev);
+        InitProximityClassDeviceStruct(dev, dev->context);
 
     dev->valuator = valc;
 
@@ -1365,7 +1365,7 @@ InitValuatorClassDeviceStruct(DeviceIntPtr dev, int numAxes, Atom *labels,
 
     for (i = 0; i < numAxes; i++) {
         InitValuatorAxisStruct(dev, i, labels[i], NO_AXIS_LIMITS,
-                               NO_AXIS_LIMITS, 0, 0, 0, mode);
+                               NO_AXIS_LIMITS, 0, 0, 0, mode, dev->context);
         valc->axisVal[i] = 0;
     }
 
@@ -1436,8 +1436,8 @@ InitFocusClassDeviceStruct(DeviceIntPtr dev)
 {
     FocusClassPtr focc;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
-    BUG_RETURN_VAL(dev->focus != NULL, FALSE);
+    BUG_RETURN_VAL(dev == NULL, dev ? dev->context : NULL, FALSE);
+    BUG_RETURN_VAL(dev->focus != NULL, dev->context, FALSE);
 
     focc = malloc(sizeof(FocusClassRec));
     if (!focc)
@@ -1459,7 +1459,7 @@ InitPtrFeedbackClassDeviceStruct(DeviceIntPtr dev, PtrCtrlProcPtr controlProc)
 {
     PtrFeedbackPtr feedc;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
+    BUG_RETURN_VAL(dev == NULL, dev ? dev->context : NULL, FALSE);
 
     feedc = malloc(sizeof(PtrFeedbackClassRec));
     if (!feedc)
@@ -1502,7 +1502,7 @@ InitStringFeedbackClassDeviceStruct(DeviceIntPtr dev,
     int i;
     StringFeedbackPtr feedc;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
+    BUG_RETURN_VAL(dev == NULL, dev ? dev->context : NULL, FALSE);
 
     feedc = malloc(sizeof(StringFeedbackClassRec));
     if (!feedc)
@@ -1538,7 +1538,7 @@ InitBellFeedbackClassDeviceStruct(DeviceIntPtr dev, BellProcPtr bellProc,
 {
     BellFeedbackPtr feedc;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
+    BUG_RETURN_VAL(dev == NULL, dev ? dev->context : NULL, FALSE);
 
     feedc = malloc(sizeof(BellFeedbackClassRec));
     if (!feedc)
@@ -1559,7 +1559,7 @@ InitLedFeedbackClassDeviceStruct(DeviceIntPtr dev, LedCtrlProcPtr controlProc)
 {
     LedFeedbackPtr feedc;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
+    BUG_RETURN_VAL(dev == NULL, dev ? dev->context : NULL, FALSE);
 
     feedc = malloc(sizeof(LedFeedbackClassRec));
     if (!feedc)
@@ -1581,7 +1581,7 @@ InitIntegerFeedbackClassDeviceStruct(DeviceIntPtr dev,
 {
     IntegerFeedbackPtr feedc;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
+    BUG_RETURN_VAL(dev == NULL, dev ? dev->context : NULL, FALSE);
 
     feedc = malloc(sizeof(IntegerFeedbackClassRec));
     if (!feedc)
@@ -1603,10 +1603,10 @@ InitPointerDeviceStruct(DevicePtr device, CARD8 *map, int numButtons,
 {
     DeviceIntPtr dev = (DeviceIntPtr) device;
 
-    BUG_RETURN_VAL(dev == NULL, FALSE);
-    BUG_RETURN_VAL(dev->button != NULL, FALSE);
-    BUG_RETURN_VAL(dev->valuator != NULL, FALSE);
-    BUG_RETURN_VAL(dev->ptrfeed != NULL, FALSE);
+    BUG_RETURN_VAL(dev == NULL, dev ? dev->context : NULL, FALSE);
+    BUG_RETURN_VAL(dev->button != NULL, dev->context, FALSE);
+    BUG_RETURN_VAL(dev->valuator != NULL, dev->context, FALSE);
+    BUG_RETURN_VAL(dev->ptrfeed != NULL, dev->context, FALSE);
 
     return (InitButtonClassDeviceStruct(dev, numButtons, btn_labels, map) &&
             InitValuatorClassDeviceStruct(dev, numAxes, axes_labels,
@@ -1628,18 +1628,18 @@ InitTouchClassDeviceStruct(DeviceIntPtr device, unsigned int max_touches,
     TouchClassPtr touch;
     int i;
 
-    BUG_RETURN_VAL(device == NULL, FALSE);
-    BUG_RETURN_VAL(device->touch != NULL, FALSE);
-    BUG_RETURN_VAL(device->valuator == NULL, FALSE);
+    BUG_RETURN_VAL(device == NULL, device ? device->context : NULL, FALSE);
+    BUG_RETURN_VAL(device->touch != NULL, device->context, FALSE);
+    BUG_RETURN_VAL(device->valuator == NULL, device->context, FALSE);
 
     /* Check the mode is valid, and at least X and Y axes. */
-    BUG_RETURN_VAL(mode != XIDirectTouch && mode != XIDependentTouch, FALSE);
-    BUG_RETURN_VAL(num_axes < 2, FALSE);
+    BUG_RETURN_VAL(mode != XIDirectTouch && mode != XIDependentTouch, device->context, FALSE);
+    BUG_RETURN_VAL(num_axes < 2, device->context, FALSE);
 
     if (num_axes > MAX_VALUATORS) {
         LogMessage(X_WARNING,
                    "Device '%s' has %d touch axes, only using first %d.\n",
-                   device->name, num_axes, MAX_VALUATORS);
+                   device->context, device->name, num_axes, MAX_VALUATORS);
         num_axes = MAX_VALUATORS;
     }
 
@@ -1688,8 +1688,8 @@ InitGestureClassDeviceStruct(DeviceIntPtr device, unsigned int max_touches)
 {
     GestureClassPtr g;
 
-    BUG_RETURN_VAL(device == NULL, FALSE);
-    BUG_RETURN_VAL(device->gesture != NULL, FALSE);
+    BUG_RETURN_VAL(device == NULL, device ? device->context : NULL, FALSE);
+    BUG_RETURN_VAL(device->gesture != NULL, device->context, FALSE);
 
     g = calloc(1, sizeof(*g));
     if (!g)
@@ -2292,7 +2292,7 @@ ProcChangePointerControl(ClientPtr client)
     REQUEST_SIZE_MATCH(xChangePointerControlReq);
 
     /* If the device has no PtrFeedbackPtr, the xserver has a bug */
-    BUG_RETURN_VAL (!mouse->ptrfeed, BadImplementation);
+    BUG_RETURN_VAL(!mouse->ptrfeed, mouse ? mouse->context : NULL, BadImplementation);
 
     ctrl = mouse->ptrfeed->ctrl;
     if ((stuff->doAccel != xTrue) && (stuff->doAccel != xFalse)) {
@@ -2563,7 +2563,7 @@ RecalculateMasterButtons(DeviceIntPtr slave)
             event.keys.max_keycode = master->key->xkbInfo->desc->max_key_code;
         }
 
-        XISendDeviceChangedEvent(master, &event);
+        XISendDeviceChangedEvent(master, &event, slave->context);
     }
 }
 
@@ -2863,11 +2863,11 @@ DeliverDeviceClassesChangedEvent(int sourceid, Time time, XephyrContext* context
 
     /* UpdateFromMaster generates at most one event */
     UpdateFromMaster(&dcce, dev, DEVCHANGE_POINTER_EVENT, &num_events);
-    BUG_WARN(num_events > 1);
+    BUG_WARN(num_events > 1, dev->context);
 
     if (num_events) {
         dcce.any.time = time;
         /* FIXME: This doesn't do anything */
-        dev->public.processInputProc(&dcce, dev);
+        dev->public.processInputProc(&dcce, dev, context);
     }
 }

@@ -342,10 +342,10 @@ const char *
 KdParseFindNext(const char *cur, const char *delim, char *save, char *last);
 
 void
- KdUseMsg(void);
+ KdUseMsg(XephyrContext* context);
 
 int
- KdProcessArgument(int argc, char **argv, int i);
+ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context);
 
 void
  KdOsAddInputDrivers(void);

@@ -32,12 +32,12 @@
 
 struct xorg_list GlxVendorList = { &GlxVendorList, &GlxVendorList };
 
-GlxServerVendor *GlxCreateVendor(const GlxServerImports *imports)
+GlxServerVendor *GlxCreateVendor(const GlxServerImports *imports, XephyrContext* context)
 {
     GlxServerVendor *vendor = NULL;
 
     if (imports == NULL) {
-        ErrorF("GLX: Vendor library did not provide an imports table\n");
+        ErrorF("GLX: Vendor library did not provide an imports table\n", context);
         return NULL;
     }
 
@@ -45,13 +45,13 @@ GlxServerVendor *GlxCreateVendor(const GlxServerImports *imports)
             || imports->handleRequest == NULL
             || imports->getDispatchAddress == NULL
             || imports->makeCurrent == NULL) {
-        ErrorF("GLX: Vendor library is missing required callback functions.\n");
+        ErrorF("GLX: Vendor library is missing required callback functions.\n", context);
         return NULL;
     }
 
     vendor = (GlxServerVendor *) calloc(1, sizeof(GlxServerVendor));
     if (vendor == NULL) {
-        ErrorF("GLX: Can't allocate vendor library.\n");
+        ErrorF("GLX: Can't allocate vendor library.\n", context);
         return NULL;
     }
     memcpy(&vendor->glxvc, imports, sizeof(GlxServerImports));

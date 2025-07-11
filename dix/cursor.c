@@ -116,7 +116,7 @@ FreeCursor(void *value, XID cid, XephyrContext* context)
     if (CursorRefCount(pCurs) != 0)
         return Success;
 
-    BUG_WARN(CursorRefCount(pCurs) < 0);
+    BUG_WARN(CursorRefCount(pCurs) < 0, context);
 
     if (context && context->screenInfo.numScreens > 0) {
         for (nscr = 0; nscr < context->screenInfo.numScreens; nscr++) {

@@ -521,7 +521,7 @@ PanoramiXExtensionInit(XephyrContext* context)
 
     if (!success) {
         noPanoramiXExtension = TRUE;
-        ErrorF(PANORAMIX_PROTOCOL_NAME " extension failed to initialize\n");
+        ErrorF(PANORAMIX_PROTOCOL_NAME " extension failed to initialize\n", context);
         return;
     }
 
@@ -588,7 +588,7 @@ PanoramiXExtensionInit(XephyrContext* context)
 
     PanoramiXRenderInit();
     PanoramiXFixesInit();
-    PanoramiXDamageInit();
+    PanoramiXDamageInit(context);
 #ifdef COMPOSITE
     PanoramiXCompositeInit();
 #endif
@@ -613,14 +613,14 @@ PanoramiXCreateConnectionBlock(XephyrContext* context)
      */
 
     if (!PanoramiXNumDepths) {
-        ErrorF("Xinerama error: No common visuals\n");
+        ErrorF("Xinerama error: No common visuals\n", context);
         return FALSE;
     }
 
     for (i = 1; i < context->screenInfo.numScreens; i++) {
         pScreen = context->screenInfo.screens[i];
         if (pScreen->rootDepth != context->screenInfo.screens[0]->rootDepth) {
-            ErrorF("Xinerama error: Root window depths differ\n");
+            ErrorF("Xinerama error: Root window depths differ\n", context);
             return FALSE;
         }
         if (pScreen->backingStoreSupport !=

@@ -600,7 +600,7 @@ void glamor_gldrawarrays_quads_using_indices(glamor_screen_private *glamor_priv,
 Bool glamor_get_drawable_location(const DrawablePtr drawable);
 void glamor_get_drawable_deltas(DrawablePtr drawable, PixmapPtr pixmap,
                                 int *x, int *y);
-GLint glamor_compile_glsl_prog(GLenum type, const char *source);
+GLint glamor_compile_glsl_prog(GLenum type, const char *source, XephyrContext* context);
 void glamor_link_glsl_prog(ScreenPtr screen, GLint prog,
                            const char *format, ...) _X_ATTRIBUTE_PRINTF(3,4);
 void glamor_get_color_4f_from_pixel(PixmapPtr pixmap,

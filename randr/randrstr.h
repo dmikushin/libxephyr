@@ -1100,7 +1100,7 @@ extern _X_EXPORT int
 /* rrxinerama.c */
 #ifdef XINERAMA
 extern _X_EXPORT void
- RRXineramaExtensionInit(void);
+ RRXineramaExtensionInit(XephyrContext* context);
 #endif
 
 void

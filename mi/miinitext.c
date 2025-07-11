@@ -180,16 +180,16 @@ static ExtensionModule staticExtensions[] = {
 };
 
 void
-ListStaticExtensions(void)
+ListStaticExtensions(XephyrContext* context)
 {
     const ExtensionModule *ext;
     int i;
 
-    ErrorF(" Only the following extensions can be run-time enabled/disabled:\n");
+    ErrorF(" Only the following extensions can be run-time enabled/disabled:\n", context);
     for (i = 0; i < ARRAY_SIZE(staticExtensions); i++) {
         ext = &staticExtensions[i];
         if (ext->disablePtr != NULL) {
-            ErrorF("\t%s\n", ext->name);
+            ErrorF("\t%s\n", context, ext->name);
         }
     }
 }
@@ -219,7 +219,7 @@ EnableDisableExtension(const char *name, Bool enable)
 }
 
 void
-EnableDisableExtensionError(const char *name, Bool enable)
+EnableDisableExtensionError(const char *name, Bool enable, XephyrContext* context)
 {
     const ExtensionModule *ext;
     int i;
@@ -228,18 +228,18 @@ EnableDisableExtensionError(const char *name, Bool enable)
     for (i = 0; i < ARRAY_SIZE(staticExtensions); i++) {
         ext = &staticExtensions[i];
         if ((strcmp(name, ext->name) == 0) && (ext->disablePtr == NULL)) {
-            ErrorF("[mi] Extension \"%s\" can not be disabled\n", name);
+            ErrorF("[mi] Extension \"%s\" can not be disabled\n", context, name);
             found = TRUE;
             break;
         }
     }
     if (found == FALSE) {
-        ErrorF("[mi] Extension \"%s\" is not recognized\n", name);
+        ErrorF("[mi] Extension \"%s\" is not recognized\n", context, name);
         /* Disabling a non-existing extension is a no-op anyway */
         if (enable == FALSE)
             return;
     }
-    ListStaticExtensions();
+    ListStaticExtensions(context);
 }
 
 static ExtensionModule *ExtensionModuleList = NULL;
@@ -300,7 +300,7 @@ InitExtensions(int argc, char *argv[], XephyrContext* context)
         ext = &ExtensionModuleList[i];
         if (ext->initFunc != NULL &&
             (ext->disablePtr == NULL || !*ext->disablePtr)) {
-            LogMessageVerb(X_INFO, 3, "Initializing extension %s\n",
+            LogMessageVerb(X_INFO, 3, "Initializing extension %s\n", context,
                            ext->name);
 
             (ext->initFunc) (context);

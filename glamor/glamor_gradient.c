@@ -174,7 +174,7 @@ _glamor_create_getcolor_fs_source(ScreenPtr screen, int stops_count,
         return gradient_fs;
     }
     else {
-        return XNFstrdup(gradient_fs_getcolor_no_array);
+        return XNFstrdup(gradient_fs_getcolor_no_array, screen->context);
     }
 }
 
@@ -329,7 +329,7 @@ _glamor_create_radial_gradient_program(ScreenPtr screen, int stops_count,
 
     gradient_prog = glCreateProgram();
 
-    vs_prog = glamor_compile_glsl_prog(GL_VERTEX_SHADER, gradient_vs);
+    vs_prog = glamor_compile_glsl_prog(GL_VERTEX_SHADER, gradient_vs, screen->context);
 
     fs_getcolor_source =
         _glamor_create_getcolor_fs_source(screen, stops_count,
@@ -341,7 +341,7 @@ _glamor_create_radial_gradient_program(ScreenPtr screen, int stops_count,
                 PIXMAN_REPEAT_REFLECT,
                 fs_getcolor_source);
 
-    fs_prog = glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, gradient_fs);
+    fs_prog = glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, gradient_fs, screen->context);
 
     free(gradient_fs);
     free(fs_getcolor_source);
@@ -512,7 +512,7 @@ _glamor_create_linear_gradient_program(ScreenPtr screen, int stops_count,
 
     gradient_prog = glCreateProgram();
 
-    vs_prog = glamor_compile_glsl_prog(GL_VERTEX_SHADER, gradient_vs);
+    vs_prog = glamor_compile_glsl_prog(GL_VERTEX_SHADER, gradient_vs, screen->context);
 
     fs_getcolor_source =
         _glamor_create_getcolor_fs_source(screen, stops_count, stops_count > 0);
@@ -522,7 +522,7 @@ _glamor_create_linear_gradient_program(ScreenPtr screen, int stops_count,
                 PIXMAN_REPEAT_NORMAL, PIXMAN_REPEAT_REFLECT,
                 fs_getcolor_source);
 
-    fs_prog = glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, gradient_fs);
+    fs_prog = glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, gradient_fs, screen->context);
     free(gradient_fs);
     free(fs_getcolor_source);
 
@@ -969,13 +969,13 @@ glamor_generate_radial_gradient_picture(ScreenPtr screen,
     if (stops_count > RADIAL_SMALL_STOPS) {
         stop_colors = xallocarray(stops_count, 4 * sizeof(float));
         if (stop_colors == NULL) {
-            ErrorF("Failed to allocate stop_colors memory.\n");
+            ErrorF("Failed to allocate stop_colors memory.\n", screen->context);
             goto GRADIENT_FAIL;
         }
 
         n_stops = xallocarray(stops_count, sizeof(float));
         if (n_stops == NULL) {
-            ErrorF("Failed to allocate n_stops memory.\n");
+            ErrorF("Failed to allocate n_stops memory.\n", screen->context);
             goto GRADIENT_FAIL;
         }
     }
@@ -1308,13 +1308,13 @@ glamor_generate_linear_gradient_picture(ScreenPtr screen,
     if (stops_count > LINEAR_SMALL_STOPS) {
         stop_colors = xallocarray(stops_count, 4 * sizeof(float));
         if (stop_colors == NULL) {
-            ErrorF("Failed to allocate stop_colors memory.\n");
+            ErrorF("Failed to allocate stop_colors memory.\n", screen->context);
             goto GRADIENT_FAIL;
         }
 
         n_stops = xallocarray(stops_count, sizeof(float));
         if (n_stops == NULL) {
-            ErrorF("Failed to allocate n_stops memory.\n");
+            ErrorF("Failed to allocate n_stops memory.\n", screen->context);
             goto GRADIENT_FAIL;
         }
     }

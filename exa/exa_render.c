@@ -179,7 +179,7 @@ exaGetRGBAFromPixel(CARD32 pixel,
                     CARD16 *green,
                     CARD16 *blue,
                     CARD16 *alpha,
-                    PictFormatPtr pFormat, PictFormatShort format)
+                    PictFormatPtr pFormat, PictFormatShort format, XephyrContext* context)
 {
     int rbits, bbits, gbits, abits;
     int rshift, bshift, gshift, ashift;
@@ -206,7 +206,7 @@ exaGetRGBAFromPixel(CARD32 pixel,
     }
     else
         FatalError("EXA bug: exaGetRGBAFromPixel() doesn't match "
-                   "createSourcePicture()\n");
+                   "createSourcePicture()\n", context);
 
     if (rbits) {
         *red = ((pixel >> rshift) & ((1 << rbits) - 1)) << (16 - rbits);
@@ -298,7 +298,7 @@ exaTryDriverSolidFill(PicturePtr pSrc,
                              &pixel);
 
     if (!exaGetRGBAFromPixel(pixel, &red, &green, &blue, &alpha,
-                             pSrc->pFormat, pSrc->format) ||
+                             pSrc->pFormat, pSrc->format, pDst->pDrawable->pScreen->context) ||
         !exaGetPixelFromRGBA(&pixel, red, green, blue, alpha, pDst->pFormat)) {
         RegionUninit(&region);
         return -1;

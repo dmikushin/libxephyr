@@ -55,7 +55,7 @@
 static int countValuators(DeviceEvent *ev, int *first);
 static int getValuatorEvents(DeviceEvent *ev, deviceValuator * xv, XephyrContext* context);
 static int eventToKeyButtonPointer(DeviceEvent *ev, xEvent **xi, int *count, XephyrContext* context);
-static int eventToDeviceChanged(DeviceChangedEvent *ev, xEvent **dcce);
+static int eventToDeviceChanged(DeviceChangedEvent *ev, xEvent **dcce, XephyrContext* context);
 static int eventToDeviceEvent(DeviceEvent *ev, xEvent **xi);
 static int eventToRawEvent(RawDeviceEvent *ev, xEvent **xi);
 static int eventToBarrierEvent(BarrierEvent *ev, xEvent **xi);
@@ -104,7 +104,7 @@ EventIsKeyRepeat(xEvent *event)
  * @return Success or the matching error code.
  */
 int
-EventToCore(InternalEvent *event, xEvent **core_out, int *count_out)
+EventToCore(InternalEvent *event, xEvent **core_out, int *count_out, XephyrContext* context)
 {
     xEvent *core = NULL;
     int count = 0;
@@ -176,7 +176,7 @@ EventToCore(InternalEvent *event, xEvent **core_out, int *count_out)
         break;
     default:
         /* XXX: */
-        ErrorF("[dix] EventToCore: Not implemented yet \n");
+        ErrorF("[dix] EventToCore: Not implemented yet \n", context);
         ret = BadImplementation;
     }
 
@@ -243,7 +243,7 @@ EventToXI(InternalEvent *ev, xEvent **xi, int *count, XephyrContext* context)
         break;
     }
 
-    ErrorF("[dix] EventToXI: Not implemented for %d \n", ev->any.type);
+    ErrorF("[dix] EventToXI: Not implemented for %d \n", context, ev->any.type);
     return BadImplementation;
 }
 
@@ -262,7 +262,7 @@ EventToXI(InternalEvent *ev, xEvent **xi, int *count, XephyrContext* context)
  * @return Success or the error code.
  */
 int
-EventToXI2(InternalEvent *ev, xEvent **xi)
+EventToXI2(InternalEvent *ev, xEvent **xi, XephyrContext* context)
 {
     switch (ev->any.type) {
         /* Enter/FocusIn are for grabs. We don't need an actual event, since
@@ -287,7 +287,7 @@ EventToXI2(InternalEvent *ev, xEvent **xi)
         *xi = NULL;
         return BadMatch;
     case ET_DeviceChanged:
-        return eventToDeviceChanged(&ev->changed_event, xi);
+        return eventToDeviceChanged(&ev->changed_event, xi, context);
     case ET_RawKeyPress:
     case ET_RawKeyRelease:
     case ET_RawButtonPress:
@@ -312,7 +312,7 @@ EventToXI2(InternalEvent *ev, xEvent **xi)
         break;
     }
 
-    ErrorF("[dix] EventToXI2: Not implemented for %d \n", ev->any.type);
+    ErrorF("[dix] EventToXI2: Not implemented for %d \n", context, ev->any.type);
     return BadImplementation;
 }
 
@@ -534,7 +534,7 @@ appendValuatorInfo(DeviceChangedEvent *dce, xXIValuatorInfo * info,
 }
 
 static int
-appendScrollInfo(DeviceChangedEvent *dce, xXIScrollInfo * info, int axisnumber)
+appendScrollInfo(DeviceChangedEvent *dce, xXIScrollInfo * info, int axisnumber, XephyrContext* context)
 {
     if (dce->valuators[axisnumber].scroll.type == SCROLL_TYPE_NONE)
         return 0;
@@ -550,7 +550,7 @@ appendScrollInfo(DeviceChangedEvent *dce, xXIScrollInfo * info, int axisnumber)
         info->scroll_type = XIScrollTypeHorizontal;
         break;
     default:
-        ErrorF("[Xi] Unknown scroll type %d. This is a bug.\n",
+        ErrorF("[Xi] Unknown scroll type %d. This is a bug.\n", context,
                dce->valuators[axisnumber].scroll.type);
         break;
     }
@@ -569,7 +569,7 @@ appendScrollInfo(DeviceChangedEvent *dce, xXIScrollInfo * info, int axisnumber)
 }
 
 static int
-eventToDeviceChanged(DeviceChangedEvent *dce, xEvent **xi)
+eventToDeviceChanged(DeviceChangedEvent *dce, xEvent **xi, XephyrContext* context)
 {
     xXIDeviceChangedEvent *dcce;
     int len = sizeof(xXIDeviceChangedEvent);
@@ -600,7 +600,7 @@ eventToDeviceChanged(DeviceChangedEvent *dce, xEvent **xi)
 
     dcce = calloc(1, len);
     if (!dcce) {
-        ErrorF("[Xi] BadAlloc in SendDeviceChangedEvent.\n");
+        ErrorF("[Xi] BadAlloc in SendDeviceChangedEvent.\n", context);
         return BadAlloc;
     }
 
@@ -636,7 +636,7 @@ eventToDeviceChanged(DeviceChangedEvent *dce, xEvent **xi)
         for (i = 0; i < dce->num_valuators; i++) {
             if (dce->valuators[i].scroll.type != SCROLL_TYPE_NONE) {
                 dcce->num_classes++;
-                ptr += appendScrollInfo(dce, (xXIScrollInfo *) ptr, i);
+                ptr += appendScrollInfo(dce, (xXIScrollInfo *) ptr, i, context);
             }
         }
     }

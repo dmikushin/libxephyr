@@ -53,7 +53,7 @@ enum ScrollFlags {
     SCROLL_FLAG_PREFERRED = (1 << 2)
 };
 
-extern _X_EXPORT int InitProximityClassDeviceStruct(DeviceIntPtr /* dev */ );
+extern _X_EXPORT int InitProximityClassDeviceStruct(DeviceIntPtr /* dev */, XephyrContext* /* context */ );
 
 extern _X_EXPORT Bool InitValuatorAxisStruct(DeviceIntPtr /* dev */ ,
                                              int /* axnum */ ,
@@ -63,7 +63,8 @@ extern _X_EXPORT Bool InitValuatorAxisStruct(DeviceIntPtr /* dev */ ,
                                              int /* resolution */ ,
                                              int /* min_res */ ,
                                              int /* max_res */ ,
-                                             int /* mode */ );
+                                             int /* mode */,
+                                             XephyrContext* /* context */ );
 
 extern _X_EXPORT Bool SetScrollValuator(DeviceIntPtr /* dev */ ,
                                         int /* axnum */ ,
@@ -167,7 +168,8 @@ extern void
 
 extern int
  CheckGrabValues(ClientPtr /* client */ ,
-                 GrabParameters * /* param */ );
+                 GrabParameters * /* param */,
+                 XephyrContext* /* context */ );
 
 extern int
  GrabButton(ClientPtr /* client */ ,
@@ -313,7 +315,7 @@ extern int
  XIShouldNotify(ClientPtr client, DeviceIntPtr dev);
 
 extern void
- XISendDeviceChangedEvent(DeviceIntPtr device, DeviceChangedEvent *dce);
+ XISendDeviceChangedEvent(DeviceIntPtr device, DeviceChangedEvent *dce, XephyrContext* context);
 
 extern int
 

@@ -516,7 +516,7 @@ hostx_destroy_shm_segment(xcb_shm_segment_info_t *shminfo, size_t size)
 }
 
 int
-hostx_init(void)
+hostx_init(XephyrContext* context)
 {
     uint32_t attrs[2];
     uint32_t attr_mask = 0;
@@ -559,7 +559,7 @@ hostx_init(void)
     HostX.depth = xscreen->root_depth;
 #ifdef GLAMOR
     if (ephyr_glamor) {
-        HostX.visual = ephyr_glamor_get_visual();
+        HostX.visual = ephyr_glamor_get_visual(context);
         if (HostX.visual->visual_id != xscreen->root_visual) {
             attrs[1] = xcb_generate_id(HostX.conn);
             attr_mask |= XCB_CW_COLORMAP;
@@ -1573,12 +1573,12 @@ ephyr_glamor_init(ScreenPtr screen)
     KdScreenInfo *kd_screen = pScreenPriv->screen;
     EphyrScrPriv *scrpriv = kd_screen->driver;
 
-    scrpriv->glamor = ephyr_glamor_glx_screen_init(scrpriv->win);
+    scrpriv->glamor = ephyr_glamor_glx_screen_init(scrpriv->win, screen->context);
     ephyr_glamor_set_window_size(scrpriv->glamor,
                                  scrpriv->win_width, scrpriv->win_height);
 
     if (!glamor_init(screen, 0)) {
-        FatalError("Failed to initialize glamor\n");
+        FatalError("Failed to initialize glamor\n", screen->context);
         return FALSE;
     }
 

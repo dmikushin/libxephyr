@@ -173,7 +173,7 @@ typedef int (*DeviceProc) (DeviceIntPtr /*device */ ,
                            int /*what */ );
 
 typedef void (*ProcessInputProc) (InternalEvent * /*event */ ,
-                                  DeviceIntPtr /*device */ );
+                                  DeviceIntPtr /*device */, XephyrContext* /*context */ );
 
 typedef Bool (*DeviceHandleProc) (DeviceIntPtr /*device */ ,
                                   void *        /*data */
@@ -447,12 +447,14 @@ extern void MaybeStopHint(DeviceIntPtr /*device */ ,
                           ClientPtr /*client */ );
 
 extern void ProcessPointerEvent(InternalEvent * /* ev */ ,
-                                DeviceIntPtr /*mouse */ );
+                                DeviceIntPtr /*mouse */ ,
+                                XephyrContext* /*context */ );
 
 extern void ProcessKeyboardEvent(InternalEvent * /*ev */ ,
-                                 DeviceIntPtr /*keybd */ );
+                                 DeviceIntPtr /*keybd */ ,
+                                 XephyrContext* /*context */ );
 
-extern _X_EXPORT void ProcessInputEvents(void);
+extern _X_EXPORT void ProcessInputEvents(XephyrContext* context);
 
 extern _X_EXPORT void InitInput(int /*argc */ ,
                                 char ** /*argv */ ,
@@ -673,9 +675,9 @@ extern void GestureEndGesture(GestureInfoPtr gi, XephyrContext* context);
 extern Bool GestureResourceIsOwner(GestureInfoPtr gi, XID resource);
 extern void GestureAddListener(GestureInfoPtr gi, XID resource, int resource_type,
                                enum GestureListenerType type,
-                               WindowPtr window, GrabPtr grab);
+                               WindowPtr window, GrabPtr grab, XephyrContext* context);
 extern void GestureSetupListener(DeviceIntPtr dev, GestureInfoPtr gi,
-                                 InternalEvent *ev);
+                                 InternalEvent *ev, XephyrContext* context);
 extern Bool GestureBuildSprite(DeviceIntPtr sourcedev, GestureInfoPtr gi);
 extern void GestureListenerGone(XID resource, XephyrContext* context);
 extern void GestureEndActiveGestures(DeviceIntPtr dev);
@@ -805,7 +807,7 @@ extern _X_HIDDEN void input_constrain_cursor(DeviceIntPtr pDev, ScreenPtr screen
                                              int current_x, int current_y,
                                              int dest_x, int dest_y,
                                              int *out_x, int *out_y,
-                                             int *nevents, InternalEvent* events);
+                                             int *nevents, InternalEvent* events, XephyrContext* context);
 
 extern _X_EXPORT void input_lock(void);
 extern _X_EXPORT void input_unlock(void);

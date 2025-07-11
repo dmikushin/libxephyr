@@ -166,7 +166,7 @@ InputThreadReadPipe(int readHead)
         return ret;
 
     if (errno != EAGAIN)
-        FatalError("input-thread: draining pipe (%d)", errno);
+        FatalError("input-thread: draining pipe (%d)", errno, context);
 
     return 1;
 }
@@ -404,14 +404,14 @@ InputThreadPreInit(void)
         return;
 
     if (pipe(fds) < 0)
-        FatalError("input-thread: could not create pipe");
+        FatalError("input-thread: could not create pipe", context);
 
      if (pipe(hotplugPipe) < 0)
-        FatalError("input-thread: could not create pipe");
+        FatalError("input-thread: could not create pipe", context);
 
     inputThreadInfo = malloc(sizeof(InputThreadInfo));
     if (!inputThreadInfo)
-        FatalError("input-thread: could not allocate memory");
+        FatalError("input-thread: could not allocate memory", context);
 
     inputThreadInfo->changed = FALSE;
 

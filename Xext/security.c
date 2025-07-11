@@ -1053,7 +1053,7 @@ SecurityExtensionInit(void)
     /* Allocate the private storage */
     if (!dixRegisterPrivateKey
         (stateKey, PRIVATE_CLIENT, sizeof(SecurityStateRec)))
-        FatalError("SecurityExtensionSetup: Can't allocate client private.\n");
+        FatalError("SecurityExtensionSetup: Can't allocate client private.\n", context);
 
     /* Register callbacks */
     ret &= AddCallback(&ClientStateCallback, SecurityClientState, NULL);
@@ -1069,7 +1069,7 @@ SecurityExtensionInit(void)
     ret &= XaceRegisterCallback(XACE_SERVER_ACCESS, SecurityServer, NULL);
 
     if (!ret)
-        FatalError("SecurityExtensionSetup: Failed to register callbacks\n");
+        FatalError("SecurityExtensionSetup: Failed to register callbacks\n", context);
 
     /* Add extension to server */
     extEntry = AddExtension(SECURITY_EXTENSION_NAME,

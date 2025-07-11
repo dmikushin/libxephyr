@@ -450,7 +450,7 @@ RRExtensionInit(XephyrContext* context)
     RROutputInitErrorValue();
     RRProviderInitErrorValue();
 #ifdef PANORAMIX
-    RRXineramaExtensionInit();
+    RRXineramaExtensionInit(context);
 #endif
 }
 

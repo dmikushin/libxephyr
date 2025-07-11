@@ -57,7 +57,7 @@ DoSwapInterval(__GLXclientState * cl, GLbyte * pc, int do_swap)
     }
 
     if (cx->pGlxScreen->swapInterval == NULL) {
-        LogMessage(X_ERROR, "AIGLX: cx->pGlxScreen->swapInterval == NULL\n");
+        LogMessage(X_ERROR, "AIGLX: cx->pGlxScreen->swapInterval == NULL\n", client->context);
         client->errorValue = tag;
         return __glXError(GLXUnsupportedPrivateRequest);
     }

@@ -78,6 +78,8 @@ SOFTWARE.
 #ifndef MIINITEXT_H
 #define MIINITEXT_H
 
-void ListStaticExtensions(void);
+typedef struct _XephyrContext XephyrContext;
+
+void ListStaticExtensions(XephyrContext* context);
 
 #endif /* MIINITEXT_H */

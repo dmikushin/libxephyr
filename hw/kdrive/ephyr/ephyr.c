@@ -117,7 +117,8 @@ ephyrScreenInitialize(KdScreenInfo *screen)
         }
         else
             ErrorF
-                ("\nXephyr: requested screen depth not supported, setting to match hosts.\n");
+                ("\nXephyr: requested screen depth not supported, setting to match hosts.\n", 
+                 screen->pScreen ? screen->pScreen->context : NULL);
     }
 
     screen->fb.depth = hostx_get_server_depth(screen);
@@ -159,7 +160,8 @@ ephyrScreenInitialize(KdScreenInfo *screen)
             screen->fb.bitsPerPixel = 32;
         }
         else {
-            ErrorF("\nXephyr: Unsupported screen depth %d\n", screen->fb.depth);
+            ErrorF("\nXephyr: Unsupported screen depth %d\n", 
+                   screen->pScreen ? screen->pScreen->context : NULL, screen->fb.depth);
             return FALSE;
         }
 
@@ -365,7 +367,7 @@ ephyrScreenBlockHandler(ScreenPtr pScreen, void *timeout)
 
     if (hostx_has_queued_event()) {
         if (!QueueWorkProc(ephyrEventWorkProc, NULL, NULL))
-            FatalError("cannot queue event processing in ephyr block handler");
+            FatalError("cannot queue event processing in ephyr block handler", pScreen->context);
         AdjustWaitForDelay(timeout, 0);
     }
 }
@@ -859,7 +861,7 @@ screen_from_window(XephyrContext* context, Window w)
 }
 
 static void
-ephyrProcessErrorEvent(xcb_generic_event_t *xev)
+ephyrProcessErrorEvent(xcb_generic_event_t *xev, XephyrContext* context)
 {
     xcb_generic_error_t *e = (xcb_generic_error_t *)xev;
 
@@ -868,6 +870,7 @@ ephyrProcessErrorEvent(xcb_generic_event_t *xev)
                "Sequence number: %hu\n"
                "Major code: %hhu\tMinor code: %hu\n"
                "Error value: %u\n",
+               context,
                e->error_code,
                e->sequence,
                e->major_code, e->minor_code,
@@ -1135,7 +1138,7 @@ ephyrXcbProcessEvents(XephyrContext* context, Bool queued_only)
 
         switch (xev->response_type & 0x7f) {
         case 0:
-            ephyrProcessErrorEvent(xev);
+            ephyrProcessErrorEvent(xev, context);
             break;
 
         case XCB_EXPOSE:

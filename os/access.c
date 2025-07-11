@@ -429,7 +429,7 @@ ifioctl(int fd, int cmd, char *arg)
 
 #if !defined(SIOCGIFCONF)
 void
-DefineSelf(int fd)
+DefineSelf(int fd, XephyrContext* context)
 {
 #if !defined(TCPCONN) && !defined(UNIXCONN)
     return;
@@ -593,7 +593,7 @@ in6_fillscopeid(struct sockaddr_in6 *sin6)
 #endif
 
 void
-DefineSelf(int fd)
+DefineSelf(int fd, XephyrContext* context)
 {
 #ifndef HAVE_GETIFADDRS
     char *cp, *cplim;
@@ -630,7 +630,7 @@ DefineSelf(int fd)
     ifn.lifn_family = AF_UNSPEC;
     ifn.lifn_flags = 0;
     if (ioctl(fd, SIOCGLIFNUM, (char *) &ifn) < 0)
-        ErrorF("Getting interface count: %s\n", strerror(errno));
+        ErrorF("Getting interface count: %s\n", NULL, strerror(errno));
     if (len < (ifn.lifn_count * sizeof(struct lifreq))) {
         len = ifn.lifn_count * sizeof(struct lifreq);
         bufptr = malloc(len);
@@ -660,7 +660,7 @@ DefineSelf(int fd)
 #endif
 
     if (ifioctl(fd, IFC_IOCTL_REQ, (void *) &ifc) < 0)
-        ErrorF("Getting interface configuration (4): %s\n", strerror(errno));
+        ErrorF("Getting interface configuration (4): %s\n", NULL, strerror(errno));
 
     cplim = (char *) IFC_IFC_REQ + IFC_IFC_LEN;
 
@@ -785,7 +785,7 @@ DefineSelf(int fd)
         free(bufptr);
 #else                           /* HAVE_GETIFADDRS */
     if (getifaddrs(&ifap) < 0) {
-        ErrorF("Warning: getifaddrs returns %s\n", strerror(errno));
+        ErrorF("Warning: getifaddrs returns %s\n", context, strerror(errno));
         return;
     }
     for (ifr = ifap; ifr != NULL; ifr = ifr->ifa_next) {
@@ -968,7 +968,7 @@ ResetHosts(const char *display, XephyrContext* context)
     fnamelen = strlen(ETC_HOST_PREFIX) + strlen(ETC_HOST_SUFFIX) +
         strlen(context->display) + 1;
     if (fnamelen > sizeof(fname))
-        FatalError("Display name `%s' is too long\n", context->display);
+        FatalError("Display name `%s' is too long\n", context, context->display);
     snprintf(fname, sizeof(fname), ETC_HOST_PREFIX "%s" ETC_HOST_SUFFIX,
              context->display);
 

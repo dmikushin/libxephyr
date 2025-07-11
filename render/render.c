@@ -225,7 +225,7 @@ RESTYPE XRT_PICTURE;
 #endif
 
 void
-RenderExtensionInit(void)
+RenderExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
@@ -234,7 +234,7 @@ RenderExtensionInit(void)
     if (!PictureFinishInit())
         return;
     if (!dixRegisterPrivateKey
-        (&RenderClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(RenderClientRec)))
+        (&RenderClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(RenderClientRec), context))
         return;
 
     extEntry = AddExtension(RENDER_NAME, 0, RenderNumberErrors,
@@ -1419,7 +1419,7 @@ ProcRenderFillRectangles(ClientPtr client)
 }
 
 static void
-RenderSetBit(unsigned char *line, int x, int bit)
+RenderSetBit(unsigned char *line, int x, int bit, XephyrContext* context)
 {
     unsigned char mask;
 
@@ -1580,8 +1580,8 @@ ProcRenderCreateCursor(ClientPtr client)
             if (ncolor <= 2) {
                 CARD32 a = ((p >> 24));
 
-                RenderSetBit(mskline, x, a != 0);
-                RenderSetBit(srcline, x, a != 0 && p == twocolor[0]);
+                RenderSetBit(mskline, x, a != 0, client->context);
+                RenderSetBit(srcline, x, a != 0 && p == twocolor[0], client->context);
             }
             else {
                 CARD32 a = ((p >> 24) * DITHER_SIZE + 127) / 255;
@@ -1589,9 +1589,9 @@ ProcRenderCreateCursor(ClientPtr client)
                 CARD32 d =
                     orderedDither[y & (DITHER_DIM - 1)][x & (DITHER_DIM - 1)];
                 /* Set mask from dithered alpha value */
-                RenderSetBit(mskline, x, a > d);
+                RenderSetBit(mskline, x, a > d, client->context);
                 /* Set src from dithered intensity value */
-                RenderSetBit(srcline, x, a > d && i <= d);
+                RenderSetBit(srcline, x, a > d && i <= d, client->context);
             }
         }
         srcline += stride;

@@ -339,8 +339,8 @@ glamor_build_program(ScreenPtr          screen,
     prog->fill_use = fill->use;
     prog->fill_use_render = fill->use_render;
 
-    vs_prog = glamor_compile_glsl_prog(GL_VERTEX_SHADER, vs_prog_string);
-    fs_prog = glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, fs_prog_string);
+    vs_prog = glamor_compile_glsl_prog(GL_VERTEX_SHADER, vs_prog_string, screen->context);
+    fs_prog = glamor_compile_glsl_prog(GL_FRAGMENT_SHADER, fs_prog_string, screen->context);
     free(vs_prog_string);
     free(fs_prog_string);
     glAttachShader(prog->prog, vs_prog);
@@ -351,7 +351,7 @@ glamor_build_program(ScreenPtr          screen,
 
     if (prim->source_name) {
 #if DBG
-        ErrorF("Bind GLAMOR_VERTEX_SOURCE to %s\n", prim->source_name);
+        ErrorF("Bind GLAMOR_VERTEX_SOURCE to %s\n", NULL, prim->source_name);
 #endif
         glBindAttribLocation(prog->prog, GLAMOR_VERTEX_SOURCE, prim->source_name);
     }

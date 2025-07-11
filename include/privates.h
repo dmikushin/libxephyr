@@ -336,14 +336,14 @@ extern _X_EXPORT int
  * Dump out private stats to ErrorF
  */
 extern void
- dixPrivateUsage(void);
+ dixPrivateUsage(XephyrContext* context);
 
 /*
  * Resets the privates subsystem.  dixResetPrivates is called from the main loop
  * before each server generation.  This function must only be called by main().
  */
 extern _X_EXPORT void
- dixResetPrivates(void);
+ dixResetPrivates(XephyrContext* context);
 
 /*
  * Looks up the offset where the devPrivates field is located.

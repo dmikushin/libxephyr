@@ -1171,5 +1171,5 @@ WriteSConnSetupPrefix(ClientPtr pClient, xConnSetupPrefix * pcsp)
 void _X_COLD
 ReplyNotSwappd(ClientPtr pClient, int size, void *pbuf)
 {
-    FatalError("Not implemented");
+    FatalError("Not implemented", pClient->context);
 }

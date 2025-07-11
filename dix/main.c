@@ -131,7 +131,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
     /* Context should be provided by caller */
     if (!context) {
-        FatalError("No context provided - server not properly initialized");
+        FatalError("No context provided - server not properly initialized", context);
     }
     
 
@@ -139,9 +139,9 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
     InitRegions();
 
-    CheckUserParameters(argc, argv, envp);
+    CheckUserParameters(argc, argv, envp, context);
 
-    CheckUserAuthorization();
+    CheckUserAuthorization(context);
 
     ProcessCommandLine(argc, argv, context);
 
@@ -163,7 +163,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
                 context->clients[i] = NullClient;
             context->serverClient = calloc(sizeof(ClientRec), 1);
             if (!context->serverClient)
-                FatalError("couldn't create server client");
+                FatalError("couldn't create server client", context);
             InitClient(context->serverClient, 0, (void *) NULL);
             context->serverClient->context = context;
         }
@@ -176,21 +176,21 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         InitSelections();
 
         /* Initialize privates before first allocation */
-        dixResetPrivates();
+        dixResetPrivates(context);
 
         /* Initialize server client devPrivates, to be reallocated as
          * more client privates are registered
          */
         if (!dixAllocatePrivates(&context->serverClient->devPrivates, PRIVATE_CLIENT))
-            FatalError("failed to create server client privates");
+            FatalError("failed to create server client privates", context);
 
         if (!InitClientResources(context->serverClient)) /* for root resources */
-            FatalError("couldn't init server resources");
+            FatalError("couldn't init server resources", context);
 
         SetInputCheck(&alwaysCheckForInput[0], &alwaysCheckForInput[1]);
         context->screenInfo.numScreens = 0;
 
-        InitAtoms();
+        InitAtoms(context);
         InitEvents(context);
         xfont2_init_glyph_caching();
         dixResetRegistry();
@@ -199,45 +199,45 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         InitOutput(&context->screenInfo, argc, argv, context);
 
         if (context->screenInfo.numScreens < 1)
-            FatalError("no screens found");
+            FatalError("no screens found", context);
         InitExtensions(argc, argv, context);
 
         for (i = 0; i < context->screenInfo.numGPUScreens; i++) {
             ScreenPtr pScreen = context->screenInfo.gpuscreens[i];
             if (!CreateScratchPixmapsForScreen(pScreen))
-                FatalError("failed to create scratch pixmaps");
+                FatalError("failed to create scratch pixmaps", context);
             if (pScreen->CreateScreenResources &&
                 !(*pScreen->CreateScreenResources) (pScreen))
-                FatalError("failed to create screen resources");
+                FatalError("failed to create screen resources", context);
         }
 
         for (i = 0; i < context->screenInfo.numScreens; i++) {
             ScreenPtr pScreen = context->screenInfo.screens[i];
 
             if (!CreateScratchPixmapsForScreen(pScreen))
-                FatalError("failed to create scratch pixmaps");
+                FatalError("failed to create scratch pixmaps", context);
             if (pScreen->CreateScreenResources &&
                 !(*pScreen->CreateScreenResources) (pScreen))
-                FatalError("failed to create screen resources");
+                FatalError("failed to create screen resources", context);
             if (!CreateGCperDepth(i, context))
-                FatalError("failed to create scratch GCs");
+                FatalError("failed to create scratch GCs", context);
             if (!CreateDefaultStipple(i, context))
-                FatalError("failed to create default stipple");
+                FatalError("failed to create default stipple", context);
             if (!CreateRootWindow(pScreen))
-                FatalError("failed to create root window");
+                FatalError("failed to create root window", context);
             CallCallbacks(&RootWindowFinalizeCallback, pScreen);
         }
 
-        if (SetDefaultFontPath(context->defaultFontPath) != Success) {
+        if (SetDefaultFontPath(context->defaultFontPath, context) != Success) {
             ErrorF("[dix] failed to set default font path '%s'",
-                   context->defaultFontPath);
+                   context, context->defaultFontPath);
         }
         if (!SetDefaultFont("fixed", context)) {
-            FatalError("could not open default font");
+            FatalError("could not open default font", context);
         }
 
         if (!(context->rootCursor = CreateRootCursor(NULL, 0, context))) {
-            FatalError("could not open default cursor font");
+            FatalError("could not open default cursor font", context);
         }
 
 #ifdef PANORAMIX
@@ -263,14 +263,14 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 #ifdef PANORAMIX
         if (!noPanoramiXExtension) {
             if (!PanoramiXCreateConnectionBlock(context)) {
-                FatalError("could not create connection block info");
+                FatalError("could not create connection block info", context);
             }
         }
         else
 #endif
         {
             if (!CreateConnectionBlock(context)) {
-                FatalError("could not create connection block info");
+                FatalError("could not create connection block info", context);
             }
         }
 

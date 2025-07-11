@@ -180,13 +180,13 @@ volatile char isItTimeToYield;
     (a.pScreen == b.pScreen))
 
 ClientPtr
-GetCurrentClient(void)
+GetCurrentClient(XephyrContext* context)
 {
     if (in_input_thread()) {
         static Bool warned;
 
         if (!warned) {
-            ErrorF("[dix] Error GetCurrentClient called from input-thread\n");
+            ErrorF("[dix] Error GetCurrentClient called from input-thread\n", context);
             warned = TRUE;
         }
 
@@ -216,7 +216,7 @@ UpdateCurrentTime(XephyrContext* context)
     if (systime.milliseconds < context->currentTime.milliseconds)
         systime.months++;
     if (InputCheckPending())
-        ProcessInputEvents();
+        ProcessInputEvents(context);
     if (CompareTimeStamps(systime, context->currentTime) == LATER)
         context->currentTime = systime;
 }
@@ -486,7 +486,7 @@ Dispatch(XephyrContext* context)
 
     while (!dispatchException) {
         if (InputCheckPending()) {
-            ProcessInputEvents();
+            ProcessInputEvents(context);
             FlushIfCriticalOutputPending();
         }
 
@@ -506,7 +506,7 @@ Dispatch(XephyrContext* context)
             start_tick = SmartScheduleTime;
             while (!isItTimeToYield) {
                 if (InputCheckPending())
-                    ProcessInputEvents();
+                    ProcessInputEvents(context);
 
                 FlushIfCriticalOutputPending();
                 if ((SmartScheduleTime - start_tick) >= SmartScheduleSlice)

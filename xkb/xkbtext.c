@@ -65,7 +65,7 @@ tbGetBuffer(unsigned size)
 
     if (size > tb->size) {
         free(tb->buffer);
-        tb->buffer = xnfalloc(size);
+        tb->buffer = XNFalloc(size, NULL);
         tb->size = size;
     }
     return tb->buffer;

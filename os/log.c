@@ -192,14 +192,14 @@ strlen_sigsafe(const char *s)
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
 static char *
-LogFilePrep(const char *fname, const char *backup, const char *idstring)
+LogFilePrep(const char *fname, const char *backup, const char *idstring, XephyrContext* context)
 {
     char *logFileName = NULL;
 
     /* the format string below is controlled by the user,
        this code should never be called with elevated privileges */
     if (asprintf(&logFileName, fname, idstring) == -1)
-        FatalError("Cannot allocate space for the log file name\n");
+        FatalError("Cannot allocate space for the log file name\n", context);
 
     if (backup && *backup) {
         struct stat buf;
@@ -210,12 +210,12 @@ LogFilePrep(const char *fname, const char *backup, const char *idstring)
 
             if ((asprintf(&suffix, backup, idstring) == -1) ||
                 (asprintf(&oldLog, "%s%s", logFileName, suffix) == -1)) {
-                FatalError("Cannot allocate space for the log file name\n");
+                FatalError("Cannot allocate space for the log file name\n", context);
             }
             free(suffix);
 
             if (rename(logFileName, oldLog) == -1) {
-                FatalError("Cannot move old log file \"%s\" to \"%s\"\n",
+                FatalError("Cannot move old log file \"%s\" to \"%s\"\n", context,
                            logFileName, oldLog);
             }
             free(oldLog);
@@ -223,7 +223,7 @@ LogFilePrep(const char *fname, const char *backup, const char *idstring)
     }
     else {
         if (remove(logFileName) != 0 && errno != ENOENT) {
-            FatalError("Cannot remove old log file \"%s\": %s\n",
+            FatalError("Cannot remove old log file \"%s\": %s\n", context,
                        logFileName, strerror(errno));
         }
     }
@@ -256,7 +256,7 @@ LogInit(const char *fname, const char *backup, XephyrContext* context)
             char pidstring[32];
             snprintf(pidstring, sizeof(pidstring), "pid-%ld",
                      (unsigned long) getpid());
-            logFileName = LogFilePrep(fname, backup, pidstring);
+            logFileName = LogFilePrep(fname, backup, pidstring, context);
             saved_log_tempname = logFileName;
 
             /* Save the patterns for use when the context->display is named. */
@@ -266,9 +266,9 @@ LogInit(const char *fname, const char *backup, XephyrContext* context)
             else
                 saved_log_backup = strdup(backup);
         } else
-            logFileName = LogFilePrep(fname, backup, context->display);
+            logFileName = LogFilePrep(fname, backup, context->display, context);
         if ((logFile = fopen(logFileName, "w")) == NULL)
-            FatalError("Cannot open log file \"%s\"\n", logFileName);
+            FatalError("Cannot open log file \"%s\"\n", context, logFileName);
         setvbuf(logFile, NULL, _IONBF, 0);
 
         logFileFd = fileno(logFile);
@@ -303,7 +303,7 @@ LogSetDisplay(XephyrContext* context)
     if (saved_log_fname && strstr(saved_log_fname, "%s")) {
         char *logFileName;
 
-        logFileName = LogFilePrep(saved_log_fname, saved_log_backup, context->display);
+        logFileName = LogFilePrep(saved_log_fname, saved_log_backup, context->display, context);
 
         if (rename(saved_log_tempname, logFileName) == 0) {
             LogMessageVerb(X_PROBED, 0,
@@ -376,7 +376,7 @@ enum {
  *
  * @return the number of bytes parsed
  */
-static int parse_length_modifier(const char *format, size_t len, int *flags_return)
+static int parse_length_modifier(const char *format, size_t len, int *flags_return, XephyrContext* context)
 {
     int idx = 0;
     int length_modifier = 0;
@@ -384,7 +384,7 @@ static int parse_length_modifier(const char *format, size_t len, int *flags_retu
     while (idx < len) {
         switch (format[idx]) {
             case 'l':
-                BUG_RETURN_VAL(length_modifier & LMOD_SHORT, 0);
+                BUG_RETURN_VAL(length_modifier & LMOD_SHORT, context, 0);
 
                 if (length_modifier & LMOD_LONG)
                     length_modifier |= LMOD_LONGLONG;
@@ -392,7 +392,7 @@ static int parse_length_modifier(const char *format, size_t len, int *flags_retu
                     length_modifier |= LMOD_LONG;
                 break;
             case 'h':
-                BUG_RETURN_VAL(length_modifier & (LMOD_LONG|LMOD_LONGLONG), 0);
+                BUG_RETURN_VAL(length_modifier & (LMOD_LONG|LMOD_LONGLONG), context, 0);
                 length_modifier |= LMOD_SHORT;
                 /* gcc says 'short int' is promoted to 'int' when
                  * passed through '...', so ignored during
@@ -466,7 +466,7 @@ vpnprintf(char *string, int size_in, const char *f, va_list args)
 
         /* non-digit length modifiers */
         if (f_idx < f_len) {
-            int parsed_bytes = parse_length_modifier(&f[f_idx], f_len - f_idx, &length_modifier);
+            int parsed_bytes = parse_length_modifier(&f[f_idx], f_len - f_idx, &length_modifier, NULL);
             if (parsed_bytes < 0)
                 return 0;
             f_idx += parsed_bytes;
@@ -606,14 +606,14 @@ LogSWrite(int verb, const char *buf, size_t len, Bool end_line, XephyrContext* c
         ret = write(2, buf, len);
 
     if (verb < 0 || logFileVerbosity >= verb) {
-        if (context->inSignalContext && logFileFd >= 0) {
+        if (context && context->inSignalContext && logFileFd >= 0) {
             ret = write(logFileFd, buf, len);
 #ifndef WIN32
             if (logFlush && logSync)
                 fsync(logFileFd);
 #endif
         }
-        else if (!context->inSignalContext && logFile) {
+        else if (context && !context->inSignalContext && logFile) {
             if (newline)
                 fprintf(logFile, "[%10.3f] ", GetTimeInMillis() / 1000.0);
             newline = end_line;
@@ -632,7 +632,7 @@ LogSWrite(int verb, const char *buf, size_t len, Bool end_line, XephyrContext* c
                 bufferUnused += 1024;
                 saveBuffer = realloc(saveBuffer, bufferSize);
                 if (!saveBuffer)
-                    FatalError("realloc() failed while saving log messages\n");
+                    FatalError("realloc() failed while saving log messages\n", context);
             }
             bufferUnused -= len;
             memcpy(saveBuffer + bufferPos, buf, len);
@@ -647,18 +647,18 @@ LogSWrite(int verb, const char *buf, size_t len, Bool end_line, XephyrContext* c
 }
 
 void
-LogVWrite(int verb, const char *f, va_list args)
+LogVWrite(int verb, const char *f, va_list args, XephyrContext* context)
 {
-    return LogVMessageVerb(X_NONE, verb, f, args);
+    return LogVMessageVerb(X_NONE, verb, f, args, context);
 }
 
 void
-LogWrite(int verb, const char *f, ...)
+LogWrite(int verb, const char *f, XephyrContext* context, ...)
 {
     va_list args;
 
-    va_start(args, f);
-    LogVWrite(verb, f, args);
+    va_start(args, context);
+    LogVWrite(verb, f, args, context);
     va_end(args);
 }
 
@@ -713,7 +713,7 @@ LogVMessageVerb(MessageType type, int verb, const char *format, va_list args, Xe
     size_t len = 0;
 
     if (context->inSignalContext) {
-        LogVMessageVerbSigSafe(type, verb, format, args);
+        LogVMessageVerbSigSafe(type, verb, format, args, context);
         return;
     }
 
@@ -738,38 +738,38 @@ LogVMessageVerb(MessageType type, int verb, const char *format, va_list args, Xe
 
 /* Log message with verbosity level specified. */
 void
-LogMessageVerb(MessageType type, int verb, const char *format, ...)
+LogMessageVerb(MessageType type, int verb, const char *format, XephyrContext* context, ...)
 {
     va_list ap;
 
-    va_start(ap, format);
-    LogVMessageVerb(type, verb, format, ap);
+    va_start(ap, context);
+    LogVMessageVerb(type, verb, format, ap, context);
     va_end(ap);
 }
 
 /* Log a message with the standard verbosity level of 1. */
 void
-LogMessage(MessageType type, const char *format, ...)
+LogMessage(MessageType type, const char *format, XephyrContext* context, ...)
 {
     va_list ap;
 
-    va_start(ap, format);
-    LogVMessageVerb(type, 1, format, ap);
+    va_start(ap, context);
+    LogVMessageVerb(type, 1, format, ap, context);
     va_end(ap);
 }
 
 /* Log a message using only signal safe functions. */
 void
-LogMessageVerbSigSafe(MessageType type, int verb, const char *format, ...)
+LogMessageVerbSigSafe(MessageType type, int verb, const char *format, XephyrContext* context, ...)
 {
     va_list ap;
-    va_start(ap, format);
-    LogVMessageVerbSigSafe(type, verb, format, ap);
+    va_start(ap, context);
+    LogVMessageVerbSigSafe(type, verb, format, ap, context);
     va_end(ap);
 }
 
 void
-LogVMessageVerbSigSafe(MessageType type, int verb, const char *format, va_list args)
+LogVMessageVerbSigSafe(MessageType type, int verb, const char *format, va_list args, XephyrContext* context)
 {
     const char *type_str;
     char buf[1024];
@@ -782,8 +782,8 @@ LogVMessageVerbSigSafe(MessageType type, int verb, const char *format, va_list a
 
     /* if type_str is not "", prepend it and ' ', to message */
     if (type_str[0] != '\0') {
-        LogSWrite(verb, type_str, strlen_sigsafe(type_str), FALSE);
-        LogSWrite(verb, " ", 1, FALSE);
+        LogSWrite(verb, type_str, strlen_sigsafe(type_str), FALSE, context);
+        LogSWrite(verb, " ", 1, FALSE, context);
     }
 
     len = vpnprintf(buf, sizeof(buf), format, args);
@@ -793,12 +793,12 @@ LogVMessageVerbSigSafe(MessageType type, int verb, const char *format, va_list a
         buf[len - 1] = '\n';
 
     newline = (len > 0 && buf[len - 1] == '\n');
-    LogSWrite(verb, buf, len, newline);
+    LogSWrite(verb, buf, len, newline, context);
 }
 
 void
 LogVHdrMessageVerb(MessageType type, int verb, const char *msg_format,
-                   va_list msg_args, const char *hdr_format, va_list hdr_args)
+                   va_list msg_args, const char *hdr_format, va_list hdr_args, XephyrContext* context)
 {
     const char *type_str;
     char buf[1024];
@@ -837,44 +837,44 @@ LogVHdrMessageVerb(MessageType type, int verb, const char *msg_format,
         buf[len - 1] = '\n';
 
     newline = (buf[len - 1] == '\n');
-    LogSWrite(verb, buf, len, newline);
+    LogSWrite(verb, buf, len, newline, context);
 }
 
 void
 LogHdrMessageVerb(MessageType type, int verb, const char *msg_format,
-                  va_list msg_args, const char *hdr_format, ...)
+                  va_list msg_args, const char *hdr_format, XephyrContext* context, ...)
 {
     va_list hdr_args;
 
-    va_start(hdr_args, hdr_format);
-    LogVHdrMessageVerb(type, verb, msg_format, msg_args, hdr_format, hdr_args);
+    va_start(hdr_args, context);
+    LogVHdrMessageVerb(type, verb, msg_format, msg_args, hdr_format, hdr_args, context);
     va_end(hdr_args);
 }
 
 void
 LogHdrMessage(MessageType type, const char *msg_format, va_list msg_args,
-              const char *hdr_format, ...)
+              const char *hdr_format, XephyrContext* context, ...)
 {
     va_list hdr_args;
 
-    va_start(hdr_args, hdr_format);
-    LogVHdrMessageVerb(type, 1, msg_format, msg_args, hdr_format, hdr_args);
+    va_start(hdr_args, context);
+    LogVHdrMessageVerb(type, 1, msg_format, msg_args, hdr_format, hdr_args, context);
     va_end(hdr_args);
 }
 
 void
-AbortServer(void)
+AbortServer(XephyrContext* context)
     _X_NORETURN;
 
 void
-AbortServer(void)
+AbortServer(XephyrContext* context)
 {
 #ifdef XF86BIGFONT
     XF86BigfontCleanup();
 #endif
     CloseWellKnownConnections();
     OsCleanup(TRUE);
-    AbortDevices();
+    AbortDevices(context);
     ddxGiveUp(EXIT_ERR_ABORT);
     fflush(stderr);
     if (CoreDump)
@@ -982,18 +982,18 @@ VAuditF(const char *f, va_list args)
 }
 
 void
-FatalError(const char *f, ...)
+FatalError(const char *f, XephyrContext* context, ...)
 {
     va_list args;
     va_list args2;
     static Bool beenhere = FALSE;
 
     if (beenhere)
-        ErrorFSigSafe("\nFatalError re-entered, aborting\n");
+        ErrorFSigSafe("\nFatalError re-entered, aborting\n", context);
     else
-        ErrorFSigSafe("\nFatal server error:\n");
+        ErrorFSigSafe("\nFatal server error:\n", context);
 
-    va_start(args, f);
+    va_start(args, context);
 
     /* Make a copy for OsVendorFatalError */
     va_copy(args2, args);
@@ -1008,72 +1008,73 @@ FatalError(const char *f, ...)
         va_end(apple_args);
     }
 #endif
-    VErrorFSigSafe(f, args);
+    VErrorFSigSafe(f, args, context);
     va_end(args);
-    ErrorFSigSafe("\n");
+    ErrorFSigSafe("\n", context);
     if (!beenhere)
         OsVendorFatalError(f, args2);
     va_end(args2);
     if (!beenhere) {
         beenhere = TRUE;
-        AbortServer();
+        AbortServer(context);
     }
     else
         OsAbort();
  /*NOTREACHED*/}
 
 void
-VErrorF(const char *f, va_list args)
+VErrorF(const char *f, va_list args, XephyrContext* context)
 {
 #ifdef DDXOSVERRORF
     if (OsVendorVErrorFProc)
         OsVendorVErrorFProc(f, args);
-    else
-        LogVWrite(-1, f, args);
+    else {
+        LogVWrite(-1, f, args, context);
+    }
 #else
-    LogVWrite(-1, f, args);
+    LogVWrite(-1, f, args, context);
 #endif
 }
 
 void
-ErrorF(const char *f, ...)
+ErrorF(const char *f, XephyrContext* context, ...)
 {
     va_list args;
 
-    va_start(args, f);
-    VErrorF(f, args);
+    va_start(args, context);
+    VErrorF(f, args, context);
     va_end(args);
 }
 
 void
-VErrorFSigSafe(const char *f, va_list args)
+VErrorFSigSafe(const char *f, va_list args, XephyrContext* context)
 {
-    LogVMessageVerbSigSafe(X_ERROR, -1, f, args);
+    LogVMessageVerbSigSafe(X_ERROR, -1, f, args, context);
 }
 
 void
-ErrorFSigSafe(const char *f, ...)
+ErrorFSigSafe(const char *f, XephyrContext* context, ...)
 {
     va_list args;
 
-    va_start(args, f);
-    VErrorFSigSafe(f, args);
+    va_start(args, context);
+    VErrorFSigSafe(f, args, context);
     va_end(args);
 }
 
 void
-LogPrintMarkers(void)
+LogPrintMarkers(XephyrContext* context)
 {
     /* Show what the message marker symbols mean. */
-    LogWrite(0, "Markers: ");
-    LogMessageVerb(X_PROBED, 0, "probed, ");
-    LogMessageVerb(X_CONFIG, 0, "from config file, ");
-    LogMessageVerb(X_DEFAULT, 0, "default setting,\n\t");
-    LogMessageVerb(X_CMDLINE, 0, "from command line, ");
-    LogMessageVerb(X_NOTICE, 0, "notice, ");
-    LogMessageVerb(X_INFO, 0, "informational,\n\t");
-    LogMessageVerb(X_WARNING, 0, "warning, ");
-    LogMessageVerb(X_ERROR, 0, "error, ");
-    LogMessageVerb(X_NOT_IMPLEMENTED, 0, "not implemented, ");
-    LogMessageVerb(X_UNKNOWN, 0, "unknown.\n");
+    LogWrite(0, "Markers: ", context);
+    LogMessageVerb(X_PROBED, 0, "probed, ", context);
+    LogMessageVerb(X_CONFIG, 0, "from config file, ", context);
+    LogMessageVerb(X_DEFAULT, 0, "default setting,\n\t", context);
+    LogMessageVerb(X_CMDLINE, 0, "from command line, ", context);
+    LogMessageVerb(X_NOTICE, 0, "notice, ", context);
+    LogMessageVerb(X_INFO, 0, "informational,\n\t", context);
+    LogMessageVerb(X_WARNING, 0, "warning, ", context);
+    LogMessageVerb(X_ERROR, 0, "error, ", context);
+    LogMessageVerb(X_NOT_IMPLEMENTED, 0, "not implemented, ", context);
+    LogMessageVerb(X_UNKNOWN, 0, "unknown.\n", context);
 }

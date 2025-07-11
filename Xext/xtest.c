@@ -568,13 +568,13 @@ InitXTestDevices(XephyrContext* context)
     if (AllocXTestDevice(context->serverClient, "Virtual core",
                          &xtestpointer, &xtestkeyboard,
                          context->inputInfo.pointer, context->inputInfo.keyboard) != Success)
-         FatalError("Failed to allocate XTest devices");
+         FatalError("Failed to allocate XTest devices", context);
 
     if (ActivateDevice(xtestpointer, TRUE) != Success ||
         ActivateDevice(xtestkeyboard, TRUE) != Success)
-        FatalError("Failed to activate XTest core devices.");
+        FatalError("Failed to activate XTest core devices.", context);
     if (!EnableDevice(xtestpointer, TRUE) || !EnableDevice(xtestkeyboard, TRUE))
-        FatalError("Failed to enable XTest core devices.");
+        FatalError("Failed to enable XTest core devices.", context);
 
     AttachDevice(NULL, xtestpointer, context->inputInfo.pointer);
 

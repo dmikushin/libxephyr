@@ -572,7 +572,7 @@ SProcDamageDispatch(ClientPtr client)
 }
 
 static int
-FreeDamageExt(void *value, XID did)
+FreeDamageExt(void *value, XID did, XephyrContext* context)
 {
     DamageExtPtr pDamageExt = (DamageExtPtr) value;
 
@@ -690,7 +690,7 @@ PanoramiXDamageCreate(ClientPtr client)
 }
 
 static int
-PanoramiXDamageDelete(void *res, XID id)
+PanoramiXDamageDelete(void *res, XID id, XephyrContext* context)
 {
     int i;
     PanoramiXDamageRes *damage = res;
@@ -707,11 +707,11 @@ PanoramiXDamageDelete(void *res, XID id)
 }
 
 void
-PanoramiXDamageInit(void)
+PanoramiXDamageInit(XephyrContext* context)
 {
     XRT_DAMAGE = CreateNewResourceType(PanoramiXDamageDelete, "XineramaDamage");
     if (!XRT_DAMAGE)
-        FatalError("Couldn't Xineramify Damage extension\n");
+        FatalError("Couldn't Xineramify Damage extension\n", context);
 
     PanoramiXSaveDamageCreate = ProcDamageVector[X_DamageCreate];
     ProcDamageVector[X_DamageCreate] = PanoramiXDamageCreate;

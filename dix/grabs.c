@@ -81,7 +81,7 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
     GrabPtr grab = devGrab->grab;
     Bool clientIdPrinted = FALSE;
 
-    ErrorF("Active grab 0x%lx (%s) on device '%s' (%d):\n",
+    ErrorF("Active grab 0x%lx (%s) on device '%s' (%d):\n", dev->context,
            (unsigned long) grab->resource,
            (grab->grabtype == XI2) ? "xi2" :
            ((grab->grabtype == CORE) ? "core" : "xi1"), dev->name, dev->id);
@@ -93,12 +93,12 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
         const char *cmdargs = GetClientCmdArgs(client);
 
         if ((clientpid > 0) && (cmdname != NULL)) {
-            ErrorF("      client pid %ld %s %s\n",
+            ErrorF("      client pid %ld %s %s\n", dev->context,
                    (long) clientpid, cmdname, cmdargs ? cmdargs : "");
             clientIdPrinted = TRUE;
         }
         else if (GetLocalClientCreds(client, &lcc) != -1) {
-            ErrorF("      client pid %ld uid %ld gid %ld\n",
+            ErrorF("      client pid %ld uid %ld gid %ld\n", dev->context,
                    (lcc->fieldsSet & LCC_PID_SET) ? (long) lcc->pid : 0,
                    (lcc->fieldsSet & LCC_UID_SET) ? (long) lcc->euid : 0,
                    (lcc->fieldsSet & LCC_GID_SET) ? (long) lcc->egid : 0);
@@ -107,28 +107,23 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
         }
     }
     if (!clientIdPrinted) {
-        ErrorF("      (no client information available for client %d)\n",
-               CLIENT_ID(grab->resource));
+        ErrorF("      (no client information available for client %d)\n", NULL, CLIENT_ID(grab->resource));
     }
 
     /* XXX is this even correct? */
     if (devGrab->sync.other)
-        ErrorF("      grab ID 0x%lx from paired device\n",
-               (unsigned long) devGrab->sync.other->resource);
+        ErrorF("      grab ID 0x%lx from paired device\n", NULL, (unsigned long) devGrab->sync.other->resource);
 
-    ErrorF("      at %ld (from %s grab)%s (device %s, state %d)\n",
-           (unsigned long) devGrab->grabTime.milliseconds,
+    ErrorF("      at %ld (from %s grab)%s (device %s, state %d)\n", NULL, (unsigned long) devGrab->grabTime.milliseconds,
            devGrab->fromPassiveGrab ? "passive" : "active",
            devGrab->implicitGrab ? " (implicit)" : "",
            devGrab->sync.frozen ? "frozen" : "thawed", devGrab->sync.state);
 
     if (grab->grabtype == CORE) {
-        ErrorF("        core event mask 0x%lx\n",
-               (unsigned long) grab->eventMask);
+        ErrorF("        core event mask 0x%lx\n", NULL, (unsigned long) grab->eventMask);
     }
     else if (grab->grabtype == XI) {
-        ErrorF("      xi1 event mask 0x%lx\n",
-               devGrab->implicitGrab ? (unsigned long) grab->deviceMask :
+        ErrorF("      xi1 event mask 0x%lx\n", NULL, devGrab->implicitGrab ? (unsigned long) grab->deviceMask :
                (unsigned long) grab->eventMask);
     }
     else if (grab->grabtype == XI2) {
@@ -138,7 +133,7 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
 
             print = 0;
             for (j = 0; j < XI2MASKSIZE; j++) {
-                mask = xi2mask_get_one_mask(grab->xi2mask, i);
+                mask = xi2mask_get_one_mask(grab->xi2mask, i, dev->context);
                 if (mask[j]) {
                     print = 1;
                     break;
@@ -146,20 +141,20 @@ PrintDeviceGrabInfo(DeviceIntPtr dev)
             }
             if (!print)
                 continue;
-            ErrorF("      xi2 event mask for device %d: 0x", dev->id);
+            ErrorF("      xi2 event mask for device %d: 0x", dev->context, dev->id);
             for (j = 0; j < xi2mask_mask_size(grab->xi2mask); j++)
-                ErrorF("%x", mask[j]);
-            ErrorF("\n");
+                ErrorF("%x", dev->context, mask[j]);
+            ErrorF("\n", dev->context);
         }
     }
 
     if (devGrab->fromPassiveGrab) {
         ErrorF("      passive grab type %d, detail 0x%x, "
-               "activating key %d\n", grab->type, grab->detail.exact,
+               "activating key %d\n", dev->context, grab->type, grab->detail.exact,
                devGrab->activatingKey);
     }
 
-    ErrorF("      owner-events %s, kb %d ptr %d, confine %lx, cursor 0x%lx\n",
+    ErrorF("      owner-events %s, kb %d ptr %d, confine %lx, cursor 0x%lx\n", dev->context,
            grab->ownerEvents ? "true" : "false",
            grab->keyboardMode, grab->pointerMode,
            grab->confineTo ? (unsigned long) grab->confineTo->drawable.id : 0,
@@ -172,7 +167,7 @@ UngrabAllDevices(Bool kill_client, XephyrContext* context)
     DeviceIntPtr dev;
     ClientPtr client;
 
-    ErrorF("Ungrabbing all devices%s; grabs listed below:\n",
+    ErrorF("Ungrabbing all devices%s; grabs listed below:\n", context,
            kill_client ? " and killing their owners" : "");
 
     for (dev = context->inputInfo.devices; dev; dev = dev->next) {
@@ -186,11 +181,11 @@ UngrabAllDevices(Bool kill_client, XephyrContext* context)
             CloseDownClient(client);
     }
 
-    ErrorF("End list of ungrabbed devices\n");
+    ErrorF("End list of ungrabbed devices\n", context);
 }
 
 GrabPtr
-AllocGrab(const GrabPtr src)
+AllocGrab(const GrabPtr src, XephyrContext* context)
 {
     GrabPtr grab = calloc(1, sizeof(GrabRec));
 
@@ -200,7 +195,7 @@ AllocGrab(const GrabPtr src)
             free(grab);
             grab = NULL;
         }
-        else if (src && !CopyGrab(grab, src)) {
+        else if (src && !CopyGrab(grab, src, context)) {
             free(grab->xi2mask);
             free(grab);
             grab = NULL;
@@ -219,7 +214,7 @@ CreateGrab(int client, DeviceIntPtr device, DeviceIntPtr modDevice,
 {
     GrabPtr grab;
 
-    grab = AllocGrab(NULL);
+    grab = AllocGrab(NULL, device->context);
     if (!grab)
         return (GrabPtr) NULL;
     grab->resource = FakeClientID(client, device->context);
@@ -253,7 +248,7 @@ CreateGrab(int client, DeviceIntPtr device, DeviceIntPtr modDevice,
 void
 FreeGrab(GrabPtr pGrab, XephyrContext* context)
 {
-    BUG_RETURN(!pGrab);
+    BUG_RETURN(!pGrab, context);
 
     free(pGrab->modifiersDetail.pMask);
     free(pGrab->detail.pMask);
@@ -266,7 +261,7 @@ FreeGrab(GrabPtr pGrab, XephyrContext* context)
 }
 
 Bool
-CopyGrab(GrabPtr dst, const GrabPtr src)
+CopyGrab(GrabPtr dst, const GrabPtr src, XephyrContext* context)
 {
     Mask *mdetails_mask = NULL;
     Mask *details_mask = NULL;
@@ -302,7 +297,7 @@ CopyGrab(GrabPtr dst, const GrabPtr src)
     }
     else {
         xi2mask = dst->xi2mask;
-        xi2mask_zero(xi2mask, -1);
+        xi2mask_zero(xi2mask, -1, context);
     }
 
     *dst = *src;

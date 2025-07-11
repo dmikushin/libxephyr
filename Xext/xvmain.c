@@ -161,7 +161,7 @@ XvExtensionInit(XephyrContext* context)
        init global variables so the extension can function */
     if (XvScreenGeneration != context->serverGeneration) {
         if (!CreateResourceTypes(context)) {
-            ErrorF("XvExtensionInit: Unable to allocate resource types\n");
+            ErrorF("XvExtensionInit: Unable to allocate resource types\n", context);
             return;
         }
 #ifdef PANORAMIX
@@ -177,7 +177,7 @@ XvExtensionInit(XephyrContext* context)
                                 ProcXvDispatch, SProcXvDispatch,
                                 XvResetProc, StandardMinorOpcode);
         if (!extEntry) {
-            FatalError("XvExtensionInit: AddExtensions failed\n");
+            FatalError("XvExtensionInit: AddExtensions failed\n", context);
         }
 
         XvReqCode = extEntry->base;
@@ -205,25 +205,25 @@ CreateResourceTypes(XephyrContext* context)
     XvResourceGeneration = context->serverGeneration;
 
     if (!(XvRTPort = CreateNewResourceType(XvdiDestroyPort, "XvRTPort"))) {
-        ErrorF("CreateResourceTypes: failed to allocate port resource.\n");
+        ErrorF("CreateResourceTypes: failed to allocate port resource.\n", context);
         return FALSE;
     }
 
     if (!(XvRTGrab = CreateNewResourceType(XvdiDestroyGrab, "XvRTGrab"))) {
-        ErrorF("CreateResourceTypes: failed to allocate grab resource.\n");
+        ErrorF("CreateResourceTypes: failed to allocate grab resource.\n", context);
         return FALSE;
     }
 
     if (!(XvRTEncoding = CreateNewResourceType(XvdiDestroyEncoding,
                                                "XvRTEncoding"))) {
-        ErrorF("CreateResourceTypes: failed to allocate encoding resource.\n");
+        ErrorF("CreateResourceTypes: failed to allocate encoding resource.\n", context);
         return FALSE;
     }
 
     if (!(XvRTVideoNotify = CreateNewResourceType(XvdiDestroyVideoNotify,
                                                   "XvRTVideoNotify"))) {
         ErrorF
-            ("CreateResourceTypes: failed to allocate video notify resource.\n");
+            ("CreateResourceTypes: failed to allocate video notify resource.\n", context);
         return FALSE;
     }
 
@@ -232,14 +232,14 @@ CreateResourceTypes(XephyrContext* context)
          CreateNewResourceType(XvdiDestroyVideoNotifyList,
                                "XvRTVideoNotifyList"))) {
         ErrorF
-            ("CreateResourceTypes: failed to allocate video notify list resource.\n");
+            ("CreateResourceTypes: failed to allocate video notify list resource.\n", context);
         return FALSE;
     }
 
     if (!(XvRTPortNotify = CreateNewResourceType(XvdiDestroyPortNotify,
                                                  "XvRTPortNotify"))) {
         ErrorF
-            ("CreateResourceTypes: failed to allocate port notify resource.\n");
+            ("CreateResourceTypes: failed to allocate port notify resource.\n", context);
         return FALSE;
     }
 
@@ -254,7 +254,7 @@ XvScreenInit(ScreenPtr pScreen, XephyrContext* context)
 
     if (XvScreenGeneration != context->serverGeneration) {
         if (!CreateResourceTypes(context)) {
-            ErrorF("XvScreenInit: Unable to allocate resource types\n");
+            ErrorF("XvScreenInit: Unable to allocate resource types\n", context);
             return BadAlloc;
         }
 #ifdef PANORAMIX
@@ -267,14 +267,14 @@ XvScreenInit(ScreenPtr pScreen, XephyrContext* context)
         return BadAlloc;
 
     if (dixLookupPrivate(&pScreen->devPrivates, XvScreenKey)) {
-        ErrorF("XvScreenInit: screen devPrivates ptr non-NULL before init\n");
+        ErrorF("XvScreenInit: screen devPrivates ptr non-NULL before init\n", context);
     }
 
     /* ALLOCATE SCREEN PRIVATE RECORD */
 
     pxvs = malloc(sizeof(XvScreenRec));
     if (!pxvs) {
-        ErrorF("XvScreenInit: Unable to allocate screen private structure\n");
+        ErrorF("XvScreenInit: Unable to allocate screen private structure\n", context);
         return BadAlloc;
     }
 

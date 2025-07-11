@@ -31,6 +31,7 @@
 #include <xcb/xcb.h>
 #include <xcb/render.h>
 #include "ephyr.h"
+#include "dix/context.h"
 
 #define EPHYR_WANT_DEBUG 0
 
@@ -108,7 +109,7 @@ void
  hostx_handle_signal(int signum);
 
 int
- hostx_init(void);
+ hostx_init(XephyrContext* context);
 
 void
 hostx_add_screen(KdScreenInfo *screen, unsigned long win_id, int screen_num, Bool use_geometry, const char *output);

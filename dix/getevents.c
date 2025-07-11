@@ -395,7 +395,7 @@ AllocateMotionHistory(DeviceIntPtr pDev)
     pDev->valuator->first_motion = 0;
     pDev->valuator->last_motion = 0;
     if (!pDev->valuator->motion)
-        ErrorF("[dix] %s: Failed to alloc motion history (%d bytes).\n",
+        ErrorF("[dix] %s: Failed to alloc motion history (%d bytes).\n", pDev->context,
                pDev->name, size * pDev->valuator->numMotionEvents);
 }
 
@@ -888,7 +888,7 @@ scale_to_desktop(DeviceIntPtr dev, ValuatorMask *mask,
     ScreenPtr scr = miPointerGetScreen(dev);
     double x, y;
 
-    BUG_WARN(dev->valuator && dev->valuator->numAxes < 2);
+    BUG_WARN(dev->valuator && dev->valuator->numAxes < 2, dev->context);
     if (!dev->valuator || dev->valuator->numAxes < 2) {
         /* if we have no axes, last.valuators must be in screen coords
          * anyway */
@@ -1358,7 +1358,7 @@ fill_pointer_events(InternalEvent *events, DeviceIntPtr pDev, int type,
     case MotionNotify:
         if (!pDev->valuator) {
             ErrorF("[dix] motion events from device %d without valuators\n",
-                   pDev->id);
+                   pDev->context, pDev->id);
             return 0;
         }
         if (!mask_in || valuator_mask_num_valuators(mask_in) <= 0)
@@ -1371,7 +1371,7 @@ fill_pointer_events(InternalEvent *events, DeviceIntPtr pDev, int type,
         if (mask_in && valuator_mask_size(mask_in) > 0 && !pDev->valuator) {
             ErrorF
                 ("[dix] button event with valuator from device %d without valuators\n",
-                 pDev->id);
+                 pDev->context, pDev->id);
             return 0;
         }
         break;
@@ -1533,7 +1533,7 @@ emulate_scroll_button_events(InternalEvent *events,
     ax = &dev->valuator->axes[axis];
     incr = ax->scroll.increment;
 
-    BUG_WARN_MSG(incr == 0, "for device %s\n", dev->name);
+    BUG_WARN_MSG(incr == 0, dev->context, "for device %s\n", dev->name);
     if (incr == 0)
         return 0;
 
@@ -1630,7 +1630,7 @@ GetPointerEvents(InternalEvent *events, DeviceIntPtr pDev, int type,
     }
 #endif
 
-    BUG_RETURN_VAL(buttons >= MAX_BUTTONS, 0);
+    BUG_RETURN_VAL(buttons >= MAX_BUTTONS, pDev->context, 0);
 
     /* refuse events from disabled devices */
     if (!pDev->enabled)
@@ -1907,7 +1907,7 @@ GetTouchEvents(InternalEvent *events, DeviceIntPtr dev, uint32_t ddx_touchid,
 
     ti = TouchFindByDDXID(dev, ddx_touchid, (type == XI_TouchBegin));
     if (!ti) {
-        ErrorFSigSafe("[dix] %s: unable to %s touch point %u\n", dev->name,
+        ErrorFSigSafe("[dix] %s: unable to %s touch point %u\n", dev->context, dev->name,
                       type == XI_TouchBegin ? "begin" : "find", ddx_touchid);
         return 0;
     }
@@ -1941,16 +1941,14 @@ GetTouchEvents(InternalEvent *events, DeviceIntPtr dev, uint32_t ddx_touchid,
         if (!mask_in ||
             !valuator_mask_isset(mask_in, 0) ||
             !valuator_mask_isset(mask_in, 1)) {
-            ErrorFSigSafe("%s: Attempted to start touch without x/y "
-                          "(driver bug)\n", dev->name);
+            ErrorFSigSafe("%s: Attempted to start touch without x/y (driver bug)\n", dev->context, dev->name);
             return 0;
         }
         break;
     case XI_TouchUpdate:
         event->type = ET_TouchUpdate;
         if (!mask_in || valuator_mask_num_valuators(mask_in) <= 0) {
-            ErrorFSigSafe("%s: TouchUpdate with no valuators? Driver bug\n",
-                          dev->name);
+            ErrorFSigSafe("%s: TouchUpdate with no valuators? Driver bug\n", dev->context, dev->name);
         }
         break;
     case XI_TouchEnd:
@@ -2047,7 +2045,7 @@ GetDixTouchEnd(InternalEvent *ievent, DeviceIntPtr dev, TouchPointInfoPtr ti,
     DeviceEvent *event = &ievent->device_event;
     CARD32 ms = GetTimeInMillis();
 
-    BUG_WARN(!dev->enabled);
+    BUG_WARN(!dev->enabled, dev->context);
 
     init_device_event(event, dev, ms, EVENT_SOURCE_NORMAL);
 
@@ -2100,7 +2098,7 @@ PostSyntheticMotion(DeviceIntPtr pDev,
     ev.time = time;
 
     /* FIXME: MD/SD considerations? */
-    (*pDev->public.processInputProc) ((InternalEvent *) &ev, pDev);
+    (*pDev->public.processInputProc) ((InternalEvent *) &ev, pDev, pDev->context);
 }
 
 void

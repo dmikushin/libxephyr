@@ -142,9 +142,9 @@ _glamor_create_tex(glamor_screen_private *glamor_priv,
     if (glGetError() == GL_OUT_OF_MEMORY) {
         if (!glamor_priv->logged_any_fbo_allocation_failure) {
             LogMessageVerb(X_WARNING, 0, "glamor: Failed to allocate %dx%d "
-                           "FBO due to GL_OUT_OF_MEMORY.\n", w, h);
+                           "FBO due to GL_OUT_OF_MEMORY.\n", pixmap->drawable.pScreen->context, w, h);
             LogMessageVerb(X_WARNING, 0,
-                           "glamor: Expect reduced performance.\n");
+                           "glamor: Expect reduced performance.\n", pixmap->drawable.pScreen->context);
             glamor_priv->logged_any_fbo_allocation_failure = true;
         }
         glDeleteTextures(1, &tex);

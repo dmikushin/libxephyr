@@ -345,39 +345,32 @@ KdParseRgba(char *rgba)
 }
 
 void
-KdUseMsg(void)
+KdUseMsg(XephyrContext* context)
 {
-    ErrorF("\nTinyX Device Dependent Usage:\n");
-    ErrorF
-        ("-screen WIDTH[/WIDTHMM]xHEIGHT[/HEIGHTMM][+[-]XOFFSET][+[-]YOFFSET][@ROTATION][X][Y][xDEPTH/BPP[xFREQ]]  Specify screen characteristics\n");
-    ErrorF
-        ("-rgba rgb/bgr/vrgb/vbgr/none   Specify subpixel ordering for LCD panels\n");
-    ErrorF
-        ("-mouse driver [,n,,options]    Specify the pointer driver and its options (n is the number of buttons)\n");
-    ErrorF
-        ("-keybd driver [,,options]      Specify the keyboard driver and its options\n");
-    ErrorF("-xkb-rules       Set default XkbRules value (can be overridden by -keybd options)\n");
-    ErrorF("-xkb-model       Set default XkbModel value (can be overridden by -keybd options)\n");
-    ErrorF("-xkb-layout      Set default XkbLayout value (can be overridden by -keybd options)\n");
-    ErrorF("-xkb-variant     Set default XkbVariant value (can be overridden by -keybd options)\n");
-    ErrorF("-xkb-options     Set default XkbOptions value (can be overridden by -keybd options)\n");
-    ErrorF("-zaphod          Disable cursor screen switching\n");
-    ErrorF("-2button         Emulate 3 button mouse\n");
-    ErrorF("-3button         Disable 3 button mouse emulation\n");
-    ErrorF
-        ("-rawcoord        Don't transform pointer coordinates on rotation\n");
-    ErrorF("-dumb            Disable hardware acceleration\n");
-    ErrorF("-softCursor      Force software cursor\n");
-    ErrorF("-videoTest       Start the server, pause momentarily and exit\n");
-    ErrorF
-        ("-origin X,Y      Locates the next screen in the the virtual screen (Xinerama)\n");
-    ErrorF("-switchCmd       Command to execute on vt switch\n");
-    ErrorF
-        ("vtxx             Use virtual terminal xx instead of the next available\n");
+    ErrorF("\nTinyX Device Dependent Usage:\n", context);
+    ErrorF("-screen WIDTH[/WIDTHMM]xHEIGHT[/HEIGHTMM][+[-]XOFFSET][+[-]YOFFSET][@ROTATION][X][Y][xDEPTH/BPP[xFREQ]]  Specify screen characteristics\n", context);
+    ErrorF("-rgba rgb/bgr/vrgb/vbgr/none   Specify subpixel ordering for LCD panels\n", context);
+    ErrorF("-mouse driver [,n,,options]    Specify the pointer driver and its options (n is the number of buttons)\n", context);
+    ErrorF("-keybd driver [,,options]      Specify the keyboard driver and its options\n", context);
+    ErrorF("-xkb-rules       Set default XkbRules value (can be overridden by -keybd options)\n", context);
+    ErrorF("-xkb-model       Set default XkbModel value (can be overridden by -keybd options)\n", context);
+    ErrorF("-xkb-layout      Set default XkbLayout value (can be overridden by -keybd options)\n", context);
+    ErrorF("-xkb-variant     Set default XkbVariant value (can be overridden by -keybd options)\n", context);
+    ErrorF("-xkb-options     Set default XkbOptions value (can be overridden by -keybd options)\n", context);
+    ErrorF("-zaphod          Disable cursor screen switching\n", context);
+    ErrorF("-2button         Emulate 3 button mouse\n", context);
+    ErrorF("-3button         Disable 3 button mouse emulation\n", context);
+    ErrorF("-rawcoord        Don't transform pointer coordinates on rotation\n", context);
+    ErrorF("-dumb            Disable hardware acceleration\n", context);
+    ErrorF("-softCursor      Force software cursor\n", context);
+    ErrorF("-videoTest       Start the server, pause momentarily and exit\n", context);
+    ErrorF("-origin X,Y      Locates the next screen in the the virtual screen (Xinerama)\n", context);
+    ErrorF("-switchCmd       Command to execute on vt switch\n", context);
+    ErrorF("vtxx             Use virtual terminal xx instead of the next available\n", context);
 }
 
 int
-KdProcessArgument(int argc, char **argv, int i)
+KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
 {
     KdCardInfo *card;
     KdScreenInfo *screen;
@@ -394,10 +387,10 @@ KdProcessArgument(int argc, char **argv, int i)
                 KdParseScreen(screen, argv[i + 1]);
             }
             else
-                ErrorF("No matching card found!\n");
+                ErrorF("No matching card found!\n", context);
         }
         else
-            UseMsg();
+            UseMsg(context);
         return 2;
     }
     if (!strcmp(argv[i], "-zaphod")) {
@@ -439,73 +432,73 @@ KdProcessArgument(int argc, char **argv, int i)
                 kdOrigin.y = 0;
         }
         else
-            UseMsg();
+            UseMsg(context);
         return 2;
     }
     if (!strcmp(argv[i], "-rgba")) {
         if ((i + 1) < argc)
             KdParseRgba(argv[i + 1]);
         else
-            UseMsg();
+            UseMsg(context);
         return 2;
     }
     if (!strcmp(argv[i], "-switchCmd")) {
         if ((i + 1) < argc)
             kdSwitchCmd = argv[i + 1];
         else
-            UseMsg();
+            UseMsg(context);
         return 2;
     }
     if (!strcmp(argv[i], "-xkb-rules")) {
         if (i + 1 >= argc) {
-            UseMsg();
-            FatalError("Missing argument for option -xkb-rules.\n");
+            UseMsg(context);
+            FatalError("Missing argument for option -xkb-rules.\n", context);
         }
         kdGlobalXkbRules = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-xkb-model")) {
         if (i + 1 >= argc) {
-            UseMsg();
-            FatalError("Missing argument for option -xkb-model.\n");
+            UseMsg(context);
+            FatalError("Missing argument for option -xkb-model.\n", context);
         }
         kdGlobalXkbModel = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-xkb-layout")) {
         if (i + 1 >= argc) {
-            UseMsg();
-            FatalError("Missing argument for option -xkb-layout.\n");
+            UseMsg(context);
+            FatalError("Missing argument for option -xkb-layout.\n", context);
         }
         kdGlobalXkbLayout = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-xkb-variant")) {
         if (i + 1 >= argc) {
-            UseMsg();
-            FatalError("Missing argument for option -xkb-variant.\n");
+            UseMsg(context);
+            FatalError("Missing argument for option -xkb-variant.\n", context);
         }
         kdGlobalXkbVariant = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-xkb-options")) {
         if (i + 1 >= argc) {
-            UseMsg();
-            FatalError("Missing argument for option -xkb-options.\n");
+            UseMsg(context);
+            FatalError("Missing argument for option -xkb-options.\n", context);
         }
         kdGlobalXkbOptions = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-mouse") || !strcmp(argv[i], "-pointer")) {
         if (i + 1 >= argc)
-            UseMsg();
+            UseMsg(context);
         KdAddConfigPointer(argv[i + 1]);
         kdHasPointer = TRUE;
         return 2;
     }
     if (!strcmp(argv[i], "-keybd")) {
         if (i + 1 >= argc)
-            UseMsg();
+            UseMsg(context);
         KdAddConfigKeyboard(argv[i + 1]);
         kdHasKbd = TRUE;
         return 2;
@@ -828,12 +821,12 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 static void
 KdInitScreen(ScreenInfo * pScreenInfo,
-             KdScreenInfo * screen, int argc, char **argv)
+             KdScreenInfo * screen, int argc, char **argv, XephyrContext* context)
 {
     KdCardInfo *card = screen->card;
 
     if (!(*card->cfuncs->scrinit) (screen))
-        FatalError("Screen initialization failed!\n");
+        FatalError("Screen initialization failed!\n", context);
 
     if (!card->cfuncs->initAccel)
         screen->dumb = TRUE;
@@ -937,7 +930,7 @@ KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* con
     if (!kdCardInfo) {
         InitCard(0);
         if (!(card = KdCardInfoLast()))
-            FatalError("No matching cards found!\n");
+            FatalError("No matching cards found!\n", context);
         screen = KdScreenInfoAdd(card);
         KdParseScreen(screen, 0);
     }
@@ -951,7 +944,7 @@ KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* con
             ret = (*card->cfuncs->cardinit) (card);
         if (ret) {
             for (screen = card->screenList; screen; screen = screen->next)
-                KdInitScreen(pScreenInfo, screen, argc, argv);
+                KdInitScreen(pScreenInfo, screen, argc, argv, context);
         }
     }
 

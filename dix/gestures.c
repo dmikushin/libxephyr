@@ -155,16 +155,17 @@ GestureResourceIsOwner(GestureInfoPtr gi, XID resource)
 
 void
 GestureAddListener(GestureInfoPtr gi, XID resource, int resource_type,
-                   enum GestureListenerType type, WindowPtr window, const GrabPtr grab)
+                   enum GestureListenerType type, WindowPtr window, const GrabPtr grab,
+                   XephyrContext* context)
 {
     GrabPtr g = NULL;
 
-    BUG_RETURN(gi->has_listener);
+    BUG_RETURN(gi->has_listener, context);
 
     /* We need a copy of the grab, not the grab itself since that may be deleted by
      * a UngrabButton request and leaves us with a dangling pointer */
     if (grab)
-        g = AllocGrab(grab);
+        g = AllocGrab(grab, context);
 
     gi->listener.listener = resource;
     gi->listener.resource_type = resource_type;
@@ -175,7 +176,8 @@ GestureAddListener(GestureInfoPtr gi, XID resource, int resource_type,
 }
 
 static void
-GestureAddGrabListener(DeviceIntPtr dev, GestureInfoPtr gi, GrabPtr grab)
+GestureAddGrabListener(DeviceIntPtr dev, GestureInfoPtr gi, GrabPtr grab,
+                       XephyrContext* context)
 {
     enum GestureListenerType type;
 
@@ -192,18 +194,19 @@ GestureAddGrabListener(DeviceIntPtr dev, GestureInfoPtr gi, GrabPtr grab)
         type = GESTURE_LISTENER_NONGESTURE_GRAB;
     }
     else {
-        BUG_RETURN_MSG(1, "Unsupported grab type\n");
+        BUG_RETURN_MSG(1, context, "Unsupported grab type\n");
     }
 
     /* grab listeners are always RT_NONE since we keep the grab pointer */
-    GestureAddListener(gi, grab->resource, RT_NONE, type, grab->window, grab);
+    GestureAddListener(gi, grab->resource, RT_NONE, type, grab->window, grab, context);
 }
 
 /**
  * Add one listener if there is a grab on the given window.
  */
 static void
-GestureAddPassiveGrabListener(DeviceIntPtr dev, GestureInfoPtr gi, WindowPtr win, InternalEvent *ev)
+GestureAddPassiveGrabListener(DeviceIntPtr dev, GestureInfoPtr gi, WindowPtr win, InternalEvent *ev,
+                              XephyrContext* context)
 {
     Bool activate = FALSE;
     Bool check_core = FALSE;
@@ -215,11 +218,12 @@ GestureAddPassiveGrabListener(DeviceIntPtr dev, GestureInfoPtr gi, WindowPtr win
 
     /* We'll deliver later in gesture-specific code */
     ActivateGrabNoDelivery(dev, grab, ev, ev);
-    GestureAddGrabListener(dev, gi, grab);
+    GestureAddGrabListener(dev, gi, grab, context);
 }
 
 static void
-GestureAddRegularListener(DeviceIntPtr dev, GestureInfoPtr gi, WindowPtr win, InternalEvent *ev)
+GestureAddRegularListener(DeviceIntPtr dev, GestureInfoPtr gi, WindowPtr win, InternalEvent *ev,
+                          XephyrContext* context)
 {
     InputClients *iclients = NULL;
     OtherInputMasks *inputMasks = NULL;
@@ -238,14 +242,14 @@ GestureAddRegularListener(DeviceIntPtr dev, GestureInfoPtr gi, WindowPtr win, In
                 continue;
 
             GestureAddListener(gi, iclients->resource, RT_INPUTCLIENT,
-                               GESTURE_LISTENER_REGULAR, win, NULL);
+                               GESTURE_LISTENER_REGULAR, win, NULL, context);
             return;
         }
     }
 }
 
 void
-GestureSetupListener(DeviceIntPtr dev, GestureInfoPtr gi, InternalEvent *ev)
+GestureSetupListener(DeviceIntPtr dev, GestureInfoPtr gi, InternalEvent *ev, XephyrContext* context)
 {
     int i;
     SpritePtr sprite = &gi->sprite;
@@ -253,7 +257,7 @@ GestureSetupListener(DeviceIntPtr dev, GestureInfoPtr gi, InternalEvent *ev)
 
     /* Any current grab will consume all gesture events */
     if (dev->deviceGrab.grab) {
-        GestureAddGrabListener(dev, gi, dev->deviceGrab.grab);
+        GestureAddGrabListener(dev, gi, dev->deviceGrab.grab, context);
         return;
     }
 
@@ -270,7 +274,7 @@ GestureSetupListener(DeviceIntPtr dev, GestureInfoPtr gi, InternalEvent *ev)
 
     for (; i < sprite->spriteTraceGood; i++) {
         win = sprite->spriteTrace[i];
-        GestureAddPassiveGrabListener(dev, gi, win, ev);
+        GestureAddPassiveGrabListener(dev, gi, win, ev, context);
         if (gi->has_listener)
             return;
     }
@@ -279,7 +283,7 @@ GestureSetupListener(DeviceIntPtr dev, GestureInfoPtr gi, InternalEvent *ev)
      * going from deepest child window back up to the root window. */
     for (i = sprite->spriteTraceGood - 1; i >= 0; i--) {
         win = sprite->spriteTrace[i];
-        GestureAddRegularListener(dev, gi, win, ev);
+        GestureAddRegularListener(dev, gi, win, ev, context);
         if (gi->has_listener)
             return;
     }
@@ -295,7 +299,7 @@ GestureListenerGone(XID resource, XephyrContext* context)
     InternalEvent *events = InitEventList(GetMaximumEventsNum());
 
     if (!events)
-        FatalError("GestureListenerGone: couldn't allocate events\n");
+        FatalError("GestureListenerGone: couldn't allocate events\n", context);
 
     for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (!dev->gesture)
@@ -327,7 +331,7 @@ GestureEndActiveGestures(DeviceIntPtr dev)
     eventlist = InitEventList(GetMaximumEventsNum());
 
     input_lock();
-    mieqProcessInputEvents();
+    mieqProcessInputEvents(dev->context);
     if (g->gesture.active) {
         int j;
         int type = GetXI2Type(GestureTypeToEnd(g->gesture.type));

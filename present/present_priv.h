@@ -323,7 +323,7 @@ present_select_input(ClientPtr client,
                      CARD32 event_mask);
 
 Bool
-present_event_init(void);
+present_event_init(XephyrContext* context);
 
 /*
  * present_execute.c

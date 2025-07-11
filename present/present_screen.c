@@ -231,7 +231,7 @@ present_extension_init(XephyrContext* context)
     if (!present_init())
         goto bail;
 
-    if (!present_event_init())
+    if (!present_event_init(context))
         goto bail;
 
     for (i = 0; i < context->screenInfo.numScreens; i++) {
@@ -241,5 +241,5 @@ present_extension_init(XephyrContext* context)
     return;
 
 bail:
-    FatalError("Cannot initialize Present extension");
+    FatalError("Cannot initialize Present extension", context);
 }
