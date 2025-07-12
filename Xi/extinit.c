@@ -148,7 +148,6 @@ const Mask DevicePresenceNotifyMask = (1L << 18);
 const Mask DevicePropertyNotifyMask = (1L << 19);
 const Mask XIAllMasks = (1L << 20) - 1;
 
-int ExtEventIndex;
 
 static struct dev_type {
     Atom type;
@@ -175,7 +174,7 @@ static struct dev_type {
 };
 
 CARD8 event_base[numInputClasses];
-XExtEventInfo EventInfo[32];
+// EventInfo moved to context->EventInfo
 
 static DeviceIntRec xi_all_devices;
 static DeviceIntRec xi_all_master_devices;
@@ -323,13 +322,12 @@ static int (*SProcIVector[]) (ClientPtr) = {
  *
  */
 
+/* Moved to XephyrContext:
 int IReqCode = 0;
 int IEventBase = 0;
-static int BadEvent = 1;
 int BadMode = 2;
 int DeviceBusy = 3;
 int BadClass = 4;
-
 int DeviceValuator;
 int DeviceKeyPress;
 int DeviceKeyRelease;
@@ -346,8 +344,9 @@ int DeviceButtonStateNotify;
 int DeviceMappingNotify;
 int DevicePresenceNotify;
 int DevicePropertyNotify;
-
 RESTYPE RT_INPUTCLIENT;
+*/
+static int BadEvent = 1;
 
 /*****************************************************************
  *
@@ -363,7 +362,9 @@ extern XExtensionVersion XIVersion;
  *
  */
 
+/* Moved to XephyrContext:
 DevPrivateKeyRec XIClientPrivateKeyRec;
+*/
 
 /*****************************************************************
  *
@@ -1001,10 +1002,10 @@ XI2EventSwap(xGenericEvent *from, xGenericEvent *to)
  */
 
 static void
-SetEventInfo(Mask mask, int constant)
+SetEventInfo(Mask mask, int constant, XephyrContext* context)
 {
-    EventInfo[ExtEventIndex].mask = mask;
-    EventInfo[ExtEventIndex++].type = constant;
+    context->EventInfo[context->ExtEventIndex].mask = mask;
+    context->EventInfo[context->ExtEventIndex++].type = constant;
 }
 
 /**************************************************************************
@@ -1018,8 +1019,8 @@ SetMaskForExtEvent(Mask mask, int event, XephyrContext* context)
 {
     int i;
 
-    EventInfo[ExtEventIndex].mask = mask;
-    EventInfo[ExtEventIndex++].type = event;
+    context->EventInfo[context->ExtEventIndex].mask = mask;
+    context->EventInfo[context->ExtEventIndex++].type = event;
 
     if ((event < LASTEvent) || (event >= 128))
         FatalError("MaskForExtensionEvent: bogus event number", context);
@@ -1088,13 +1089,13 @@ FixExtensionEvents(ExtensionEntry * extEntry, XephyrContext* context)
     SetMaskForExtEvent(PointerMotionMask, DeviceMotionNotify, context);
     SetCriticalEvent(DeviceMotionNotify, context);
 
-    SetEventInfo(DevicePointerMotionHintMask, _devicePointerMotionHint);
-    SetEventInfo(DeviceButton1MotionMask, _deviceButton1Motion);
-    SetEventInfo(DeviceButton2MotionMask, _deviceButton2Motion);
-    SetEventInfo(DeviceButton3MotionMask, _deviceButton3Motion);
-    SetEventInfo(DeviceButton4MotionMask, _deviceButton4Motion);
-    SetEventInfo(DeviceButton5MotionMask, _deviceButton5Motion);
-    SetEventInfo(DeviceButtonMotionMask, _deviceButtonMotion);
+    SetEventInfo(DevicePointerMotionHintMask, _devicePointerMotionHint, context);
+    SetEventInfo(DeviceButton1MotionMask, _deviceButton1Motion, context);
+    SetEventInfo(DeviceButton2MotionMask, _deviceButton2Motion, context);
+    SetEventInfo(DeviceButton3MotionMask, _deviceButton3Motion, context);
+    SetEventInfo(DeviceButton4MotionMask, _deviceButton4Motion, context);
+    SetEventInfo(DeviceButton5MotionMask, _deviceButton5Motion, context);
+    SetEventInfo(DeviceButtonMotionMask, _deviceButtonMotion, context);
 
     SetMaskForExtEvent(DeviceFocusChangeMask, DeviceFocusIn, context);
     SetMaskForExtEvent(DeviceFocusChangeMask, DeviceFocusOut, context);
@@ -1102,12 +1103,12 @@ FixExtensionEvents(ExtensionEntry * extEntry, XephyrContext* context)
     SetMaskForExtEvent(DeviceMappingNotifyMask, DeviceMappingNotify, context);
     SetMaskForExtEvent(ChangeDeviceNotifyMask, context->ChangeDeviceNotify, context);
 
-    SetEventInfo(DeviceButtonGrabMask, _deviceButtonGrab);
-    SetEventInfo(DeviceOwnerGrabButtonMask, _deviceOwnerGrabButton);
-    SetEventInfo(DevicePresenceNotifyMask, _devicePresence);
+    SetEventInfo(DeviceButtonGrabMask, _deviceButtonGrab, context);
+    SetEventInfo(DeviceOwnerGrabButtonMask, _deviceOwnerGrabButton, context);
+    SetEventInfo(DevicePresenceNotifyMask, _devicePresence, context);
     SetMaskForExtEvent(DevicePropertyNotifyMask, DevicePropertyNotify, context);
 
-    SetEventInfo(0, _noExtensionEvent);
+    SetEventInfo(0, _noExtensionEvent, context);
 }
 
 /************************************************************************
@@ -1122,18 +1123,18 @@ RestoreExtensionEvents(XephyrContext* context)
 {
     int i, j;
 
-    IReqCode = 0;
-    IEventBase = 0;
+    context->IReqCode = 0;
+    context->IEventBase = 0;
 
-    for (i = 0; i < ExtEventIndex - 1; i++) {
-        if ((EventInfo[i].type >= LASTEvent) && (EventInfo[i].type < 128)) {
+    for (i = 0; i < context->ExtEventIndex - 1; i++) {
+        if ((context->EventInfo[i].type >= LASTEvent) && (context->EventInfo[i].type < 128)) {
             for (j = 0; j < MAXDEVICES; j++)
-                SetMaskForEvent(j, 0, EventInfo[i].type, context);
+                SetMaskForEvent(j, 0, context->EventInfo[i].type, context);
         }
-        EventInfo[i].mask = 0;
-        EventInfo[i].type = 0;
+        context->EventInfo[i].mask = 0;
+        context->EventInfo[i].type = 0;
     }
-    ExtEventIndex = 0;
+    context->ExtEventIndex = 0;
     DeviceValuator = 0;
     DeviceKeyPress = 1;
     DeviceKeyRelease = 2;

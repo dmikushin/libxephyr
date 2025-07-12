@@ -1549,7 +1549,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                     }
                 }
 
-                CursorVisible = TRUE;
+                pWin->drawable.pScreen->context->CursorVisible = TRUE;
 
                 if (pWin->realized)
                     WindowHasNewCursor(pWin);
@@ -3019,6 +3019,7 @@ SendVisibilityNotify(WindowPtr pWin)
 {
     xEvent event;
     unsigned int visibility = pWin->visibility;
+    XephyrContext *context = pWin->drawable.pScreen->context;
 
 #ifdef PANORAMIX
     /* This is not quite correct yet, but it's close */
@@ -3523,7 +3524,7 @@ ChangeWindowDeviceCursor(WindowPtr pWin, DeviceIntPtr pDev, CursorPtr pCursor)
     }
 
  out:
-    CursorVisible = TRUE;
+    pWin->drawable.pScreen->context->CursorVisible = TRUE;
 
     if (pWin->realized)
         WindowHasNewCursor(pWin);

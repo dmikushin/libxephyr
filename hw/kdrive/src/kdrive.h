@@ -106,7 +106,7 @@ typedef struct _KdScreenInfo {
 
 typedef struct _KdCardFuncs {
     Bool (*cardinit) (KdCardInfo *);    /* detect and map device */
-    Bool (*scrinit) (KdScreenInfo *);   /* initialize screen information */
+    Bool (*scrinit) (KdScreenInfo *, XephyrContext*);   /* initialize screen information */
     Bool (*initScreen) (ScreenPtr);     /* initialize ScreenRec */
     Bool (*finishInitScreen) (ScreenPtr pScreen);
     Bool (*createRes) (ScreenPtr);      /* create screen resources */
@@ -209,6 +209,8 @@ struct _KdPointerInfo {
 
     KdPointerDriver *driver;
     void *driverPrivate;
+    
+    XephyrContext *context;  // Added context reference
 
     struct _KdPointerInfo *next;
 };
@@ -270,6 +272,8 @@ struct _KdKeyboardInfo {
 
     KdKeyboardDriver *driver;
     void *driverPrivate;
+    
+    XephyrContext *context;  // Added context reference
 };
 
 void KdAddKeyboardDriver(KdKeyboardDriver * driver);

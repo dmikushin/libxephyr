@@ -51,7 +51,6 @@ DevPrivateKeyRec PictureWindowPrivateKeyRec;
 static int PictureGeneration;
 RESTYPE PictureType;
 RESTYPE PictFormatType;
-RESTYPE GlyphSetType;
 int PictureCmapPolicy = PictureCmapPolicyDefault;
 
 PictFormatPtr
@@ -627,8 +626,8 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
         PictFormatType = CreateNewResourceType(FreePictFormat, "PICTFORMAT");
         if (!PictFormatType)
             return FALSE;
-        GlyphSetType = CreateNewResourceType(FreeGlyphSet, "GLYPHSET");
-        if (!GlyphSetType)
+        pScreen->context->GlyphSetType = CreateNewResourceType(FreeGlyphSet, "GLYPHSET");
+        if (!pScreen->context->GlyphSetType)
             return FALSE;
         PictureGeneration = pScreen->context->serverGeneration;
     }

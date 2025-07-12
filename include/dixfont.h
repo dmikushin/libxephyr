@@ -92,7 +92,7 @@ extern _X_EXPORT void DeleteClientFontStuff(ClientPtr /*client */ );
 #ifdef __APPLE__
 #define InitFonts Darwin_X_InitFonts
 #endif
-extern _X_EXPORT void InitFonts(void);
+extern _X_EXPORT void InitFonts(XephyrContext* context);
 
 extern _X_EXPORT void FreeFonts(void);
 

@@ -55,9 +55,6 @@ static CARD8 CompositeReqCode;
 static DevPrivateKeyRec CompositeClientPrivateKeyRec;
 
 #define CompositeClientPrivateKey (&CompositeClientPrivateKeyRec)
-RESTYPE CompositeClientWindowType;
-RESTYPE CompositeClientSubwindowsType;
-RESTYPE CompositeClientOverlayType;
 
 typedef struct _CompositeClient {
     int major_version;
@@ -68,7 +65,7 @@ typedef struct _CompositeClient {
     dixLookupPrivate(&(pClient)->devPrivates, CompositeClientPrivateKey))
 
 static int
-FreeCompositeClientWindow(void *value, XID ccwid)
+FreeCompositeClientWindow(void *value, XID ccwid, XephyrContext* context)
 {
     WindowPtr pWin = value;
 
@@ -77,7 +74,7 @@ FreeCompositeClientWindow(void *value, XID ccwid)
 }
 
 static int
-FreeCompositeClientSubwindows(void *value, XID ccwid)
+FreeCompositeClientSubwindows(void *value, XID ccwid, XephyrContext* context)
 {
     WindowPtr pWin = value;
 
@@ -86,7 +83,7 @@ FreeCompositeClientSubwindows(void *value, XID ccwid)
 }
 
 static int
-FreeCompositeClientOverlay(void *value, XID ccwid)
+FreeCompositeClientOverlay(void *value, XID ccwid, XephyrContext* context)
 {
     CompOverlayClientPtr pOc = (CompOverlayClientPtr) value;
 
@@ -552,22 +549,22 @@ CompositeExtensionInit(XephyrContext* context)
             return;
     }
 
-    CompositeClientWindowType = CreateNewResourceType
+    context->CompositeClientWindowType = CreateNewResourceType
         (FreeCompositeClientWindow, "CompositeClientWindow");
-    if (!CompositeClientWindowType)
+    if (!context->CompositeClientWindowType)
         return;
 
     coreGetWindowBytes = GetResourceTypeSizeFunc(RT_WINDOW);
     SetResourceTypeSizeFunc(RT_WINDOW, GetCompositeWindowBytes);
 
-    CompositeClientSubwindowsType = CreateNewResourceType
+    context->CompositeClientSubwindowsType = CreateNewResourceType
         (FreeCompositeClientSubwindows, "CompositeClientSubwindows");
-    if (!CompositeClientSubwindowsType)
+    if (!context->CompositeClientSubwindowsType)
         return;
 
-    CompositeClientOverlayType = CreateNewResourceType
+    context->CompositeClientOverlayType = CreateNewResourceType
         (FreeCompositeClientOverlay, "CompositeClientOverlay");
-    if (!CompositeClientOverlayType)
+    if (!context->CompositeClientOverlayType)
         return;
 
     if (!dixRegisterPrivateKey(&CompositeClientPrivateKeyRec, PRIVATE_CLIENT,
@@ -600,6 +597,7 @@ PanoramiXCompositeRedirectWindow(ClientPtr client)
     PanoramiXRes *win;
     int rc = 0, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xCompositeRedirectWindowReq);
 
     REQUEST_SIZE_MATCH(xCompositeRedirectWindowReq);
@@ -625,6 +623,7 @@ PanoramiXCompositeRedirectSubwindows(ClientPtr client)
 {
     PanoramiXRes *win;
     int rc = 0, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xCompositeRedirectSubwindowsReq);
 
@@ -651,6 +650,7 @@ PanoramiXCompositeUnredirectWindow(ClientPtr client)
 {
     PanoramiXRes *win;
     int rc = 0, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xCompositeUnredirectWindowReq);
 
@@ -677,6 +677,7 @@ PanoramiXCompositeUnredirectSubwindows(ClientPtr client)
 {
     PanoramiXRes *win;
     int rc = 0, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xCompositeUnredirectSubwindowsReq);
 
@@ -702,7 +703,8 @@ static int
 PanoramiXCompositeNameWindowPixmap(ClientPtr client)
 {
     WindowPtr pWin;
-    CompWindowPtr cw;
+
+    XephyrContext *context = client->context;    CompWindowPtr cw;
     PixmapPtr pPixmap;
     int rc;
     PanoramiXRes *win, *newPix;
@@ -769,7 +771,8 @@ static int
 PanoramiXCompositeGetOverlayWindow(ClientPtr client)
 {
     REQUEST(xCompositeGetOverlayWindowReq);
-    xCompositeGetOverlayWindowReply rep;
+
+    XephyrContext *context = client->context;    xCompositeGetOverlayWindowReply rep;
     WindowPtr pWin;
     ScreenPtr pScreen;
     CompScreenPtr cs;
@@ -873,6 +876,7 @@ PanoramiXCompositeReleaseOverlayWindow(ClientPtr client)
     CompOverlayClientPtr pOc;
     PanoramiXRes *win;
     int i, rc;
+    XephyrContext *context = client->context;
 
     REQUEST_SIZE_MATCH(xCompositeReleaseOverlayWindowReq);
 

@@ -40,8 +40,10 @@
 #include <GL/glxproto.h>
 #include "vndservervendor.h"
 
+/* Moved to XephyrContext:
 ExtensionEntry *GlxExtensionEntry;
 int GlxErrorBase = 0;
+*/
 static CallbackListRec vndInitCallbackList;
 static CallbackListPtr vndInitCallbackListPtr = &vndInitCallbackList;
 static DevPrivateKeyRec glvXGLVScreenPrivKey;

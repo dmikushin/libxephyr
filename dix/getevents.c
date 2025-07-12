@@ -79,7 +79,6 @@
  * QueuePointerEvents, QueueKeyboardEvents, and QueueProximityEvents.
  * This list is allocated on startup by the DIX.
  */
-InternalEvent *InputEventList = NULL;
 
 /**
  * Pick some arbitrary size for Xi motion history.
@@ -1049,8 +1048,8 @@ QueueKeyboardEvents(DeviceIntPtr device, int type,
 {
     int nevents;
 
-    nevents = GetKeyboardEvents(InputEventList, device, type, keycode);
-    queueEventList(device, InputEventList, nevents);
+    nevents = GetKeyboardEvents(device->context->InputEventList, device, type, keycode);
+    queueEventList(device, device->context->InputEventList, nevents);
 }
 
 /**
@@ -1289,8 +1288,8 @@ QueuePointerEvents(DeviceIntPtr device, int type,
     int nevents;
 
     nevents =
-        GetPointerEvents(InputEventList, device, type, buttons, flags, mask);
-    queueEventList(device, InputEventList, nevents);
+        GetPointerEvents(device->context->InputEventList, device, type, buttons, flags, mask);
+    queueEventList(device, device->context->InputEventList, nevents);
 }
 
 /**
@@ -1737,8 +1736,8 @@ QueueProximityEvents(DeviceIntPtr device, int type, const ValuatorMask *mask)
 {
     int nevents;
 
-    nevents = GetProximityEvents(InputEventList, device, type, mask);
-    queueEventList(device, InputEventList, nevents);
+    nevents = GetProximityEvents(device->context->InputEventList, device, type, mask);
+    queueEventList(device, device->context->InputEventList, nevents);
 }
 
 /**
@@ -1847,8 +1846,8 @@ QueueTouchEvents(DeviceIntPtr device, int type,
     int nevents;
 
     nevents =
-        GetTouchEvents(InputEventList, device, ddx_touchid, type, flags, mask);
-    queueEventList(device, InputEventList, nevents);
+        GetTouchEvents(device->context->InputEventList, device, ddx_touchid, type, flags, mask);
+    queueEventList(device, device->context->InputEventList, nevents);
 }
 
 /**
@@ -2212,11 +2211,11 @@ QueueGesturePinchEvents(DeviceIntPtr dev, uint16_t type,
                         double scale, double delta_angle)
 {
     int nevents;
-    nevents = GetGestureEvents(InputEventList, dev, type, num_touches, flags,
+    nevents = GetGestureEvents(dev->context->InputEventList, dev, type, num_touches, flags,
                                delta_x, delta_y,
                                delta_unaccel_x, delta_unaccel_y,
                                scale, delta_angle);
-    queueEventList(dev, InputEventList, nevents);
+    queueEventList(dev, dev->context->InputEventList, nevents);
 }
 
 void
@@ -2227,9 +2226,9 @@ QueueGestureSwipeEvents(DeviceIntPtr dev, uint16_t type,
                         double delta_unaccel_y)
 {
     int nevents;
-    nevents = GetGestureEvents(InputEventList, dev, type, num_touches, flags,
+    nevents = GetGestureEvents(dev->context->InputEventList, dev, type, num_touches, flags,
                                delta_x, delta_y,
                                delta_unaccel_x, delta_unaccel_y,
                                0.0, 0.0);
-    queueEventList(dev, InputEventList, nevents);
+    queueEventList(dev, dev->context->InputEventList, nevents);
 }

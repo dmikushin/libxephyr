@@ -1100,6 +1100,8 @@ ScreenSaverUnsetAttributes(ClientPtr client)
 static int
 ProcScreenSaverSetAttributes(ClientPtr client)
 {
+
+    XephyrContext *context = client->context;
 #ifdef PANORAMIX
     if (!noPanoramiXExtension) {
         REQUEST(xScreenSaverSetAttributesReq);
@@ -1187,6 +1189,7 @@ ProcScreenSaverSetAttributes(ClientPtr client)
 static int
 ProcScreenSaverUnsetAttributes(ClientPtr client)
 {
+    XephyrContext *context = client->context;
 #ifdef PANORAMIX
     if (!noPanoramiXExtension) {
         REQUEST(xScreenSaverUnsetAttributesReq);
@@ -1200,7 +1203,7 @@ ProcScreenSaverUnsetAttributes(ClientPtr client)
         if (rc != Success)
             return (rc == BadValue) ? BadDrawable : rc;
 
-        for (i = PanoramiXNumScreens - 1; i > 0; i--) {
+        for (i = context->PanoramiXNumScreens - 1; i > 0; i--) {
             stuff->drawable = draw->info[i].id;
             ScreenSaverUnsetAttributes(client);
         }

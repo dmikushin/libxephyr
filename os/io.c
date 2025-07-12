@@ -79,8 +79,6 @@ SOFTWARE.
 #include "dixstruct.h"
 #include "misc.h"
 
-CallbackListPtr ReplyCallback;
-CallbackListPtr FlushCallback;
 
 typedef struct _connectionInput {
     struct _connectionInput *next;
@@ -751,7 +749,7 @@ WriteToClient(ClientPtr who, int count, const void *__buf)
 
     padBytes = padding_for_int32(count);
 
-    if (ReplyCallback) {
+    if (who->context && who->context->ReplyCallback) {
         ReplyInfoRec replyinfo;
 
         replyinfo.client = who;
@@ -762,7 +760,7 @@ WriteToClient(ClientPtr who, int count, const void *__buf)
             who->replyBytesRemaining -= count + padBytes;
             replyinfo.startOfReply = FALSE;
             replyinfo.bytesRemaining = who->replyBytesRemaining;
-            CallCallbacks((&ReplyCallback), (void *) &replyinfo);
+            CallCallbacks((&who->context->ReplyCallback), (void *) &replyinfo);
         }
         else if (who->clientState == ClientStateRunning && buf[0] == X_Reply) { /* start of new reply */
             CARD32 replylen;
@@ -774,7 +772,7 @@ WriteToClient(ClientPtr who, int count, const void *__buf)
             bytesleft = (replylen * 4) + SIZEOF(xReply) - count - padBytes;
             replyinfo.startOfReply = TRUE;
             replyinfo.bytesRemaining = who->replyBytesRemaining = bytesleft;
-            CallCallbacks((&ReplyCallback), (void *) &replyinfo);
+            CallCallbacks((&who->context->ReplyCallback), (void *) &replyinfo);
         }
     }
 #ifdef DEBUG_COMMUNICATION
@@ -843,8 +841,8 @@ FlushClient(ClientPtr who, OsCommPtr oc, const void *__extraBuf, int extraCount)
     if (!notWritten)
         return 0;
 
-    if (FlushCallback)
-        CallCallbacks(&FlushCallback, who);
+    if (who->context && who->context->FlushCallback)
+        CallCallbacks(&who->context->FlushCallback, who);
 
     todo = notWritten;
     while (notWritten) {

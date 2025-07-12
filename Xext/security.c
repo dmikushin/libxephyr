@@ -1008,7 +1008,7 @@ static void
 SecurityResetProc(ExtensionEntry * extEntry)
 {
     /* Unregister callbacks */
-    XephyrContext* context = get_current_context();
+    XephyrContext* context = (XephyrContext*)extEntry->extPrivate;
     if (context) {
         DeleteCallback(&context->ClientStateCallback, SecurityClientState, NULL);
         
@@ -1079,6 +1079,9 @@ SecurityExtensionInit(void)
                             XSecurityNumberEvents, XSecurityNumberErrors,
                             ProcSecurityDispatch, SProcSecurityDispatch,
                             SecurityResetProc, StandardMinorOpcode);
+    
+    /* Store context in extension private data for ResetProc callback */
+    extEntry->extPrivate = context;
 
     SecurityErrorBase = extEntry->errorBase;
     SecurityEventBase = extEntry->eventBase;

@@ -12,10 +12,4 @@
 extern int DPMSSet(ClientPtr client, int level);
 extern Bool DPMSSupported(XephyrContext* context);
 
-extern CARD32 DPMSStandbyTime;
-extern CARD32 DPMSSuspendTime;
-extern CARD32 DPMSOffTime;
-extern CARD16 DPMSPowerLevel;
-extern Bool DPMSDisabledSwitch;
-
 #endif

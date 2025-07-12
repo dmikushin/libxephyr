@@ -82,7 +82,7 @@ void __glXScreenInitVisuals(__GLXscreen * screen);
 extern __GLXcontext *__glXForceCurrent(__GLXclientState *, GLXContextTag,
                                        int *);
 
-int __glXError(int error);
+int __glXError(int error, XephyrContext* context);
 
 /************************************************************************/
 

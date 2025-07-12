@@ -114,7 +114,6 @@ present_fake_queue_vblank(ScreenPtr     screen,
     return Success;
 }
 
-uint32_t FakeScreenFps = 0;
 
 void
 present_fake_screen_init(ScreenPtr screen)
@@ -122,8 +121,8 @@ present_fake_screen_init(ScreenPtr screen)
     uint32_t                fake_fps;
     present_screen_priv_ptr screen_priv = present_screen_priv(screen);
 
-    if (FakeScreenFps)
-        fake_fps = FakeScreenFps;
+    if (screen->context && screen->context->FakeScreenFps)
+        fake_fps = screen->context->FakeScreenFps;
     else {
         /* For screens with hardware vblank support, the fake code
         * will be used for off-screen windows and while screens are blanked,

@@ -957,7 +957,7 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
 
     screen->driver =
         glxProbeDriver(driverName, (void **) &screen->core, __DRI_CORE, 1,
-                       (void **) &screen->dri2, __DRI_DRI2, 1);
+                       (void **) &screen->dri2, __DRI_DRI2, 1, pScreen->context);
     if (screen->driver == NULL) {
         goto handle_error;
     }

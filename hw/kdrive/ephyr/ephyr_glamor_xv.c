@@ -53,14 +53,16 @@ static int
 ephyr_glamor_xv_set_port_attribute(KdScreenInfo *screen,
                                    Atom attribute, INT32 value, void *data)
 {
-    return glamor_xv_set_port_attribute(data, attribute, value);
+    XephyrContext* context = screen->pScreen->context;
+    return glamor_xv_set_port_attribute(data, attribute, value, context);
 }
 
 static int
 ephyr_glamor_xv_get_port_attribute(KdScreenInfo *screen,
                                    Atom attribute, INT32 *value, void *data)
 {
-    return glamor_xv_get_port_attribute(data, attribute, value);
+    XephyrContext* context = screen->pScreen->context;
+    return glamor_xv_get_port_attribute(data, attribute, value, context);
 }
 
 static void

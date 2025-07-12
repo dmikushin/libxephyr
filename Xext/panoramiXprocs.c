@@ -59,8 +59,8 @@ PanoramiXCreateWindow(ClientPtr client)
     PanoramiXRes *backPix = NULL;
     PanoramiXRes *bordPix = NULL;
     PanoramiXRes *cmap = NULL;
-    XephyrContext* context = client->context;
 
+    XephyrContext *context = client->context;
     REQUEST(xCreateWindowReq);
     int pback_offset = 0, pbord_offset = 0, cmap_offset = 0;
     int result, len, j;
@@ -170,6 +170,9 @@ PanoramiXChangeWindowAttributes(ClientPtr client)
     PanoramiXRes *cmap = NULL;
 
     REQUEST(xChangeWindowAttributesReq);
+    
+    
+    XephyrContext *context = client->context;
     int pback_offset = 0, pbord_offset = 0, cmap_offset = 0;
     int result, len, j;
     XID tmp;
@@ -241,6 +244,7 @@ PanoramiXDestroyWindow(ClientPtr client)
     PanoramiXRes *win;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xResourceReq);
 
     REQUEST_SIZE_MATCH(xResourceReq);
@@ -269,6 +273,7 @@ PanoramiXDestroySubwindows(ClientPtr client)
     PanoramiXRes *win;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xResourceReq);
 
     REQUEST_SIZE_MATCH(xResourceReq);
@@ -297,6 +302,7 @@ PanoramiXChangeSaveSet(ClientPtr client)
     PanoramiXRes *win;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xChangeSaveSetReq);
 
     REQUEST_SIZE_MATCH(xChangeSaveSetReq);
@@ -323,8 +329,8 @@ PanoramiXReparentWindow(ClientPtr client)
     int result, j;
     int x, y;
     Bool parentIsRoot;
-    XephyrContext* context = client->context;
 
+    XephyrContext *context = client->context;
     REQUEST(xReparentWindowReq);
 
     REQUEST_SIZE_MATCH(xReparentWindowReq);
@@ -364,6 +370,7 @@ PanoramiXMapWindow(ClientPtr client)
     PanoramiXRes *win;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xResourceReq);
 
     REQUEST_SIZE_MATCH(xResourceReq);
@@ -389,6 +396,7 @@ PanoramiXMapSubwindows(ClientPtr client)
     PanoramiXRes *win;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xResourceReq);
 
     REQUEST_SIZE_MATCH(xResourceReq);
@@ -414,6 +422,7 @@ PanoramiXUnmapWindow(ClientPtr client)
     PanoramiXRes *win;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xResourceReq);
 
     REQUEST_SIZE_MATCH(xResourceReq);
@@ -439,6 +448,7 @@ PanoramiXUnmapSubwindows(ClientPtr client)
     PanoramiXRes *win;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xResourceReq);
 
     REQUEST_SIZE_MATCH(xResourceReq);
@@ -467,7 +477,7 @@ PanoramiXConfigureWindow(ClientPtr client)
     int result, j, len, sib_offset = 0, x = 0, y = 0;
     int x_offset = -1;
     int y_offset = -1;
-    XephyrContext* context = client->context;
+    XephyrContext *context = client->context;
 
     REQUEST(xConfigureWindowReq);
 
@@ -537,6 +547,7 @@ PanoramiXCirculateWindow(ClientPtr client)
     PanoramiXRes *win;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xCirculateWindowReq);
 
     REQUEST_SIZE_MATCH(xCirculateWindowReq);
@@ -562,7 +573,7 @@ PanoramiXGetGeometry(ClientPtr client)
     xGetGeometryReply rep;
     DrawablePtr pDraw;
     int rc;
-    XephyrContext* context = client->context;
+    XephyrContext *context = client->context;
 
     REQUEST(xResourceReq);
 
@@ -613,7 +624,7 @@ int
 PanoramiXTranslateCoords(ClientPtr client)
 {
     INT16 x, y;
-    XephyrContext* context = client->context;
+    XephyrContext *context = client->context;
 
     REQUEST(xTranslateCoordsReq);
     int rc;
@@ -688,6 +699,7 @@ PanoramiXCreatePixmap(ClientPtr client)
     PanoramiXRes *refDraw, *newPix;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xCreatePixmapReq);
 
     REQUEST_SIZE_MATCH(xCreatePixmapReq);
@@ -727,6 +739,7 @@ PanoramiXFreePixmap(ClientPtr client)
     PanoramiXRes *pix;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xResourceReq);
 
     REQUEST_SIZE_MATCH(xResourceReq);
@@ -761,6 +774,9 @@ PanoramiXCreateGC(ClientPtr client)
     PanoramiXRes *clip = NULL;
 
     REQUEST(xCreateGCReq);
+    
+    
+    XephyrContext *context = client->context;
     int tile_offset = 0, stip_offset = 0, clip_offset = 0;
     int result, len, j;
     XID tmp;
@@ -842,6 +858,9 @@ PanoramiXChangeGC(ClientPtr client)
     PanoramiXRes *clip = NULL;
 
     REQUEST(xChangeGCReq);
+    
+    
+    XephyrContext *context = client->context;
     int tile_offset = 0, stip_offset = 0, clip_offset = 0;
     int result, len, j;
     XID tmp;
@@ -907,6 +926,7 @@ PanoramiXCopyGC(ClientPtr client)
     PanoramiXRes *srcGC, *dstGC;
     int result, j;
 
+    XephyrContext *context = client->context;
     REQUEST(xCopyGCReq);
 
     REQUEST_SIZE_MATCH(xCopyGCReq);
@@ -940,6 +960,9 @@ PanoramiXSetDashes(ClientPtr client)
 
     REQUEST(xSetDashesReq);
 
+    
+    
+    XephyrContext *context = client->context;
     REQUEST_FIXED_SIZE(xSetDashesReq, stuff->nDashes);
 
     result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
@@ -965,6 +988,9 @@ PanoramiXSetClipRectangles(ClientPtr client)
 
     REQUEST(xSetClipRectanglesReq);
 
+    
+    
+    XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xSetClipRectanglesReq);
 
     result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
@@ -990,6 +1016,9 @@ PanoramiXFreeGC(ClientPtr client)
 
     REQUEST(xResourceReq);
 
+    
+    
+    XephyrContext *context = client->context;
     REQUEST_SIZE_MATCH(xResourceReq);
 
     result = dixLookupResourceByType((void **) &gc, stuff->id, XRT_GC,
@@ -1016,8 +1045,8 @@ PanoramiXClearToBackground(ClientPtr client)
     PanoramiXRes *win;
     int result, j, x, y;
     Bool isRoot;
-    XephyrContext* context = client->context;
 
+    XephyrContext *context = client->context;
     REQUEST(xClearAreaReq);
 
     REQUEST_SIZE_MATCH(xClearAreaReq);
@@ -1062,7 +1091,7 @@ PanoramiXCopyArea(ClientPtr client)
     Bool srcIsRoot = FALSE;
     Bool dstIsRoot = FALSE;
     Bool srcShared, dstShared;
-    XephyrContext* context = client->context;
+    XephyrContext *context = client->context;
 
     REQUEST(xCopyAreaReq);
 
@@ -1272,10 +1301,11 @@ PanoramiXCopyPlane(ClientPtr client)
     Bool srcIsRoot = FALSE;
     Bool dstIsRoot = FALSE;
     Bool srcShared, dstShared;
+
+    XephyrContext *context = client->context;
     DrawablePtr psrcDraw, pdstDraw = NULL;
     GCPtr pGC = NULL;
     RegionRec totalReg;
-    XephyrContext* context = client->context;
 
     REQUEST(xCopyPlaneReq);
 
@@ -1381,9 +1411,10 @@ PanoramiXPolyPoint(ClientPtr client)
 {
     PanoramiXRes *gc, *draw;
     int result, npoint, j;
+
+    XephyrContext *context = client->context;
     xPoint *origPts;
     Bool isRoot;
-    XephyrContext* context = client->context;
 
     REQUEST(xPolyPointReq);
 
@@ -1447,9 +1478,10 @@ PanoramiXPolyLine(ClientPtr client)
 {
     PanoramiXRes *gc, *draw;
     int result, npoint, j;
+
+    XephyrContext *context = client->context;
     xPoint *origPts;
     Bool isRoot;
-    XephyrContext* context = client->context;
 
     REQUEST(xPolyLineReq);
 
@@ -1513,9 +1545,10 @@ PanoramiXPolySegment(ClientPtr client)
 {
     int result, nsegs, i, j;
     PanoramiXRes *gc, *draw;
+
+    XephyrContext *context = client->context;
     xSegment *origSegs;
     Bool isRoot;
-    XephyrContext* context = client->context;
 
     REQUEST(xPolySegmentReq);
 
@@ -1583,8 +1616,9 @@ PanoramiXPolyRectangle(ClientPtr client)
     int result, nrects, i, j;
     PanoramiXRes *gc, *draw;
     Bool isRoot;
+
+    XephyrContext *context = client->context;
     xRectangle *origRecs;
-    XephyrContext* context = client->context;
 
     REQUEST(xPolyRectangleReq);
 
@@ -1651,8 +1685,9 @@ PanoramiXPolyArc(ClientPtr client)
     int result, narcs, i, j;
     PanoramiXRes *gc, *draw;
     Bool isRoot;
+
+    XephyrContext *context = client->context;
     xArc *origArcs;
-    XephyrContext* context = client->context;
 
     REQUEST(xPolyArcReq);
 
@@ -1717,8 +1752,9 @@ PanoramiXFillPoly(ClientPtr client)
     int result, count, j;
     PanoramiXRes *gc, *draw;
     Bool isRoot;
+
+    XephyrContext *context = client->context;
     DDXPointPtr locPts;
-    XephyrContext* context = client->context;
 
     REQUEST(xFillPolyReq);
 
@@ -1784,8 +1820,9 @@ PanoramiXPolyFillRectangle(ClientPtr client)
     int result, things, i, j;
     PanoramiXRes *gc, *draw;
     Bool isRoot;
+
+    XephyrContext *context = client->context;
     xRectangle *origRects;
-    XephyrContext* context = client->context;
 
     REQUEST(xPolyFillRectangleReq);
 
@@ -1852,8 +1889,9 @@ PanoramiXPolyFillArc(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     int result, narcs, i, j;
+
+    XephyrContext *context = client->context;
     xArc *origArcs;
-    XephyrContext* context = client->context;
 
     REQUEST(xPolyFillArcReq);
 
@@ -1919,8 +1957,8 @@ PanoramiXPutImage(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     int j, result, orig_x, orig_y;
-    XephyrContext* context = client->context;
 
+    XephyrContext *context = client->context;
     REQUEST(xPutImageReq);
 
     REQUEST_AT_LEAST_SIZE(xPutImageReq);
@@ -1959,6 +1997,8 @@ PanoramiXPutImage(ClientPtr client)
 int
 PanoramiXGetImage(ClientPtr client)
 {
+    
+    XephyrContext *context = client->context;
     DrawablePtr drawables[MAXSCREENS];
     DrawablePtr pDraw;
     PanoramiXRes *draw;
@@ -1969,7 +2009,6 @@ PanoramiXGetImage(ClientPtr client)
     Mask plane = 0, planemask;
     int linesDone, nlines, linesPerBuf;
     long widthBytesLine, length;
-    XephyrContext* context = client->context;
 
     REQUEST(xGetImageReq);
 
@@ -2006,16 +2045,16 @@ PanoramiXGetImage(ClientPtr client)
 
     if (isRoot) {
         /* check for being onscreen */
-        if (x < 0 || x + w > PanoramiXPixWidth ||
-            y < 0 || y + h > PanoramiXPixHeight)
+        if (x < 0 || x + w > context->PanoramiXPixWidth ||
+            y < 0 || y + h > context->PanoramiXPixHeight)
             return BadMatch;
     }
     else {
         /* check for being onscreen and inside of border */
         if (context->screenInfo.screens[0]->x + pDraw->x + x < 0 ||
-            context->screenInfo.screens[0]->x + pDraw->x + x + w > PanoramiXPixWidth ||
+            context->screenInfo.screens[0]->x + pDraw->x + x + w > context->PanoramiXPixWidth ||
             context->screenInfo.screens[0]->y + pDraw->y + y < 0 ||
-            context->screenInfo.screens[0]->y + pDraw->y + y + h > PanoramiXPixHeight ||
+            context->screenInfo.screens[0]->y + pDraw->y + y + h > context->PanoramiXPixHeight ||
             x < -wBorderWidth((WindowPtr) pDraw) ||
             x + w > wBorderWidth((WindowPtr) pDraw) + (int) pDraw->width ||
             y < -wBorderWidth((WindowPtr) pDraw) ||
@@ -2126,8 +2165,8 @@ PanoramiXPolyText8(ClientPtr client)
     Bool isRoot;
     int result, j;
     int orig_x, orig_y;
-    XephyrContext* context = client->context;
 
+    XephyrContext *context = client->context;
     REQUEST(xPolyTextReq);
 
     REQUEST_AT_LEAST_SIZE(xPolyTextReq);
@@ -2170,8 +2209,8 @@ PanoramiXPolyText16(ClientPtr client)
     Bool isRoot;
     int result, j;
     int orig_x, orig_y;
-    XephyrContext* context = client->context;
 
+    XephyrContext *context = client->context;
     REQUEST(xPolyTextReq);
 
     REQUEST_AT_LEAST_SIZE(xPolyTextReq);
@@ -2214,8 +2253,8 @@ PanoramiXImageText8(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     int orig_x, orig_y;
-    XephyrContext* context = client->context;
 
+    XephyrContext *context = client->context;
     REQUEST(xImageTextReq);
 
     REQUEST_FIXED_SIZE(xImageTextReq, stuff->nChars);
@@ -2258,8 +2297,8 @@ PanoramiXImageText16(ClientPtr client)
     PanoramiXRes *gc, *draw;
     Bool isRoot;
     int orig_x, orig_y;
-    XephyrContext* context = client->context;
 
+    XephyrContext *context = client->context;
     REQUEST(xImageTextReq);
 
     REQUEST_FIXED_SIZE(xImageTextReq, stuff->nChars << 1);
@@ -2300,7 +2339,7 @@ PanoramiXCreateColormap(ClientPtr client)
 {
     PanoramiXRes *win, *newCmap;
     int result, j, orig_visual;
-    XephyrContext* context = client->context;
+    XephyrContext *context = client->context;
 
     REQUEST(xCreateColormapReq);
 
@@ -2343,7 +2382,8 @@ PanoramiXFreeColormap(ClientPtr client)
 
     REQUEST(xResourceReq);
 
-    REQUEST_SIZE_MATCH(xResourceReq);
+    
+    XephyrContext *context = client->context;REQUEST_SIZE_MATCH(xResourceReq);
 
     client->errorValue = stuff->id;
 
@@ -2373,7 +2413,8 @@ PanoramiXCopyColormapAndFree(ClientPtr client)
 
     REQUEST(xCopyColormapAndFreeReq);
 
-    REQUEST_SIZE_MATCH(xCopyColormapAndFreeReq);
+    
+    XephyrContext *context = client->context;REQUEST_SIZE_MATCH(xCopyColormapAndFreeReq);
 
     client->errorValue = stuff->srcCmap;
 
@@ -2409,6 +2450,8 @@ int
 PanoramiXInstallColormap(ClientPtr client)
 {
     REQUEST(xResourceReq);
+    
+    XephyrContext *context = client->context;
     int result, j;
     PanoramiXRes *cmap;
 
@@ -2434,6 +2477,8 @@ int
 PanoramiXUninstallColormap(ClientPtr client)
 {
     REQUEST(xResourceReq);
+    
+    XephyrContext *context = client->context;
     int result, j;
     PanoramiXRes *cmap;
 
@@ -2461,6 +2506,7 @@ PanoramiXAllocColor(ClientPtr client)
     int result, j;
     PanoramiXRes *cmap;
 
+    XephyrContext *context = client->context;
     REQUEST(xAllocColorReq);
 
     REQUEST_SIZE_MATCH(xAllocColorReq);
@@ -2487,6 +2533,7 @@ PanoramiXAllocNamedColor(ClientPtr client)
     int result, j;
     PanoramiXRes *cmap;
 
+    XephyrContext *context = client->context;
     REQUEST(xAllocNamedColorReq);
 
     REQUEST_FIXED_SIZE(xAllocNamedColorReq, stuff->nbytes);
@@ -2513,6 +2560,7 @@ PanoramiXAllocColorCells(ClientPtr client)
     int result, j;
     PanoramiXRes *cmap;
 
+    XephyrContext *context = client->context;
     REQUEST(xAllocColorCellsReq);
 
     REQUEST_SIZE_MATCH(xAllocColorCellsReq);
@@ -2539,6 +2587,7 @@ PanoramiXAllocColorPlanes(ClientPtr client)
     int result, j;
     PanoramiXRes *cmap;
 
+    XephyrContext *context = client->context;
     REQUEST(xAllocColorPlanesReq);
 
     REQUEST_SIZE_MATCH(xAllocColorPlanesReq);
@@ -2567,7 +2616,8 @@ PanoramiXFreeColors(ClientPtr client)
 
     REQUEST(xFreeColorsReq);
 
-    REQUEST_AT_LEAST_SIZE(xFreeColorsReq);
+    
+    XephyrContext *context = client->context;REQUEST_AT_LEAST_SIZE(xFreeColorsReq);
 
     client->errorValue = stuff->cmap;
 
@@ -2589,6 +2639,7 @@ PanoramiXStoreColors(ClientPtr client)
     int result, j;
     PanoramiXRes *cmap;
 
+    XephyrContext *context = client->context;
     REQUEST(xStoreColorsReq);
 
     REQUEST_AT_LEAST_SIZE(xStoreColorsReq);
@@ -2617,7 +2668,8 @@ PanoramiXStoreNamedColor(ClientPtr client)
 
     REQUEST(xStoreNamedColorReq);
 
-    REQUEST_FIXED_SIZE(xStoreNamedColorReq, stuff->nbytes);
+    
+    XephyrContext *context = client->context;REQUEST_FIXED_SIZE(xStoreNamedColorReq, stuff->nbytes);
 
     client->errorValue = stuff->cmap;
 

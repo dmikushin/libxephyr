@@ -151,8 +151,10 @@ OsSigHandler(int signo)
     }
 #endif
 
-    if (signo != SIGQUIT)
-        CoreDump = TRUE;
+    if (signo != SIGQUIT) {
+        /* Signal handlers can't access context - CoreDump flag not set */
+        /* TODO: consider using a thread-local or other mechanism */
+    }
 
     fprintf(stderr, "Caught signal %d (%s). Server aborting\n",
                signo, strsignal(signo));
@@ -326,9 +328,9 @@ OsInit(XephyrContext* context)
 }
 
 void
-OsCleanup(Bool terminating)
+OsCleanup(Bool terminating, XephyrContext* context)
 {
     if (terminating) {
-        UnlockServer();
+        UnlockServer(context);
     }
 }

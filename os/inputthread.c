@@ -42,7 +42,6 @@
 
 #if INPUTTHREAD
 
-Bool InputThreadEnable = TRUE;
 
 /**
  * An input device as seen by the threaded input facility
@@ -395,12 +394,12 @@ InputThreadNotifyPipe(int fd, int mask, void *data)
  *
  */
 void
-InputThreadPreInit(void)
+InputThreadPreInit(XephyrContext* context)
 {
     int fds[2], hotplugPipe[2];
     int flags;
 
-    if (!InputThreadEnable)
+    if (!context->InputThreadEnable)
         return;
 
     if (pipe(fds) < 0)
@@ -533,13 +532,12 @@ int xthread_sigmask(int how, const sigset_t *set, sigset_t *oldset)
 
 #else /* INPUTTHREAD */
 
-Bool InputThreadEnable = FALSE;
 
 void input_lock(void) {}
 void input_unlock(void) {}
 void input_force_unlock(void) {}
 
-void InputThreadPreInit(void) {}
+void InputThreadPreInit(XephyrContext* context) {}
 void InputThreadInit(void) {}
 void InputThreadFini(void) {}
 int in_input_thread(void) { return 0; }

@@ -39,7 +39,9 @@ extern Bool kdHasPointer;
 extern Bool kdHasKbd;
 extern Bool ephyr_glamor, ephyr_glamor_gles2, ephyr_glamor_skip_present;
 
+/* Moved to XephyrContext:
 extern Bool ephyrNoXV;
+*/
 
 void processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id, XephyrContext* context);
 void processOutputArg(const char *output, char *parent_id, XephyrContext* context);
@@ -73,6 +75,7 @@ InitInput(int argc, char **argv, XephyrContext* context)
             if (!ki)
                 FatalError("Couldn't create Xephyr keyboard\n", context);
             ki->driver = &EphyrKeyboardDriver;
+            ki->context = context;
             KdAddKeyboard(ki, context);
         }
 
@@ -81,6 +84,7 @@ InitInput(int argc, char **argv, XephyrContext* context)
             if (!pi)
                 FatalError("Couldn't create Xephyr pointer\n", context);
             pi->driver = &EphyrMouseDriver;
+            pi->context = context;
             KdAddPointer(pi, context);
         }
     }
@@ -250,7 +254,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
     }
 #ifdef GLAMOR
     else if (!strcmp (argv[i], "-glamor")) {
-        ephyr_glamor = TRUE;
+        context->ephyr_glamor = TRUE;
         ephyrFuncs.initAccel = ephyr_glamor_init;
         ephyrFuncs.enableAccel = ephyr_glamor_enable;
         ephyrFuncs.disableAccel = ephyr_glamor_disable;
@@ -258,7 +262,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         return 1;
     }
     else if (!strcmp (argv[i], "-glamor_gles2")) {
-        ephyr_glamor = TRUE;
+        context->ephyr_glamor = TRUE;
         ephyr_glamor_gles2 = TRUE;
         ephyrFuncs.initAccel = ephyr_glamor_init;
         ephyrFuncs.enableAccel = ephyr_glamor_enable;
@@ -292,7 +296,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         }
     }
     else if (!strcmp(argv[i], "-noxv")) {
-        ephyrNoXV = TRUE;
+        context->ephyrNoXV = TRUE;
         EPHYR_LOG("no XVideo enabled\n");
         return 1;
     }

@@ -1441,6 +1441,7 @@ XineramaXvStopVideo(ClientPtr client)
     int result, i;
     PanoramiXRes *draw, *port;
 
+    XephyrContext *context = client->context;
     REQUEST(xvStopVideoReq);
     REQUEST_SIZE_MATCH(xvStopVideoReq);
 
@@ -1472,6 +1473,7 @@ XineramaXvSetPortAttribute(ClientPtr client)
     PanoramiXRes *port;
     int result, i;
 
+    XephyrContext *context = client->context;
     REQUEST_SIZE_MATCH(xvSetPortAttributeReq);
 
     result = dixLookupResourceByType((void **) &port, stuff->port,
@@ -1498,6 +1500,7 @@ XineramaXvShmPutImage(ClientPtr client)
     Bool isRoot;
     int result, i, x, y;
 
+    XephyrContext *context = client->context;
     REQUEST_SIZE_MATCH(xvShmPutImageReq);
 
     send_event = stuff->send_event;
@@ -1552,6 +1555,7 @@ XineramaXvPutImage(ClientPtr client)
     Bool isRoot;
     int result, i, x, y;
 
+    XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xvPutImageReq);
 
     result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
@@ -1600,6 +1604,7 @@ XineramaXvPutVideo(ClientPtr client)
     Bool isRoot;
     int result, i, x, y;
 
+    XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xvPutVideoReq);
 
     result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
@@ -1648,6 +1653,7 @@ XineramaXvPutStill(ClientPtr client)
     Bool isRoot;
     int result, i, x, y;
 
+    XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xvPutImageReq);
 
     result = dixLookupResourceByClass((void **) &draw, stuff->drawable,

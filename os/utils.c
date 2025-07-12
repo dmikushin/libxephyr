@@ -267,7 +267,7 @@ LockServer(XephyrContext* context)
     int len;
     char port[20];
 
-    if (nolock || NoListenAll)
+    if (nolock || context->NoListenAll)
         return;
     /*
      * Path names
@@ -392,9 +392,9 @@ LockServer(XephyrContext* context)
  *      Remove the server lock file.
  */
 void
-UnlockServer(void)
+UnlockServer(XephyrContext* context)
 {
-    if (nolock || NoListenAll)
+    if (nolock || context->NoListenAll)
         return;
 
     if (!StillLocking) {
@@ -744,7 +744,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             core_limit.rlim_cur = core_limit.rlim_max;
             setrlimit(RLIMIT_CORE, &core_limit);
 #endif
-            CoreDump = TRUE;
+            context->CoreDump = TRUE;
         }
         else if (strcmp(argv[i], "-nocursor") == 0) {
             EnableCursor = FALSE;
@@ -769,7 +769,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         else if (strcmp(argv[i], "dpms") == 0)
             /* ignored for compatibility */ ;
         else if (strcmp(argv[i], "-dpms") == 0)
-            DPMSDisabledSwitch = TRUE;
+            context->DPMSDisabledSwitch = TRUE;
 #endif
         else if (strcmp(argv[i], "-deferglyphs") == 0) {
             if (++i >= argc || !xfont2_parse_glyph_caching_mode(argv[i]))
@@ -783,8 +783,8 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         }
         else if (strcmp(argv[i], "-fakescreenfps") == 0) {
             if (++i < argc) {
-                FakeScreenFps = (uint32_t) atoi(argv[i]);
-                if (FakeScreenFps < 1 || FakeScreenFps > 600)
+                context->FakeScreenFps = (uint32_t) atoi(argv[i]);
+                if (context->FakeScreenFps < 1 || context->FakeScreenFps > 600)
                     FatalError("fakescreenfps must be an integer in [1;600] range\n", context);
             }
             else
@@ -992,7 +992,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         }
 #endif
         else if (strcmp(argv[i], "-dumbSched") == 0) {
-            InputThreadEnable = FALSE;
+            context->InputThreadEnable = FALSE;
 #ifdef HAVE_SETITIMER
             SmartScheduleSignalEnable = FALSE;
 #endif

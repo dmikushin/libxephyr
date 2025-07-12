@@ -53,13 +53,13 @@ DoSwapInterval(__GLXclientState * cl, GLbyte * pc, int do_swap)
 
     if ((cx == NULL) || (cx->pGlxScreen == NULL)) {
         client->errorValue = tag;
-        return __glXError(GLXBadContext);
+        return __glXError(GLXBadContext, client->context);
     }
 
     if (cx->pGlxScreen->swapInterval == NULL) {
         LogMessage(X_ERROR, "AIGLX: cx->pGlxScreen->swapInterval == NULL\n", client->context);
         client->errorValue = tag;
-        return __glXError(GLXUnsupportedPrivateRequest);
+        return __glXError(GLXUnsupportedPrivateRequest, client->context);
     }
 
     if (cx->drawPriv == NULL) {

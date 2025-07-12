@@ -166,7 +166,7 @@ __glXDisp_UseXFont(__GLXclientState * cl, GLbyte * pc)
          ** to try to make a font during another lists construction.
          */
         client->errorValue = cx->id;
-        return __glXError(GLXBadContextState);
+        return __glXError(GLXBadContextState, client->context);
     }
 
     /*

@@ -255,7 +255,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
     }
 #ifdef GLAMOR
     else if (!strcmp (argv[i], "-glamor")) {
-        ephyr_glamor = TRUE;
+        context->ephyr_glamor = TRUE;
         ephyrFuncs.initAccel = ephyr_glamor_init;
         ephyrFuncs.enableAccel = ephyr_glamor_enable;
         ephyrFuncs.disableAccel = ephyr_glamor_disable;
@@ -263,7 +263,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         return 1;
     }
     else if (!strcmp (argv[i], "-glamor_gles2")) {
-        ephyr_glamor = TRUE;
+        context->ephyr_glamor = TRUE;
         ephyr_glamor_gles2 = TRUE;
         ephyrFuncs.initAccel = ephyr_glamor_init;
         ephyrFuncs.enableAccel = ephyr_glamor_enable;
@@ -297,7 +297,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         }
     }
     else if (!strcmp(argv[i], "-noxv")) {
-        ephyrNoXV = TRUE;
+        context->ephyrNoXV = TRUE;
         EPHYR_LOG("no XVideo enabled\n");
         return 1;
     }

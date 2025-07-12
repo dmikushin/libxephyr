@@ -199,11 +199,12 @@ updateOverlayWindow(ScreenPtr pScreen)
     XID vlist[2];
     int w = pScreen->width;
     int h = pScreen->height;
+    XephyrContext *context = pScreen->context;
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension) {
-        w = PanoramiXPixWidth;
-        h = PanoramiXPixHeight;
+        w = context->PanoramiXPixWidth;
+        h = context->PanoramiXPixHeight;
     }
 #endif
 

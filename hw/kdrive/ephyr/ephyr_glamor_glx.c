@@ -57,8 +57,10 @@
 static Display *dpy;
 static XVisualInfo *visual_info;
 static GLXFBConfig fb_config;
+/* Moved to XephyrContext:
 Bool ephyr_glamor_gles2;
 Bool ephyr_glamor_skip_present;
+*/
 /** @} */
 
 /**
@@ -210,7 +212,7 @@ ephyr_glamor_set_vertices(struct ephyr_glamor *glamor)
 
 void
 ephyr_glamor_damage_redisplay(struct ephyr_glamor *glamor,
-                              struct pixman_region16 *damage)
+                              struct pixman_region16 *damage, XephyrContext* context)
 {
     GLint old_vao;
 
@@ -218,7 +220,7 @@ ephyr_glamor_damage_redisplay(struct ephyr_glamor *glamor,
      * expensive, and if we're just running the X Test suite headless,
      * nobody's watching.
      */
-    if (ephyr_glamor_skip_present)
+    if (context->ephyr_glamor_skip_present)
         return;
 
     glXMakeCurrent(dpy, glamor->glx_win, glamor->ctx);
@@ -229,7 +231,7 @@ ephyr_glamor_damage_redisplay(struct ephyr_glamor *glamor,
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(glamor->texture_shader);
     glViewport(0, 0, glamor->width, glamor->height);
-    if (!ephyr_glamor_gles2)
+    if (!context->ephyr_glamor_gles2)
         glDisable(GL_COLOR_LOGIC_OP);
 
     glActiveTexture(GL_TEXTURE0);
@@ -309,7 +311,7 @@ ephyr_glamor_glx_screen_init(xcb_window_t win, XephyrContext* context)
 
     glx_win = glXCreateWindow(dpy, fb_config, win, NULL);
 
-    if (ephyr_glamor_gles2) {
+    if (context->ephyr_glamor_gles2) {
         static const int context_attribs[] = {
             GLX_CONTEXT_MAJOR_VERSION_ARB, 2,
             GLX_CONTEXT_MINOR_VERSION_ARB, 0,

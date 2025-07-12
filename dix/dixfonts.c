@@ -1822,22 +1822,19 @@ register_fpe_funcs(const xfont2_fpe_funcs_rec *funcs)
     return num_fpe_types++;
 }
 
+
 static unsigned long
 get_server_generation(void)
 {
-    // TODO: This is a temporary solution for xfont2 compatibility
-    // The xfont2 library API doesn't support context parameters
-    XephyrContext* ctx = get_current_context();
-    return ctx ? ctx->serverGeneration : 1;
+    /* xfont2 callback - return safe default since no context available */
+    return 1;
 }
 
 static void *
 get_server_client(void)
 {
-    // TODO: This is a temporary solution for xfont2 compatibility
-    // The xfont2 library API doesn't support context parameters
-    XephyrContext* ctx = get_current_context();
-    return ctx ? ctx->serverClient : NULL;
+    /* xfont2 callback - return NULL since no context available */
+    return NULL;
 }
 
 static int
@@ -1852,12 +1849,11 @@ get_client_resolutions(int *num)
     static struct _FontResolution res;
     ScreenPtr pScreen;
 
-    XephyrContext* ctx = get_current_context();
-    pScreen = ctx ? ctx->screenInfo.screens[0] : NULL;
-    if (!pScreen) {
-        *num = 0;
-        return NULL;
-    }
+    /* xfont2 callback - no context available, return safe defaults */
+    res.x_resolution = 75;  /* Safe default DPI */
+    res.y_resolution = 75;
+    *num = 1;
+    return &res;
     res.x_resolution = (pScreen->width * 25.4) / pScreen->mmWidth;
     /*
      * XXX - we'll want this as long as bitmap instances are prevalent
@@ -1899,7 +1895,8 @@ find_old_font(XID id)
 {
     void *pFont;
 
-    XephyrContext* ctx = get_current_context();
+    /* xfont2 callback - no context available, use safe defaults */
+    XephyrContext* ctx = NULL;
     dixLookupResourceByType(&pFont, id, RT_NONE, ctx ? ctx->serverClient : NULL, DixReadAccess);
     return (FontPtr) pFont;
 }
@@ -1908,7 +1905,8 @@ static Font
 get_new_font_client_id(void)
 {
     // TODO: This needs proper context but xfont2 API doesn't support it
-    XephyrContext* ctx = get_current_context();
+    /* xfont2 callback - no context available, use safe defaults */
+    XephyrContext* ctx = NULL;
     return FakeClientID(0, ctx);
 }
 
@@ -1916,7 +1914,8 @@ static int
 store_font_Client_font(FontPtr pfont, Font id)
 {
     // TODO: This needs proper context but xfont2 API doesn't support it
-    XephyrContext* ctx = get_current_context();
+    /* xfont2 callback - no context available, use safe defaults */
+    XephyrContext* ctx = NULL;
     return AddResource(id, RT_NONE, (void *) pfont, ctx);
 }
 
@@ -1924,8 +1923,17 @@ static void
 delete_font_client_id(Font id)
 {
     // TODO: This needs proper context but xfont2 API doesn't support it
-    XephyrContext* ctx = get_current_context();
+    /* xfont2 callback - no context available, use safe defaults */
+    XephyrContext* ctx = NULL;
     FreeResource(id, RT_NONE, ctx);
+}
+
+static void
+xfont2_VErrorF_wrapper(const char *f, va_list args)
+{
+    /* xfont2 callback - no context available, use safe defaults */
+    XephyrContext* ctx = NULL;
+    VErrorF(f, args, ctx);
 }
 
 static int
@@ -2005,7 +2013,8 @@ static int
 _init_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handler)
 {
     /* if server has reset, make sure the b&w handlers are reinstalled */
-    XephyrContext* ctx = get_current_context();
+    /* xfont2 callback - no context available, use safe defaults */
+    XephyrContext* ctx = NULL;
     if (ctx && last_server_gen < ctx->serverGeneration) {
         last_server_gen = ctx->serverGeneration;
         fs_handlers_installed = 0;
@@ -2045,7 +2054,7 @@ static const xfont2_client_funcs_rec xfont2_client_funcs = {
     .client_auth_generation = _client_auth_generation,
     .client_signal = ClientSignal,
     .delete_font_client_id = delete_font_client_id,
-    .verrorf = VErrorF,
+    .verrorf = xfont2_VErrorF_wrapper,
     .find_old_font = find_old_font,
     .get_client_resolutions = get_client_resolutions,
     .get_default_point_size = get_default_point_size,
@@ -2066,13 +2075,12 @@ static const xfont2_client_funcs_rec xfont2_client_funcs = {
     .adjust_fs_wait_for_delay = adjust_fs_wait_for_delay,
 };
 
-xfont2_pattern_cache_ptr fontPatternCache;
 
 void
-InitFonts(void)
+InitFonts(XephyrContext* context)
 {
-    if (fontPatternCache)
-	xfont2_free_font_pattern_cache(fontPatternCache);
-    fontPatternCache = xfont2_make_font_pattern_cache();
+    if (context->fontPatternCache)
+	xfont2_free_font_pattern_cache(context->fontPatternCache);
+    context->fontPatternCache = xfont2_make_font_pattern_cache();
     xfont2_init(&xfont2_client_funcs);
 }

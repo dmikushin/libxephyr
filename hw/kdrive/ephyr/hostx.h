@@ -143,11 +143,11 @@ hostx_set_cmap_entry(ScreenPtr pScreen, unsigned char idx,
 void *hostx_screen_init(KdScreenInfo *screen,
                         int x, int y,
                         int width, int height, int buffer_height,
-                        int *bytes_per_line, int *bits_per_pixel);
+                        int *bytes_per_line, int *bits_per_pixel, XephyrContext* context);
 
 void
 hostx_paint_rect(KdScreenInfo *screen,
-                 int sx, int sy, int dx, int dy, int width, int height);
+                 int sx, int sy, int dx, int dy, int width, int height, XephyrContext* context);
 
 Bool
 hostx_load_keymap(KeySymsPtr keySyms, CARD8 *modmap, XkbControlsPtr controls);

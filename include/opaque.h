@@ -45,7 +45,7 @@ extern _X_EXPORT volatile char dispatchException;
 
 
 
-extern _X_EXPORT Bool CoreDump;
-extern _X_EXPORT Bool NoListenAll;
+/* REMOVED: extern _X_EXPORT Bool context->CoreDump; - moved to XephyrContext */
+/* REMOVED: extern _X_EXPORT Bool NoListenAll; - moved to XephyrContext */
 
 #endif                          /* OPAQUE_H */

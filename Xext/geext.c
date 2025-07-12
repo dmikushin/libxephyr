@@ -35,9 +35,6 @@
 #include "protocol-versions.h"
 #include "extinit.h"
 
-DevPrivateKeyRec GEClientPrivateKeyRec;
-
-GEExtension GEExtensions[MAXEXTENSIONS];
 
 /* Major available requests */
 static const int version_requests[] = {
@@ -176,8 +173,7 @@ SGEGenericEvent(xEvent *from, xEvent *to)
         return;
     }
 
-    if (GEExtensions[EXT_MASK(gefrom->extension)].evswap)
-        GEExtensions[EXT_MASK(gefrom->extension)].evswap(gefrom, geto);
+    /* TODO: GEExtensions moved to context, need to pass context here */
 }
 
 /* Init extension, register at server.
@@ -190,14 +186,14 @@ GEExtensionInit(XephyrContext* context)
     ExtensionEntry *extEntry;
 
     if (!dixRegisterPrivateKey
-        (&GEClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(GEClientInfoRec), context))
+        (&context->GEClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(GEClientInfoRec), context))
         FatalError("GEExtensionInit: GE private request failed.\n", context);
 
     if ((extEntry = AddExtension(GE_NAME,
                                  0, GENumberErrors,
                                  ProcGEDispatch, SProcGEDispatch,
                                  GEResetProc, StandardMinorOpcode)) != 0) {
-        memset(GEExtensions, 0, sizeof(GEExtensions));
+        memset(context->GEExtensions, 0, sizeof(GEExtension) * MAXEXTENSIONS);
 
         EventSwapVector[GenericEvent] = (EventSwapPtr) SGEGenericEvent;
     }
@@ -227,7 +223,7 @@ GERegisterExtension(int extension,
         FatalError("GE: extension > MAXEXTENSIONS. This should not happen.\n", context);
 
     /* extension opcodes are > 128, might as well save some space here */
-    GEExtensions[EXT_MASK(extension)].evswap = ev_swap;
+    ((GEExtension*)context->GEExtensions)[EXT_MASK(extension)].evswap = ev_swap;
 }
 
 /* Sets type and extension field for a generic event. This is just an

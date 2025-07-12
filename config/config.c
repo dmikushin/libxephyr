@@ -83,7 +83,7 @@ static void
 remove_device(const char *backend, DeviceIntPtr dev)
 {
     /* this only gets called for devices that have already been added */
-    LogMessage(X_INFO, "config/%s: removing device %s\n", backend, dev->name);
+    LogMessage(X_INFO, "config/%s: removing device %s\n", dev->master->context, backend, dev->name);
 
     /* Call PIE here so we don't try to dereference a device that's
      * already been removed. */

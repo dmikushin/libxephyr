@@ -21,6 +21,8 @@
 #include <X11/Xproto.h>
 #include "../os/ospoll.h"
 #include "servermd.h"
+#include "privates.h"
+#include "resource.h"
 #ifdef CONFIG_UDEV
 #include <libudev.h>
 #endif
@@ -150,12 +152,153 @@ typedef struct _XephyrContext {
     Bool noXFixesExtension;
     Bool noXvExtension;
     Bool PanoramiXExtensionDisabledHack;
+    int PanoramiXNumScreens;
+    int PanoramiXPixHeight;
+    int PanoramiXPixWidth;
+    void* PanoramiXSaveCompositeVector;
+    void* PanoramiXSaveRenderVector;
+    void* PanoramiXSaveXFixesVector;
+    RegionPtr PanoramiXScreenRegion;
+    
+    // Additional global variables  
+    struct { Mask mask; int type; } EventInfo[32];  // From Xi module
+    int ExtEventIndex;
+    int FakeScreenFps;
+    DevPrivateKeyRec GEClientPrivateKeyRec;
+    void* GEExtensions;  // GEExtension*
+    RESTYPE GlyphSetType;
     
     // Input device error codes
     int BadDevice;
     int BadShmSegCode;
     int ChangeDeviceNotify;
     Bool DPMSEnabled;
+    Bool DPMSDisabledSwitch;
+    CARD16 DPMSPowerLevel;
+    
+    // Composite module variables
+    DevPrivateKeyRec CompScreenPrivateKeyRec;
+    DevPrivateKeyRec CompSubwindowsPrivateKeyRec;
+    DevPrivateKeyRec CompWindowPrivateKeyRec;
+    RESTYPE CompositeClientOverlayType;
+    RESTYPE CompositeClientSubwindowsType;
+    RESTYPE CompositeClientWindowType;
+    
+    // Ephyr module variables
+    ScreenPtr ephyrCursorScreen;
+    void* ephyrKbd;  // KdKeyboardInfo*
+    void* ephyrMouse;  // KdPointerInfo*
+    Bool ephyrNoDRI;
+    Bool ephyrNoXV; 
+    char* ephyrResName;
+    char* ephyrResNameFromCmd;
+    char* ephyrTitle;
+    void* cursorScreenDevPriv;
+    Bool EphyrWantGrayScale;
+    Bool EphyrWantNoHostGrab;
+    Bool EphyrWantResize;
+    
+    // Xi (X Input) module variables
+    int IReqCode;
+    int IEventBase;
+    int BadMode;
+    int DeviceBusy;
+    int BadClass;
+    int DeviceValuator;
+    int DeviceKeyPress;
+    int DeviceKeyRelease;
+    int DeviceButtonPress;
+    int DeviceButtonRelease;
+    int DeviceMotionNotify;
+    int DeviceFocusIn;
+    int DeviceFocusOut;
+    int ProximityIn;
+    int ProximityOut;
+    int DeviceStateNotify;
+    int DeviceKeyStateNotify;
+    int DeviceButtonStateNotify;
+    int DeviceMappingNotify;
+    int DevicePresenceNotify;
+    int DevicePropertyNotify;
+    RESTYPE RT_INPUTCLIENT;
+    DevPrivateKeyRec XIClientPrivateKeyRec;
+    
+    // GLX module variables
+    ExtensionEntry* GlxExtensionEntry;
+    int GlxErrorBase;
+    RESTYPE __glXContextRes;
+    RESTYPE __glXDrawableRes;
+    int __glXEventBase;
+    
+    // Glamor module variables
+    Atom glamorBrightness;
+    Atom glamorColorspace;
+    Atom glamorContrast;
+    Atom glamorGamma;
+    Atom glamorHue;
+    Atom glamorSaturation;
+    int glamor_debug_level;
+    
+    // Ephyr Glamor variables
+    Bool ephyr_glamor;
+    Bool ephyr_glamor_gles2;
+    Bool ephyr_glamor_skip_present;
+    
+    // XFixes module variables
+    Bool CursorVisible;
+    
+    // Picture/Render module variables
+    RESTYPE PictFormatType;
+    int PictureCmapPolicy;
+    DevPrivateKeyRec PictureScreenPrivateKeyRec;
+    RESTYPE PictureType;
+    DevPrivateKeyRec PictureWindowPrivateKeyRec;
+    RESTYPE PointerBarrierType;
+    
+    // RandR module variables
+    DevPrivateKeyRec RRClientPrivateKeyRec;
+    RESTYPE RRClientType;
+    RESTYPE RRCrtcType;
+    int RRErrorBase;
+    int RREventBase;
+    int RREventType;
+    RESTYPE RRLeaseType;
+    RESTYPE RRModeType;
+    RESTYPE RROutputType;
+    RESTYPE RRProviderType;
+    RESTYPE RegionResType;
+    
+    // Render module variables
+    int RenderErrBase;
+    
+    // SHM module variables
+    int ShmCompletionCode;
+    RESTYPE ShmSegType;
+    
+    // Saved procedure vector
+    void* SavedProcVector;
+    
+    // Additional global variables  
+    int present_request;
+    DevPrivateKeyRec present_screen_private_key;
+    DevPrivateKeyRec present_window_private_key;
+    DevPrivateKeyRec rrPrivKeyRec;
+    Bool noRRXineramaExtension;
+    
+    // Mi module variables
+    DevPrivateKeyRec miPointerPrivKeyRec;
+    DevPrivateKeyRec miPointerScreenKeyRec;
+    DevPrivateKeyRec miSyncScreenPrivateKey;
+    DevPrivateKeyRec miZeroLineScreenKeyRec;
+    DevPrivateKeyRec micmapScrPrivateKeyRec;
+    
+    // XKB module variables
+    int xkbDebugFlags;
+    DevPrivateKeyRec xkbDevicePrivateKeyRec;
+    
+    // XTest module variables
+    DeviceIntPtr xtestkeyboard;
+    DeviceIntPtr xtestpointer;
 } XephyrContext;
 
 

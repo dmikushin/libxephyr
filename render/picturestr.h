@@ -352,7 +352,7 @@ extern _X_EXPORT DevPrivateKeyRec PictureWindowPrivateKeyRec;
 
 extern RESTYPE PictureType;
 extern RESTYPE PictFormatType;
-extern RESTYPE GlyphSetType;
+/* GlyphSetType is now in context */
 
 #define GetPictureScreen(s) ((PictureScreenPtr)dixLookupPrivate(&(s)->devPrivates, PictureScreenPrivateKey))
 #define GetPictureScreenIfSet(s) (dixPrivateKeyRegistered(PictureScreenPrivateKey) ? GetPictureScreen(s) : NULL)

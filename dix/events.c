@@ -201,12 +201,9 @@ xi2_get_type(const xEvent *event)
 
 #define XE_KBPTR (xE->u.keyButtonPointer)
 
-CallbackListPtr EventCallback;
-CallbackListPtr DeviceEventCallback;
 
 #define DNPMCOUNT 8
 
-Mask DontPropagateMasks[DNPMCOUNT];
 static int DontPropagateRefCnts[DNPMCOUNT];
 
 static void CheckVirtualMotion(DeviceIntPtr pDev, QdEventPtr qe,
@@ -526,6 +523,7 @@ XineramaSetCursorPosition(DeviceIntPtr pDev, int x, int y, Bool generateEvent)
     ScreenPtr pScreen;
     int i;
     SpritePtr pSprite = pDev->spriteInfo->sprite;
+    XephyrContext *context = pDev->context;
 
     /* x,y are in Screen 0 coordinates.  We need to decide what Screen
        to send the message too and what the coordinates relative to
@@ -578,7 +576,8 @@ XineramaConstrainCursor(DeviceIntPtr pDev)
 static Bool
 XineramaSetWindowPntrs(DeviceIntPtr pDev, WindowPtr pWin)
 {
-    SpritePtr pSprite = pDev->spriteInfo->sprite;
+    
+    XephyrContext *context = pDev->context;SpritePtr pSprite = pDev->spriteInfo->sprite;
 
     if (pWin == pDev->context->screenInfo.screens[0]->root) {
         int i;
@@ -610,7 +609,7 @@ XineramaConfineCursorToWindow(DeviceIntPtr pDev,
                               WindowPtr pWin, Bool generateEvents)
 {
     SpritePtr pSprite = pDev->spriteInfo->sprite;
-
+    XephyrContext *context = pDev->context;
     int x, y, off_x, off_y, i;
 
     assert(!noPanoramiXExtension);
@@ -618,7 +617,7 @@ XineramaConfineCursorToWindow(DeviceIntPtr pDev,
     if (!XineramaSetWindowPntrs(pDev, pWin))
         return;
 
-    i = PanoramiXNumScreens - 1;
+    i = context->PanoramiXNumScreens - 1;
 
     RegionCopy(&pSprite->Reg1, &pSprite->windows[i]->borderSize);
     off_x = pDev->context->screenInfo.screens[i]->x;
@@ -788,6 +787,7 @@ static void
 CheckVirtualMotion(DeviceIntPtr pDev, QdEventPtr qe, WindowPtr pWin)
 {
     SpritePtr pSprite = pDev->spriteInfo->sprite;
+    XephyrContext *context = pDev->context;
     RegionPtr reg = NULL;
     DeviceEvent *ev = NULL;
 
@@ -822,7 +822,7 @@ CheckVirtualMotion(DeviceIntPtr pDev, QdEventPtr qe, WindowPtr pWin)
             if (!XineramaSetWindowPntrs(pDev, pWin))
                 return;
 
-            i = PanoramiXNumScreens - 1;
+            i = context->PanoramiXNumScreens - 1;
 
             RegionCopy(&pSprite->Reg2, &pSprite->windows[i]->borderSize);
             off_x = pDev->context->screenInfo.screens[i]->x;
@@ -1163,7 +1163,7 @@ EnqueueEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* context)
         event->type == ET_KeyRelease)
         AccessXCancelRepeatKey(device->key->xkbInfo, event->detail.key);
 
-    if (DeviceEventCallback) {
+    if (context->DeviceEventCallback) {
         DeviceEventInfoRec eventinfo;
 
         /*  The RECORD spec says that the root window field of motion events
@@ -1180,7 +1180,7 @@ EnqueueEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* context)
 
         eventinfo.event = ev;
         eventinfo.device = device;
-        CallCallbacks(&DeviceEventCallback, (void *) &eventinfo);
+        CallCallbacks(&context->DeviceEventCallback, (void *) &eventinfo);
     }
 
     if (event->type == ET_Motion) {
@@ -3319,6 +3319,7 @@ InitializeSprite(DeviceIntPtr pDev, WindowPtr pWin)
     SpritePtr pSprite;
     ScreenPtr pScreen;
     CursorPtr pCursor;
+    XephyrContext *context = pDev->context;
 
     if (!pDev->spriteInfo->sprite) {
         DeviceIntPtr it;
@@ -3399,8 +3400,8 @@ InitializeSprite(DeviceIntPtr pDev, WindowPtr pWin)
     if (!noPanoramiXExtension) {
         pSprite->hotLimits.x1 = -pDev->context->screenInfo.screens[0]->x;
         pSprite->hotLimits.y1 = -pDev->context->screenInfo.screens[0]->y;
-        pSprite->hotLimits.x2 = PanoramiXPixWidth - pDev->context->screenInfo.screens[0]->x;
-        pSprite->hotLimits.y2 = PanoramiXPixHeight - pDev->context->screenInfo.screens[0]->y;
+        pSprite->hotLimits.x2 = context->PanoramiXPixWidth - pDev->context->screenInfo.screens[0]->x;
+        pSprite->hotLimits.y2 = context->PanoramiXPixHeight - pDev->context->screenInfo.screens[0]->y;
         pSprite->physLimits = pSprite->hotLimits;
         pSprite->confineWin = NullWindow;
         pSprite->hotShape = NullRegion;
@@ -3445,6 +3446,7 @@ UpdateSpriteForScreen(DeviceIntPtr pDev, ScreenPtr pScreen)
     SpritePtr pSprite = NULL;
     WindowPtr win = NULL;
     CursorPtr pCursor;
+    XephyrContext *context = pDev->context;
 
     if (!pScreen)
         return;
@@ -3479,8 +3481,8 @@ UpdateSpriteForScreen(DeviceIntPtr pDev, ScreenPtr pScreen)
     if (!noPanoramiXExtension) {
         pSprite->hotLimits.x1 = -pDev->context->screenInfo.screens[0]->x;
         pSprite->hotLimits.y1 = -pDev->context->screenInfo.screens[0]->y;
-        pSprite->hotLimits.x2 = PanoramiXPixWidth - pDev->context->screenInfo.screens[0]->x;
-        pSprite->hotLimits.y2 = PanoramiXPixHeight - pDev->context->screenInfo.screens[0]->y;
+        pSprite->hotLimits.x2 = context->PanoramiXPixWidth - pDev->context->screenInfo.screens[0]->x;
+        pSprite->hotLimits.y2 = context->PanoramiXPixHeight - pDev->context->screenInfo.screens[0]->y;
         pSprite->physLimits = pSprite->hotLimits;
         pSprite->screen = pScreen;
     }
@@ -3768,7 +3770,8 @@ ProcWarpPointer(ClientPtr client)
 static Bool
 BorderSizeNotEmpty(DeviceIntPtr pDev, WindowPtr pWin)
 {
-    if (RegionNotEmpty(&pWin->borderSize))
+    
+    XephyrContext *context = pDev->context;if (RegionNotEmpty(&pWin->borderSize))
         return TRUE;
 
 #ifdef PANORAMIX
@@ -5476,16 +5479,16 @@ InitEvents(XephyrContext* context)
         DontPropagateRefCnts[i] = 0;
     }
 
-    InputEventList = InitEventList(GetMaximumEventsNum());
-    if (!InputEventList)
+    context->InputEventList = InitEventList(GetMaximumEventsNum());
+    if (!context->InputEventList)
         FatalError("[dix] Failed to allocate input event list.\n", context);
 }
 
 void
-CloseDownEvents(void)
+CloseDownEvents(XephyrContext* context)
 {
-    FreeEventList(InputEventList, GetMaximumEventsNum());
-    InputEventList = NULL;
+    FreeEventList(context->InputEventList, GetMaximumEventsNum());
+    context->InputEventList = NULL;
 }
 
 #define SEND_EVENT_BIT 0x80
@@ -6111,13 +6114,13 @@ WriteEventsToClient(ClientPtr pClient, int count, xEvent *events)
     }
 #endif
 
-    if (EventCallback) {
+    if (pClient->context->EventCallback) {
         EventInfoRec eventinfo;
 
         eventinfo.client = pClient;
         eventinfo.events = events;
         eventinfo.count = count;
-        CallCallbacks(&EventCallback, (void *) &eventinfo);
+        CallCallbacks(&pClient->context->EventCallback, (void *) &eventinfo);
     }
 #ifdef XSERVER_DTRACE
     if (XSERVER_SEND_EVENT_ENABLED()) {

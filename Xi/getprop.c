@@ -64,8 +64,8 @@ SOFTWARE.
 
 #include "getprop.h"
 
-extern XExtEventInfo EventInfo[];
-extern int ExtEventIndex;
+// EventInfo is now in context->EventInfo
+// ExtEventIndex is now in context->ExtEventIndex
 
 /***********************************************************************
  *
@@ -116,7 +116,7 @@ ProcXGetDeviceDontPropagateList(ClientPtr client)
 
     if ((others = wOtherInputMasks(pWin)) != 0) {
         for (i = 0; i < EMASKSIZE; i++)
-            ClassFromMask(NULL, others->dontPropagateMask[i], i, &count, COUNT);
+            ClassFromMask(NULL, others->dontPropagateMask[i], i, &count, COUNT, client->context);
         if (count) {
             rep.count = count;
             buf = xallocarray(rep.count, sizeof(XEventClass));
@@ -125,7 +125,7 @@ ProcXGetDeviceDontPropagateList(ClientPtr client)
             tbuf = buf;
             for (i = 0; i < EMASKSIZE; i++)
                 tbuf = ClassFromMask(tbuf, others->dontPropagateMask[i], i,
-                                     NULL, CREATE);
+                                     NULL, CREATE, client->context);
         }
     }
 
@@ -148,7 +148,7 @@ ProcXGetDeviceDontPropagateList(ClientPtr client)
 
 XEventClass
     * ClassFromMask(XEventClass * buf, Mask mask, int maskndx, CARD16 *count,
-                    int mode)
+                    int mode, XephyrContext* context)
 {
     int i, j;
     int id = maskndx;
@@ -156,12 +156,12 @@ XEventClass
 
     for (i = 0; i < 32; i++, tmask >>= 1)
         if (tmask & mask) {
-            for (j = 0; j < ExtEventIndex; j++)
-                if (EventInfo[j].mask == tmask) {
+            for (j = 0; j < context->ExtEventIndex; j++)
+                if (context->EventInfo[j].mask == tmask) {
                     if (mode == COUNT)
                         (*count)++;
                     else
-                        *buf++ = (id << 8) | EventInfo[j].type;
+                        *buf++ = (id << 8) | context->EventInfo[j].type;
                 }
         }
     return buf;

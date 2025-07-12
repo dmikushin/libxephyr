@@ -827,6 +827,7 @@ PanoramiXFixesSetGCClipRegion(ClientPtr client)
     int result = Success, j;
     PanoramiXRes *gc;
 
+    XephyrContext *context = client->context;
     REQUEST_SIZE_MATCH(xXFixesSetGCClipRegionReq);
 
     if ((result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
@@ -850,7 +851,8 @@ PanoramiXFixesSetWindowShapeRegion(ClientPtr client)
 {
     int result = Success, j;
     PanoramiXRes *win;
-    RegionPtr reg = NULL;
+
+    XephyrContext *context = client->context;    RegionPtr reg = NULL;
 
     REQUEST(xXFixesSetWindowShapeRegionReq);
 
@@ -892,7 +894,8 @@ PanoramiXFixesSetPictureClipRegion(ClientPtr client)
     REQUEST(xXFixesSetPictureClipRegionReq);
     int result = Success, j;
     PanoramiXRes *pict;
-    RegionPtr reg = NULL;
+
+    XephyrContext *context = client->context;    RegionPtr reg = NULL;
 
     REQUEST_SIZE_MATCH(xXFixesSetPictureClipRegionReq);
 

@@ -133,13 +133,13 @@ __glXDisp_CreateContextAttribsARB(__GLXclientState * cl, GLbyte * pc)
      */
     if (!validGlxScreen(client, req->screen, &glxScreen, &err)) {
         client->errorValue = req->fbconfig;
-        return __glXError(GLXBadFBConfig);
+        return __glXError(GLXBadFBConfig, client->context);
     }
 
     if (req->fbconfig) {
         if (!validGlxFBConfig(client, glxScreen, req->fbconfig, &config, &err)) {
             client->errorValue = req->fbconfig;
-            return __glXError(GLXBadFBConfig);
+            return __glXError(GLXBadFBConfig, client->context);
         }
     }
 
@@ -287,7 +287,7 @@ __glXDisp_CreateContextAttribsARB(__GLXclientState * cl, GLbyte * pc)
     case GLX_CONTEXT_ES2_PROFILE_BIT_EXT:
         break;
     default:
-        return __glXError(GLXBadProfileARB);
+        return __glXError(GLXBadProfileARB, client->context);
     }
 
     /* The GLX_ARB_create_context_robustness spec says:
@@ -313,7 +313,7 @@ __glXDisp_CreateContextAttribsARB(__GLXclientState * cl, GLbyte * pc)
     if (!req->isDirect && (major_version > 1 || minor_version > 4
                            || profile == GLX_CONTEXT_ES2_PROFILE_BIT_EXT)) {
         client->errorValue = req->fbconfig;
-        return __glXError(GLXBadFBConfig);
+        return __glXError(GLXBadFBConfig, client->context);
     }
 
     /* Allocate memory for the new context

@@ -128,14 +128,13 @@ SOFTWARE.
 
 struct ospoll   *server_poll;
 
-Bool NewOutputPending;          /* not yet attempted to write some new output */
-Bool NoListenAll;               /* Don't establish any listening sockets */
+/* REMOVED: Bool NoListenAll; - moved to XephyrContext */
 
 static Bool RunFromSmartParent; /* send SIGUSR1 to parent process */
 Bool RunFromSigStopParent;      /* send SIGSTOP to our own process; Upstart (or
                                    equivalent) will send SIGCONT back. */
 static char dynamic_display[7]; /* context->display name */
-Bool PartialNetwork;            /* continue even if unable to bind all addrs */
+/* REMOVED: Bool PartialNetwork; - moved to XephyrContext */
 static Pid_t ParentProcess;
 
 // // int GrabInProgress = 0;
@@ -249,13 +248,13 @@ CreateWellKnownSockets(XephyrContext* context)
     /* context->display is initialized to "0" by main(). It is then set to the context->display
      * number if specified on the command line. */
 
-    if (NoListenAll) {
+    if (context->NoListenAll) {
         ListenTransCount = 0;
     }
     else if ((context->displayfd < 0) || context->explicit_display) {
         if (TryCreateSocket(atoi(context->display), &partial) &&
             ListenTransCount >= 1)
-            if (!PartialNetwork && partial)
+            if (!context->PartialNetwork && partial)
                 FatalError("Failed to establish all listening sockets", context);
     }
     else { /* -context->displayfd and no explicit context->display number */
@@ -289,7 +288,7 @@ CreateWellKnownSockets(XephyrContext* context)
             DefineSelf (fd, context);
     }
 
-    if (ListenTransCount == 0 && !NoListenAll)
+    if (ListenTransCount == 0 && !context->NoListenAll)
         FatalError("Cannot establish any listening sockets - Make sure an X server isn't already running", context);
 
 #if !defined(WIN32)
@@ -779,8 +778,8 @@ CloseDownConnection(ClientPtr client)
 {
     OsCommPtr oc = (OsCommPtr) client->osPrivate;
 
-    if (FlushCallback)
-        CallCallbacks(&FlushCallback, client);
+    if (client->context && client->context->FlushCallback)
+        CallCallbacks(&client->context->FlushCallback, client);
 
     if (oc->output)
 	FlushClient(client, oc, (char *) NULL, 0);

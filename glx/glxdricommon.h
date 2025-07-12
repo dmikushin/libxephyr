@@ -39,6 +39,6 @@ __GLXconfig *glxConvertConfigs(const __DRIcoreExtension * core,
 void *glxProbeDriver(const char *name,
                      void **coreExt, const char *coreName, int coreVersion,
                      void **renderExt, const char *renderName,
-                     int renderVersion);
+                     int renderVersion, XephyrContext* context);
 
 #endif

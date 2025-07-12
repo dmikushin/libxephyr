@@ -97,7 +97,9 @@ extern Bool EphyrWantResize;
 char *ephyrResName = NULL;
 int ephyrResNameFromCmd = 0;
 char *ephyrTitle = NULL;
-Bool ephyr_glamor = FALSE;
+/* Moved to XephyrContext:
+Bool context->ephyr_glamor = FALSE;
+*/
 extern Bool ephyr_glamor_skip_present;
 
 Bool
@@ -543,7 +545,7 @@ hostx_init(XephyrContext* context)
 
     EPHYR_DBG("mark");
 #ifdef GLAMOR
-    if (ephyr_glamor)
+    if (context->ephyr_glamor)
         HostX.conn = ephyr_glamor_connect();
     else
 #endif
@@ -558,7 +560,7 @@ hostx_init(XephyrContext* context)
     HostX.gc = xcb_generate_id(HostX.conn);
     HostX.depth = xscreen->root_depth;
 #ifdef GLAMOR
-    if (ephyr_glamor) {
+    if (context->ephyr_glamor) {
         HostX.visual = ephyr_glamor_get_visual(context);
         if (HostX.visual->visual_id != xscreen->root_visual) {
             attrs[1] = xcb_generate_id(HostX.conn);
@@ -725,7 +727,7 @@ hostx_init(XephyrContext* context)
                       1,1);
     xcb_free_pixmap(HostX.conn, cursor_pxm);
     if (!hostx_want_host_cursor ()) {
-        CursorVisible = TRUE;
+        context->CursorVisible = TRUE;
         /* Ditch the cursor, we provide our 'own' */
         for (index = 0; index < HostX.n_screens; index++) {
             KdScreenInfo *screen = HostX.screens[index];
@@ -875,7 +877,7 @@ void *
 hostx_screen_init(KdScreenInfo *screen,
                   int x, int y,
                   int width, int height, int buffer_height,
-                  int *bytes_per_line, int *bits_per_pixel)
+                  int *bytes_per_line, int *bits_per_pixel, XephyrContext* context)
 {
     EphyrScrPriv *scrpriv = screen->driver;
     Bool shm_success = FALSE;
@@ -905,7 +907,7 @@ hostx_screen_init(KdScreenInfo *screen,
         }
     }
 
-    if (!ephyr_glamor && HostX.have_shm) {
+    if (!context->ephyr_glamor && HostX.have_shm) {
         scrpriv->ximg = xcb_image_create_native(HostX.conn,
                                                 width,
                                                 buffer_height,
@@ -930,7 +932,7 @@ hostx_screen_init(KdScreenInfo *screen,
         }
     }
 
-    if (!ephyr_glamor && !shm_success) {
+    if (!context->ephyr_glamor && !shm_success) {
         EPHYR_DBG("Creating image %dx%d for screen scrpriv=%p\n",
                   width, buffer_height, scrpriv);
         scrpriv->ximg = xcb_image_create_native(HostX.conn,
@@ -995,7 +997,7 @@ hostx_screen_init(KdScreenInfo *screen,
     scrpriv->win_y = y;
 
 #ifdef GLAMOR
-    if (ephyr_glamor) {
+    if (context->ephyr_glamor) {
         *bytes_per_line = 0;
         ephyr_glamor_set_window_size(scrpriv->glamor,
                                      scrpriv->win_width, scrpriv->win_height);
@@ -1027,14 +1029,14 @@ static void hostx_paint_debug_rect(KdScreenInfo *screen,
 
 void
 hostx_paint_rect(KdScreenInfo *screen,
-                 int sx, int sy, int dx, int dy, int width, int height)
+                 int sx, int sy, int dx, int dy, int width, int height, XephyrContext* context)
 {
     EphyrScrPriv *scrpriv = screen->driver;
 
     EPHYR_DBG("painting in screen %d\n", scrpriv->mynum);
 
 #ifdef GLAMOR
-    if (ephyr_glamor) {
+    if (context->ephyr_glamor) {
         BoxRec box;
         RegionRec region;
 
@@ -1044,7 +1046,7 @@ hostx_paint_rect(KdScreenInfo *screen,
         box.y2 = dy + height;
 
         RegionInit(&region, &box, 1);
-        ephyr_glamor_damage_redisplay(scrpriv->glamor, &region);
+        ephyr_glamor_damage_redisplay(scrpriv->glamor, &region, context);
         RegionUninit(&region);
         return;
     }
@@ -1606,7 +1608,8 @@ ephyr_glamor_create_screen_resources(ScreenPtr pScreen)
     PixmapPtr old_screen_pixmap, screen_pixmap;
     uint32_t tex;
 
-    if (!ephyr_glamor)
+    XephyrContext* context = pScreen->context;
+    if (!context->ephyr_glamor)
         return TRUE;
 
     /* kdrive's fbSetupScreen() told mi to have

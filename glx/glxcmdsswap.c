@@ -786,7 +786,7 @@ __glXDispSwap_VendorPrivate(__GLXclientState * cl, GLbyte * pc)
     }
 
     cl->client->errorValue = req->vendorCode;
-    return __glXError(GLXUnsupportedPrivateRequest);
+    return __glXError(GLXUnsupportedPrivateRequest, cl->client->context);
 }
 
 int
@@ -814,5 +814,5 @@ __glXDispSwap_VendorPrivateWithReply(__GLXclientState * cl, GLbyte * pc)
     }
 
     cl->client->errorValue = req->vendorCode;
-    return __glXError(GLXUnsupportedPrivateRequest);
+    return __glXError(GLXUnsupportedPrivateRequest, cl->client->context);
 }

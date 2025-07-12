@@ -1134,7 +1134,7 @@ DbeSetupBackgroundPainter(WindowPtr pWin, GCPtr pGC)
  *
  *****************************************************************************/
 static int
-DbeDrawableDelete(void *pDrawable, XID id)
+DbeDrawableDelete(void *pDrawable, XID id, XephyrContext* context)
 {
     return Success;
 
@@ -1152,7 +1152,7 @@ DbeDrawableDelete(void *pDrawable, XID id)
  *
  *****************************************************************************/
 static int
-DbeWindowPrivDelete(void *pDbeWinPriv, XID id)
+DbeWindowPrivDelete(void *pDbeWinPriv, XID id, XephyrContext* context)
 {
     DbeScreenPrivPtr pDbeScreenPriv;
     DbeWindowPrivPtr pDbeWindowPriv = (DbeWindowPrivPtr) pDbeWinPriv;
@@ -1254,17 +1254,13 @@ DbeResetProc(ExtensionEntry * extEntry)
     int i;
     ScreenPtr pScreen;
     DbeScreenPrivPtr pDbeScreenPriv;
+    XephyrContext* context = (XephyrContext*) extEntry->extPrivate;
 
-    /* Get context from first available screen */
-    ScreenPtr pFirstScreen = NULL;
-    for (i = 0; i < 16; i++) { /* reasonable max screens */
-        if ((pFirstScreen = GetScreen(i)) != NULL && pFirstScreen->context != NULL)
-            break;
-    }
-    if (!pFirstScreen) return; /* No screens available */
-    
-    for (i = 0; i < pFirstScreen->context->screenInfo.numScreens; i++) {
-        pScreen = pFirstScreen->context->screenInfo.screens[i];
+    if (!context)
+        return;
+
+    for (i = 0; i < context->screenInfo.numScreens; i++) {
+        pScreen = context->screenInfo.screens[i];
         pDbeScreenPriv = DBE_SCREEN_PRIV(pScreen);
 
         if (pDbeScreenPriv) {

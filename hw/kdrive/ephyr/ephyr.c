@@ -46,10 +46,14 @@
 
 extern Bool ephyr_glamor;
 
-KdKeyboardInfo *ephyrKbd;
-KdPointerInfo *ephyrMouse;
-Bool ephyrNoDRI = FALSE;
-Bool ephyrNoXV = FALSE;
+/* Moved to XephyrContext:
+KdKeyboardInfo *context->ephyrKbd;
+KdPointerInfo *context->ephyrMouse;
+*/
+/* Moved to XephyrContext:
+Bool context->ephyrNoDRI = FALSE;
+Bool context->ephyrNoXV = FALSE;
+*/
 
 static int mouseState = 0;
 static Rotation ephyrRandr = RR_Rotate_0;
@@ -58,9 +62,6 @@ typedef struct _EphyrInputPrivate {
     Bool enabled;
 } EphyrKbdPrivate, EphyrPointerPrivate;
 
-Bool EphyrWantGrayScale = 0;
-Bool EphyrWantResize = 0;
-Bool EphyrWantNoHostGrab = 0;
 
 Bool
 ephyrInitialize(KdCardInfo * card, EphyrPriv * priv)
@@ -91,7 +92,7 @@ ephyrCardInit(KdCardInfo * card)
 }
 
 Bool
-ephyrScreenInitialize(KdScreenInfo *screen)
+ephyrScreenInitialize(KdScreenInfo *screen, XephyrContext* context)
 {
     EphyrScrPriv *scrpriv = screen->driver;
     int x = 0, y = 0;
@@ -106,7 +107,7 @@ ephyrScreenInitialize(KdScreenInfo *screen)
         screen->y = y;
     }
 
-    if (EphyrWantGrayScale)
+    if (context->EphyrWantGrayScale)
         screen->fb.depth = 8;
 
     if (screen->fb.depth && screen->fb.depth != hostx_get_depth()) {
@@ -124,7 +125,7 @@ ephyrScreenInitialize(KdScreenInfo *screen)
     screen->rate = 72;
 
     if (screen->fb.depth <= 8) {
-        if (EphyrWantGrayScale)
+        if (context->EphyrWantGrayScale)
             screen->fb.visuals = ((1 << StaticGray) | (1 << GrayScale));
         else
             screen->fb.visuals = ((1 << StaticGray) |
@@ -173,7 +174,7 @@ ephyrScreenInitialize(KdScreenInfo *screen)
 
     scrpriv->randr = screen->randr;
 
-    return ephyrMapFramebuffer(screen);
+    return ephyrMapFramebuffer(screen, context);
 }
 
 void *
@@ -208,7 +209,7 @@ ephyrBufferHeight(KdScreenInfo * screen)
 }
 
 Bool
-ephyrMapFramebuffer(KdScreenInfo * screen)
+ephyrMapFramebuffer(KdScreenInfo * screen, XephyrContext* context)
 {
     EphyrScrPriv *scrpriv = screen->driver;
     EphyrPriv *priv = screen->card->driver;
@@ -230,7 +231,7 @@ ephyrMapFramebuffer(KdScreenInfo * screen)
     priv->base =
         hostx_screen_init(screen, screen->x, screen->y,
                           screen->width, screen->height, buffer_height,
-                          &priv->bytes_per_line, &screen->fb.bitsPerPixel);
+                          &priv->bytes_per_line, &screen->fb.bitsPerPixel, context);
 
     if ((scrpriv->randr & RR_Rotate_0) && !(scrpriv->randr & RR_Reflect_All)) {
         scrpriv->shadow = FALSE;
@@ -299,7 +300,7 @@ ephyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf)
      * pBuf->pDamage  regions
      */
     shadowUpdateRotatePacked(pScreen, pBuf);
-    hostx_paint_rect(screen, 0, 0, 0, 0, screen->width, screen->height);
+    hostx_paint_rect(screen, 0, 0, 0, 0, screen->width, screen->height, pScreen->context);
 }
 
 static void
@@ -319,8 +320,8 @@ ephyrInternalDamageRedisplay(ScreenPtr pScreen)
         int nbox;
         BoxPtr pbox;
 
-        if (ephyr_glamor) {
-            ephyr_glamor_damage_redisplay(scrpriv->glamor, pRegion);
+        if (pScreen->context->ephyr_glamor) {
+            ephyr_glamor_damage_redisplay(scrpriv->glamor, pRegion, pScreen->context);
         } else {
             nbox = RegionNumRects(pRegion);
             pbox = RegionRects(pRegion);
@@ -329,7 +330,7 @@ ephyrInternalDamageRedisplay(ScreenPtr pScreen)
                 hostx_paint_rect(screen,
                                  pbox->x1, pbox->y1,
                                  pbox->x1, pbox->y1,
-                                 pbox->x2 - pbox->x1, pbox->y2 - pbox->y1);
+                                 pbox->x2 - pbox->x1, pbox->y2 - pbox->y1, pScreen->context);
                 pbox++;
             }
         }
@@ -520,7 +521,7 @@ ephyrRandRSetConfig(ScreenPtr pScreen,
                                  scrpriv->win_height);
 #endif
 
-    if (!ephyrMapFramebuffer(screen))
+    if (!ephyrMapFramebuffer(screen, pScreen->context))
         goto bail4;
 
     /* FIXME below should go in own call */
@@ -539,7 +540,7 @@ ephyrRandRSetConfig(ScreenPtr pScreen,
     }
     else {
 #ifdef GLAMOR
-        if (ephyr_glamor)
+        if (pScreen->context->ephyr_glamor)
             ephyr_glamor_create_screen_resources(pScreen);
 #endif
         /* Without shadow fb ( non rotated ) we need
@@ -577,7 +578,7 @@ ephyrRandRSetConfig(ScreenPtr pScreen,
 
     ephyrUnmapFramebuffer(screen);
     *scrpriv = oldscr;
-    (void) ephyrMapFramebuffer(screen);
+    (void) ephyrMapFramebuffer(screen, pScreen->context);
 
     pScreen->width = oldwidth;
     pScreen->height = oldheight;
@@ -657,7 +658,7 @@ ephyrInitScreen(ScreenPtr pScreen)
 
     EPHYR_LOG("pScreen->myNum:%d\n", pScreen->myNum);
     hostx_set_screen_number(screen, pScreen->myNum);
-    if (EphyrWantNoHostGrab) {
+    if (pScreen->context->EphyrWantNoHostGrab) {
         hostx_set_win_title(screen, "xephyr");
     } else {
         hostx_set_win_title(screen, "(ctrl+shift grabs mouse and keyboard)");
@@ -665,8 +666,8 @@ ephyrInitScreen(ScreenPtr pScreen)
     pScreen->CreateColormap = ephyrCreateColormap;
 
 #ifdef XV
-    if (!ephyrNoXV) {
-        if (ephyr_glamor)
+    if (!pScreen->context->ephyrNoXV) {
+        if (pScreen->context->ephyr_glamor)
             ephyr_glamor_xv_init(pScreen, pScreen->context);
         else if (!ephyrInitVideo(pScreen)) {
             EPHYR_LOG_ERROR("failed to initialize xvideo\n");
@@ -727,7 +728,7 @@ ephyrCreateResources(ScreenPtr pScreen)
                            ephyrShadowUpdate, ephyrWindowLinear);
     else {
 #ifdef GLAMOR
-        if (ephyr_glamor) {
+        if (pScreen->context->ephyr_glamor) {
             if (!ephyr_glamor_create_screen_resources(pScreen))
                 return FALSE;
         }
@@ -785,11 +786,11 @@ ephyrUpdateModifierState(XephyrContext* context, unsigned int state)
             for (key = 0; key < MAP_LENGTH; key++)
                 if (keyc->xkbInfo->desc->map->modmap[key] & mask) {
                     if (mask == XCB_MOD_MASK_LOCK) {
-                        KdEnqueueKeyboardEvent(ephyrKbd, key, FALSE);
-                        KdEnqueueKeyboardEvent(ephyrKbd, key, TRUE);
+                        KdEnqueueKeyboardEvent(context->ephyrKbd, key, FALSE);
+                        KdEnqueueKeyboardEvent(context->ephyrKbd, key, TRUE);
                     }
                     else if (key_is_down(pDev, key, KEY_PROCESSED))
-                        KdEnqueueKeyboardEvent(ephyrKbd, key, TRUE);
+                        KdEnqueueKeyboardEvent(context->ephyrKbd, key, TRUE);
 
                     if (--count == 0)
                         break;
@@ -800,9 +801,9 @@ ephyrUpdateModifierState(XephyrContext* context, unsigned int state)
         if (!(xkb_state & mask) && (state & mask))
             for (key = 0; key < MAP_LENGTH; key++)
                 if (keyc->xkbInfo->desc->map->modmap[key] & mask) {
-                    KdEnqueueKeyboardEvent(ephyrKbd, key, FALSE);
+                    KdEnqueueKeyboardEvent(context->ephyrKbd, key, FALSE);
                     if (mask == XCB_MOD_MASK_LOCK)
-                        KdEnqueueKeyboardEvent(ephyrKbd, key, TRUE);
+                        KdEnqueueKeyboardEvent(context->ephyrKbd, key, TRUE);
                     break;
                 }
     }
@@ -819,13 +820,15 @@ ephyrCrossScreen(ScreenPtr pScreen, Bool entering)
 {
 }
 
-ScreenPtr ephyrCursorScreen; /* screen containing the cursor */
+/* Moved to XephyrContext:
+ScreenPtr context->ephyrCursorScreen;
+*/
 
 static void
 ephyrWarpCursor(DeviceIntPtr pDev, ScreenPtr pScreen, int x, int y)
 {
     input_lock();
-    ephyrCursorScreen = pScreen;
+    pScreen->context->ephyrCursorScreen = pScreen;
     miPointerWarpCursor(pScreen->context->inputInfo.pointer, pScreen, x, y);
 
     input_unlock();
@@ -890,7 +893,7 @@ ephyrProcessExpose(XephyrContext* context, xcb_generic_event_t *xev)
     if (scrpriv) {
         hostx_paint_rect(scrpriv->screen, 0, 0, 0, 0,
                          scrpriv->win_width,
-                         scrpriv->win_height);
+                         scrpriv->win_height, context);
     } else {
         EPHYR_LOG_ERROR("failed to get host screen\n");
     }
@@ -902,16 +905,16 @@ ephyrProcessMouseMotion(XephyrContext* context, xcb_generic_event_t *xev)
     xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)xev;
     KdScreenInfo *screen = screen_from_window(context, motion->event);
 
-    if (!ephyrMouse ||
-        !((EphyrPointerPrivate *) ephyrMouse->driverPrivate)->enabled) {
+    if (!context->ephyrMouse ||
+        !((EphyrPointerPrivate *) ((KdPointerInfo*)context->ephyrMouse)->driverPrivate)->enabled) {
         EPHYR_LOG("skipping mouse motion:%d\n", screen->pScreen->myNum);
         return;
     }
 
-    if (ephyrCursorScreen != screen->pScreen) {
+    if (context->ephyrCursorScreen != screen->pScreen) {
         EPHYR_LOG("warping mouse cursor. "
                   "cur_screen:%d, motion_screen:%d\n",
-                  ephyrCursorScreen->myNum, screen->pScreen->myNum);
+                  context->ephyrCursorScreen->myNum, screen->pScreen->myNum);
         ephyrWarpCursor(context->inputInfo.pointer, screen->pScreen,
                         motion->event_x, motion->event_y);
     }
@@ -929,7 +932,7 @@ ephyrProcessMouseMotion(XephyrContext* context, xcb_generic_event_t *xev)
         x += screen->pScreen->x;
         y += screen->pScreen->y;
 
-        KdEnqueuePointerEvent(ephyrMouse, mouseState | KD_POINTER_DESKTOP, x, y, 0);
+        KdEnqueuePointerEvent(context->ephyrMouse, mouseState | KD_POINTER_DESKTOP, x, y, 0);
     }
 }
 
@@ -938,8 +941,8 @@ ephyrProcessButtonPress(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_button_press_event_t *button = (xcb_button_press_event_t *)xev;
 
-    if (!ephyrMouse ||
-        !((EphyrPointerPrivate *) ephyrMouse->driverPrivate)->enabled) {
+    if (!context->ephyrMouse ||
+        !((EphyrPointerPrivate *) ((KdPointerInfo*)context->ephyrMouse)->driverPrivate)->enabled) {
         EPHYR_LOG("skipping mouse press:%d\n", screen_from_window(context, button->event)->pScreen->myNum);
         return;
     }
@@ -951,7 +954,7 @@ ephyrProcessButtonPress(XephyrContext* context, xcb_generic_event_t *xev)
     mouseState |= 1 << (button->detail - 1);
 
     EPHYR_LOG("enqueuing mouse press:%d\n", screen_from_window(context, button->event)->pScreen->myNum);
-    KdEnqueuePointerEvent(ephyrMouse, mouseState | KD_MOUSE_DELTA, 0, 0, 0);
+    KdEnqueuePointerEvent(context->ephyrMouse, mouseState | KD_MOUSE_DELTA, 0, 0, 0);
 }
 
 static void
@@ -959,8 +962,8 @@ ephyrProcessButtonRelease(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_button_press_event_t *button = (xcb_button_press_event_t *)xev;
 
-    if (!ephyrMouse ||
-        !((EphyrPointerPrivate *) ephyrMouse->driverPrivate)->enabled) {
+    if (!context->ephyrMouse ||
+        !((EphyrPointerPrivate *) ((KdPointerInfo*)context->ephyrMouse)->driverPrivate)->enabled) {
         return;
     }
 
@@ -968,7 +971,7 @@ ephyrProcessButtonRelease(XephyrContext* context, xcb_generic_event_t *xev)
     mouseState &= ~(1 << (button->detail - 1));
 
     EPHYR_LOG("enqueuing mouse release:%d\n", screen_from_window(context, button->event)->pScreen->myNum);
-    KdEnqueuePointerEvent(ephyrMouse, mouseState | KD_MOUSE_DELTA, 0, 0, 0);
+    KdEnqueuePointerEvent(context->ephyrMouse, mouseState | KD_MOUSE_DELTA, 0, 0, 0);
 }
 
 /* Xephyr wants ctrl+shift to grab the window, but that conflicts with
@@ -999,14 +1002,14 @@ ephyrProcessKeyPress(XephyrContext* context, xcb_generic_event_t *xev)
 {
     xcb_key_press_event_t *key = (xcb_key_press_event_t *)xev;
 
-    if (!ephyrKbd ||
-        !((EphyrKbdPrivate *) ephyrKbd->driverPrivate)->enabled) {
+    if (!context->ephyrKbd ||
+        !((EphyrKbdPrivate *) ((KdKeyboardInfo*)context->ephyrKbd)->driverPrivate)->enabled) {
         return;
     }
 
     ephyrUpdateGrabModifierState(key->state);
     ephyrUpdateModifierState(context, key->state);
-    KdEnqueueKeyboardEvent(ephyrKbd, key->detail, FALSE);
+    KdEnqueueKeyboardEvent(context->ephyrKbd, key->detail, FALSE);
 }
 
 static void
@@ -1021,7 +1024,7 @@ ephyrProcessKeyRelease(XephyrContext* context, xcb_generic_event_t *xev)
     if (!keysyms)
         keysyms = xcb_key_symbols_alloc(conn);
 
-    if (!EphyrWantNoHostGrab &&
+    if (!context->EphyrWantNoHostGrab &&
         (((xcb_key_symbols_get_keysym(keysyms, key->detail, 0) == XK_Shift_L
           || xcb_key_symbols_get_keysym(keysyms, key->detail, 0) == XK_Shift_R)
          && (key->state & XCB_MOD_MASK_CONTROL)) ||
@@ -1079,8 +1082,8 @@ ephyrProcessKeyRelease(XephyrContext* context, xcb_generic_event_t *xev)
         }
     }
 
-    if (!ephyrKbd ||
-        !((EphyrKbdPrivate *) ephyrKbd->driverPrivate)->enabled) {
+    if (!context->ephyrKbd ||
+        !((EphyrKbdPrivate *) ((KdKeyboardInfo*)context->ephyrKbd)->driverPrivate)->enabled) {
         return;
     }
 
@@ -1090,7 +1093,7 @@ ephyrProcessKeyRelease(XephyrContext* context, xcb_generic_event_t *xev)
      * together.
      */
     ephyrUpdateModifierState(context, key->state);
-    KdEnqueueKeyboardEvent(ephyrKbd, key->detail, TRUE);
+    KdEnqueueKeyboardEvent(context->ephyrKbd, key->detail, TRUE);
 }
 
 static void
@@ -1102,7 +1105,7 @@ ephyrProcessConfigureNotify(XephyrContext* context, xcb_generic_event_t *xev)
     EphyrScrPriv *scrpriv = screen->driver;
 
     if (!scrpriv ||
-        (scrpriv->win_pre_existing == None && !EphyrWantResize)) {
+        (scrpriv->win_pre_existing == None && !context->EphyrWantResize)) {
         return;
     }
 
@@ -1126,7 +1129,7 @@ ephyrXcbProcessEvents(XephyrContext* context, Bool queued_only)
              */
             if (xcb_connection_has_error(conn)) {
                 CloseWellKnownConnections();
-                OsCleanup(1);
+                OsCleanup(1, context);
                 exit(1);
             }
 
@@ -1172,7 +1175,7 @@ ephyrXcbProcessEvents(XephyrContext* context, Bool queued_only)
         }
 
         if (xev) {
-            if (ephyr_glamor)
+            if (context->ephyr_glamor)
                 ephyr_glamor_process_event(xev);
 
             free(xev);
@@ -1280,7 +1283,9 @@ MouseInit(KdPointerInfo * pi)
      */
     pi->transformCoordinates = TRUE;
 
-    ephyrMouse = pi;
+    if (pi->context) {
+        pi->context->ephyrMouse = pi;
+    }
     return Success;
 }
 
@@ -1304,7 +1309,9 @@ static void
 MouseFini(KdPointerInfo * pi)
 {
     free(pi->driverPrivate);
-    ephyrMouse = NULL;
+    if (pi->context) {
+        pi->context->ephyrMouse = NULL;
+    }
     return;
 }
 
@@ -1346,7 +1353,7 @@ EphyrKeyboardInit(KdKeyboardInfo * ki, XephyrContext* context)
     }
 
     ki->name = strdup("Xephyr virtual keyboard");
-    ephyrKbd = ki;
+    context->ephyrKbd = ki;
     return Success;
 }
 
@@ -1368,7 +1375,9 @@ static void
 EphyrKeyboardFini(KdKeyboardInfo * ki)
 {
     free(ki->driverPrivate);
-    ephyrKbd = NULL;
+    if (ki->context) {
+        ki->context->ephyrKbd = NULL;
+    }
     return;
 }
 

@@ -120,13 +120,13 @@ ProcXGetSelectedExtensionEvents(ClientPtr client)
         for (others = pOthers->inputClients; others; others = others->next)
             for (i = 0; i < EMASKSIZE; i++)
                 ClassFromMask(NULL, others->mask[i], i,
-                              &rep.all_clients_count, COUNT);
+                              &rep.all_clients_count, COUNT, client->context);
 
         for (others = pOthers->inputClients; others; others = others->next)
             if (SameClient(others, client)) {
                 for (i = 0; i < EMASKSIZE; i++)
                     ClassFromMask(NULL, others->mask[i], i,
-                                  &rep.this_client_count, COUNT);
+                                  &rep.this_client_count, COUNT, client->context);
                 break;
             }
 
@@ -140,12 +140,12 @@ ProcXGetSelectedExtensionEvents(ClientPtr client)
         if (others)
             for (i = 0; i < EMASKSIZE; i++)
                 tclient =
-                    ClassFromMask(tclient, others->mask[i], i, NULL, CREATE);
+                    ClassFromMask(tclient, others->mask[i], i, NULL, CREATE, client->context);
 
         for (others = pOthers->inputClients; others; others = others->next)
             for (i = 0; i < EMASKSIZE; i++)
                 aclient =
-                    ClassFromMask(aclient, others->mask[i], i, NULL, CREATE);
+                    ClassFromMask(aclient, others->mask[i], i, NULL, CREATE, client->context);
     }
 
     WriteReplyToClient(client, sizeof(xGetSelectedExtensionEventsReply), &rep);

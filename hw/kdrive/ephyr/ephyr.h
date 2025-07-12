@@ -95,8 +95,10 @@ typedef struct _ephyrScrPriv {
 } EphyrScrPriv;
 
 extern KdCardFuncs ephyrFuncs;
+/* Moved to XephyrContext:
 extern KdKeyboardInfo *ephyrKbd;
 extern KdPointerInfo *ephyrMouse;
+*/
 
 extern miPointerScreenFuncRec ephyrPointerScreenFuncs;
 
@@ -107,7 +109,7 @@ Bool
  ephyrCardInit(KdCardInfo * card);
 
 Bool
-ephyrScreenInitialize(KdScreenInfo *screen);
+ephyrScreenInitialize(KdScreenInfo *screen, XephyrContext* context);
 
 Bool
  ephyrInitScreen(ScreenPtr pScreen);
@@ -149,7 +151,7 @@ void
  ephyrPutColors(ScreenPtr pScreen, int n, xColorItem * pdefs);
 
 Bool
- ephyrMapFramebuffer(KdScreenInfo * screen);
+ ephyrMapFramebuffer(KdScreenInfo * screen, XephyrContext* context);
 
 void *ephyrWindowLinear(ScreenPtr pScreen,
                         CARD32 row,

@@ -327,6 +327,7 @@ DamageExtSubtractWindowClip(DamageExtPtr pDamageExt)
     PanoramiXRes *res = NULL;
     RegionPtr ret;
     int i;
+    XephyrContext *context = pDamageExt->pClient->context;
 
     if (!win->parent)
         return &PanoramiXScreenRegion;
@@ -642,6 +643,7 @@ PanoramiXDamageCreate(ClientPtr client)
     PanoramiXDamageRes *damage;
     PanoramiXRes *draw;
     int i, rc;
+    XephyrContext *context = client->context;
 
     REQUEST(xDamageCreateReq);
 

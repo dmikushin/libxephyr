@@ -115,7 +115,7 @@ compCreateOverlayClient(ScreenPtr pScreen, ClientPtr pClient)
      * Create a resource for this element so it can be deleted
      * when the client goes away.
      */
-    if (!AddResource(pOc->resource, CompositeClientOverlayType, (void *) pOc, pClient->context))
+    if (!AddResource(pOc->resource, pScreen->context->CompositeClientOverlayType, (void *) pOc, pClient->context))
         return NULL;
 
     return pOc;
@@ -135,13 +135,14 @@ compCreateOverlayWindow(ScreenPtr pScreen)
     int w = pScreen->width;
     int h = pScreen->height;
     int x = 0, y = 0;
+    XephyrContext *context = pScreen->context;
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension) {
         x = -pScreen->x;
         y = -pScreen->y;
-        w = PanoramiXPixWidth;
-        h = PanoramiXPixHeight;
+        w = context->PanoramiXPixWidth;
+        h = context->PanoramiXPixHeight;
     }
 #endif
 

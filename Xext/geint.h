@@ -37,15 +37,13 @@
 #include "extnsionst.h"
 #include <X11/extensions/geproto.h>
 
-extern DevPrivateKeyRec GEClientPrivateKeyRec;
-
-#define GEClientPrivateKey (&GEClientPrivateKeyRec)
+/* GEClientPrivateKey is now accessed through context */
 
 typedef struct _GEClientInfo {
     CARD32 major_version;
     CARD32 minor_version;
 } GEClientInfoRec, *GEClientInfoPtr;
 
-#define GEGetClient(pClient)    ((GEClientInfoPtr)(dixLookupPrivate(&((pClient)->devPrivates), GEClientPrivateKey)))
+#define GEGetClient(pClient)    ((GEClientInfoPtr)(dixLookupPrivate(&((pClient)->devPrivates), &((pClient)->context->GEClientPrivateKeyRec))))
 
 #endif                          /* _GEINT_H_ */

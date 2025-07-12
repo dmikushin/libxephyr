@@ -191,6 +191,7 @@ extern DevPrivateKeyRec CompSubwindowsPrivateKeyRec;
 #define GetCompSubwindows(w) ((CompSubwindowsPtr) \
     dixLookupPrivate(&(w)->devPrivates, CompSubwindowsPrivateKey))
 
+extern RESTYPE CompositeClientWindowType;
 extern RESTYPE CompositeClientSubwindowsType;
 extern RESTYPE CompositeClientOverlayType;
 

@@ -167,7 +167,7 @@ typedef union _GrabMask GrabMask;
 typedef struct _ValuatorMask ValuatorMask;
 
 /* The DIX stores incoming input events in this list */
-extern InternalEvent *InputEventList;
+/* InputEventList is now in context */
 
 typedef int (*DeviceProc) (DeviceIntPtr /*device */ ,
                            int /*what */ );
@@ -740,7 +740,6 @@ extern Bool EnableCursor;
 /* Set to FALSE by default - ChangeWindowAttributes sets it to TRUE on
  * CWCursor, xfixes/cursor.c uses it to determine if the cursor is enabled
  */
-extern Bool CursorVisible;
 
 extern _X_EXPORT ValuatorMask *valuator_mask_new(int num_valuators);
 extern _X_EXPORT void valuator_mask_free(ValuatorMask **mask);
@@ -814,7 +813,7 @@ extern _X_EXPORT void input_unlock(void);
 extern _X_EXPORT void input_force_unlock(void);
 extern _X_EXPORT int in_input_thread(void);
 
-extern void InputThreadPreInit(void);
+extern void InputThreadPreInit(XephyrContext* context);
 extern void InputThreadInit(void);
 extern void InputThreadFini(void);
 
@@ -824,6 +823,6 @@ extern int InputThreadRegisterDev(int fd,
 
 extern int InputThreadUnregisterDev(int fd);
 
-extern _X_EXPORT Bool InputThreadEnable;
+/* InputThreadEnable is now in context */
 
 #endif                          /* INPUT_H */

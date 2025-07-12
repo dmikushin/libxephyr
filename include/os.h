@@ -309,7 +309,7 @@ extern _X_EXPORT int auditTrailLevel;
 extern _X_EXPORT void
 LockServer(XephyrContext* context);
 extern _X_EXPORT void
-UnlockServer(void);
+UnlockServer(XephyrContext* context);
 
 extern _X_EXPORT int
 OsLookupColor(int /*screen */ ,
@@ -323,7 +323,7 @@ extern _X_EXPORT void
 OsInit(XephyrContext* context);
 
 extern _X_EXPORT void
-OsCleanup(Bool);
+OsCleanup(Bool terminating, XephyrContext* context);
 
 extern _X_EXPORT void
 OsVendorFatalError(const char *f, va_list args)
@@ -541,7 +541,6 @@ extern _X_EXPORT void
 ddxUseMsg(XephyrContext* context);
 
 /* stuff for ReplyCallback */
-extern _X_EXPORT CallbackListPtr ReplyCallback;
 typedef struct {
     ClientPtr client;
     const void *replyData;

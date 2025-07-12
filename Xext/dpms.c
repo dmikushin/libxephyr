@@ -44,8 +44,6 @@ Equipment Corporation.
 #include "scrnintstr.h"
 #include "windowstr.h"
 
-CARD16 DPMSPowerLevel = 0;
-Bool DPMSDisabledSwitch = FALSE;
 CARD32 DPMSStandbyTime = -1;
 CARD32 DPMSSuspendTime = -1;
 CARD32 DPMSOffTime = -1;
@@ -87,7 +85,7 @@ DPMSSet(ClientPtr client, int level)
 {
     int rc, i;
 
-    DPMSPowerLevel = level;
+    client->context->DPMSPowerLevel = level;
 
     if (level != DPMSModeOn) {
         if (isUnblank(screenIsSaved)) {
@@ -262,7 +260,7 @@ ProcDPMSInfo(ClientPtr client)
         .type = X_Reply,
         .sequenceNumber = client->sequence,
         .length = 0,
-        .power_level = DPMSPowerLevel,
+        .power_level = client->context->DPMSPowerLevel,
         .state = client->context->DPMSEnabled
     };
 
@@ -443,7 +441,7 @@ DPMSExtensionInit(XephyrContext* context)
     CONDITIONALLY_SET_DPMS_TIMEOUT(DPMSSuspendTime)
     CONDITIONALLY_SET_DPMS_TIMEOUT(DPMSOffTime)
 
-    DPMSPowerLevel = DPMSModeOn;
+    context->DPMSPowerLevel = DPMSModeOn;
     context->DPMSEnabled = DPMSSupported(context);
 
     if (context->DPMSEnabled)

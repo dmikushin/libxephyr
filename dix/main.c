@@ -197,7 +197,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         InitEvents(context);
         xfont2_init_glyph_caching();
         dixResetRegistry();
-        InitFonts();
+        InitFonts(context);
         InitCallbackManager();
         InitOutput(&context->screenInfo, argc, argv, context);
 
@@ -318,7 +318,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
         CloseDownDevices(context);
 
-        CloseDownEvents();
+        CloseDownEvents(context);
 
         for (i = context->screenInfo.numGPUScreens - 1; i >= 0; i--) {
             ScreenPtr pScreen = context->screenInfo.gpuscreens[i];
@@ -361,7 +361,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             CloseWellKnownConnections();
         }
 
-        OsCleanup((dispatchException & DE_TERMINATE) != 0);
+        OsCleanup((dispatchException & DE_TERMINATE) != 0, context);
 
         if (dispatchException & DE_TERMINATE) {
             ddxGiveUp(EXIT_NO_ERROR);

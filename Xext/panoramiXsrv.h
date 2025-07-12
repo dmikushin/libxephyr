@@ -8,9 +8,9 @@
 
 #include "panoramiX.h"
 
-extern _X_EXPORT int PanoramiXNumScreens;
-extern _X_EXPORT int PanoramiXPixWidth;
-extern _X_EXPORT int PanoramiXPixHeight;
+/* REMOVED: extern _X_EXPORT int PanoramiXNumScreens; - moved to XephyrContext */
+/* REMOVED: extern _X_EXPORT int PanoramiXPixWidth; - moved to XephyrContext */
+/* REMOVED: extern _X_EXPORT int PanoramiXPixHeight; - moved to XephyrContext */
 extern _X_EXPORT RegionRec PanoramiXScreenRegion;
 
 extern _X_EXPORT VisualID PanoramiXTranslateVisualID(int screen, VisualID orig, XephyrContext* context);
@@ -54,6 +54,7 @@ static inline void
 panoramix_setup_ids(PanoramiXRes * resource, ClientPtr client, XID base_id)
 {
     int j;
+    XephyrContext *context = client->context;
 
     resource->info[0].id = base_id;
     FOR_NSCREENS_FORWARD_SKIP(j) {

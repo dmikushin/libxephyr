@@ -1881,7 +1881,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* contex
         }
     }
 
-    if (DeviceEventCallback && !syncEvents.playingEvents) {
+    if (context->DeviceEventCallback && !context->syncEvents) {
         DeviceEventInfoRec eventinfo;
         SpritePtr pSprite = device->spriteInfo->sprite;
 
@@ -1891,7 +1891,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* contex
 
         eventinfo.device = device;
         eventinfo.event = ev;
-        CallCallbacks(&DeviceEventCallback, (void *) &eventinfo);
+        CallCallbacks(&context->DeviceEventCallback, (void *) &eventinfo);
     }
 
     grab = device->deviceGrab.grab;

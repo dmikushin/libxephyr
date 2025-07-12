@@ -986,8 +986,7 @@ SyncCreateSystemCounter(const char *name,
                         XephyrContext* context
     )
 {
-    /* TODO: Need proper context here - using NULL for now */
-    SyncCounter *pCounter = SyncCreateCounter(NULL, FakeClientID(0, NULL), initial);
+    SyncCounter *pCounter = SyncCreateCounter(NULL, FakeClientID(0, context), initial);
 
     if (pCounter) {
         SysCounterInfo *psci;
@@ -2640,6 +2639,7 @@ typedef struct {
     int64_t *value_less;
     int64_t *value_greater;
     int deviceid;
+    XephyrContext *context;
 } IdleCounterPriv;
 
 static void
@@ -2798,9 +2798,7 @@ IdleTimeBracketValues(void *pCounter, int64_t *pbracket_less,
     else if (!registered && (pbracket_less || pbracket_greater)) {
         /* Reset flag must be zero so we don't force a idle timer reset on
            the first wakeup */
-        /* TODO: Get context properly - this is called from a system callback */
-        extern XephyrContext* context;
-        LastEventTimeToggleResetAll(FALSE, context);
+        LastEventTimeToggleResetAll(FALSE, priv->context);
         RegisterBlockAndWakeupHandlers(IdleTimeBlockHandler,
                                        IdleTimeWakeupHandler, pCounter);
     }
@@ -2828,6 +2826,7 @@ init_system_idle_counter(const char *name, int deviceid, XephyrContext* context)
 
         priv->value_less = priv->value_greater = NULL;
         priv->deviceid = deviceid;
+        priv->context = context;
 
         idle_time_counter->pSysCounterInfo->private = priv;
     }

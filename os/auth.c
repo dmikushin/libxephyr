@@ -137,9 +137,8 @@ LoadAuthorization(XephyrContext* context)
                 memcmp(protocols[i].name, auth->name,
                        (int) auth->name_length) == 0 && protocols[i].Add) {
                 ++count;
-                /* TODO: Need proper context here during initialization */
                 (*protocols[i].Add) (auth->data_length, auth->data,
-                                     FakeClientID(0, NULL));
+                                     FakeClientID(0, context));
             }
         }
         XauDisposeAuth(auth);
@@ -281,7 +280,8 @@ AddAuthorization(unsigned name_length, const char *name,
         if (protocols[i].name_length == name_length &&
             memcmp(protocols[i].name, name, (int) name_length) == 0 &&
             protocols[i].Add) {
-            /* TODO: Need proper context here */
+            /* AddAuthorization is called from xdmcp.c which doesn't have context yet
+             * Once xdmcp globals are moved to context, pass it through here */
             return (*protocols[i].Add) (data_length, data, FakeClientID(0, NULL));
         }
     }
@@ -303,7 +303,8 @@ GenerateAuthorization(unsigned name_length,
         if (protocols[i].name_length == name_length &&
             memcmp(protocols[i].name, name, (int) name_length) == 0 &&
             protocols[i].Generate) {
-            /* TODO: Need proper context here */
+            /* GenerateAuthorization is called from security extension which doesn't have context yet
+             * Once security extension globals are moved to context, pass it through here */
             return (*protocols[i].Generate) (data_length, data,
                                              FakeClientID(0, NULL),
                                              data_length_return, data_return);

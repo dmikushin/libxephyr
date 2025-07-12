@@ -53,8 +53,10 @@
 ** X resources.
 */
 static int glxGeneration;
+/* Moved to XephyrContext:
 RESTYPE __glXContextRes;
 RESTYPE __glXDrawableRes;
+*/
 
 static DevPrivateKeyRec glxClientPrivateKeyRec;
 static GlxServerVendor *glvnd_vendor = NULL;
@@ -236,13 +238,15 @@ __glXErrorOccured(void)
     return errorOccured;
 }
 
-static int __glXErrorBase;
+/* Moved to XephyrContext:
+static int context->GlxErrorBase;
 int __glXEventBase;
+*/
 
 int
-__glXError(int error)
+__glXError(int error, XephyrContext* context)
 {
-    return __glXErrorBase + error;
+    return context->GlxErrorBase + error;
 }
 
 __GLXclientState *
@@ -371,7 +375,7 @@ xorgGlxThunkRequest(ClientPtr client)
         xGLXQueryContextInfoEXTReq *req = (void *)stuff;
         REQUEST_AT_LEAST_SIZE(*req);
         if (!(vendor = glxServer.getXIDMap(maybe_swap32(client, req->context))))
-            return __glXError(GLXBadContext);
+            return __glXError(GLXBadContext, client->context);
         break;
         }
 
@@ -418,7 +422,7 @@ xorgGlxThunkRequest(ClientPtr client)
         REQUEST_AT_LEAST_SIZE(*req);
         if (!(vendor = glxServer.getXIDMap(maybe_swap32(client,
                                                         req->drawable))))
-            return __glXError(GLXBadDrawable);
+            return __glXError(GLXBadDrawable, client->context);
         break;
         }
 
@@ -428,7 +432,7 @@ xorgGlxThunkRequest(ClientPtr client)
         GLXContextTag tag = maybe_swap32(client, stuff->contextTag);
         vendor = glxServer.getContextTag(client, tag);
         if (!vendor)
-            return __glXError(GLXBadContextTag);
+            return __glXError(GLXBadContextTag, client->context);
         break;
         }
     }
@@ -490,7 +494,7 @@ xorgGlxServerPreInit(const ExtensionEntry *extEntry, XephyrContext* context)
         if (!AddCallback(&context->ClientStateCallback, glxClientCallback, 0))
             return FALSE;
 
-        __glXErrorBase = extEntry->errorBase;
+        context->GlxErrorBase = extEntry->errorBase;
         __glXEventBase = extEntry->eventBase;
 
         SetResourceTypeSizeFunc(__glXDrawableRes, GetGLXDrawableBytes);
@@ -544,7 +548,7 @@ xorgGlxServerInit(CallbackListPtr *pcbl, void *param, void *ext)
 
         if (glxServer.getVendorForScreen(NULL, pScreen) != NULL) {
             // There's already a vendor registered.
-            LogMessage(X_INFO, "GLX: Another vendor is already registered for screen %d\n", i);
+            LogMessage(X_INFO, "GLX: Another vendor is already registered for screen %d\n", context, i);
             continue;
         }
 
@@ -553,7 +557,7 @@ xorgGlxServerInit(CallbackListPtr *pcbl, void *param, void *ext)
             if (glxScreen != NULL) {
                 LogMessage(X_INFO,
                            "GLX: Initialized %s GL provider for screen %d\n",
-                           p->name, i);
+                           context, p->name, i);
                 break;
             }
 
@@ -563,7 +567,7 @@ xorgGlxServerInit(CallbackListPtr *pcbl, void *param, void *ext)
             glxServer.setScreenVendor(pScreen, glvnd_vendor);
         } else {
             LogMessage(X_INFO,
-                       "GLX: no usable GL providers found for screen %d\n", i);
+                       "GLX: no usable GL providers found for screen %d\n", context, i);
         }
     }
 }
@@ -597,14 +601,14 @@ __glXForceCurrent(__GLXclientState * cl, GLXContextTag tag, int *error)
     cx = __glXLookupContextByTag(cl, tag);
     if (!cx) {
         cl->client->errorValue = tag;
-        *error = __glXError(GLXBadContextTag);
+        *error = __glXError(GLXBadContextTag, cl->client->context);
         return 0;
     }
 
     /* If we're expecting a glXRenderLarge request, this better be one. */
     if (cx->largeCmdRequestsSoFar != 0 && stuff->glxCode != X_GLXRenderLarge) {
         client->errorValue = stuff->glxCode;
-        *error = __glXError(GLXBadLargeRequest);
+        *error = __glXError(GLXBadLargeRequest, client->context);
         return 0;
     }
 
@@ -615,7 +619,7 @@ __glXForceCurrent(__GLXclientState * cl, GLXContextTag tag, int *error)
              ** windows can be destroyed from under us; GLX pixmaps are
              ** refcounted and don't go away until no one is using them.
              */
-            *error = __glXError(GLXBadCurrentWindow);
+            *error = __glXError(GLXBadCurrentWindow, client->context);
             return 0;
         }
     }
@@ -641,7 +645,7 @@ __glXForceCurrent(__GLXclientState * cl, GLXContextTag tag, int *error)
             /* Bind failed, and set the error code.  Bummer */
             lastGLContext = NULL;
             cl->client->errorValue = cx->id;
-            *error = __glXError(GLXBadContextState);
+            *error = __glXError(GLXBadContextState, cl->client->context);
             return 0;
         }
     }

@@ -200,7 +200,7 @@ compRedirectWindow(ClientPtr pClient, WindowPtr pWin, int update)
     }
     ccw->next = cw->clients;
     cw->clients = ccw;
-    if (!AddResource(ccw->id, CompositeClientWindowType, pWin, pClient->context))
+    if (!AddResource(ccw->id, pWin->drawable.pScreen->context->CompositeClientWindowType, pWin, pClient->context))
         return BadAlloc;
     if (ccw->update == CompositeRedirectManual) {
         if (!anyMarked)
@@ -399,7 +399,7 @@ compRedirectSubwindows(ClientPtr pClient, WindowPtr pWin, int update)
      */
     ccw->next = csw->clients;
     csw->clients = ccw;
-    if (!AddResource(ccw->id, CompositeClientSubwindowsType, pWin, pClient->context))
+    if (!AddResource(ccw->id, pWin->drawable.pScreen->context->CompositeClientSubwindowsType, pWin, pClient->context))
         return BadAlloc;
     if (ccw->update == CompositeRedirectManual) {
         csw->update = CompositeRedirectManual;

@@ -64,8 +64,8 @@ SOFTWARE.
 
 #include "grabdev.h"
 
-extern XExtEventInfo EventInfo[];
-extern int ExtEventIndex;
+// EventInfo is now in context->EventInfo
+// ExtEventIndex is now in context->ExtEventIndex
 
 /***********************************************************************
  *
@@ -189,9 +189,9 @@ CreateMaskFromList(ClientPtr client, XEventClass * list, int count,
         if (rc == client->context->BadDevice || (dev != NULL && tdev != dev))
             return BadClass;
 
-        for (j = 0; j < ExtEventIndex; j++)
-            if (EventInfo[j].type == (*list & 0xff)) {
-                mask[device].mask |= EventInfo[j].mask;
+        for (j = 0; j < client->context->ExtEventIndex; j++)
+            if (client->context->EventInfo[j].type == (*list & 0xff)) {
+                mask[device].mask |= client->context->EventInfo[j].mask;
                 mask[device].dev = (void *) tdev;
                 break;
             }

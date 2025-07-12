@@ -303,7 +303,9 @@ glamor_set_debug_level(int *debug_level)
     *debug_level = 0;
 }
 
+/* Moved to XephyrContext:
 int glamor_debug_level;
+*/
 
 void
 glamor_gldrawarrays_quads_using_indices(glamor_screen_private *glamor_priv,

@@ -40,7 +40,8 @@ XEventClass *ClassFromMask(XEventClass * /* buf */ ,
                            Mask /* mask */ ,
                            int /* maskndx */ ,
                            CARD16 * /* count */ ,
-                           int  /* mode */
+                           int  /* mode */,
+                           XephyrContext* /* context */
     );
 
 void SRepXGetDeviceDontPropagateList(ClientPtr /* client */ ,

@@ -56,7 +56,7 @@ ephyr_glamor_set_window_size(struct ephyr_glamor *glamor,
 
 void
 ephyr_glamor_damage_redisplay(struct ephyr_glamor *glamor,
-                              struct pixman_region16 *damage);
+                              struct pixman_region16 *damage, XephyrContext* context);
 
 void
 ephyr_glamor_process_event(xcb_generic_event_t *xev);

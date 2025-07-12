@@ -872,11 +872,11 @@ AbortServer(XephyrContext* context)
     XF86BigfontCleanup();
 #endif
     CloseWellKnownConnections();
-    OsCleanup(TRUE);
+    OsCleanup(TRUE, context);
     AbortDevices(context);
     ddxGiveUp(EXIT_ERR_ABORT);
     fflush(stderr);
-    if (CoreDump)
+    if (context->CoreDump)
         OsAbort();
     exit(1);
 }

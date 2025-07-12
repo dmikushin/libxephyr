@@ -900,13 +900,13 @@ RecordInstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient, XephyrConte
 
     assert(numEnabledRCAPs >= 0);
     if (!oneclient && ++numEnabledRCAPs == 1) { /* we're enabling the first context */
-        if (!AddCallback(&EventCallback, RecordADeliveredEventOrError, NULL))
+        if (!AddCallback(&context->EventCallback, RecordADeliveredEventOrError, NULL))
             return BadAlloc;
-        if (!AddCallback(&DeviceEventCallback, RecordADeviceEvent, NULL))
+        if (!AddCallback(&context->DeviceEventCallback, RecordADeviceEvent, NULL))
             return BadAlloc;
-        if (!AddCallback(&ReplyCallback, RecordAReply, NULL))
+        if (!AddCallback(&context->ReplyCallback, RecordAReply, NULL))
             return BadAlloc;
-        if (!AddCallback(&FlushCallback, RecordFlushAllContexts, NULL))
+        if (!AddCallback(&context->FlushCallback, RecordFlushAllContexts, NULL))
             return BadAlloc;
         /* Alternate context flushing scheme: delete the line above
          * and call RegisterBlockAndWakeupHandlers here passing
@@ -998,16 +998,16 @@ RecordUninstallHooks(RecordClientsAndProtocolPtr pRCAP, XID oneclient, XephyrCon
 
     assert(numEnabledRCAPs >= 1);
     if (!oneclient && --numEnabledRCAPs == 0) { /* we're disabling the last context */
-        DeleteCallback(&EventCallback, RecordADeliveredEventOrError, NULL);
-        DeleteCallback(&DeviceEventCallback, RecordADeviceEvent, NULL);
-        DeleteCallback(&ReplyCallback, RecordAReply, NULL);
-        DeleteCallback(&FlushCallback, RecordFlushAllContexts, NULL);
+        DeleteCallback(&context->EventCallback, RecordADeliveredEventOrError, NULL);
+        DeleteCallback(&context->DeviceEventCallback, RecordADeviceEvent, NULL);
+        DeleteCallback(&context->ReplyCallback, RecordAReply, NULL);
+        DeleteCallback(&context->FlushCallback, RecordFlushAllContexts, NULL);
         /* Alternate context flushing scheme: delete the line above
          * and call RemoveBlockAndWakeupHandlers here passing
          * RecordFlushAllContexts.  Is this any better?
          */
         /* Having deleted the callback, call it one last time. -gildea */
-        RecordFlushAllContexts(&FlushCallback, NULL, NULL);
+        RecordFlushAllContexts(&context->FlushCallback, NULL, NULL);
     }
 }                               /* RecordUninstallHooks */
 
@@ -2778,7 +2778,7 @@ RecordAClientStateChange(CallbackListPtr *pcbl, void *nulldata,
 static void
 RecordCloseDown(ExtensionEntry * extEntry)
 {
-    XephyrContext* context = get_current_context();
+    XephyrContext* context = (XephyrContext*)extEntry->extPrivate;
     if (context) {
         DeleteCallback(&context->ClientStateCallback, RecordAClientStateChange, NULL);
     }
@@ -2818,6 +2818,8 @@ RecordExtensionInit(XephyrContext* context)
         DeleteCallback(&context->ClientStateCallback, RecordAClientStateChange, NULL);
         return;
     }
+    /* Store context in extension private data for CloseDown callback */
+    extentry->extPrivate = context;
     SetResourceTypeErrorValue(RTContext,
                               extentry->errorBase + XRecordBadContext);
 

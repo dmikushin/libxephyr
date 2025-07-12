@@ -741,6 +741,7 @@ ProcPanoramiXShmPutImage(ClientPtr client)
     PanoramiXRes *draw, *gc;
     Bool sendEvent, isRoot;
 
+    XephyrContext *context = client->context;
     REQUEST(xShmPutImageReq);
     REQUEST_SIZE_MATCH(xShmPutImageReq);
 
@@ -780,6 +781,8 @@ static int
 ProcPanoramiXShmGetImage(ClientPtr client)
 {
     PanoramiXRes *draw;
+
+    XephyrContext *context = client->context;
     DrawablePtr *drawables;
     DrawablePtr pDraw;
     xShmGetImageReply xgi;
@@ -823,16 +826,16 @@ ProcPanoramiXShmGetImage(ClientPtr client)
 
     if (isRoot) {
         if (                    /* check for being onscreen */
-               x < 0 || x + w > PanoramiXPixWidth ||
-               y < 0 || y + h > PanoramiXPixHeight)
+               x < 0 || x + w > context->PanoramiXPixWidth ||
+               y < 0 || y + h > context->PanoramiXPixHeight)
             return BadMatch;
     }
     else {
         if (                    /* check for being onscreen */
                client->context->screenInfo.screens[0]->x + pDraw->x + x < 0 ||
-               client->context->screenInfo.screens[0]->x + pDraw->x + x + w > PanoramiXPixWidth
+               client->context->screenInfo.screens[0]->x + pDraw->x + x + w > context->PanoramiXPixWidth
                || client->context->screenInfo.screens[0]->y + pDraw->y + y < 0 ||
-               client->context->screenInfo.screens[0]->y + pDraw->y + y + h > PanoramiXPixHeight
+               client->context->screenInfo.screens[0]->y + pDraw->y + y + h > context->PanoramiXPixHeight
                ||
                /* check for being inside of border */
                x < -wBorderWidth((WindowPtr) pDraw) ||
@@ -855,7 +858,7 @@ ProcPanoramiXShmGetImage(ClientPtr client)
 
     VERIFY_SHMSIZE(shmdesc, stuff->offset, length, client);
 
-    drawables = calloc(PanoramiXNumScreens, sizeof(DrawablePtr));
+    drawables = calloc(context->PanoramiXNumScreens, sizeof(DrawablePtr));
     if (!drawables)
         return BadAlloc;
 
@@ -921,6 +924,8 @@ static int
 ProcPanoramiXShmCreatePixmap(ClientPtr client)
 {
     ScreenPtr pScreen = NULL;
+
+    XephyrContext *context = client->context;
     PixmapPtr pMap = NULL;
     DrawablePtr pDraw;
     DepthPtr pDepth;

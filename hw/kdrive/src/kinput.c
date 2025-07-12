@@ -694,6 +694,7 @@ KdNewKeyboard(void)
     ki->xkbLayout = strdup(kdGlobalXkbLayout ? kdGlobalXkbLayout : XKB_DFLT_KB_LAYOUT);
     ki->xkbVariant = strdup(kdGlobalXkbVariant ? kdGlobalXkbVariant : XKB_DFLT_KB_VARIANT);
     ki->xkbOptions = strdup(kdGlobalXkbOptions ? kdGlobalXkbOptions : XKB_DFLT_KB_OPTIONS);
+    ki->context = NULL;  // Initialize context field
 
     return ki;
 }
@@ -1118,7 +1119,7 @@ KdInitInput(XephyrContext* context)
     struct KdConfigDevice *dev;
 
     if (kdConfigPointers || kdConfigKeyboards)
-        InputThreadPreInit();
+        InputThreadPreInit(context);
 
     kdInputEnabled = TRUE;
 
@@ -2025,7 +2026,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
         if (KdAddPointer(pi, context) != Success ||
             ActivateDevice(pi->dixdev, TRUE) != Success ||
             EnableDevice(pi->dixdev, TRUE) != TRUE) {
-            ErrorF("couldn't add or enable pointer \", context%s\" (%s)\n", pi->name ? pi->name : "(unnamed)", pi->path);
+            ErrorF("couldn't add or enable pointer \"%s\" (%s)\n", context, pi->name ? pi->name : "(unnamed)", pi->path);
             KdFreePointer(pi);
             return BadImplementation;
         }
@@ -2037,7 +2038,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
         KdParseKbdOptions(ki, context);
 
         if (!ki->driver) {
-            ErrorF("couldn't find driver for keyboard device \", context%s\" (%s)\n", ki->name ? ki->name : "(unnamed)", ki->path);
+            ErrorF("couldn't find driver for keyboard device \"%s\" (%s)\n", context, ki->name ? ki->name : "(unnamed)", ki->path);
             KdFreeKeyboard(ki);
             return BadValue;
         }
@@ -2045,7 +2046,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
         if (KdAddKeyboard(ki, context) != Success ||
             ActivateDevice(ki->dixdev, TRUE) != Success ||
             EnableDevice(ki->dixdev, TRUE) != TRUE) {
-            ErrorF("couldn't add or enable keyboard \", context%s\" (%s)\n", ki->name ? ki->name : "(unnamed)", ki->path);
+            ErrorF("couldn't add or enable keyboard \"%s\" (%s)\n", context, ki->name ? ki->name : "(unnamed)", ki->path);
             KdFreeKeyboard(ki);
             return BadImplementation;
         }
@@ -2053,7 +2054,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
         *pdev = ki->dixdev;
     }
     else {
-        ErrorF("unrecognised device identifier: %s\n", input_option_get_value(input_option_find(optionsdup,
+        ErrorF("unrecognised device identifier: %s\n", context, input_option_get_value(input_option_find(optionsdup,
                                                         "device")));
         input_option_free_list(&optionsdup);
         return BadValue;

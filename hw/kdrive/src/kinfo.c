@@ -125,6 +125,7 @@ KdNewPointer(void)
     pi->nButtons = KD_MAX_BUTTON;
     for (i = 1; i < KD_MAX_BUTTON; i++)
         pi->map[i] = i;
+    pi->context = NULL;  // Initialize context field
 
     return pi;
 }

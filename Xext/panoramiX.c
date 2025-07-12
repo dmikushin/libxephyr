@@ -72,9 +72,9 @@ extern VisualPtr glxMatchVisual(ScreenPtr pScreen,
  *	PanoramiX data declarations
  */
 
-int PanoramiXPixWidth = 0;
-int PanoramiXPixHeight = 0;
-int PanoramiXNumScreens = 0;
+/* REMOVED: int context->PanoramiXPixWidth = 0; - moved to XephyrContext */
+/* REMOVED: int context->PanoramiXPixHeight = 0; - moved to XephyrContext */
+/* REMOVED: int context->PanoramiXNumScreens = 0; - moved to XephyrContext */
 
 _X_EXPORT RegionRec PanoramiXScreenRegion = { {0, 0, 0, 0}, NULL };
 
@@ -403,8 +403,8 @@ XineramaInitData(XephyrContext* context)
         RegionUninit(&ScreenRegion);
     }
 
-    PanoramiXPixWidth = context->screenInfo.screens[0]->x + context->screenInfo.screens[0]->width;
-    PanoramiXPixHeight =
+    context->PanoramiXPixWidth = context->screenInfo.screens[0]->x + context->screenInfo.screens[0]->width;
+    context->PanoramiXPixHeight =
         context->screenInfo.screens[0]->y + context->screenInfo.screens[0]->height;
 
     FOR_NSCREENS_FORWARD_SKIP(i) {
@@ -413,10 +413,10 @@ XineramaInitData(XephyrContext* context)
         w = pScreen->x + pScreen->width;
         h = pScreen->y + pScreen->height;
 
-        if (PanoramiXPixWidth < w)
-            PanoramiXPixWidth = w;
-        if (PanoramiXPixHeight < h)
-            PanoramiXPixHeight = h;
+        if (context->PanoramiXPixWidth < w)
+            context->PanoramiXPixWidth = w;
+        if (context->PanoramiXPixHeight < h)
+            context->PanoramiXPixHeight = h;
     }
 }
 
@@ -458,8 +458,8 @@ PanoramiXExtensionInit(XephyrContext* context)
         return;
     }
 
-    PanoramiXNumScreens = context->screenInfo.numScreens;
-    if (PanoramiXNumScreens == 1) {     /* Only 1 screen        */
+    context->PanoramiXNumScreens = context->screenInfo.numScreens;
+    if (context->PanoramiXNumScreens == 1) {     /* Only 1 screen        */
         noPanoramiXExtension = TRUE;
         return;
     }
@@ -686,8 +686,8 @@ PanoramiXCreateConnectionBlock(XephyrContext* context)
     old_width = root->pixWidth;
     old_height = root->pixHeight;
 
-    root->pixWidth = PanoramiXPixWidth;
-    root->pixHeight = PanoramiXPixHeight;
+    root->pixWidth = context->PanoramiXPixWidth;
+    root->pixHeight = context->PanoramiXPixHeight;
     width_mult = (1.0 * root->pixWidth) / old_width;
     height_mult = (1.0 * root->pixHeight) / old_height;
     root->mmWidth *= width_mult;
@@ -896,7 +896,7 @@ PanoramiXResetProc(ExtensionEntry * extEntry)
 #ifdef COMPOSITE
     PanoramiXCompositeReset ();
 #endif
-    context->screenInfo.numScreens = PanoramiXNumScreens;
+    context->screenInfo.numScreens = context->PanoramiXNumScreens;
     for (i = 256; i--;)
         ProcVector[i] = SavedProcVector[i];
 }
@@ -961,6 +961,7 @@ ProcPanoramiXGetScreenCount(ClientPtr client)
     WindowPtr pWin;
     xPanoramiXGetScreenCountReply rep;
     int rc;
+    XephyrContext *context = client->context;
 
     REQUEST_SIZE_MATCH(xPanoramiXGetScreenCountReq);
     rc = dixLookupWindow(&pWin, stuff->window, client, DixGetAttrAccess);
@@ -969,7 +970,7 @@ ProcPanoramiXGetScreenCount(ClientPtr client)
 
     rep = (xPanoramiXGetScreenCountReply) {
         .type = X_Reply,
-        .ScreenCount = PanoramiXNumScreens,
+        .ScreenCount = context->PanoramiXNumScreens,
         .sequenceNumber = client->sequence,
         .length = 0,
         .window = stuff->window
@@ -990,10 +991,11 @@ ProcPanoramiXGetScreenSize(ClientPtr client)
     WindowPtr pWin;
     xPanoramiXGetScreenSizeReply rep;
     int rc;
+    XephyrContext *context = client->context;
 
     REQUEST_SIZE_MATCH(xPanoramiXGetScreenSizeReq);
 
-    if (stuff->screen >= PanoramiXNumScreens)
+    if (stuff->screen >= context->PanoramiXNumScreens)
         return BadMatch;
 
     rc = dixLookupWindow(&pWin, stuff->window, client, DixGetAttrAccess);
@@ -1055,7 +1057,8 @@ int
 ProcXineramaQueryScreens(ClientPtr client)
 {
     /* REQUEST(xXineramaQueryScreensReq); */
-    CARD32 number = (noPanoramiXExtension) ? 0 : PanoramiXNumScreens;
+    XephyrContext *context = client->context;
+    CARD32 number = (noPanoramiXExtension) ? 0 : context->PanoramiXNumScreens;
     xXineramaQueryScreensReply rep = {
         .type = X_Reply,
         .sequenceNumber = client->sequence,

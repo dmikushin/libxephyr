@@ -526,7 +526,7 @@ extern void
 InitEvents(XephyrContext* context);
 
 extern void
-CloseDownEvents(void);
+CloseDownEvents(XephyrContext* context);
 
 extern void
 DeleteWindowFromAnyEvents(WindowPtr /* pWin */ ,
@@ -607,7 +607,6 @@ typedef struct {
  *  EventCallback stuff
  */
 
-extern _X_EXPORT CallbackListPtr EventCallback;
 
 typedef struct {
     ClientPtr client;
@@ -619,7 +618,6 @@ typedef struct {
  *  DeviceEventCallback stuff
  */
 
-extern _X_EXPORT CallbackListPtr DeviceEventCallback;
 
 typedef struct {
     InternalEvent *event;

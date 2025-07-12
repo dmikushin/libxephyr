@@ -440,7 +440,7 @@ __glXDRIscreenProbe(ScreenPtr pScreen)
                                     (void **) &screen->core,
                                     __DRI_CORE, 1,
                                     (void **) &screen->swrast,
-                                    __DRI_SWRAST, 1);
+                                    __DRI_SWRAST, 1, pScreen->context);
     if (screen->driver == NULL) {
         goto handle_error;
     }

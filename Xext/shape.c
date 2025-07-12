@@ -307,6 +307,7 @@ ProcPanoramiXShapeRectangles(ClientPtr client)
     PanoramiXRes *win;
     int j, result;
 
+    XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xShapeRectanglesReq);
 
     result = dixLookupResourceByType((void **) &win, stuff->dest, XRT_WINDOW,
@@ -404,6 +405,7 @@ ProcPanoramiXShapeMask(ClientPtr client)
     REQUEST(xShapeMaskReq);
     PanoramiXRes *win, *pmap;
     int j, result;
+    XephyrContext *context = client->context;
 
     REQUEST_SIZE_MATCH(xShapeMaskReq);
 
@@ -533,6 +535,7 @@ ProcPanoramiXShapeCombine(ClientPtr client)
     PanoramiXRes *win, *win2;
     int j, result;
 
+    XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xShapeCombineReq);
 
     result = dixLookupResourceByType((void **) &win, stuff->dest, XRT_WINDOW,
@@ -604,6 +607,7 @@ ProcPanoramiXShapeOffset(ClientPtr client)
     PanoramiXRes *win;
     int j, result;
 
+    XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xShapeOffsetReq);
 
     result = dixLookupResourceByType((void **) &win, stuff->dest, XRT_WINDOW,

@@ -137,8 +137,10 @@ XvAttributeRec glamor_xv_attributes[] = {
 };
 int glamor_xv_num_attributes = ARRAY_SIZE(glamor_xv_attributes) - 1;
 
-Atom glamorBrightness, glamorContrast, glamorSaturation, glamorHue,
-    glamorColorspace, glamorGamma;
+/* Moved to XephyrContext:
+Atom context->glamorBrightness, context->glamorContrast, context->glamorSaturation, context->glamorHue,
+    context->glamorColorspace, context->glamorGamma;
+*/
 
 XvImageRec glamor_xv_images[] = {
     XVIMAGE_YV12,
@@ -214,19 +216,19 @@ glamor_xv_free_port_data(glamor_port_private *port_priv)
 
 int
 glamor_xv_set_port_attribute(glamor_port_private *port_priv,
-                             Atom attribute, INT32 value)
+                             Atom attribute, INT32 value, XephyrContext* context)
 {
-    if (attribute == glamorBrightness)
+    if (attribute == context->glamorBrightness)
         port_priv->brightness = ClipValue(value, -1000, 1000);
-    else if (attribute == glamorHue)
+    else if (attribute == context->glamorHue)
         port_priv->hue = ClipValue(value, -1000, 1000);
-    else if (attribute == glamorContrast)
+    else if (attribute == context->glamorContrast)
         port_priv->contrast = ClipValue(value, -1000, 1000);
-    else if (attribute == glamorSaturation)
+    else if (attribute == context->glamorSaturation)
         port_priv->saturation = ClipValue(value, -1000, 1000);
-    else if (attribute == glamorGamma)
+    else if (attribute == context->glamorGamma)
         port_priv->gamma = ClipValue(value, 100, 10000);
-    else if (attribute == glamorColorspace)
+    else if (attribute == context->glamorColorspace)
         port_priv->transform_index = ClipValue(value, 0, 1);
     else
         return BadMatch;
@@ -235,19 +237,19 @@ glamor_xv_set_port_attribute(glamor_port_private *port_priv,
 
 int
 glamor_xv_get_port_attribute(glamor_port_private *port_priv,
-                             Atom attribute, INT32 *value)
+                             Atom attribute, INT32 *value, XephyrContext* context)
 {
-    if (attribute == glamorBrightness)
+    if (attribute == context->glamorBrightness)
         *value = port_priv->brightness;
-    else if (attribute == glamorHue)
+    else if (attribute == context->glamorHue)
         *value = port_priv->hue;
-    else if (attribute == glamorContrast)
+    else if (attribute == context->glamorContrast)
         *value = port_priv->contrast;
-    else if (attribute == glamorSaturation)
+    else if (attribute == context->glamorSaturation)
         *value = port_priv->saturation;
-    else if (attribute == glamorGamma)
+    else if (attribute == context->glamorGamma)
         *value = port_priv->gamma;
-    else if (attribute == glamorColorspace)
+    else if (attribute == context->glamorColorspace)
         *value = port_priv->transform_index;
     else
         return BadMatch;
@@ -656,16 +658,17 @@ glamor_xv_init_port(glamor_port_private *port_priv)
     port_priv->gamma = 1000;
     port_priv->transform_index = 0;
 
-    REGION_NULL(pScreen, &port_priv->clip);
+    REGION_NULL(NULL, &port_priv->clip);
 }
 
 void
 glamor_xv_core_init(ScreenPtr screen)
 {
-    glamorBrightness = MAKE_ATOM("XV_BRIGHTNESS");
-    glamorContrast = MAKE_ATOM("XV_CONTRAST");
-    glamorSaturation = MAKE_ATOM("XV_SATURATION");
-    glamorHue = MAKE_ATOM("XV_HUE");
-    glamorGamma = MAKE_ATOM("XV_GAMMA");
-    glamorColorspace = MAKE_ATOM("XV_COLORSPACE");
+    XephyrContext* context = screen->context;
+    context->glamorBrightness = MAKE_ATOM("XV_BRIGHTNESS");
+    context->glamorContrast = MAKE_ATOM("XV_CONTRAST");
+    context->glamorSaturation = MAKE_ATOM("XV_SATURATION");
+    context->glamorHue = MAKE_ATOM("XV_HUE");
+    context->glamorGamma = MAKE_ATOM("XV_GAMMA");
+    context->glamorColorspace = MAKE_ATOM("XV_COLORSPACE");
 }

@@ -249,7 +249,7 @@ RenderExtensionInit(XephyrContext* context)
 #endif
     SetResourceTypeErrorValue(PictureType, RenderErrBase + BadPicture);
     SetResourceTypeErrorValue(PictFormatType, RenderErrBase + BadPictFormat);
-    SetResourceTypeErrorValue(GlyphSetType, RenderErrBase + BadGlyphSet);
+    SetResourceTypeErrorValue(context->GlyphSetType, RenderErrBase + BadGlyphSet);
 }
 
 static int
@@ -927,11 +927,11 @@ ProcRenderCreateGlyphSet(ClientPtr client)
     if (!glyphSet)
         return BadAlloc;
     /* security creation/labeling check */
-    rc = XaceHook(XACE_RESOURCE_ACCESS, client, stuff->gsid, GlyphSetType,
+    rc = XaceHook(XACE_RESOURCE_ACCESS, client, stuff->gsid, client->context->GlyphSetType,
                   glyphSet, RT_NONE, NULL, DixCreateAccess);
     if (rc != Success)
         return rc;
-    if (!AddResource(stuff->gsid, GlyphSetType, (void *) glyphSet, client->context))
+    if (!AddResource(stuff->gsid, client->context->GlyphSetType, (void *) glyphSet, client->context))
         return BadAlloc;
     return Success;
 }
@@ -949,13 +949,13 @@ ProcRenderReferenceGlyphSet(ClientPtr client)
     LEGAL_NEW_RESOURCE(stuff->gsid, client);
 
     rc = dixLookupResourceByType((void **) &glyphSet, stuff->existing,
-                                 GlyphSetType, client, DixGetAttrAccess);
+                                 client->context->GlyphSetType, client, DixGetAttrAccess);
     if (rc != Success) {
         client->errorValue = stuff->existing;
         return rc;
     }
     glyphSet->refcnt++;
-    if (!AddResource(stuff->gsid, GlyphSetType, (void *) glyphSet, client->context))
+    if (!AddResource(stuff->gsid, client->context->GlyphSetType, (void *) glyphSet, client->context))
         return BadAlloc;
     return Success;
 }
@@ -973,7 +973,7 @@ ProcRenderFreeGlyphSet(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xRenderFreeGlyphSetReq);
     rc = dixLookupResourceByType((void **) &glyphSet, stuff->glyphset,
-                                 GlyphSetType, client, DixDestroyAccess);
+                                 client->context->GlyphSetType, client, DixDestroyAccess);
     if (rc != Success) {
         client->errorValue = stuff->glyphset;
         return rc;
@@ -1013,7 +1013,7 @@ ProcRenderAddGlyphs(ClientPtr client)
     REQUEST_AT_LEAST_SIZE(xRenderAddGlyphsReq);
     err =
         dixLookupResourceByType((void **) &glyphSet, stuff->glyphset,
-                                GlyphSetType, client, DixAddAccess);
+                                client->context->GlyphSetType, client, DixAddAccess);
     if (err != Success) {
         client->errorValue = stuff->glyphset;
         return err;
@@ -1205,7 +1205,7 @@ ProcRenderFreeGlyphs(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xRenderFreeGlyphsReq);
     rc = dixLookupResourceByType((void **) &glyphSet, stuff->glyphset,
-                                 GlyphSetType, client, DixRemoveAccess);
+                                 client->context->GlyphSetType, client, DixRemoveAccess);
     if (rc != Success) {
         client->errorValue = stuff->glyphset;
         return rc;
@@ -1279,7 +1279,7 @@ ProcRenderCompositeGlyphs(ClientPtr client)
         pFormat = 0;
 
     rc = dixLookupResourceByType((void **) &glyphSet, stuff->glyphset,
-                                 GlyphSetType, client, DixUseAccess);
+                                 client->context->GlyphSetType, client, DixUseAccess);
     if (rc != Success)
         return rc;
 
@@ -1330,7 +1330,7 @@ ProcRenderCompositeGlyphs(ClientPtr client)
             if (buffer + sizeof(GlyphSet) < end) {
                 memcpy(&gs, buffer, sizeof(GlyphSet));
                 rc = dixLookupResourceByType((void **) &glyphSet, gs,
-                                             GlyphSetType, client,
+                                             client->context->GlyphSetType, client,
                                              DixUseAccess);
                 if (rc != Success)
                     goto bail;
@@ -2598,6 +2598,7 @@ PanoramiXRenderCreatePicture(ClientPtr client)
     REQUEST(xRenderCreatePictureReq);
     PanoramiXRes *refDraw, *newPict;
     int result, j;
+    XephyrContext *context = client->context;
 
     REQUEST_AT_LEAST_SIZE(xRenderCreatePictureReq);
     result = dixLookupResourceByClass((void **) &refDraw, stuff->drawable,
@@ -2637,6 +2638,7 @@ PanoramiXRenderChangePicture(ClientPtr client)
 {
     PanoramiXRes *pict;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xRenderChangePictureReq);
 
@@ -2659,6 +2661,7 @@ PanoramiXRenderSetPictureClipRectangles(ClientPtr client)
 {
     REQUEST(xRenderSetPictureClipRectanglesReq);
     int result = Success, j;
+    XephyrContext *context = client->context;
     PanoramiXRes *pict;
 
     REQUEST_AT_LEAST_SIZE(xRenderSetPictureClipRectanglesReq);
@@ -2682,6 +2685,7 @@ PanoramiXRenderSetPictureTransform(ClientPtr client)
 {
     REQUEST(xRenderSetPictureTransformReq);
     int result = Success, j;
+    XephyrContext *context = client->context;
     PanoramiXRes *pict;
 
     REQUEST_AT_LEAST_SIZE(xRenderSetPictureTransformReq);
@@ -2704,6 +2708,7 @@ PanoramiXRenderSetPictureFilter(ClientPtr client)
 {
     REQUEST(xRenderSetPictureFilterReq);
     int result = Success, j;
+    XephyrContext *context = client->context;
     PanoramiXRes *pict;
 
     REQUEST_AT_LEAST_SIZE(xRenderSetPictureFilterReq);
@@ -2726,6 +2731,7 @@ PanoramiXRenderFreePicture(ClientPtr client)
 {
     PanoramiXRes *pict;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xRenderFreePictureReq);
 
@@ -2753,6 +2759,7 @@ PanoramiXRenderComposite(ClientPtr client)
 {
     PanoramiXRes *src, *msk, *dst;
     int result = Success, j;
+    XephyrContext *context = client->context;
     xRenderCompositeReq orig;
 
     REQUEST(xRenderCompositeReq);
@@ -2796,6 +2803,7 @@ PanoramiXRenderCompositeGlyphs(ClientPtr client)
 {
     PanoramiXRes *src, *dst;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xRenderCompositeGlyphsReq);
     xGlyphElt origElt, *elt;
@@ -2837,6 +2845,7 @@ PanoramiXRenderFillRectangles(ClientPtr client)
 {
     PanoramiXRes *dst;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xRenderFillRectanglesReq);
     char *extra;
@@ -2882,6 +2891,7 @@ PanoramiXRenderTrapezoids(ClientPtr client)
 {
     PanoramiXRes *src, *dst;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xRenderTrapezoidsReq);
     char *extra;
@@ -2943,6 +2953,7 @@ PanoramiXRenderTriangles(ClientPtr client)
 {
     PanoramiXRes *src, *dst;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xRenderTrianglesReq);
     char *extra;
@@ -3000,6 +3011,7 @@ PanoramiXRenderTriStrip(ClientPtr client)
 {
     PanoramiXRes *src, *dst;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xRenderTriStripReq);
     char *extra;
@@ -3053,6 +3065,7 @@ PanoramiXRenderTriFan(ClientPtr client)
 {
     PanoramiXRes *src, *dst;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xRenderTriFanReq);
     char *extra;
@@ -3106,6 +3119,7 @@ PanoramiXRenderAddTraps(ClientPtr client)
 {
     PanoramiXRes *picture;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST(xRenderAddTrapsReq);
     char *extra;
@@ -3144,6 +3158,7 @@ PanoramiXRenderCreateSolidFill(ClientPtr client)
     REQUEST(xRenderCreateSolidFillReq);
     PanoramiXRes *newPict;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST_AT_LEAST_SIZE(xRenderCreateSolidFillReq);
 
@@ -3175,6 +3190,7 @@ PanoramiXRenderCreateLinearGradient(ClientPtr client)
     REQUEST(xRenderCreateLinearGradientReq);
     PanoramiXRes *newPict;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST_AT_LEAST_SIZE(xRenderCreateLinearGradientReq);
 
@@ -3207,6 +3223,7 @@ PanoramiXRenderCreateRadialGradient(ClientPtr client)
     REQUEST(xRenderCreateRadialGradientReq);
     PanoramiXRes *newPict;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST_AT_LEAST_SIZE(xRenderCreateRadialGradientReq);
 
@@ -3239,6 +3256,7 @@ PanoramiXRenderCreateConicalGradient(ClientPtr client)
     REQUEST(xRenderCreateConicalGradientReq);
     PanoramiXRes *newPict;
     int result = Success, j;
+    XephyrContext *context = client->context;
 
     REQUEST_AT_LEAST_SIZE(xRenderCreateConicalGradientReq);
 

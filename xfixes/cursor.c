@@ -129,7 +129,6 @@ typedef struct _CursorScreen {
 #define Unwrap(as,s,elt,backup)	(((backup) = (s)->elt), (s)->elt = (as)->elt)
 
 /* The cursor doesn't show up until the first XDefineCursor() */
-Bool CursorVisible = FALSE;
 Bool EnableCursor = TRUE;
 
 static CursorPtr
@@ -160,9 +159,9 @@ CursorDisplayCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
 
     Unwrap(cs, pScreen, DisplayCursor, backupProc);
 
-    CursorVisible = CursorVisible && EnableCursor;
+    pScreen->context->CursorVisible = pScreen->context->CursorVisible && EnableCursor;
 
-    if (cs->pCursorHideCounts != NULL || !CursorVisible) {
+    if (cs->pCursorHideCounts != NULL || !pScreen->context->CursorVisible) {
         ret = (*pScreen->DisplayCursor) (pDev, pScreen, NullCursor);
     }
     else {
@@ -1075,9 +1074,9 @@ XFixesCursorInit(XephyrContext* context)
     int i;
 
     if (context->party_like_its_1989)
-        CursorVisible = EnableCursor;
+        context->CursorVisible = EnableCursor;
     else
-        CursorVisible = FALSE;
+        context->CursorVisible = FALSE;
 
     if (!dixRegisterPrivateKey(&CursorScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;

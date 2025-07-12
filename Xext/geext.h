@@ -41,7 +41,7 @@ typedef struct _GEExtension {
 } GEExtension, *GEExtensionPtr;
 
 /* All registered extensions and their handling functions. */
-extern _X_EXPORT GEExtension GEExtensions[MAXEXTENSIONS];
+/* GEExtensions array is now in context */
 
 /* Typecast to generic event */
 #define GEV(ev) ((xGenericEvent*)(ev))
@@ -61,8 +61,7 @@ extern _X_EXPORT GEExtension GEExtensions[MAXEXTENSIONS];
     (((pWin)->optional) ? (pWin)->optional->geMasks->geClients : NULL)
 
 /* Returns the event_fill for the given event */
-#define GEEventFill(ev) \
-    GEExtensions[GEEXTIDX(ev)].evfill
+/* NOTE: GEEventFill needs context, must be passed as parameter */
 
 #define GEIsType(ev, ext, ev_type) \
         ((GEV(ev)->type == GenericEvent) &&  \

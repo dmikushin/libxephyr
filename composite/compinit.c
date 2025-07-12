@@ -49,9 +49,11 @@
 #include "compint.h"
 #include "compositeext.h"
 
+/* Moved to XephyrContext: 
 DevPrivateKeyRec CompScreenPrivateKeyRec;
 DevPrivateKeyRec CompWindowPrivateKeyRec;
 DevPrivateKeyRec CompSubwindowsPrivateKeyRec;
+*/
 
 static Bool
 compCloseScreen(ScreenPtr pScreen)

@@ -294,7 +294,8 @@ static const char dri_driver_path[] = DRI_DRIVER_PATH;
 void *
 glxProbeDriver(const char *driverName,
                void **coreExt, const char *coreName, int coreVersion,
-               void **renderExt, const char *renderName, int renderVersion)
+               void **renderExt, const char *renderName, int renderVersion,
+               XephyrContext* context)
 {
     int i;
     void *driver;
@@ -331,14 +332,14 @@ glxProbeDriver(const char *driverName,
             break;
 
         LogMessage(X_ERROR, "AIGLX error: dlopen of %s failed (%s)\n",
-                   filename, dlerror());
+                   context, filename, dlerror());
 
         path = next;
     } while (path);
 
     if (driver == NULL) {
         LogMessage(X_ERROR, "AIGLX error: unable to load driver %s\n",
-                  driverName);
+                  context, driverName);
         goto cleanup_failure;
     }
 
@@ -365,7 +366,7 @@ glxProbeDriver(const char *driverName,
         extensions = dlsym(driver, __DRI_DRIVER_EXTENSIONS);
     if (extensions == NULL) {
         LogMessage(X_ERROR, "AIGLX error: %s exports no extensions (%s)\n",
-                   driverName, dlerror());
+                   context, driverName, dlerror());
         goto cleanup_failure;
     }
 
@@ -384,7 +385,7 @@ glxProbeDriver(const char *driverName,
     if (*coreExt == NULL || *renderExt == NULL) {
         LogMessage(X_ERROR,
                    "AIGLX error: %s does not export required DRI extension\n",
-                   driverName);
+                   context, driverName);
         goto cleanup_failure;
     }
     return driver;
