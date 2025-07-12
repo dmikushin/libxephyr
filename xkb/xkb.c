@@ -365,7 +365,7 @@ ProcXkbSelectEvents(ClientPtr client)
             }
         }
         if (dataLeft > 2) {
-            ErrorF("[xkb] Extra data (%d bytes) after SelectEvents\n", context, dataLeft);
+            ErrorF("[xkb] Extra data (%d bytes) after SelectEvents\n", client->context, dataLeft);
             return BadLength;
         }
         return Success;
@@ -2579,7 +2579,7 @@ _XkbSetMapChecks(ClientPtr client, DeviceIntPtr dev, xkbSetMapReq * req,
     }
 
     if (((values - ((char *) req)) / 4) != req->length) {
-        ErrorF("[xkb] Internal error! Bad length in XkbSetMap (after check)\n", context, client->context);
+        ErrorF("[xkb] Internal error! Bad length in XkbSetMap (after check)\n", client->context);
         client->errorValue = values - ((char *) &req[1]);
         return BadLength;
     }
@@ -2662,7 +2662,7 @@ _XkbSetMap(ClientPtr client, DeviceIntPtr dev, xkbSetMapReq * req, char *values)
         values =
             SetVirtualModMap(xkbi, req, (xkbVModMapWireDesc *) values, &change);
     if (((values - ((char *) req)) / 4) != req->length) {
-        ErrorF("[xkb] Internal error! Bad length in XkbSetMap (after set)\n", context, client->context);
+        ErrorF("[xkb] Internal error! Bad length in XkbSetMap (after set)\n", client->context);
         client->errorValue = values - ((char *) &req[1]);
         return BadLength;
     }
@@ -3012,7 +3012,7 @@ _XkbSetCompatMap(ClientPtr client, DeviceIntPtr dev,
             if (wire->sym == NoSymbol && wire->match == XkbSI_AnyOfOrNone &&
                 (wire->mods & 0xff) == 0xff &&
                 wire->act.type == XkbSA_XFree86Private) {
-                ErrorF("XKB: Skipping broken Any+AnyOfOrNone(All) -> Private ", context
+                ErrorF("XKB: Skipping broken Any+AnyOfOrNone(All) -> Private "
                        "action from client\n", client->context);
                 skipped++;
                 continue;
@@ -3063,7 +3063,7 @@ _XkbSetCompatMap(ClientPtr client, DeviceIntPtr dev,
     }
     i = XkbPaddedSize((data - ((char *) req)));
     if ((i / 4) != req->length) {
-        ErrorF("[xkb] Internal length error on read in _XkbSetCompatMap\n", context, client->context);
+        ErrorF("[xkb] Internal length error on read in _XkbSetCompatMap\n", client->context);
         return BadLength;
     }
 
@@ -6570,8 +6570,8 @@ ProcXkbGetDeviceInfo(ClientPtr client)
             return status;
     }
     else if (length != 0) {
-        ErrorF("[xkb] Internal Error!  BadLength in ProcXkbGetDeviceInfo\n", context, client->context);
-        ErrorF("[xkb]                  Wrote %d fewer bytes than expected\n", context, client->context, length);
+        ErrorF("[xkb] Internal Error!  BadLength in ProcXkbGetDeviceInfo\n", client->context);
+        ErrorF("[xkb]                  Wrote %d fewer bytes than expected\n", client->context, length);
         return BadLength;
     }
     return Success;
@@ -6961,10 +6961,10 @@ ProcXkbSetDebuggingFlags(ClientPtr client)
         }
         msg = (char *) &stuff[1];
         if (msg[stuff->msgLength - 1] != '\0') {
-            ErrorF("[xkb] XkbDebug: message not null-terminated\n", context, client->context);
+            ErrorF("[xkb] XkbDebug: message not null-terminated\n", client->context);
             return BadValue;
         }
-        ErrorF("[xkb] XkbDebug: %s\n", context, client->context, msg);
+        ErrorF("[xkb] XkbDebug: %s\n", client->context, msg);
     }
     xkbDebugFlags = newFlags;
     xkbDebugCtrls = newCtrls;

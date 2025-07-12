@@ -116,7 +116,7 @@ ephyrScreenInitialize(KdScreenInfo *screen)
             scrpriv->server_depth = screen->fb.depth;
         }
         else
-            ErrorF("\nXephyr: requested screen depth not supported, setting to match hosts.\n", context, 
+            ErrorF("\nXephyr: requested screen depth not supported, setting to match hosts.\n", 
                  screen->pScreen ? screen->pScreen->context : NULL);
     }
 
@@ -159,7 +159,7 @@ ephyrScreenInitialize(KdScreenInfo *screen)
             screen->fb.bitsPerPixel = 32;
         }
         else {
-            ErrorF("\nXephyr: Unsupported screen depth %d\n", context, screen->pScreen ? screen->pScreen->context : NULL, screen->fb.depth);
+            ErrorF("\nXephyr: Unsupported screen depth %d\n", screen->pScreen ? screen->pScreen->context : NULL, screen->fb.depth);
             return FALSE;
         }
 

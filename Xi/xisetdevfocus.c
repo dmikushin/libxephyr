@@ -80,7 +80,7 @@ ProcXISetFocus(ClientPtr client)
     if (ret != Success)
         return ret;
     if (!dev->focus)
-        return context->BadDevice;
+        return client->context->BadDevice;
 
     return SetInputFocus(client, dev, stuff->focus, RevertToParent,
                          stuff->time, TRUE);
@@ -100,7 +100,7 @@ ProcXIGetFocus(ClientPtr client)
     if (ret != Success)
         return ret;
     if (!dev->focus)
-        return context->BadDevice;
+        return client->context->BadDevice;
 
     rep = (xXIGetFocusReply) {
         .repType = X_Reply,

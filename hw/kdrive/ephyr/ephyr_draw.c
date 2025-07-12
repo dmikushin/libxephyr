@@ -492,11 +492,11 @@ ephyrDrawInit(ScreenPtr pScreen)
 
     success = exaDriverInit(pScreen, fakexa->exa);
     if (success) {
-        ErrorF("Initialized fake EXA acceleration\n", context, pScreen->context);
+        ErrorF("Initialized fake EXA acceleration\n", pScreen->context);
         scrpriv->fakexa = fakexa;
     }
     else {
-        ErrorF("Failed to initialize EXA\n", context, pScreen->context);
+        ErrorF("Failed to initialize EXA\n", pScreen->context);
         free(fakexa->exa);
         free(fakexa);
     }

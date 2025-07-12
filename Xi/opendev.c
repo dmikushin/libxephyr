@@ -102,18 +102,18 @@ ProcXOpenDevice(ClientPtr client)
 
     status = dixLookupDevice(&dev, stuff->deviceid, client, DixUseAccess);
 
-    if (status == context->BadDevice) {  /* not open */
+    if (status == client->context->BadDevice) {  /* not open */
         for (dev = client->context->inputInfo.off_devices; dev; dev = dev->next)
             if (dev->id == stuff->deviceid)
                 break;
         if (dev == NULL)
-            return context->BadDevice;
+            return client->context->BadDevice;
     }
     else if (status != Success)
         return status;
 
     if (IsMaster(dev))
-        return context->BadDevice;
+        return client->context->BadDevice;
 
     if (status != Success)
         return status;

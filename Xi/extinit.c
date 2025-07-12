@@ -1186,7 +1186,7 @@ IResetProc(ExtensionEntry * unused)
     EventSwapVector[DeviceKeyStateNotify] = NotImplemented;
     EventSwapVector[DeviceButtonStateNotify] = NotImplemented;
     EventSwapVector[DeviceMappingNotify] = NotImplemented;
-    EventSwapVector[ChangeDeviceNotify] = NotImplemented;
+    /* EventSwapVector[ChangeDeviceNotify] = NotImplemented; TODO: need context */
     EventSwapVector[DevicePresenceNotify] = NotImplemented;
     EventSwapVector[DevicePropertyNotify] = NotImplemented;
     RestoreExtensionEvents(NULL);
@@ -1282,8 +1282,8 @@ SEventIDispatch(xEvent *from, xEvent *to)
         DO_SWAP(SDeviceButtonStateNotifyEvent, deviceButtonStateNotify);
     else if (type == DeviceMappingNotify)
         DO_SWAP(SDeviceMappingNotifyEvent, deviceMappingNotify);
-    else if (type == context->ChangeDeviceNotify)
-        DO_SWAP(SChangeDeviceNotifyEvent, changeDeviceNotify);
+    /* else if (type == ChangeDeviceNotify) TODO: need context
+        DO_SWAP(SChangeDeviceNotifyEvent, changeDeviceNotify); */
     else if (type == DevicePresenceNotify)
         DO_SWAP(SDevicePresenceNotifyEvent, devicePresenceNotify);
     else if (type == DevicePropertyNotify)
@@ -1321,7 +1321,7 @@ XInputExtensionInit(XephyrContext* context)
         FatalError("Cannot request private for XI.\n", context);
 
     if (!XIBarrierInit(context))
-        FatalError("Could not initialize barriers.\n");
+        FatalError("Could not initialize barriers.\n", context);
 
     extEntry = AddExtension(INAME, IEVENTS, IERRORS, ProcIDispatch,
                             SProcIDispatch, IResetProc, StandardMinorOpcode);
@@ -1334,7 +1334,7 @@ XInputExtensionInit(XephyrContext* context)
                                                "INPUTCLIENT");
         if (!RT_INPUTCLIENT)
             FatalError("Failed to add resource type for XI.\n", context);
-        FixExtensionEvents(extEntry);
+        FixExtensionEvents(extEntry, context);
         ReplySwapVector[IReqCode] = (ReplySwapPtr) SReplyIDispatch;
         EventSwapVector[DeviceValuator] = SEventIDispatch;
         EventSwapVector[DeviceKeyPress] = SEventIDispatch;

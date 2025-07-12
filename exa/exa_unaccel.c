@@ -729,6 +729,6 @@ exaGetPixmapFirstPixel(PixmapPtr pPixmap)
     }
     default:
         FatalError("%s called for invalid bpp %d\n", pPixmap->drawable.pScreen->context, 
-                   __func__, pPixmap->drawable.bitsPerPixel, context);
+                   __func__, pPixmap->drawable.bitsPerPixel);
     }
 }

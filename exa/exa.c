@@ -429,7 +429,7 @@ exaFinishAccess(DrawablePtr pDrawable, int index)
 
     if (i >= EXA_PREPARE_AUX_DEST &&
         !(pExaScr->info->flags & EXA_SUPPORTS_PREPARE_AUX)) {
-        ErrorF("EXA bug: Trying to call driver FinishAccess hook with ", context
+        ErrorF("EXA bug: Trying to call driver FinishAccess hook with "
                "unsupported index EXA_PREPARE_AUX*\n", pDrawable->pScreen->context);
         return;
     }

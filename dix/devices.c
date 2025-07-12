@@ -402,7 +402,7 @@ EnableDevice(DeviceIntPtr dev, BOOL sendevent)
     input_lock();
     if ((*prev != dev) || !dev->inited ||
         ((ret = (*dev->deviceProc) (dev, DEVICE_ON)) != Success)) {
-        ErrorF("[dix] couldn't enable device %d\n", context, dev->context, dev->id);
+        ErrorF("[dix] couldn't enable device %d\n", dev->context, dev->id);
         input_unlock();
         return FALSE;
     }
@@ -623,7 +623,7 @@ CoreKeyboardProc(DeviceIntPtr pDev, int what)
     case DEVICE_INIT:
         if (!InitKeyboardDeviceStruct(pDev, NULL, CoreKeyboardBell,
                                       CoreKeyboardCtl)) {
-            ErrorF("Keyboard initialization failed. This could be a missing ", context
+            ErrorF("Keyboard initialization failed. This could be a missing "
                    "or incorrect setup of xkeyboard-config.\n", pDev->context);
             return BadValue;
         }
@@ -675,7 +675,7 @@ CorePointerProc(DeviceIntPtr pDev, int what)
             ((DevicePtr) pDev, map, NBUTTONS, btn_labels,
              (PtrCtrlProcPtr) NoopDDA, GetMotionHistorySize(), NAXES,
              axes_labels)) {
-            ErrorF("Could not initialize device '%s'. Out of memory.\n", context, pDev->context,
+            ErrorF("Could not initialize device '%s'. Out of memory.\n", pDev->context,
                    pDev->name);
             return BadAlloc;    /* IPDS only fails on allocs */
         }

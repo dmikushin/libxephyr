@@ -231,13 +231,13 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
 
     if (!IsMaster(ptr)) {
         client->errorValue = r->deviceid;
-        rc = context->BadDevice;
+        rc = client->context->BadDevice;
         goto unwind;
     }
 
     /* XXX: For now, don't allow removal of VCP, VCK */
     if (ptr == client->context->inputInfo.pointer ||ptr == client->context->inputInfo.keyboard) {
-        rc = context->BadDevice;
+        rc = client->context->BadDevice;
         goto unwind;
     }
 
@@ -273,7 +273,7 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
 
         if (!IsMaster(newptr)) {
             client->errorValue = r->return_pointer;
-            rc = context->BadDevice;
+            rc = client->context->BadDevice;
             goto unwind;
         }
 
@@ -284,7 +284,7 @@ remove_master(ClientPtr client, xXIRemoveMasterInfo * r, int flags[MAXDEVICES])
 
         if (!IsMaster(newkeybd)) {
             client->errorValue = r->return_keyboard;
-            rc = context->BadDevice;
+            rc = client->context->BadDevice;
             goto unwind;
         }
 
@@ -342,14 +342,14 @@ detach_slave(ClientPtr client, xXIDetachSlaveInfo * c, int flags[MAXDEVICES])
 
     if (IsMaster(dev)) {
         client->errorValue = c->deviceid;
-        rc = context->BadDevice;
+        rc = client->context->BadDevice;
         goto unwind;
     }
 
     /* Don't allow changes to XTest Devices, these are fixed */
     if (IsXTestDevice(dev, NULL)) {
         client->errorValue = c->deviceid;
-        rc = context->BadDevice;
+        rc = client->context->BadDevice;
         goto unwind;
     }
 
@@ -374,14 +374,14 @@ attach_slave(ClientPtr client, xXIAttachSlaveInfo * c, int flags[MAXDEVICES])
 
     if (IsMaster(dev)) {
         client->errorValue = c->deviceid;
-        rc = context->BadDevice;
+        rc = client->context->BadDevice;
         goto unwind;
     }
 
     /* Don't allow changes to XTest Devices, these are fixed */
     if (IsXTestDevice(dev, NULL)) {
         client->errorValue = c->deviceid;
-        rc = context->BadDevice;
+        rc = client->context->BadDevice;
         goto unwind;
     }
 
@@ -390,13 +390,13 @@ attach_slave(ClientPtr client, xXIAttachSlaveInfo * c, int flags[MAXDEVICES])
         goto unwind;
     if (!IsMaster(newmaster)) {
         client->errorValue = c->new_master;
-        rc = context->BadDevice;
+        rc = client->context->BadDevice;
         goto unwind;
     }
 
     if (!((IsPointerDevice(newmaster) && IsPointerDevice(dev)) ||
           (IsKeyboardDevice(newmaster) && IsKeyboardDevice(dev)))) {
-        rc = context->BadDevice;
+        rc = client->context->BadDevice;
         goto unwind;
     }
 

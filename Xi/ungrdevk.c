@@ -115,7 +115,7 @@ ProcXUngrabDeviceKey(ClientPtr client)
         rc = dixLookupDevice(&mdev, stuff->modifier_device, client,
                              DixReadAccess);
         if (rc != Success)
-            return context->BadDevice;
+            return client->context->BadDevice;
         if (mdev->key == NULL)
             return BadMatch;
     }

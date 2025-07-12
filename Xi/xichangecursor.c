@@ -82,7 +82,7 @@ ProcXIChangeCursor(ClientPtr client)
         return rc;
 
     if (!IsMaster(pDev) || !IsPointerDevice(pDev))
-        return context->BadDevice;
+        return client->context->BadDevice;
 
     if (stuff->win != None) {
         rc = dixLookupWindow(&pWin, stuff->win, client, DixSetAttrAccess);

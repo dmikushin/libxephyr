@@ -207,14 +207,14 @@ KdPointerProc(DeviceIntPtr pDevice, int onoff)
     }
 
     if (!pi || !pi->dixdev || pi->dixdev->id != pDevice->id) {
-        ErrorF("[KdPointerProc] Failed to find pointer for device %d!\n", context, pDevice->context, pDevice->id);
+        ErrorF("[KdPointerProc] Failed to find pointer for device %d!\n", pDevice->context, pDevice->id);
         return BadImplementation;
     }
 
     switch (onoff) {
     case DEVICE_INIT:
 #ifdef DEBUG
-        ErrorF("initialising pointer %s ...\n", context, pDevice->context, pi->name);
+        ErrorF("initialising pointer %s ...\n", pDevice->context, pi->name);
 #endif
         if (!pi->driver) {
             if (!pi->driverPrivate) {
@@ -234,7 +234,7 @@ KdPointerProc(DeviceIntPtr pDevice, int onoff)
         }
 
         if (!pi->driver->Init) {
-            ErrorF("no init function\n", context, pDevice->context);
+            ErrorF("no init function\n", pDevice->context);
             return BadImplementation;
         }
 
@@ -300,7 +300,7 @@ KdPointerProc(DeviceIntPtr pDevice, int onoff)
             return Success;
 
         if (!pi->driver->Enable) {
-            ErrorF("no enable function\n", context, pDevice->context);
+            ErrorF("no enable function\n", pDevice->context);
             return BadImplementation;
         }
 
@@ -509,7 +509,7 @@ KdKeyboardProc(DeviceIntPtr pDevice, int onoff)
     switch (onoff) {
     case DEVICE_INIT:
 #ifdef DEBUG
-        ErrorF("initialising keyboard %s\n", context, pDevice->context, ki->name);
+        ErrorF("initialising keyboard %s\n", pDevice->context, ki->name);
 #endif
         if (!ki->driver) {
             if (!ki->driverPrivate) {
@@ -529,7 +529,7 @@ KdKeyboardProc(DeviceIntPtr pDevice, int onoff)
         }
 
         if (!ki->driver->Init) {
-            ErrorF("Keyboard %s: no init function\n", context, pDevice->context, ki->name);
+            ErrorF("Keyboard %s: no init function\n", pDevice->context, ki->name);
             return BadImplementation;
         }
 
@@ -541,7 +541,7 @@ KdKeyboardProc(DeviceIntPtr pDevice, int onoff)
         rmlvo.options = ki->xkbOptions;
         ret = InitKeyboardDeviceStruct(pDevice, &rmlvo, KdBell, KdKbdCtrl);
         if (!ret) {
-            ErrorF("Couldn't initialise keyboard %s\n", context, pDevice->context, ki->name);
+            ErrorF("Couldn't initialise keyboard %s\n", pDevice->context, ki->name);
             return BadImplementation;
         }
 
@@ -1653,7 +1653,7 @@ KdEnqueueKeyboardEvent(KdKeyboardInfo * ki,
         QueueKeyboardEvents(ki->dixdev, type, key_code);
     }
     else {
-        ErrorF("driver %s wanted to post scancode %d outside of [%d, %d]!\n", context, ki->dixdev->context,
+        ErrorF("driver %s wanted to post scancode %d outside of [%d, %d]!\n", ki->dixdev->context,
                ki->name, scan_code, ki->minScanCode, ki->maxScanCode);
     }
 }
@@ -2017,7 +2017,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
         KdParsePointerOptions(pi, context);
 
         if (!pi->driver) {
-            ErrorF("couldn't find driver for pointer device \", context%s\" (%s)\n", pi->name ? pi->name : "(unnamed)", pi->path);
+            ErrorF("couldn't find driver for pointer device \"%s\" (%s)\n", context, pi->name ? pi->name : "(unnamed)", pi->path);
             KdFreePointer(pi);
             return BadValue;
         }

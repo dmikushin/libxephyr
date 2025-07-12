@@ -339,7 +339,7 @@ extern _X_EXPORT Bool RegionIsValid(RegionPtr   /*prgn */
     );
 #endif
 
-extern _X_EXPORT void RegionPrint(RegionPtr /*pReg */ );
+extern _X_EXPORT void RegionPrint(RegionPtr /*pReg */, XephyrContext* /*context*/);
 
 #define INCLUDE_LEGACY_REGION_DEFINES
 #ifdef INCLUDE_LEGACY_REGION_DEFINES

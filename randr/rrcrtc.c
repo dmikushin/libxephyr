@@ -588,7 +588,7 @@ fail: /* If flipping funcs fail, just fall back to unsynchronized */
     }
 
     if (sync) { /* Wanted sync, didn't get it */
-        ErrorF("randr: falling back to unsynchronized pixmap sharing\n", context, crtc->pScreen->context);
+        ErrorF("randr: falling back to unsynchronized pixmap sharing\n", crtc->pScreen->context);
 
         /* Set output property to 0 to indicate to user */
         rrSetPixmapSharingSyncProp(0, numOutputs, outputs);
@@ -596,7 +596,7 @@ fail: /* If flipping funcs fail, just fall back to unsynchronized */
 
     if (!pSecondaryScrPriv->rrCrtcSetScanoutPixmap(crtc, spix_front)) {
         rrDestroySharedPixmap(crtc, spix_front);
-        ErrorF("randr: failed to set shadow secondary pixmap\n", context, crtc->pScreen->context);
+        ErrorF("randr: failed to set shadow secondary pixmap\n", crtc->pScreen->context);
         return FALSE;
     }
     crtc->scanout_pixmap = spix_front;

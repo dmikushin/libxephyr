@@ -101,10 +101,10 @@ typedef struct _PredictableAccelSchemeRec {
 } PredictableAccelSchemeRec, *PredictableAccelSchemePtr;
 
 extern _X_EXPORT void
-InitVelocityData(DeviceVelocityPtr vel);
+InitVelocityData(DeviceVelocityPtr vel, XephyrContext* context);
 
 extern _X_EXPORT void
-InitTrackers(DeviceVelocityPtr vel, int ntracker);
+InitTrackers(DeviceVelocityPtr vel, int ntracker, XephyrContext* context);
 
 extern _X_EXPORT BOOL
 ProcessVelocityData2D(DeviceVelocityPtr vel, double dx, double dy, int time);

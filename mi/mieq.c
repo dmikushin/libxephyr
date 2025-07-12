@@ -352,7 +352,7 @@ ChangeDeviceID(DeviceIntPtr dev, InternalEvent *event)
         event->gesture_event.deviceid = dev->id;
         break;
     default:
-        ErrorF("[mi] Unknown event type (%d), cannot change id.\n", context, dev->context,
+        ErrorF("[mi] Unknown event type (%d), cannot change id.\n", dev->context,
                event->any.type);
     }
 }

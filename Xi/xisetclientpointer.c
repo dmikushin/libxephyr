@@ -78,7 +78,7 @@ ProcXISetClientPointer(ClientPtr client)
 
     if (!IsMaster(pDev)) {
         client->errorValue = stuff->deviceid;
-        return context->BadDevice;
+        return client->context->BadDevice;
     }
 
     pDev = GetMaster(pDev, MASTER_POINTER);

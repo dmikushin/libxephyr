@@ -116,7 +116,7 @@ XkbProcessKeyboardEvent(DeviceEvent *event, DeviceIntPtr keybd)
                 rg->currentDown = key;
             }
             else
-                ErrorF("[xkb] InternalError! Illegal radio group %d\n", context, ndx);
+                ErrorF("[xkb] InternalError! Illegal radio group %d\n", keybd->context, ndx);
             break;
         case XkbKB_Overlay1:
         case XkbKB_Overlay2:
@@ -153,7 +153,7 @@ XkbProcessKeyboardEvent(DeviceEvent *event, DeviceIntPtr keybd)
         }
             break;
         default:
-            ErrorF("[xkb] unknown key behavior 0x%04x\n", context, behavior.type);
+            ErrorF("[xkb] unknown key behavior 0x%04x\n", keybd->context, behavior.type);
             break;
         }
     }

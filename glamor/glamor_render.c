@@ -262,7 +262,7 @@ glamor_create_composite_fs(struct shader_key *key, XephyrContext* context)
         mask_fetch = mask_pixmap_fetch;
         break;
     default:
-        FatalError("Bad composite shader mask");
+        FatalError("Bad composite shader mask", context);
     }
 
     /* If we're storing to an a8 texture but our texture format is
@@ -277,7 +277,7 @@ glamor_create_composite_fs(struct shader_key *key, XephyrContext* context)
         dest_swizzle = dest_swizzle_alpha_to_red;
         break;
     default:
-        FatalError("Bad composite shader dest swizzle");
+        FatalError("Bad composite shader dest swizzle", context);
     }
 
     header = header_norm;
@@ -296,7 +296,7 @@ glamor_create_composite_fs(struct shader_key *key, XephyrContext* context)
         header = header_ca_dual_blend;
         break;
     default:
-        FatalError("Bad composite IN type");
+        FatalError("Bad composite IN type", context);
     }
 
     XNFasprintf(&source,

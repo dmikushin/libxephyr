@@ -969,13 +969,13 @@ glamor_generate_radial_gradient_picture(ScreenPtr screen,
     if (stops_count > RADIAL_SMALL_STOPS) {
         stop_colors = xallocarray(stops_count, 4 * sizeof(float));
         if (stop_colors == NULL) {
-            ErrorF("Failed to allocate stop_colors memory.\n", context, screen->context);
+            ErrorF("Failed to allocate stop_colors memory.\n", screen->context);
             goto GRADIENT_FAIL;
         }
 
         n_stops = xallocarray(stops_count, sizeof(float));
         if (n_stops == NULL) {
-            ErrorF("Failed to allocate n_stops memory.\n", context, screen->context);
+            ErrorF("Failed to allocate n_stops memory.\n", screen->context);
             goto GRADIENT_FAIL;
         }
     }
@@ -1308,13 +1308,13 @@ glamor_generate_linear_gradient_picture(ScreenPtr screen,
     if (stops_count > LINEAR_SMALL_STOPS) {
         stop_colors = xallocarray(stops_count, 4 * sizeof(float));
         if (stop_colors == NULL) {
-            ErrorF("Failed to allocate stop_colors memory.\n", context, screen->context);
+            ErrorF("Failed to allocate stop_colors memory.\n", screen->context);
             goto GRADIENT_FAIL;
         }
 
         n_stops = xallocarray(stops_count, sizeof(float));
         if (n_stops == NULL) {
-            ErrorF("Failed to allocate n_stops memory.\n", context, screen->context);
+            ErrorF("Failed to allocate n_stops memory.\n", screen->context);
             goto GRADIENT_FAIL;
         }
     }

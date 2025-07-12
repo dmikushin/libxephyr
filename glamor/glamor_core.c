@@ -89,7 +89,7 @@ glamor_link_glsl_prog(ScreenPtr screen, GLint prog, const char *format, ...)
         va_list va;
 
         va_start(va, format);
-        XNFvasprintf(&label, format, va);
+        XNFvasprintf(&label, format, va, screen->context);
         glObjectLabel(GL_PROGRAM, prog, -1, label);
         free(label);
         va_end(va);
@@ -105,7 +105,7 @@ glamor_link_glsl_prog(ScreenPtr screen, GLint prog, const char *format, ...)
         info = malloc(size);
 
         glGetProgramInfoLog(prog, size, NULL, info);
-        ErrorF("Failed to link: %s\n", context, screen->context, info);
+        ErrorF("Failed to link: %s\n", screen->context, info);
         FatalError("GLSL link failure\n", screen->context);
     }
 }

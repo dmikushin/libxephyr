@@ -628,7 +628,7 @@ exaDoMigration_classic(ExaMigrationPtr pixmaps, int npixmaps, Bool can_accel)
         for (i = 0; i < npixmaps; i++) {
             if (!exaPixmapIsDirty(pixmaps[i].pPix) &&
                 !exaAssertNotDirty(pixmaps[i].pPix))
-                ErrorF("%s: Pixmap %d dirty but not marked as such!\n", context, pScreen->context, __func__, i);
+                ErrorF("%s: Pixmap %d dirty but not marked as such!\n", pScreen->context, __func__, i);
         }
     }
     /* If anything is pinned in system memory, we won't be able to

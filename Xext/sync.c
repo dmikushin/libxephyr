@@ -126,12 +126,12 @@ SysCounterGetPrivate(SyncCounter *counter)
 }
 
 static Bool
-SyncCheckWarnIsCounter(const SyncObject * pSync, const char *warning)
+SyncCheckWarnIsCounter(const SyncObject * pSync, const char *warning, XephyrContext* context)
 {
     if (pSync && (SYNC_COUNTER != pSync->type)) {
         if (SyncNumInvalidCounterWarnings++ < MAX_INVALID_COUNTER_WARNINGS) {
-            ErrorF("%s", context, NULL, warning);
-            ErrorF("         Counter type: %d\n", context, NULL, pSync->type);
+            ErrorF("%s", context, warning);
+            ErrorF("         Counter type: %d\n", context, pSync->type);
         }
 
         return FALSE;
@@ -246,7 +246,7 @@ SyncCheckTriggerPositiveComparison(SyncTrigger * pTrigger, int64_t oldval)
 
     /* Non-counter sync objects should never get here because they
      * never trigger this comparison. */
-    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_COMPARE))
+    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_COMPARE, NULL))
         return FALSE;
 
     pCounter = (SyncCounter *) pTrigger->pSync;
@@ -261,7 +261,7 @@ SyncCheckTriggerNegativeComparison(SyncTrigger * pTrigger, int64_t oldval)
 
     /* Non-counter sync objects should never get here because they
      * never trigger this comparison. */
-    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_COMPARE))
+    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_COMPARE, NULL))
         return FALSE;
 
     pCounter = (SyncCounter *) pTrigger->pSync;
@@ -276,7 +276,7 @@ SyncCheckTriggerPositiveTransition(SyncTrigger * pTrigger, int64_t oldval)
 
     /* Non-counter sync objects should never get here because they
      * never trigger this comparison. */
-    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_COMPARE))
+    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_COMPARE, NULL))
         return FALSE;
 
     pCounter = (SyncCounter *) pTrigger->pSync;
@@ -293,7 +293,7 @@ SyncCheckTriggerNegativeTransition(SyncTrigger * pTrigger, int64_t oldval)
 
     /* Non-counter sync objects should never get here because they
      * never trigger this comparison. */
-    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_COMPARE))
+    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_COMPARE, NULL))
         return FALSE;
 
     pCounter = (SyncCounter *) pTrigger->pSync;
@@ -430,7 +430,7 @@ SyncSendAlarmNotifyEvents(SyncAlarm * pAlarm)
     SyncTrigger *pTrigger = &pAlarm->trigger;
     SyncCounter *pCounter;
 
-    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_ALARM))
+    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_ALARM, NULL))
         return;
 
     pCounter = (SyncCounter *) pTrigger->pSync;
@@ -532,7 +532,7 @@ SyncAlarmTriggerFired(SyncTrigger * pTrigger)
     SyncCounter *pCounter;
     int64_t new_test_value;
 
-    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_ALARM))
+    if (!SyncCheckWarnIsCounter(pTrigger->pSync, WARN_INVALID_COUNTER_ALARM, NULL))
         return;
 
     pCounter = (SyncCounter *) pTrigger->pSync;
@@ -562,7 +562,7 @@ SyncAlarmTriggerFired(SyncTrigger * pTrigger)
         SyncCounter *paCounter;
 
         if (!SyncCheckWarnIsCounter(paTrigger->pSync,
-                                    WARN_INVALID_COUNTER_ALARM))
+                                    WARN_INVALID_COUNTER_ALARM, NULL))
             return;
 
         paCounter = (SyncCounter *) pTrigger->pSync;
@@ -1746,7 +1746,7 @@ ProcSyncCreateAlarm(ClientPtr client)
         SyncCounter *pCounter;
 
         if (!SyncCheckWarnIsCounter(pTrigger->pSync,
-                                    WARN_INVALID_COUNTER_ALARM)) {
+                                    WARN_INVALID_COUNTER_ALARM, client->context)) {
             FreeResource(stuff->id, RT_NONE, client->context);
             return BadAlloc;
         }
@@ -1790,7 +1790,7 @@ ProcSyncChangeAlarm(ClientPtr client)
         return status;
 
     if (SyncCheckWarnIsCounter(pAlarm->trigger.pSync,
-                               WARN_INVALID_COUNTER_ALARM))
+                               WARN_INVALID_COUNTER_ALARM, client->context))
         pCounter = (SyncCounter *) pAlarm->trigger.pSync;
 
     /*  see if alarm already triggered.  NULL counter WILL trigger

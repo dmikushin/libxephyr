@@ -94,7 +94,7 @@ DeletePredictableAccelerationProperties(DeviceIntPtr,
  * Init DeviceVelocity struct so it should match the average case
  */
 void
-InitVelocityData(DeviceVelocityPtr vel)
+InitVelocityData(DeviceVelocityPtr vel, XephyrContext* context)
 {
     memset(vel, 0, sizeof(DeviceVelocityRec));
 
@@ -108,7 +108,7 @@ InitVelocityData(DeviceVelocityPtr vel)
     vel->initial_range = 2;
     vel->average_accel = TRUE;
     SetAccelerationProfile(vel, AccelProfileClassic);
-    InitTrackers(vel, 16);
+    InitTrackers(vel, 16, context);
 }
 
 /**
@@ -140,7 +140,7 @@ InitPredictableAccelerationScheme(DeviceIntPtr dev,
         free(schemeData);
         return FALSE;
     }
-    InitVelocityData(vel);
+    InitVelocityData(vel, dev->context);
     schemeData->vel = vel;
     scheme.accelData = schemeData;
     if (!InitializePredictableAccelerationProperties(dev, vel, schemeData)) {
@@ -424,10 +424,10 @@ DeletePredictableAccelerationProperties(DeviceIntPtr dev,
  ********************/
 
 void
-InitTrackers(DeviceVelocityPtr vel, int ntracker)
+InitTrackers(DeviceVelocityPtr vel, int ntracker, XephyrContext* context)
 {
     if (ntracker < 1) {
-        ErrorF("invalid number of trackers\n", context, NULL);
+        ErrorF("invalid number of trackers\n", context);
         return;
     }
     free(vel->tracker);

@@ -272,7 +272,7 @@ RegionDuplicate(RegionPtr pOld)
 }
 
 void
-RegionPrint(RegionPtr rgn)
+RegionPrint(RegionPtr rgn, XephyrContext* context)
 {
     int num, size;
     int i;
@@ -285,7 +285,7 @@ RegionPrint(RegionPtr rgn)
     ErrorF("[mi] extents: %d %d %d %d\n", context, rgn->extents.x1, rgn->extents.y1, rgn->extents.x2, rgn->extents.y2);
     for (i = 0; i < num; i++)
         ErrorF("[mi] %d %d %d %d \n", context, rects[i].x1, rects[i].y1, rects[i].x2, rects[i].y2);
-    ErrorF("[mi] \n", context, NULL);
+    ErrorF("[mi] \n", context);
 }
 
 #ifdef DEBUG
