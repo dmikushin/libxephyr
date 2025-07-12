@@ -234,7 +234,7 @@ XIGetDevice(xEvent *xE, XephyrContext* context)
 
         rc = dixLookupDevice(&pDev, id, context->serverClient, DixUnknownAccess);
         if (rc != Success)
-            ErrorF("[dix] XIGetDevice failed on XACE restrictions (%d)\n", NULL, rc);
+            ErrorF("[dix] XIGetDevice failed on XACE restrictions (%d)\n", context, NULL, rc);
     }
     return pDev;
 }
@@ -303,7 +303,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*i)) {
                 *i = calloc(1, sizeof(IntegerFeedbackClassRec));
                 if (!(*i)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context, from->context);
                     return;
                 }
             }
@@ -333,7 +333,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*s)) {
                 *s = calloc(1, sizeof(StringFeedbackClassRec));
                 if (!(*s)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context, from->context);
                     return;
                 }
             }
@@ -363,7 +363,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*b)) {
                 *b = calloc(1, sizeof(BellFeedbackClassRec));
                 if (!(*b)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context, from->context);
                     return;
                 }
             }
@@ -394,7 +394,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*l)) {
                 *l = calloc(1, sizeof(LedFeedbackClassRec));
                 if (!(*l)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context, from->context);
                     return;
                 }
             }
@@ -439,7 +439,7 @@ DeepCopyKeyboardClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*k)) {
                 *k = calloc(1, sizeof(KbdFeedbackClassRec));
                 if (!*k) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context, from->context);
                     return;
                 }
             }
@@ -556,7 +556,7 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*p)) {
                 *p = calloc(1, sizeof(PtrFeedbackClassRec));
                 if (!*p) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context, from->context);
                     return;
                 }
             }

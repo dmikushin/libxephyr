@@ -277,7 +277,7 @@ glamor_create_composite_fs(struct shader_key *key, XephyrContext* context)
         dest_swizzle = dest_swizzle_alpha_to_red;
         break;
     default:
-        FatalError("Bad composite shader dest swizzle", context);
+        FatalError("Bad composite shader dest swizzle");
     }
 
     header = header_norm;

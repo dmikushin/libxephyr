@@ -417,7 +417,7 @@ ListScrollInfo(DeviceIntPtr dev, xXIScrollInfo * info, int axisnumber)
         info->scroll_type = XIScrollTypeHorizontal;
         break;
     default:
-        ErrorF("[Xi] Unknown scroll type %d. This is a bug.\n", axis->scroll.type);
+        ErrorF("[Xi] Unknown scroll type %d. This is a bug.\n", context, axis->scroll.type);
         break;
     }
     info->increment = double_to_fp3232(axis->scroll.increment);

@@ -624,7 +624,7 @@ _XkbFilterPointerBtn(XkbSrvInfoPtr xkbi,
                 }
                 break;
             default:
-                ErrorF("Attempt to change unknown pointer default (%d) ignored\n", pAction->dflt.affect);
+                ErrorF("Attempt to change unknown pointer default (%d) ignored\n", context, pAction->dflt.affect);
                 break;
             }
             if (XkbComputeControlsNotify(xkbi->device,

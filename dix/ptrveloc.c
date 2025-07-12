@@ -427,7 +427,7 @@ void
 InitTrackers(DeviceVelocityPtr vel, int ntracker)
 {
     if (ntracker < 1) {
-        ErrorF("invalid number of trackers\n", NULL);
+        ErrorF("invalid number of trackers\n", context, NULL);
         return;
     }
     free(vel->tracker);

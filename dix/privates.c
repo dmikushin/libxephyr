@@ -606,7 +606,7 @@ dixRegisterScreenSpecificPrivateKey(ScreenPtr pScreen, DevPrivateKey key,
 
     if (!screen_specific_private[type])
         FatalError("Attempt to allocate screen-specific private storage for type %s\n",
-                   pScreen->context, key_names[type], context);
+                   pScreen->context, key_names[type]);
 
     if (key->initialized) {
         assert(size == key->size);

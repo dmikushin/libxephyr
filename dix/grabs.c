@@ -167,7 +167,7 @@ UngrabAllDevices(Bool kill_client, XephyrContext* context)
     DeviceIntPtr dev;
     ClientPtr client;
 
-    ErrorF("Ungrabbing all devices%s; grabs listed below:\n", kill_client ? " and killing their owners" : "");
+    ErrorF("Ungrabbing all devices%s; grabs listed below:\n", context, kill_client ? " and killing their owners" : "");
 
     for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (!dev->deviceGrab.grab)

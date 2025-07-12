@@ -99,7 +99,7 @@ SELinuxDoCheck(SELinuxSubjectRec * subj, SELinuxObjectRec * obj,
             return Success;     /* DixUnknownAccess requests OK ... for now */
         if (errno == EACCES)
             return BadAccess;
-        ErrorF("SELinux: avc_has_perm: unexpected error %d\n", errno);
+        ErrorF("SELinux: avc_has_perm: unexpected error %d\n", context, errno);
         return BadValue;
     }
 

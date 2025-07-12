@@ -690,7 +690,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             context->explicit_display = TRUE;
             context->display++;
             if (!VerifyDisplayName(context->display)) {
-                ErrorF("Bad context->display name: %s\n", context->display);
+                ErrorF("Bad context->display name: %s\n", context, context->display);
                 UseMsg(context);
                 FatalError("Bad context->display name, exiting: %s\n", context, context->display);
             }
@@ -870,7 +870,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         else if (strcmp(argv[i], "-nolisten") == 0) {
             if (++i < argc) {
                 if (_XSERVTransNoListen(argv[i]))
-                    ErrorF("Failed to disable listen for %s transport", argv[i]);
+                    ErrorF("Failed to disable listen for %s transport", context, argv[i]);
             }
             else
                 UseMsg(context);
@@ -878,7 +878,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         else if (strcmp(argv[i], "-listen") == 0) {
             if (++i < argc) {
                 if (_XSERVTransListen(argv[i]))
-                    ErrorF("Failed to enable listen for %s transport", argv[i]);
+                    ErrorF("Failed to enable listen for %s transport", context, argv[i]);
             }
             else
                 UseMsg(context);
@@ -1960,8 +1960,8 @@ CheckUserParameters(int argc, char **argv, char **envp, XephyrContext* context)
         ErrorF("Command line argument number %d is too long\n", context, i);
         break;
     case UnprintableArg:
-        ErrorF("Command line argument number %d contains unprintable", context
-               " characters\n", i);
+        ErrorF("Command line argument number %d contains unprintable"
+               " characters\n", context, i);
         break;
     case EnvTooLong:
         ErrorF("Environment variable `%s' is too long\n", context, e);

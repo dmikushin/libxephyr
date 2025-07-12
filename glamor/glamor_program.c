@@ -350,7 +350,7 @@ glamor_build_program(ScreenPtr          screen,
 
     if (prim->source_name) {
 #if DBG
-        ErrorF("Bind GLAMOR_VERTEX_SOURCE to %s\n", prim->source_name);
+        ErrorF("Bind GLAMOR_VERTEX_SOURCE to %s\n", context, prim->source_name);
 #endif
         glBindAttribLocation(prog->prog, GLAMOR_VERTEX_SOURCE, prim->source_name);
     }

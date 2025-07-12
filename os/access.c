@@ -785,7 +785,7 @@ DefineSelf(int fd, XephyrContext* context)
         free(bufptr);
 #else                           /* HAVE_GETIFADDRS */
     if (getifaddrs(&ifap) < 0) {
-        ErrorF("Warning: getifaddrs returns %s\n", strerror(errno));
+        ErrorF("Warning: getifaddrs returns %s\n", context, strerror(errno));
         return;
     }
     for (ifr = ifap; ifr != NULL; ifr = ifr->ifa_next) {

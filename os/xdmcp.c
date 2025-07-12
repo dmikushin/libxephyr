@@ -1338,7 +1338,7 @@ XdmcpFatal(const char *type, ARRAY8Ptr status)
 static void
 XdmcpWarning(const char *str)
 {
-    ErrorF("XDMCP warning: %s\n", str);
+    ErrorF("XDMCP warning: %s\n", context, str);
 }
 
 static void

@@ -411,7 +411,7 @@ InputThreadPreInit(void)
 
     inputThreadInfo = malloc(sizeof(InputThreadInfo));
     if (!inputThreadInfo)
-        FatalError("input-thread: could not allocate memory", context);
+        FatalError("input-thread: could not allocate memory");
 
     inputThreadInfo->changed = FALSE;
 

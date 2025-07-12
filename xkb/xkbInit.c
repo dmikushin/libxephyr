@@ -162,12 +162,12 @@ XkbWriteRulesProp(XephyrContext* context)
     name =
         MakeAtom(_XKB_RF_NAMES_PROP_ATOM, strlen(_XKB_RF_NAMES_PROP_ATOM), 1);
     if (name == None) {
-        ErrorF("[xkb] Atom error: %s not created\n", _XKB_RF_NAMES_PROP_ATOM);
+        ErrorF("[xkb] Atom error: %s not created\n", context, _XKB_RF_NAMES_PROP_ATOM);
         return TRUE;
     }
     pval = (char *) malloc(len);
     if (!pval) {
-        ErrorF("[xkb] Allocation error: %s proprerty not created\n", _XKB_RF_NAMES_PROP_ATOM);
+        ErrorF("[xkb] Allocation error: %s proprerty not created\n", context, _XKB_RF_NAMES_PROP_ATOM);
         return TRUE;
     }
     out = 0;

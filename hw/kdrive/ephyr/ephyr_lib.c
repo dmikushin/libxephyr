@@ -73,7 +73,7 @@ InitInput(int argc, char **argv, XephyrContext* context)
             if (!ki)
                 FatalError("Couldn't create Xephyr keyboard\n", context);
             ki->driver = &EphyrKeyboardDriver;
-            KdAddKeyboard(ki);
+            KdAddKeyboard(ki, context);
         }
 
         if (!kdHasPointer) {
@@ -81,7 +81,7 @@ InitInput(int argc, char **argv, XephyrContext* context)
             if (!pi)
                 FatalError("Couldn't create Xephyr pointer\n", context);
             pi->driver = &EphyrMouseDriver;
-            KdAddPointer(pi);
+            KdAddPointer(pi, context);
         }
     }
 

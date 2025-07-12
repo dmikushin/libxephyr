@@ -939,7 +939,7 @@ AuditFlush(OsTimerPtr timer, CARD32 now, void *arg)
 
     if (nrepeat > 0) {
         prefix = AuditPrefix();
-        ErrorF("%slast message repeated %d times\n", prefix != NULL ? prefix : "", nrepeat);
+        ErrorF("%slast message repeated %d times\n", NULL, prefix != NULL ? prefix : "", nrepeat);
         nrepeat = 0;
         free(prefix);
         return AUDIT_TIMEOUT;
@@ -970,7 +970,7 @@ VAuditF(const char *f, va_list args)
         /* new message */
         if (auditTimer != NULL)
             TimerForce(auditTimer);
-        ErrorF("%s%s", prefix != NULL ? prefix : "", buf);
+        ErrorF("%s%s", NULL, prefix != NULL ? prefix : "", buf);
         strlcpy(oldbuf, buf, sizeof(oldbuf));
         oldlen = len;
         nrepeat = 0;

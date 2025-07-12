@@ -188,9 +188,9 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
             FatalError("failed to create server client privates", context);
 
         if (!InitClientResources(context->serverClient)) /* for root resources */
-            FatalError("couldn't init server resources");
+            FatalError("couldn't init server resources", context);
 
-        SetInputCheck(&alwaysCheckForInput[0], &alwaysCheckForInput[1], context);
+        SetInputCheck(context->checkForInput[0], context->checkForInput[1], context);
         context->screenInfo.numScreens = 0;
 
         InitAtoms(context);
@@ -211,7 +211,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
                 FatalError("failed to create scratch pixmaps", context);
             if (pScreen->CreateScreenResources &&
                 !(*pScreen->CreateScreenResources) (pScreen))
-                FatalError("failed to create screen resources");
+                FatalError("failed to create screen resources", context);
         }
 
         for (i = 0; i < context->screenInfo.numScreens; i++) {
@@ -221,18 +221,18 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
                 FatalError("failed to create scratch pixmaps", context);
             if (pScreen->CreateScreenResources &&
                 !(*pScreen->CreateScreenResources) (pScreen))
-                FatalError("failed to create screen resources");
+                FatalError("failed to create screen resources", context);
             if (!CreateGCperDepth(i, context))
                 FatalError("failed to create scratch GCs", context);
-            if (!CreateDefaultStipple(i))
+            if (!CreateDefaultStipple(i, context))
                 FatalError("failed to create default stipple", context);
             if (!CreateRootWindow(pScreen))
-                FatalError("failed to create root window");
+                FatalError("failed to create root window", context);
             CallCallbacks(&RootWindowFinalizeCallback, pScreen);
         }
 
         if (SetDefaultFontPath(context->defaultFontPath, context) != Success) {
-            ErrorF("[dix] failed to set default font path '%s'", context->defaultFontPath);
+            ErrorF("[dix] failed to set default font path '%s'", context, context->defaultFontPath);
         }
         if (!SetDefaultFont("fixed", context)) {
             FatalError("could not open default font", context);
@@ -272,7 +272,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 #endif
         {
             if (!CreateConnectionBlock(context)) {
-                FatalError("could not create connection block info");
+                FatalError("could not create connection block info", context);
             }
         }
 

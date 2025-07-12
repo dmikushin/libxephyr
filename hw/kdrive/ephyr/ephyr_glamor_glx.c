@@ -357,7 +357,7 @@ ephyr_glamor_glx_screen_init(xcb_window_t win, XephyrContext* context)
     glamor->ctx = ctx;
     glamor->win = win;
     glamor->glx_win = glx_win;
-    ephyr_glamor_setup_texturing_shader(glamor);
+    ephyr_glamor_setup_texturing_shader(glamor, context);
 
     glGenVertexArrays(1, &glamor->vao);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &old_vao);

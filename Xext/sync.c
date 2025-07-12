@@ -130,8 +130,8 @@ SyncCheckWarnIsCounter(const SyncObject * pSync, const char *warning)
 {
     if (pSync && (SYNC_COUNTER != pSync->type)) {
         if (SyncNumInvalidCounterWarnings++ < MAX_INVALID_COUNTER_WARNINGS) {
-            ErrorF("%s", NULL, warning);
-            ErrorF("         Counter type: %d\n", NULL, pSync->type);
+            ErrorF("%s", context, NULL, warning);
+            ErrorF("         Counter type: %d\n", context, NULL, pSync->type);
         }
 
         return FALSE;
