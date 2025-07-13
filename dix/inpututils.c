@@ -95,7 +95,7 @@ do_butmap_change(DeviceIntPtr dev, CARD8 *map, int len, ClientPtr client)
     }
 
     xi_mn = (deviceMappingNotify) {
-        .type = DeviceMappingNotify,
+        .type = dev->context->DeviceMappingNotify,
         .request = MappingPointer,
         .deviceid = dev->id,
         .time = GetTimeInMillis()

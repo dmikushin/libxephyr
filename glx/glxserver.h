@@ -149,9 +149,9 @@ typedef struct {
 /*
 ** X resources.
 */
-extern RESTYPE __glXContextRes;
+/* extern RESTYPE client->context->__glXContextRes; */
 extern RESTYPE __glXClientRes;
-extern RESTYPE __glXDrawableRes;
+/* extern RESTYPE context->__glXDrawableRes; */
 
 /************************************************************************/
 
@@ -209,6 +209,6 @@ extern int __glXImageSize(GLenum format, GLenum type,
 extern unsigned glxMajorVersion;
 extern unsigned glxMinorVersion;
 
-extern int __glXEventBase;
+/* extern int context->__glXEventBase; */
 
 #endif                          /* !__GLX_server_h__ */

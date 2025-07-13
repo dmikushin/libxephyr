@@ -630,7 +630,7 @@ _XkbFilterPointerBtn(XkbSrvInfoPtr xkbi,
             if (XkbComputeControlsNotify(xkbi->device,
                                          &old, xkbi->desc->ctrls, &cn, FALSE)) {
                 cn.keycode = keycode;
-                /* XXX: what about DeviceKeyPress? */
+                /* XXX: what about context->DeviceKeyPress? */
                 cn.eventType = KeyPress;
                 cn.requestMajor = 0;
                 cn.requestMinor = 0;
@@ -705,7 +705,7 @@ _XkbFilterControls(XkbSrvInfoPtr xkbi,
             ctrls->enabled_ctrls |= change;
             if (XkbComputeControlsNotify(kbd, &old, ctrls, &cn, FALSE)) {
                 cn.keycode = keycode;
-                /* XXX: what about DeviceKeyPress? */
+                /* XXX: what about context->DeviceKeyPress? */
                 cn.eventType = KeyPress;
                 cn.requestMajor = 0;
                 cn.requestMinor = 0;

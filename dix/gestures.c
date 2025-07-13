@@ -241,7 +241,7 @@ GestureAddRegularListener(DeviceIntPtr dev, GestureInfoPtr gi, WindowPtr win, In
             if (!xi2mask_isset(iclients->xi2mask, dev, evtype))
                 continue;
 
-            GestureAddListener(gi, iclients->resource, RT_INPUTCLIENT,
+            GestureAddListener(gi, iclients->resource, context->RT_INPUTCLIENT,
                                GESTURE_LISTENER_REGULAR, win, NULL, context);
             return;
         }

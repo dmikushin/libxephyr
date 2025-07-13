@@ -113,7 +113,7 @@ glamor_trapezoids(CARD8 op,
 
     width = bounds.x2 - bounds.x1;
     height = bounds.y2 - bounds.y1;
-    stride = PixmapBytePad(width, mask_format->depth);
+    stride = PixmapBytePad(width, mask_format->depth, context);
 
     picture = glamor_create_mask_picture(screen, dst, mask_format,
                                          width, height);
@@ -136,9 +136,8 @@ glamor_trapezoids(CARD8 op,
 
     screen->ModifyPixmapHeader(pixmap, width, height,
                                mask_format->depth,
-                               BitsPerPixel(mask_format->depth),
-                               PixmapBytePad(width,
-                                             mask_format->depth),
+                               BitsPerPixel(mask_format->depth, context),
+                               PixmapBytePad(width, mask_format->depth, context),
                                pixman_image_get_data(image));
 
     x_rel = bounds.x1 + x_src - x_dst;

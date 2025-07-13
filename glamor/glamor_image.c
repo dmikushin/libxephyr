@@ -37,7 +37,7 @@ glamor_put_image_gl(DrawablePtr drawable, GCPtr gc, int depth, int x, int y,
     glamor_screen_private *glamor_priv = glamor_get_screen_private(screen);
     PixmapPtr pixmap = glamor_get_drawable_pixmap(drawable);
     glamor_pixmap_private *pixmap_priv;
-    uint32_t    byte_stride = PixmapBytePad(w, drawable->depth);
+    uint32_t    byte_stride = PixmapBytePad(w, drawable->depth, drawable->pScreen->context);
     RegionRec   region;
     BoxRec      box;
     int         off_x, off_y;
@@ -109,7 +109,7 @@ glamor_get_image_gl(DrawablePtr drawable, int x, int y, int w, int h,
 {
     PixmapPtr pixmap = glamor_get_drawable_pixmap(drawable);
     glamor_pixmap_private *pixmap_priv;
-    uint32_t    byte_stride = PixmapBytePad(w, drawable->depth);
+    uint32_t    byte_stride = PixmapBytePad(w, drawable->depth, drawable->pScreen->context);
     BoxRec      box;
     int         off_x, off_y;
 

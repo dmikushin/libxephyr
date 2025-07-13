@@ -605,7 +605,7 @@ ClientReady(int fd, int xevents, void *data)
         mark_client_ready(client);
     if (xevents & X_NOTIFY_WRITE) {
         ospoll_mute(server_poll, fd, X_NOTIFY_WRITE);
-        NewOutputPending = TRUE;
+        client->context->NewOutputPending = TRUE;
     }
 }
 
@@ -959,12 +959,12 @@ MakeClientGrabImpervious(ClientPtr client)
     oc->flags |= OS_COMM_GRAB_IMPERVIOUS;
     set_poll_client(client);
 
-    if (ServerGrabCallback) {
+    if (client->context->ServerGrabCallback) {
         ServerGrabInfoRec grabinfo;
 
         grabinfo.client = client;
         grabinfo.grabstate = CLIENT_IMPERVIOUS;
-        CallCallbacks(&ServerGrabCallback, &grabinfo);
+        CallCallbacks(&client->context->ServerGrabCallback, &grabinfo);
     }
 }
 
@@ -979,12 +979,12 @@ MakeClientGrabPervious(ClientPtr client)
     set_poll_client(client);
     isItTimeToYield = TRUE;
 
-    if (ServerGrabCallback) {
+    if (client->context->ServerGrabCallback) {
         ServerGrabInfoRec grabinfo;
 
         grabinfo.client = client;
         grabinfo.grabstate = CLIENT_PERVIOUS;
-        CallCallbacks(&ServerGrabCallback, &grabinfo);
+        CallCallbacks(&client->context->ServerGrabCallback, &grabinfo);
     }
 }
 

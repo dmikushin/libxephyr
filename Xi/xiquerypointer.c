@@ -93,7 +93,7 @@ ProcXIQueryPointer(ClientPtr client)
      * do not know about touches, so we must report emulated button presses. 2.2
      * and later context->clients are aware of touches, so we don't include emulated
      * button presses in the reply. */
-    xi_client = dixLookupPrivate(&client->devPrivates, XIClientPrivateKey);
+    xi_client = dixLookupPrivate(&client->devPrivates, XIClientPrivateKey(client));
     if (version_compare(xi_client->major_version,
                         xi_client->minor_version, 2, 2) >= 0)
         have_xi22 = TRUE;

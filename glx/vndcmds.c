@@ -223,13 +223,13 @@ static int CommonMakeCurrent(ClientPtr client,
     if (oldContextTag != 0) {
         oldTag = GlxLookupContextTag(client, oldContextTag);
         if (oldTag == NULL) {
-            return GlxErrorBase + GLXBadContextTag;
+            return client->context->GlxErrorBase + GLXBadContextTag;
         }
     }
     if (context != 0) {
         newVendor = GlxGetXIDMap(context);
         if (newVendor == NULL) {
-            return GlxErrorBase + GLXBadContext;
+            return client->context->GlxErrorBase + GLXBadContext;
         }
     }
 
@@ -318,13 +318,13 @@ static int dispatch_GLXCopyContext(ClientPtr client)
     if (stuff->contextTag != 0) {
         GlxContextTagInfo *tagInfo = GlxLookupContextTag(client, GlxCheckSwap(client, stuff->contextTag));
         if (tagInfo == NULL) {
-            return GlxErrorBase + GLXBadContextTag;
+            return client->context->GlxErrorBase + GLXBadContextTag;
         }
         vendor = tagInfo->vendor;
     } else {
         vendor = GlxGetXIDMap(GlxCheckSwap(client, stuff->source));
         if (vendor == NULL) {
-            return GlxErrorBase + GLXBadContext;
+            return client->context->GlxErrorBase + GLXBadContext;
         }
     }
     return vendor->glxvc.handleRequest(client);
@@ -341,7 +341,7 @@ static int dispatch_GLXSwapBuffers(ClientPtr client)
         // The vendor library is then responsible for validating the drawable.
         GlxContextTagInfo *tagInfo = GlxLookupContextTag(client, GlxCheckSwap(client, stuff->contextTag));
         if (tagInfo == NULL) {
-            return GlxErrorBase + GLXBadContextTag;
+            return client->context->GlxErrorBase + GLXBadContextTag;
         }
         vendor = tagInfo->vendor;
     } else {
@@ -349,7 +349,7 @@ static int dispatch_GLXSwapBuffers(ClientPtr client)
         // drawable.
         vendor = GlxGetXIDMap(GlxCheckSwap(client, stuff->drawable));
         if (vendor == NULL) {
-            return GlxErrorBase + GLXBadDrawable;
+            return client->context->GlxErrorBase + GLXBadDrawable;
         }
     }
 
@@ -369,7 +369,7 @@ static int dispatch_GLXSingle(ClientPtr client)
     if (tagInfo != NULL) {
         return tagInfo->vendor->glxvc.handleRequest(client);
     } else {
-        return GlxErrorBase + GLXBadContextTag;
+        return client->context->GlxErrorBase + GLXBadContextTag;
     }
 }
 
@@ -474,7 +474,7 @@ int GlxDispatchRequest(ClientPtr client)
     REQUEST(xReq);
     int result;
 
-    if (GlxExtensionEntry->base == 0)
+    if (client->context->GlxExtensionEntry->base == 0)
         return BadRequest;
 
     GlxSetRequestClient(client);

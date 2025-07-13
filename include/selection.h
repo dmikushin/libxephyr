@@ -73,7 +73,7 @@ extern _X_EXPORT int dixLookupSelection(Selection ** result, Atom name,
 
 extern _X_EXPORT Selection *CurrentSelections;
 
-extern _X_EXPORT CallbackListPtr SelectionCallback;
+/* extern _X_EXPORT CallbackListPtr context->SelectionCallback; */
 
 typedef enum {
     SelectionSetOwner,

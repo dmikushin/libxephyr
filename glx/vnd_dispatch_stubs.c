@@ -23,7 +23,7 @@ static int dispatch_Render(ClientPtr client)
         return ret;
     } else {
         client->errorValue = contextTag;
-        return GlxErrorBase + GLXBadContextTag;
+        return client->context->GlxErrorBase + GLXBadContextTag;
     }
 }
 static int dispatch_RenderLarge(ClientPtr client)
@@ -40,7 +40,7 @@ static int dispatch_RenderLarge(ClientPtr client)
         return ret;
     } else {
         client->errorValue = contextTag;
-        return GlxErrorBase + GLXBadContextTag;
+        return client->context->GlxErrorBase + GLXBadContextTag;
     }
 }
 static int dispatch_CreateContext(ClientPtr client)
@@ -87,7 +87,7 @@ static int dispatch_DestroyContext(ClientPtr client)
         return ret;
     } else {
         client->errorValue = context;
-        return GlxErrorBase + GLXBadContext;
+        return client->context->GlxErrorBase + GLXBadContext;
     }
 }
 static int dispatch_WaitGL(ClientPtr client)
@@ -104,7 +104,7 @@ static int dispatch_WaitGL(ClientPtr client)
         return ret;
     } else {
         client->errorValue = contextTag;
-        return GlxErrorBase + GLXBadContextTag;
+        return client->context->GlxErrorBase + GLXBadContextTag;
     }
 }
 static int dispatch_WaitX(ClientPtr client)
@@ -121,7 +121,7 @@ static int dispatch_WaitX(ClientPtr client)
         return ret;
     } else {
         client->errorValue = contextTag;
-        return GlxErrorBase + GLXBadContextTag;
+        return client->context->GlxErrorBase + GLXBadContextTag;
     }
 }
 static int dispatch_UseXFont(ClientPtr client)
@@ -138,7 +138,7 @@ static int dispatch_UseXFont(ClientPtr client)
         return ret;
     } else {
         client->errorValue = contextTag;
-        return GlxErrorBase + GLXBadContextTag;
+        return client->context->GlxErrorBase + GLXBadContextTag;
     }
 }
 static int dispatch_CreateGLXPixmap(ClientPtr client)
@@ -201,7 +201,7 @@ static int dispatch_DestroyGLXPixmap(ClientPtr client)
         return ret;
     } else {
         client->errorValue = glxpixmap;
-        return GlxErrorBase + GLXBadPixmap;
+        return client->context->GlxErrorBase + GLXBadPixmap;
     }
 }
 static int dispatch_QueryExtensionsString(ClientPtr client)
@@ -411,7 +411,7 @@ static int dispatch_DestroyPbuffer(ClientPtr client)
         return ret;
     } else {
         client->errorValue = pbuffer;
-        return GlxErrorBase + GLXBadPbuffer;
+        return client->context->GlxErrorBase + GLXBadPbuffer;
     }
 }
 static int dispatch_DestroyPixmap(ClientPtr client)
@@ -431,7 +431,7 @@ static int dispatch_DestroyPixmap(ClientPtr client)
         return ret;
     } else {
         client->errorValue = glxpixmap;
-        return GlxErrorBase + GLXBadPixmap;
+        return client->context->GlxErrorBase + GLXBadPixmap;
     }
 }
 static int dispatch_DestroyWindow(ClientPtr client)
@@ -451,7 +451,7 @@ static int dispatch_DestroyWindow(ClientPtr client)
         return ret;
     } else {
         client->errorValue = glxwindow;
-        return GlxErrorBase + GLXBadWindow;
+        return client->context->GlxErrorBase + GLXBadWindow;
     }
 }
 static int dispatch_GetDrawableAttributes(ClientPtr client)
@@ -504,7 +504,7 @@ static int dispatch_QueryContext(ClientPtr client)
         return ret;
     } else {
         client->errorValue = context;
-        return GlxErrorBase + GLXBadContext;
+        return client->context->GlxErrorBase + GLXBadContext;
     }
 }
 static int dispatch_IsDirect(ClientPtr client)
@@ -521,6 +521,6 @@ static int dispatch_IsDirect(ClientPtr client)
         return ret;
     } else {
         client->errorValue = context;
-        return GlxErrorBase + GLXBadContext;
+        return client->context->GlxErrorBase + GLXBadContext;
     }
 }

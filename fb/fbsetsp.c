@@ -72,7 +72,7 @@ fbSetSpans(DrawablePtr pDrawable,
                           1, pGC->alu, pPriv->pm, dstBpp, FALSE, FALSE);
             }
         }
-        src += PixmapBytePad(*pwidth, pDrawable->depth);
+        src += PixmapBytePad(*pwidth, pDrawable->depth, pDrawable->pScreen->context);
         ppt++;
         pwidth++;
     }

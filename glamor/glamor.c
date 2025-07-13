@@ -303,10 +303,6 @@ glamor_set_debug_level(int *debug_level)
     *debug_level = 0;
 }
 
-/* Moved to XephyrContext:
-int glamor_debug_level;
-*/
-
 void
 glamor_gldrawarrays_quads_using_indices(glamor_screen_private *glamor_priv,
                                         unsigned count)
@@ -641,7 +637,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
     if (!dixRegisterPrivateKey(&glamor_screen_private_key, PRIVATE_SCREEN, 0, screen->context)) {
         LogMessage(X_WARNING,
                    "glamor%d: Failed to allocate screen private\n",
-                   screen->myNum);
+                   screen->context, screen->myNum);
         goto free_glamor_private;
     }
 
@@ -651,7 +647,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
                                sizeof(struct glamor_pixmap_private), screen->context)) {
         LogMessage(X_WARNING,
                    "glamor%d: Failed to allocate pixmap private\n",
-                   screen->myNum);
+                   screen->context, screen->myNum);
         goto free_glamor_private;
     }
 
@@ -850,7 +846,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
 
     glamor_setup_formats(screen);
 
-    glamor_set_debug_level(&glamor_debug_level);
+    glamor_set_debug_level(&screen->context->glamor_debug_level);
 
     if (!glamor_font_init(screen))
         goto fail;

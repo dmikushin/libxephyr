@@ -172,8 +172,8 @@ ProcXChangeDeviceControl(ClientPtr client)
 
             ret = Success;
         }
-        else if (status == DeviceBusy) {
-            rep.status = DeviceBusy;
+        else if (status == client->context->DeviceBusy) {
+            rep.status = client->context->DeviceBusy;
             ret = Success;
         }
         else {
@@ -210,8 +210,8 @@ ProcXChangeDeviceControl(ClientPtr client)
                 DisableDevice(dev, TRUE);
             ret = Success;
         }
-        else if (status == DeviceBusy) {
-            rep.status = DeviceBusy;
+        else if (status == client->context->DeviceBusy) {
+            rep.status = client->context->DeviceBusy;
             ret = Success;
         }
         else {
@@ -226,7 +226,7 @@ ProcXChangeDeviceControl(ClientPtr client)
  out:
     if (ret == Success) {
         devicePresenceNotify dpn = {
-            .type = DevicePresenceNotify,
+            .type = client->context->DevicePresenceNotify,
             .time = client->context->currentTime.milliseconds,
             .devchange = DeviceControlChanged,
             .deviceid = dev->id,

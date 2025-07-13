@@ -80,5 +80,12 @@ void InitGlobalsForContext(XephyrContext* context)
     context->BadShmSegCode = 0; // Will be set later when SHM extension loads
     context->ChangeDeviceNotify = 0; // Will be set later when XI extension loads
     context->DPMSEnabled = FALSE;
+    
+    // Initialize Xi extension codes
+    context->IReqCode = 0;
+    context->IEventBase = 0;
+    context->BadMode = 2;
+    context->DeviceBusy = 3;
+    context->BadClass = 4;
 }
 

@@ -49,12 +49,6 @@
 #include "compint.h"
 #include "compositeext.h"
 
-/* Moved to XephyrContext: 
-DevPrivateKeyRec CompScreenPrivateKeyRec;
-DevPrivateKeyRec CompWindowPrivateKeyRec;
-DevPrivateKeyRec CompSubwindowsPrivateKeyRec;
-*/
-
 static Bool
 compCloseScreen(ScreenPtr pScreen)
 {
@@ -335,11 +329,11 @@ compScreenInit(ScreenPtr pScreen)
 {
     CompScreenPtr cs;
 
-    if (!dixRegisterPrivateKey(&CompScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
+    if (!dixRegisterPrivateKey(&pScreen->context->CompScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
-    if (!dixRegisterPrivateKey(&CompWindowPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
+    if (!dixRegisterPrivateKey(&pScreen->context->CompWindowPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
         return FALSE;
-    if (!dixRegisterPrivateKey(&CompSubwindowsPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
+    if (!dixRegisterPrivateKey(&pScreen->context->CompSubwindowsPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
         return FALSE;
 
     if (GetCompScreen(pScreen))

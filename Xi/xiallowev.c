@@ -76,7 +76,7 @@ ProcXIAllowEvents(ClientPtr client)
 
     REQUEST(xXI2_2AllowEventsReq);
 
-    xi_client = dixLookupPrivate(&client->devPrivates, XIClientPrivateKey);
+    xi_client = dixLookupPrivate(&client->devPrivates, XIClientPrivateKey(client));
 
     if (version_compare(xi_client->major_version,
                         xi_client->minor_version, 2, 2) >= 0) {

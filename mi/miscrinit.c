@@ -100,7 +100,7 @@ miModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
         if (bitsPerPixel > 0)
             pPixmap->drawable.bitsPerPixel = bitsPerPixel;
         else if ((bitsPerPixel < 0) && (depth > 0))
-            pPixmap->drawable.bitsPerPixel = BitsPerPixel(depth);
+            pPixmap->drawable.bitsPerPixel = BitsPerPixel(depth, pPixmap->drawable.pScreen->context);
 
         /*
          * CAVEAT:  Non-SI DDXen may use devKind and devPrivate fields for
@@ -109,8 +109,7 @@ miModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
         if (devKind > 0)
             pPixmap->devKind = devKind;
         else if ((devKind < 0) && ((width > 0) || (depth > 0)))
-            pPixmap->devKind = PixmapBytePad(pPixmap->drawable.width,
-                                             pPixmap->drawable.depth);
+            pPixmap->devKind = PixmapBytePad(pPixmap->drawable.width, pPixmap->drawable.depth, pPixmap->drawable.pScreen->context);
 
         if (pPixData)
             pPixmap->devPrivate.ptr = pPixData;
@@ -170,9 +169,8 @@ miCreateScreenResources(ScreenPtr pScreen)
         if (!(*pScreen->ModifyPixmapHeader) (pPixmap, pScreen->width,
                                              pScreen->height,
                                              pScreen->rootDepth,
-                                             BitsPerPixel(pScreen->rootDepth),
-                                             PixmapBytePad(pScrInitParms->width,
-                                                           pScreen->rootDepth),
+                                             BitsPerPixel(pScreen->rootDepth, pScreen->context),
+                                             PixmapBytePad(pScrInitParms->width, pScreen->rootDepth, pScreen->context),
                                              pScrInitParms->pbits))
             return FALSE;
         value = (void *) pPixmap;

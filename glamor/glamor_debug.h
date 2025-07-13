@@ -58,7 +58,7 @@ AbortServer(void)
 
 #define glamor_debug_output(_level_, _format_, _context_, ...)	\
   do {							\
-    if (glamor_debug_level >= _level_)			\
+    if (context->glamor_debug_level >= _level_)			\
       __debug_output_message(_format_,			\
 			     "Glamor debug",		\
 			     _context_,			\
@@ -67,7 +67,7 @@ AbortServer(void)
 
 #define glamor_fallback(_format_, _context_, ...)			\
   do {							\
-    if (glamor_debug_level >= GLAMOR_DEBUG_FALLBACK)	\
+    if (_context_->glamor_debug_level >= GLAMOR_DEBUG_FALLBACK)	\
       __debug_output_message(_format_,			\
 			     "Glamor fallback",		\
 			     _context_,			\

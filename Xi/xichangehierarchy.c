@@ -75,7 +75,7 @@ XISendDeviceHierarchyEvent(int flags[MAXDEVICES], XephyrContext* context)
     if (!ev)
         return;
     ev->type = GenericEvent;
-    ev->extension = IReqCode;
+    ev->extension = context->IReqCode;
     ev->evtype = XI_HierarchyChanged;
     ev->time = GetTimeInMillis();
     ev->flags = 0;

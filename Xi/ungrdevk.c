@@ -142,7 +142,7 @@ ProcXUngrabDeviceKey(ClientPtr client)
     temporaryGrab->resource = client->clientAsMask;
     temporaryGrab->device = dev;
     temporaryGrab->window = pWin;
-    temporaryGrab->type = DeviceKeyPress;
+    temporaryGrab->type = context->DeviceKeyPress;
     temporaryGrab->grabtype = XI;
     temporaryGrab->modifierDevice = mdev;
     temporaryGrab->modifiersDetail.exact = stuff->modifiers;

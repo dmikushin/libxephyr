@@ -35,7 +35,7 @@ _X_EXPORT int EventToCore(InternalEvent *event, xEvent **core, int *count, Xephy
 _X_EXPORT int EventToXI(InternalEvent *ev, xEvent **xi, int *count, XephyrContext* context);
 _X_EXPORT int EventToXI2(InternalEvent *ev, xEvent **xi, XephyrContext* context);
 _X_INTERNAL int GetCoreType(enum EventType type);
-_X_INTERNAL int GetXIType(enum EventType type);
+_X_INTERNAL int GetXIType(enum EventType type, XephyrContext *context);
 _X_INTERNAL int GetXI2Type(enum EventType type);
 
 _X_INTERNAL enum EventType GestureTypeToBegin(enum EventType type);

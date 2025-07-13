@@ -32,16 +32,8 @@
 #include "glx_extinit.h"
 
 extern Window EphyrPreExistingHostWin;
-extern Bool EphyrWantGrayScale;
-extern Bool EphyrWantResize;
-extern Bool EphyrWantNoHostGrab;
 extern Bool kdHasPointer;
 extern Bool kdHasKbd;
-extern Bool ephyr_glamor, ephyr_glamor_gles2, ephyr_glamor_skip_present;
-
-/* Moved to XephyrContext:
-extern Bool ephyrNoXV;
-*/
 
 void processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id, XephyrContext* context);
 void processOutputArg(const char *output, char *parent_id, XephyrContext* context);
@@ -245,11 +237,11 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         return 1;
     }
     else if (!strcmp(argv[i], "-grayscale")) {
-        EphyrWantGrayScale = 1;
+        context->EphyrWantGrayScale = 1;
         return 1;
     }
     else if (!strcmp(argv[i], "-resizeable")) {
-        EphyrWantResize = 1;
+        context->EphyrWantResize = 1;
         return 1;
     }
 #ifdef GLAMOR
@@ -263,7 +255,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
     }
     else if (!strcmp (argv[i], "-glamor_gles2")) {
         context->ephyr_glamor = TRUE;
-        ephyr_glamor_gles2 = TRUE;
+        context->ephyr_glamor_gles2 = TRUE;
         ephyrFuncs.initAccel = ephyr_glamor_init;
         ephyrFuncs.enableAccel = ephyr_glamor_enable;
         ephyrFuncs.disableAccel = ephyr_glamor_disable;
@@ -271,7 +263,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         return 1;
     }
     else if (!strcmp (argv[i], "-glamor-skip-present")) {
-        ephyr_glamor_skip_present = TRUE;
+        context->ephyr_glamor_skip_present = TRUE;
         return 1;
     }
 #endif
@@ -340,7 +332,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
     }
     /* end Xnest compat */
     else if (!strcmp(argv[i], "-no-host-grab")) {
-        EphyrWantNoHostGrab = 1;
+        context->EphyrWantNoHostGrab = 1;
         return 1;
     }
     else if (!strcmp(argv[i], "-sharevts") ||

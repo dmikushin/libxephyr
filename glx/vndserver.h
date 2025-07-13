@@ -64,10 +64,10 @@ typedef struct GlxClientPrivRec {
     GlxServerVendor **vendors;
 } GlxClientPriv;
 
-extern int GlxErrorBase;
+/* extern int client->context->GlxErrorBase; */
 extern RESTYPE idResource;
 
-extern ExtensionEntry *GlxExtensionEntry;
+/* extern ExtensionEntry *context->GlxExtensionEntry; */
 Bool GlxDispatchInit(void);
 void GlxDispatchReset(void);
 

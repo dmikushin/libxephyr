@@ -137,11 +137,6 @@ XvAttributeRec glamor_xv_attributes[] = {
 };
 int glamor_xv_num_attributes = ARRAY_SIZE(glamor_xv_attributes) - 1;
 
-/* Moved to XephyrContext:
-Atom context->glamorBrightness, context->glamorContrast, context->glamorSaturation, context->glamorHue,
-    context->glamorColorspace, context->glamorGamma;
-*/
-
 XvImageRec glamor_xv_images[] = {
     XVIMAGE_YV12,
     XVIMAGE_I420,

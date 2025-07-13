@@ -181,13 +181,13 @@ CreateMaskFromList(ClientPtr client, XEventClass * list, int count,
     for (i = 0; i < count; i++, list++) {
         device = *list >> 8;
         if (device > 255)
-            return BadClass;
+            return context->BadClass;
 
         rc = dixLookupDevice(&tdev, device, client, DixUseAccess);
         if (rc != client->context->BadDevice && rc != Success)
             return rc;
         if (rc == client->context->BadDevice || (dev != NULL && tdev != dev))
-            return BadClass;
+            return context->BadClass;
 
         for (j = 0; j < client->context->ExtEventIndex; j++)
             if (client->context->EventInfo[j].type == (*list & 0xff)) {

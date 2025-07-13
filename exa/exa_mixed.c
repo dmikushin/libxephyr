@@ -167,7 +167,7 @@ exaModifyPixmapHeader_mixed(PixmapPtr pPixmap, int width, int height, int depth,
         if (depth <= 0)
             bitsPerPixel = pPixmap->drawable.bitsPerPixel;
         else
-            bitsPerPixel = BitsPerPixel(depth);
+            bitsPerPixel = BitsPerPixel(depth, pPixmap->drawable.pScreen->context);
     }
 
     if (depth <= 0)
@@ -200,7 +200,7 @@ exaModifyPixmapHeader_mixed(PixmapPtr pPixmap, int width, int height, int depth,
                     pExaScr->deferred_mixed_pixmap = NULL;
             }
 
-            pExaPixmap->sys_pitch = PixmapBytePad(width, depth);
+            pExaPixmap->sys_pitch = PixmapBytePad(width, depth, pPixmap->drawable.pScreen->context);
         }
     }
 

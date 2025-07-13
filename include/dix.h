@@ -48,8 +48,6 @@ SOFTWARE.
 #ifndef DIX_H
 #define DIX_H
 
-typedef struct _XephyrContext XephyrContext;
-
 #include "callback.h"
 #include "gc.h"
 #include "window.h"
@@ -154,13 +152,10 @@ extern _X_EXPORT Bool touchEmulatePointer;
 typedef int HWEventQueueType;
 typedef HWEventQueueType *HWEventQueuePtr;
 
-extern _X_EXPORT HWEventQueuePtr checkForInput[2];
+/* extern _X_EXPORT HWEventQueuePtr context->checkForInput[2]; */
 
-static inline _X_NOTSAN Bool
-InputCheckPending(void)
-{
-    return (*checkForInput[0] != *checkForInput[1]);
-}
+#define InputCheckPending(context) \
+    (*(context)->checkForInput[0] != *(context)->checkForInput[1])
 
 typedef struct _TimeStamp {
     CARD32 months;              /* really ~49.7 days */
@@ -589,10 +584,10 @@ ScreenRestructured(ScreenPtr pScreen);
 #endif
 
 /*
- *  ServerGrabCallback stuff
+ *  client->context->ServerGrabCallback stuff
  */
 
-extern _X_EXPORT CallbackListPtr ServerGrabCallback;
+/* extern _X_EXPORT CallbackListPtr client->context->ServerGrabCallback; */
 
 typedef enum { SERVER_GRABBED, SERVER_UNGRABBED,
     CLIENT_PERVIOUS, CLIENT_IMPERVIOUS
@@ -627,7 +622,7 @@ typedef struct {
 extern _X_EXPORT CallbackListPtr RootWindowFinalizeCallback;
 
 extern int
-XItoCoreType(int xi_type);
+XItoCoreType(int xi_type, XephyrContext *context);
 extern Bool
 DevHasCursor(DeviceIntPtr pDev);
 extern _X_EXPORT Bool

@@ -597,7 +597,7 @@ PanoramiXGetGeometry(ClientPtr client)
 
     if (stuff->id == rep.root) {
         xWindowRoot *root = (xWindowRoot *)
-            (context->ConnectionInfo + connBlockScreenStart);
+            (context->ConnectionInfo + context->connBlockScreenStart);
 
         rep.width = root->pixWidth;
         rep.height = root->pixHeight;
@@ -1148,7 +1148,7 @@ PanoramiXCopyArea(ClientPtr client)
                                                   IncludeInferiors);
         }
 
-        pitch = PixmapBytePad(width, drawables[0]->depth);
+        pitch = PixmapBytePad(width, drawables[0]->depth, context);
         if (!(data = calloc(height, pitch)))
             return BadAlloc;
 
@@ -2083,7 +2083,7 @@ PanoramiXGetImage(ClientPtr client)
         .depth = pDraw->depth
     };
     if (format == ZPixmap) {
-        widthBytesLine = PixmapBytePad(w, pDraw->depth);
+        widthBytesLine = PixmapBytePad(w, pDraw->depth, context);
         length = widthBytesLine * h;
 
     }

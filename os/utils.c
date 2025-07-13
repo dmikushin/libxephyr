@@ -690,9 +690,9 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             context->explicit_display = TRUE;
             context->display++;
             if (!VerifyDisplayName(context->display)) {
-                ErrorF("Bad context->display name: %s\n", context, context->display);
+                ErrorF("Bad display name: %s\n", context, context->display);
                 UseMsg(context);
-                FatalError("Bad context->display name, exiting: %s\n", context, context->display);
+                FatalError("Bad display name, exiting: %s\n", context, context->display);
             }
         }
         else if (strcmp(argv[i], "-a") == 0) {

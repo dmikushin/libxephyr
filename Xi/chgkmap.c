@@ -109,7 +109,7 @@ ProcXChangeDeviceKeyMapping(ClientPtr client)
         return ret;
     len = stuff->length - bytes_to_int32(sizeof(xChangeDeviceKeyMappingReq));
 
-    ret = ChangeKeyMapping(client, dev, len, DeviceMappingNotify,
+    ret = ChangeKeyMapping(client, dev, len, client->context->DeviceMappingNotify,
                            stuff->firstKeyCode, stuff->keyCodes,
                            stuff->keySymsPerKeyCode, (KeySym *) &stuff[1], client->context);
 

@@ -181,7 +181,7 @@ PictureCreateDefaultFormats(ScreenPtr pScreen, int *nformatp)
     formats[nformats].format = PICT_a1;
     formats[nformats].depth = 1;
     nformats++;
-    formats[nformats].format = PICT_FORMAT(BitsPerPixel(8),
+    formats[nformats].format = PICT_FORMAT(BitsPerPixel(8, pScreen->context),
                                            PICT_TYPE_A, 8, 0, 0, 0);
     formats[nformats].depth = 8;
     nformats++;
@@ -204,7 +204,7 @@ PictureCreateDefaultFormats(ScreenPtr pScreen, int *nformatp)
         depth = visualDepth(pScreen, pVisual);
         if (!depth)
             continue;
-        bpp = BitsPerPixel(depth);
+        bpp = BitsPerPixel(depth, pScreen->context);
         switch (pVisual->class) {
         case DirectColor:
         case TrueColor:
@@ -252,7 +252,7 @@ PictureCreateDefaultFormats(ScreenPtr pScreen, int *nformatp)
      */
     for (d = 0; d < pScreen->numDepths; d++) {
         pDepth = &pScreen->allowedDepths[d];
-        bpp = BitsPerPixel(pDepth->depth);
+        bpp = BitsPerPixel(pDepth->depth, pScreen->context);
         format = 0;
         switch (bpp) {
         case 16:
@@ -457,10 +457,10 @@ PictureFinishInit(void)
     int s;
     XephyrContext* context;
     
-    /* Get context from extern screenInfo - temporary solution */
-    extern ScreenInfo screenInfo;
-    if (screenInfo.numScreens > 0 && screenInfo.screens[0])
-        context = screenInfo.screens[0]->context;
+    /* Get context from extern context->screenInfo - temporary solution */
+/*     extern ScreenInfo context->screenInfo; */
+    if (context->screenInfo.numScreens > 0 && context->screenInfo.screens[0])
+        context = context->screenInfo.screens[0]->context;
     else
         return FALSE;
 

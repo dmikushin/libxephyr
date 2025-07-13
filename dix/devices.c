@@ -340,7 +340,7 @@ SendDevicePresenceEvent(int deviceid, int type, XephyrContext* context)
     devicePresenceNotify ev;
 
     UpdateCurrentTimeIf(context);
-    ev.type = DevicePresenceNotify;
+    ev.type = context->DevicePresenceNotify;
     ev.time = context->currentTime.milliseconds;
     ev.devchange = type;
     ev.deviceid = deviceid;

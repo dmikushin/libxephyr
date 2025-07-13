@@ -40,10 +40,6 @@
 #include <GL/glxproto.h>
 #include "vndservervendor.h"
 
-/* Moved to XephyrContext:
-ExtensionEntry *GlxExtensionEntry;
-int GlxErrorBase = 0;
-*/
 static CallbackListRec vndInitCallbackList;
 static CallbackListPtr vndInitCallbackListPtr = &vndInitCallbackList;
 static DevPrivateKeyRec glvXGLVScreenPrivKey;
@@ -196,14 +192,14 @@ GLXClientCallback(CallbackListPtr *list, void *closure, void *data)
 static Bool
 GlxAddXIDMapWrapper(XID id, GlxServerVendor *vendor)
 {
-    XephyrContext* context = (XephyrContext*)GlxExtensionEntry->extPrivate;
+    XephyrContext* context = (XephyrContext*)context->GlxExtensionEntry->extPrivate;
     return GlxAddXIDMap(id, vendor, context);
 }
 
 static void
 GlxRemoveXIDMapWrapper(XID id)
 {
-    XephyrContext* context = (XephyrContext*)GlxExtensionEntry->extPrivate;
+    XephyrContext* context = (XephyrContext*)context->GlxExtensionEntry->extPrivate;
     GlxRemoveXIDMap(id, context);
 }
 
@@ -230,7 +226,7 @@ void
 GlxExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
-    GlxExtensionEntry = NULL;
+    context->GlxExtensionEntry = NULL;
 
     // Init private keys, per-screen data
     if (!dixRegisterPrivateKey(&glvXGLVScreenPrivKey, PRIVATE_SCREEN, 0, NULL))
@@ -257,8 +253,8 @@ GlxExtensionInit(XephyrContext* context)
         return;
     }
 
-    GlxExtensionEntry = extEntry;
-    GlxErrorBase = extEntry->errorBase;
+    context->GlxExtensionEntry = extEntry;
+    context->GlxErrorBase = extEntry->errorBase;
     extEntry->extPrivate = context;
     CallCallbacks(&vndInitCallbackListPtr, extEntry);
 

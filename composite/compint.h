@@ -172,24 +172,24 @@ typedef struct _CompScreen {
     SourceValidateProcPtr SourceValidate;
 } CompScreenRec, *CompScreenPtr;
 
-extern DevPrivateKeyRec CompScreenPrivateKeyRec;
+/* extern DevPrivateKeyRec context->CompScreenPrivateKeyRec; */
 
-#define CompScreenPrivateKey (&CompScreenPrivateKeyRec)
+#define CompScreenPrivateKey(pScreen) (&(pScreen)->context->CompScreenPrivateKeyRec)
 
-extern DevPrivateKeyRec CompWindowPrivateKeyRec;
+/* extern DevPrivateKeyRec context->CompWindowPrivateKeyRec; */
 
-#define CompWindowPrivateKey (&CompWindowPrivateKeyRec)
+#define CompWindowPrivateKey(pWin) (&(pWin)->drawable.pScreen->context->CompWindowPrivateKeyRec)
 
-extern DevPrivateKeyRec CompSubwindowsPrivateKeyRec;
+/* extern DevPrivateKeyRec context->CompSubwindowsPrivateKeyRec; */
 
-#define CompSubwindowsPrivateKey (&CompSubwindowsPrivateKeyRec)
+#define CompSubwindowsPrivateKey(pWin) (&(pWin)->drawable.pScreen->context->CompSubwindowsPrivateKeyRec)
 
 #define GetCompScreen(s) ((CompScreenPtr) \
-    dixLookupPrivate(&(s)->devPrivates, CompScreenPrivateKey))
+    dixLookupPrivate(&(s)->devPrivates, CompScreenPrivateKey(s)))
 #define GetCompWindow(w) ((CompWindowPtr) \
-    dixLookupPrivate(&(w)->devPrivates, CompWindowPrivateKey))
+    dixLookupPrivate(&(w)->devPrivates, CompWindowPrivateKey(w)))
 #define GetCompSubwindows(w) ((CompSubwindowsPtr) \
-    dixLookupPrivate(&(w)->devPrivates, CompSubwindowsPrivateKey))
+    dixLookupPrivate(&(w)->devPrivates, CompSubwindowsPrivateKey(w)))
 
 extern RESTYPE CompositeClientWindowType;
 extern RESTYPE CompositeClientSubwindowsType;

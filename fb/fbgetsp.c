@@ -57,7 +57,7 @@ fbGetSpans(DrawablePtr pDrawable,
               1,
               xoff,
               *pwidth * srcBpp, 1, GXcopy, FB_ALLONES, srcBpp, FALSE, FALSE);
-        pchardstStart += PixmapBytePad(*pwidth, pDrawable->depth);
+        pchardstStart += PixmapBytePad(*pwidth, pDrawable->depth, pDrawable->pScreen->context);
         ppt++;
         pwidth++;
     }

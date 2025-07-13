@@ -322,30 +322,25 @@ static int (*SProcIVector[]) (ClientPtr) = {
  *
  */
 
-/* Moved to XephyrContext:
-int IReqCode = 0;
-int IEventBase = 0;
-int BadMode = 2;
-int DeviceBusy = 3;
-int BadClass = 4;
-int DeviceValuator;
-int DeviceKeyPress;
-int DeviceKeyRelease;
-int DeviceButtonPress;
-int DeviceButtonRelease;
-int DeviceMotionNotify;
-int DeviceFocusIn;
-int DeviceFocusOut;
-int ProximityIn;
-int ProximityOut;
-int DeviceStateNotify;
-int DeviceKeyStateNotify;
-int DeviceButtonStateNotify;
-int DeviceMappingNotify;
-int DevicePresenceNotify;
-int DevicePropertyNotify;
-RESTYPE RT_INPUTCLIENT;
-*/
+/* Static variables for event indices - needed by callback functions that cannot access context */
+static int s_DeviceValuator = 0;
+static int s_DeviceKeyPress = 0;
+static int s_DeviceKeyRelease = 0;
+static int s_DeviceButtonPress = 0;
+static int s_DeviceButtonRelease = 0;
+static int s_DeviceMotionNotify = 0;
+static int s_DeviceFocusIn = 0;
+static int s_DeviceFocusOut = 0;
+static int s_ProximityIn = 0;
+static int s_ProximityOut = 0;
+static int s_DeviceStateNotify = 0;
+static int s_DeviceMappingNotify = 0;
+static int s_ChangeDeviceNotify = 0;
+static int s_DeviceKeyStateNotify = 0;
+static int s_DeviceButtonStateNotify = 0;
+static int s_DevicePresenceNotify = 0;
+static int s_DevicePropertyNotify = 0;
+
 static int BadEvent = 1;
 
 /*****************************************************************
@@ -363,7 +358,7 @@ extern XExtensionVersion XIVersion;
  */
 
 /* Moved to XephyrContext:
-DevPrivateKeyRec XIClientPrivateKeyRec;
+DevPrivateKeyRec context->XIClientPrivateKeyRec;
 */
 
 /*****************************************************************
@@ -505,7 +500,7 @@ SReplyIDispatch(ClientPtr client, int len, xGrabDeviceReply * rep)
 
 /************************************************************************
  *
- * This function swaps the DeviceValuator event.
+ * This function swaps the context->DeviceValuator event.
  *
  */
 
@@ -1038,56 +1033,89 @@ SetMaskForExtEvent(Mask mask, int event, XephyrContext* context)
 static void
 FixExtensionEvents(ExtensionEntry * extEntry, XephyrContext* context)
 {
-    DeviceValuator = extEntry->eventBase;
-    DeviceKeyPress = DeviceValuator + 1;
-    DeviceKeyRelease = DeviceKeyPress + 1;
-    DeviceButtonPress = DeviceKeyRelease + 1;
-    DeviceButtonRelease = DeviceButtonPress + 1;
-    DeviceMotionNotify = DeviceButtonRelease + 1;
-    DeviceFocusIn = DeviceMotionNotify + 1;
-    DeviceFocusOut = DeviceFocusIn + 1;
-    ProximityIn = DeviceFocusOut + 1;
-    ProximityOut = ProximityIn + 1;
-    DeviceStateNotify = ProximityOut + 1;
-    DeviceMappingNotify = DeviceStateNotify + 1;
-    context->ChangeDeviceNotify = DeviceMappingNotify + 1;
-    DeviceKeyStateNotify = context->ChangeDeviceNotify + 1;
-    DeviceButtonStateNotify = DeviceKeyStateNotify + 1;
-    DevicePresenceNotify = DeviceButtonStateNotify + 1;
-    DevicePropertyNotify = DevicePresenceNotify + 1;
+    context->DeviceValuator = extEntry->eventBase;
+    s_DeviceValuator = context->DeviceValuator;
+    
+    context->DeviceKeyPress = context->DeviceValuator + 1;
+    s_DeviceKeyPress = context->DeviceKeyPress;
+    
+    context->DeviceKeyRelease = context->DeviceKeyPress + 1;
+    s_DeviceKeyRelease = context->DeviceKeyRelease;
+    
+    context->DeviceButtonPress = context->DeviceKeyRelease + 1;
+    s_DeviceButtonPress = context->DeviceButtonPress;
+    
+    context->DeviceButtonRelease = context->DeviceButtonPress + 1;
+    s_DeviceButtonRelease = context->DeviceButtonRelease;
+    
+    context->DeviceMotionNotify = context->DeviceButtonRelease + 1;
+    s_DeviceMotionNotify = context->DeviceMotionNotify;
+    
+    context->DeviceFocusIn = context->DeviceMotionNotify + 1;
+    s_DeviceFocusIn = context->DeviceFocusIn;
+    
+    context->DeviceFocusOut = context->DeviceFocusIn + 1;
+    s_DeviceFocusOut = context->DeviceFocusOut;
+    
+    context->ProximityIn = context->DeviceFocusOut + 1;
+    s_ProximityIn = context->ProximityIn;
+    
+    context->ProximityOut = context->ProximityIn + 1;
+    s_ProximityOut = context->ProximityOut;
+    
+    context->DeviceStateNotify = context->ProximityOut + 1;
+    s_DeviceStateNotify = context->DeviceStateNotify;
+    
+    context->DeviceMappingNotify = context->DeviceStateNotify + 1;
+    s_DeviceMappingNotify = context->DeviceMappingNotify;
+    
+    context->ChangeDeviceNotify = context->DeviceMappingNotify + 1;
+    s_ChangeDeviceNotify = context->ChangeDeviceNotify;
+    
+    context->DeviceKeyStateNotify = context->ChangeDeviceNotify + 1;
+    s_DeviceKeyStateNotify = context->DeviceKeyStateNotify;
+    
+    context->DeviceButtonStateNotify = context->DeviceKeyStateNotify + 1;
+    s_DeviceButtonStateNotify = context->DeviceButtonStateNotify;
+    
+    context->DevicePresenceNotify = context->DeviceButtonStateNotify + 1;
+    s_DevicePresenceNotify = context->DevicePresenceNotify;
+    
+    context->DevicePropertyNotify = context->DevicePresenceNotify + 1;
+    s_DevicePropertyNotify = context->DevicePropertyNotify;
 
-    event_base[KeyClass] = DeviceKeyPress;
-    event_base[ButtonClass] = DeviceButtonPress;
-    event_base[ValuatorClass] = DeviceMotionNotify;
-    event_base[ProximityClass] = ProximityIn;
-    event_base[FocusClass] = DeviceFocusIn;
-    event_base[OtherClass] = DeviceStateNotify;
+    event_base[KeyClass] = context->DeviceKeyPress;
+    event_base[ButtonClass] = context->DeviceButtonPress;
+    event_base[ValuatorClass] = context->DeviceMotionNotify;
+    event_base[ProximityClass] = context->ProximityIn;
+    event_base[FocusClass] = context->DeviceFocusIn;
+    event_base[OtherClass] = context->DeviceStateNotify;
 
     context->BadDevice += extEntry->errorBase;
     BadEvent += extEntry->errorBase;
-    BadMode += extEntry->errorBase;
-    DeviceBusy += extEntry->errorBase;
-    BadClass += extEntry->errorBase;
+    context->BadMode += extEntry->errorBase;
+    context->DeviceBusy += extEntry->errorBase;
+    context->BadClass += extEntry->errorBase;
 
-    SetMaskForExtEvent(KeyPressMask, DeviceKeyPress, context);
-    SetCriticalEvent(DeviceKeyPress, context);
+    SetMaskForExtEvent(KeyPressMask, context->DeviceKeyPress, context);
+    SetCriticalEvent(context->DeviceKeyPress, context);
 
-    SetMaskForExtEvent(KeyReleaseMask, DeviceKeyRelease, context);
-    SetCriticalEvent(DeviceKeyRelease, context);
+    SetMaskForExtEvent(KeyReleaseMask, context->DeviceKeyRelease, context);
+    SetCriticalEvent(context->DeviceKeyRelease, context);
 
-    SetMaskForExtEvent(ButtonPressMask, DeviceButtonPress, context);
-    SetCriticalEvent(DeviceButtonPress, context);
+    SetMaskForExtEvent(ButtonPressMask, context->DeviceButtonPress, context);
+    SetCriticalEvent(context->DeviceButtonPress, context);
 
-    SetMaskForExtEvent(ButtonReleaseMask, DeviceButtonRelease, context);
-    SetCriticalEvent(DeviceButtonRelease, context);
+    SetMaskForExtEvent(ButtonReleaseMask, context->DeviceButtonRelease, context);
+    SetCriticalEvent(context->DeviceButtonRelease, context);
 
-    SetMaskForExtEvent(DeviceProximityMask, ProximityIn, context);
-    SetMaskForExtEvent(DeviceProximityMask, ProximityOut, context);
+    SetMaskForExtEvent(DeviceProximityMask, context->ProximityIn, context);
+    SetMaskForExtEvent(DeviceProximityMask, context->ProximityOut, context);
 
-    SetMaskForExtEvent(DeviceStateNotifyMask, DeviceStateNotify, context);
+    SetMaskForExtEvent(DeviceStateNotifyMask, context->DeviceStateNotify, context);
 
-    SetMaskForExtEvent(PointerMotionMask, DeviceMotionNotify, context);
-    SetCriticalEvent(DeviceMotionNotify, context);
+    SetMaskForExtEvent(PointerMotionMask, context->DeviceMotionNotify, context);
+    SetCriticalEvent(context->DeviceMotionNotify, context);
 
     SetEventInfo(DevicePointerMotionHintMask, _devicePointerMotionHint, context);
     SetEventInfo(DeviceButton1MotionMask, _deviceButton1Motion, context);
@@ -1097,16 +1125,16 @@ FixExtensionEvents(ExtensionEntry * extEntry, XephyrContext* context)
     SetEventInfo(DeviceButton5MotionMask, _deviceButton5Motion, context);
     SetEventInfo(DeviceButtonMotionMask, _deviceButtonMotion, context);
 
-    SetMaskForExtEvent(DeviceFocusChangeMask, DeviceFocusIn, context);
-    SetMaskForExtEvent(DeviceFocusChangeMask, DeviceFocusOut, context);
+    SetMaskForExtEvent(DeviceFocusChangeMask, context->DeviceFocusIn, context);
+    SetMaskForExtEvent(DeviceFocusChangeMask, context->DeviceFocusOut, context);
 
-    SetMaskForExtEvent(DeviceMappingNotifyMask, DeviceMappingNotify, context);
+    SetMaskForExtEvent(DeviceMappingNotifyMask, context->DeviceMappingNotify, context);
     SetMaskForExtEvent(ChangeDeviceNotifyMask, context->ChangeDeviceNotify, context);
 
     SetEventInfo(DeviceButtonGrabMask, _deviceButtonGrab, context);
     SetEventInfo(DeviceOwnerGrabButtonMask, _deviceOwnerGrabButton, context);
     SetEventInfo(DevicePresenceNotifyMask, _devicePresence, context);
-    SetMaskForExtEvent(DevicePropertyNotifyMask, DevicePropertyNotify, context);
+    SetMaskForExtEvent(DevicePropertyNotifyMask, context->DevicePropertyNotify, context);
 
     SetEventInfo(0, _noExtensionEvent, context);
 }
@@ -1135,29 +1163,29 @@ RestoreExtensionEvents(XephyrContext* context)
         context->EventInfo[i].type = 0;
     }
     context->ExtEventIndex = 0;
-    DeviceValuator = 0;
-    DeviceKeyPress = 1;
-    DeviceKeyRelease = 2;
-    DeviceButtonPress = 3;
-    DeviceButtonRelease = 4;
-    DeviceMotionNotify = 5;
-    DeviceFocusIn = 6;
-    DeviceFocusOut = 7;
-    ProximityIn = 8;
-    ProximityOut = 9;
-    DeviceStateNotify = 10;
-    DeviceMappingNotify = 11;
+    context->DeviceValuator = 0;
+    context->DeviceKeyPress = 1;
+    context->DeviceKeyRelease = 2;
+    context->DeviceButtonPress = 3;
+    context->DeviceButtonRelease = 4;
+    context->DeviceMotionNotify = 5;
+    context->DeviceFocusIn = 6;
+    context->DeviceFocusOut = 7;
+    context->ProximityIn = 8;
+    context->ProximityOut = 9;
+    context->DeviceStateNotify = 10;
+    context->DeviceMappingNotify = 11;
     context->ChangeDeviceNotify = 12;
-    DeviceKeyStateNotify = 13;
-    DeviceButtonStateNotify = 13;
-    DevicePresenceNotify = 14;
-    DevicePropertyNotify = 15;
+    context->DeviceKeyStateNotify = 13;
+    context->DeviceButtonStateNotify = 13;
+    context->DevicePresenceNotify = 14;
+    context->DevicePropertyNotify = 15;
 
     context->BadDevice = 0;
     BadEvent = 1;
-    BadMode = 2;
-    DeviceBusy = 3;
-    BadClass = 4;
+    context->BadMode = 2;
+    context->DeviceBusy = 3;
+    context->BadClass = 4;
 
 }
 
@@ -1170,27 +1198,30 @@ RestoreExtensionEvents(XephyrContext* context)
  */
 
 static void
-IResetProc(ExtensionEntry * unused)
+IResetProc(ExtensionEntry * extEntry)
 {
-    ReplySwapVector[IReqCode] = ReplyNotSwappd;
-    EventSwapVector[DeviceValuator] = NotImplemented;
-    EventSwapVector[DeviceKeyPress] = NotImplemented;
-    EventSwapVector[DeviceKeyRelease] = NotImplemented;
-    EventSwapVector[DeviceButtonPress] = NotImplemented;
-    EventSwapVector[DeviceButtonRelease] = NotImplemented;
-    EventSwapVector[DeviceMotionNotify] = NotImplemented;
-    EventSwapVector[DeviceFocusIn] = NotImplemented;
-    EventSwapVector[DeviceFocusOut] = NotImplemented;
-    EventSwapVector[ProximityIn] = NotImplemented;
-    EventSwapVector[ProximityOut] = NotImplemented;
-    EventSwapVector[DeviceStateNotify] = NotImplemented;
-    EventSwapVector[DeviceKeyStateNotify] = NotImplemented;
-    EventSwapVector[DeviceButtonStateNotify] = NotImplemented;
-    EventSwapVector[DeviceMappingNotify] = NotImplemented;
-    /* EventSwapVector[ChangeDeviceNotify] = NotImplemented; TODO: need context */
-    EventSwapVector[DevicePresenceNotify] = NotImplemented;
-    EventSwapVector[DevicePropertyNotify] = NotImplemented;
-    RestoreExtensionEvents(NULL);
+    ReplySwapVector[extEntry->base] = ReplyNotSwappd;
+    /* Reset event swap vectors based on event base */
+    int eventBase = extEntry->eventBase;
+    EventSwapVector[eventBase] = NotImplemented;      /* DeviceValuator */
+    EventSwapVector[eventBase + 1] = NotImplemented;  /* context->DeviceKeyPress */
+    EventSwapVector[eventBase + 2] = NotImplemented;  /* context->DeviceKeyRelease */
+    EventSwapVector[eventBase + 3] = NotImplemented;  /* context->DeviceButtonPress */
+    EventSwapVector[eventBase + 4] = NotImplemented;  /* context->DeviceButtonRelease */
+    EventSwapVector[eventBase + 5] = NotImplemented;  /* context->DeviceMotionNotify */
+    EventSwapVector[eventBase + 6] = NotImplemented;  /* context->DeviceFocusIn */
+    EventSwapVector[eventBase + 7] = NotImplemented;  /* context->DeviceFocusOut */
+    EventSwapVector[eventBase + 8] = NotImplemented;  /* context->ProximityIn */
+    EventSwapVector[eventBase + 9] = NotImplemented;  /* context->ProximityOut */
+    EventSwapVector[eventBase + 10] = NotImplemented; /* context->DeviceStateNotify */
+    EventSwapVector[eventBase + 11] = NotImplemented; /* context->DeviceMappingNotify */
+    EventSwapVector[eventBase + 12] = NotImplemented; /* ChangeDeviceNotify */
+    EventSwapVector[eventBase + 13] = NotImplemented; /* context->DeviceKeyStateNotify */
+    EventSwapVector[eventBase + 14] = NotImplemented; /* context->DeviceButtonStateNotify */
+    EventSwapVector[eventBase + 15] = NotImplemented; /* context->DevicePresenceNotify */
+    EventSwapVector[eventBase + 16] = NotImplemented; /* context->DevicePropertyNotify */
+    /* Cannot call RestoreExtensionEvents without context access */
+    /* This is called when extension is unloaded, which typically happens at server shutdown */
 
     free(xi_all_devices.name);
     free(xi_all_master_devices.name);
@@ -1241,53 +1272,53 @@ SEventIDispatch(xEvent *from, xEvent *to)
 {
     int type = from->u.u.type & 0177;
 
-    if (type == DeviceValuator)
+    if (type == s_DeviceValuator)
         DO_SWAP(SEventDeviceValuator, deviceValuator);
-    else if (type == DeviceKeyPress) {
+    else if (type == s_DeviceKeyPress) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == DeviceKeyRelease) {
+    else if (type == s_DeviceKeyRelease) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == DeviceButtonPress) {
+    else if (type == context->DeviceButtonPress) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == DeviceButtonRelease) {
+    else if (type == context->DeviceButtonRelease) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == DeviceMotionNotify) {
+    else if (type == context->DeviceMotionNotify) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == DeviceFocusIn)
+    else if (type == context->DeviceFocusIn)
         DO_SWAP(SEventFocus, deviceFocus);
-    else if (type == DeviceFocusOut)
+    else if (type == context->DeviceFocusOut)
         DO_SWAP(SEventFocus, deviceFocus);
-    else if (type == ProximityIn) {
+    else if (type == context->ProximityIn) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == ProximityOut) {
+    else if (type == context->ProximityOut) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == DeviceStateNotify)
+    else if (type == context->DeviceStateNotify)
         DO_SWAP(SDeviceStateNotifyEvent, deviceStateNotify);
-    else if (type == DeviceKeyStateNotify)
+    else if (type == context->DeviceKeyStateNotify)
         DO_SWAP(SDeviceKeyStateNotifyEvent, deviceKeyStateNotify);
-    else if (type == DeviceButtonStateNotify)
+    else if (type == context->DeviceButtonStateNotify)
         DO_SWAP(SDeviceButtonStateNotifyEvent, deviceButtonStateNotify);
-    else if (type == DeviceMappingNotify)
+    else if (type == context->DeviceMappingNotify)
         DO_SWAP(SDeviceMappingNotifyEvent, deviceMappingNotify);
     /* else if (type == ChangeDeviceNotify) TODO: need context
         DO_SWAP(SChangeDeviceNotifyEvent, changeDeviceNotify); */
-    else if (type == DevicePresenceNotify)
+    else if (type == context->DevicePresenceNotify)
         DO_SWAP(SDevicePresenceNotifyEvent, devicePresenceNotify);
-    else if (type == DevicePropertyNotify)
+    else if (type == context->DevicePropertyNotify)
         DO_SWAP(SDevicePropertyNotifyEvent, devicePropertyNotify);
     else {
         fprintf(stderr, "XInputExtension: Impossible event!\n");
@@ -1318,7 +1349,7 @@ XInputExtensionInit(XephyrContext* context)
     };
 
     if (!dixRegisterPrivateKey
-        (&XIClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(XIClientRec), context))
+        (&context->XIClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(XIClientRec), context))
         FatalError("Cannot request private for XI.\n", context);
 
     if (!XIBarrierInit(context))
@@ -1327,34 +1358,34 @@ XInputExtensionInit(XephyrContext* context)
     extEntry = AddExtension(INAME, IEVENTS, IERRORS, ProcIDispatch,
                             SProcIDispatch, IResetProc, StandardMinorOpcode);
     if (extEntry) {
-        IReqCode = extEntry->base;
-        IEventBase = extEntry->eventBase;
+        context->IReqCode = extEntry->base;
+        context->IEventBase = extEntry->eventBase;
         XIVersion = thisversion;
         MakeDeviceTypeAtoms();
-        RT_INPUTCLIENT = CreateNewResourceType((DeleteType) InputClientGone,
+        context->RT_INPUTCLIENT = CreateNewResourceType((DeleteType) InputClientGone,
                                                "INPUTCLIENT");
-        if (!RT_INPUTCLIENT)
+        if (!context->RT_INPUTCLIENT)
             FatalError("Failed to add resource type for XI.\n", context);
         FixExtensionEvents(extEntry, context);
-        ReplySwapVector[IReqCode] = (ReplySwapPtr) SReplyIDispatch;
-        EventSwapVector[DeviceValuator] = SEventIDispatch;
-        EventSwapVector[DeviceKeyPress] = SEventIDispatch;
-        EventSwapVector[DeviceKeyRelease] = SEventIDispatch;
-        EventSwapVector[DeviceButtonPress] = SEventIDispatch;
-        EventSwapVector[DeviceButtonRelease] = SEventIDispatch;
-        EventSwapVector[DeviceMotionNotify] = SEventIDispatch;
-        EventSwapVector[DeviceFocusIn] = SEventIDispatch;
-        EventSwapVector[DeviceFocusOut] = SEventIDispatch;
-        EventSwapVector[ProximityIn] = SEventIDispatch;
-        EventSwapVector[ProximityOut] = SEventIDispatch;
-        EventSwapVector[DeviceStateNotify] = SEventIDispatch;
-        EventSwapVector[DeviceKeyStateNotify] = SEventIDispatch;
-        EventSwapVector[DeviceButtonStateNotify] = SEventIDispatch;
-        EventSwapVector[DeviceMappingNotify] = SEventIDispatch;
+        ReplySwapVector[context->IReqCode] = (ReplySwapPtr) SReplyIDispatch;
+        EventSwapVector[context->DeviceValuator] = SEventIDispatch;
+        EventSwapVector[context->DeviceKeyPress] = SEventIDispatch;
+        EventSwapVector[context->DeviceKeyRelease] = SEventIDispatch;
+        EventSwapVector[context->DeviceButtonPress] = SEventIDispatch;
+        EventSwapVector[context->DeviceButtonRelease] = SEventIDispatch;
+        EventSwapVector[context->DeviceMotionNotify] = SEventIDispatch;
+        EventSwapVector[context->DeviceFocusIn] = SEventIDispatch;
+        EventSwapVector[context->DeviceFocusOut] = SEventIDispatch;
+        EventSwapVector[context->ProximityIn] = SEventIDispatch;
+        EventSwapVector[context->ProximityOut] = SEventIDispatch;
+        EventSwapVector[context->DeviceStateNotify] = SEventIDispatch;
+        EventSwapVector[context->DeviceKeyStateNotify] = SEventIDispatch;
+        EventSwapVector[context->DeviceButtonStateNotify] = SEventIDispatch;
+        EventSwapVector[context->DeviceMappingNotify] = SEventIDispatch;
         EventSwapVector[context->ChangeDeviceNotify] = SEventIDispatch;
-        EventSwapVector[DevicePresenceNotify] = SEventIDispatch;
+        EventSwapVector[context->DevicePresenceNotify] = SEventIDispatch;
 
-        GERegisterExtension(IReqCode, XI2EventSwap, context);
+        GERegisterExtension(context->IReqCode, XI2EventSwap, context);
 
         memset(&xi_all_devices, 0, sizeof(xi_all_devices));
         memset(&xi_all_master_devices, 0, sizeof(xi_all_master_devices));

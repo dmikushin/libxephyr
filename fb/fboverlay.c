@@ -133,8 +133,8 @@ fbOverlayCreateScreenResources(ScreenPtr pScreen)
             return FALSE;
         if (!(*pScreen->ModifyPixmapHeader) (pPixmap, pScreen->width,
                                              pScreen->height, depth,
-                                             BitsPerPixel(depth),
-                                             PixmapBytePad(width, depth),
+                                             BitsPerPixel(depth, pScreen->context),
+                                             PixmapBytePad(width, depth, pScreen->context),
                                              pbits))
             return FALSE;
         pScrPriv->layer[i].u.run.pixmap = pPixmap;

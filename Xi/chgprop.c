@@ -114,7 +114,7 @@ ProcXChangeDeviceDontPropagateList(ClientPtr client)
 
     if (stuff->mode != AddToList && stuff->mode != DeleteFromList) {
         client->errorValue = stuff->window;
-        return BadMode;
+        return client->context->BadMode;
     }
 
     if ((rc = CreateMaskFromList(client, (XEventClass *) &stuff[1],
@@ -136,7 +136,7 @@ ProcXChangeDeviceDontPropagateList(ClientPtr client)
 
         if (DeviceEventSuppressForWindow(pWin, client, tmp[i].mask, i, client->context) !=
             Success)
-            return BadClass;
+            return client->context->BadClass;
     }
 
     return Success;

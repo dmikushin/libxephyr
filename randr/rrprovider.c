@@ -496,7 +496,7 @@ RRProviderAutoConfigGpuScreen(ScreenPtr pScreen, ScreenPtr primaryScreen)
     RRProviderPtr primary_provider;
 
     /* Bail out if RandR wasn't initialized. */
-    if (!dixPrivateKeyRegistered(rrPrivKey))
+    if (!dixPrivateKeyRegistered(rrPrivKey(pScreen->context)))
         return;
 
     pScrPriv = rrGetScrPriv(pScreen);

@@ -395,7 +395,7 @@ PrintPassiveGrabs(XephyrContext* context)
             FreeLocalClientCreds(lcc);
         }
 
-        FindClientResourcesByType(context->clients[i], RT_PASSIVEGRAB, log_grab_info, context, context);
+        FindClientResourcesByType(context->clients[i], RT_PASSIVEGRAB, log_grab_info, context);
     }
     ErrorF("End list of registered passive grabs\n", context);
 }
@@ -3341,7 +3341,7 @@ CheckWindowOptionalNeed(WindowPtr w)
     if (!w->parent || !w->optional)
         return;
     optional = w->optional;
-    if (optional->dontPropagateMask != DontPropagateMasks[w->dontPropagate])
+    if (optional->dontPropagateMask != context->DontPropagateMasks[w->dontPropagate])
         return;
     if (optional->otherEventMasks != 0)
         return;
@@ -3402,7 +3402,7 @@ MakeWindowOptional(WindowPtr pWin)
     optional = malloc(sizeof(WindowOptRec));
     if (!optional)
         return FALSE;
-    optional->dontPropagateMask = DontPropagateMasks[pWin->dontPropagate];
+    optional->dontPropagateMask = context->DontPropagateMasks[pWin->dontPropagate];
     optional->otherEventMasks = 0;
     optional->otherClients = NULL;
     optional->passiveGrabs = NULL;

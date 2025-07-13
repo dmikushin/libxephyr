@@ -69,7 +69,7 @@ fbPutImage(DrawablePtr pDrawable,
         }
         break;
     case ZPixmap:
-        srcStride = PixmapBytePad(w, pDrawable->depth) / sizeof(FbStip);
+        srcStride = PixmapBytePad(w, pDrawable->depth, pDrawable->pScreen->context) / sizeof(FbStip);
         fbPutZImage(pDrawable, fbGetCompositeClip(pGC),
                     pGC->alu, pPriv->pm, x, y, w, h, src, srcStride);
     }
@@ -233,7 +233,7 @@ fbGetImage(DrawablePtr pDrawable,
         FbBits pm;
 
         pm = fbReplicatePixel(planeMask, srcBpp);
-        dstStride = PixmapBytePad(w, pDrawable->depth);
+        dstStride = PixmapBytePad(w, pDrawable->depth, pDrawable->pScreen->context);
         dstStride /= sizeof(FbStip);
         fbBltStip((FbStip *) (src + (y + srcYoff) * srcStride),
                   FbBitsStrideToStipStride(srcStride),

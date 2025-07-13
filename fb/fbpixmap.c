@@ -38,7 +38,7 @@ fbCreatePixmap(ScreenPtr pScreen, int width, int height, int depth,
     size_t paddedWidth;
     int adjust;
     int base;
-    int bpp = BitsPerPixel(depth);
+    int bpp = BitsPerPixel(depth, pScreen->context);
 
     paddedWidth = ((width * bpp + FB_MASK) >> FB_SHIFT) * sizeof(FbBits);
     if (paddedWidth / 4 > 32767 || height > 32767)

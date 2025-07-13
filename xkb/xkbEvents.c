@@ -133,7 +133,7 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
      * alternative of stale keymaps. -ds */
     if (keymap_changed) {
         deviceMappingNotify xi_mn = {
-            .type = DeviceMappingNotify,
+            .type = kbd->context->DeviceMappingNotify,
             .deviceid = kbd->id,
             .request = MappingKeyboard,
             .firstKeyCode = first_key,
@@ -145,7 +145,7 @@ XkbSendLegacyMapNotify(DeviceIntPtr kbd, CARD16 xkb_event, CARD16 changed,
     }
     if (modmap_changed) {
         deviceMappingNotify xi_mn = {
-            .type = DeviceMappingNotify,
+            .type = kbd->context->DeviceMappingNotify,
             .deviceid = kbd->id,
             .request = MappingModifier,
             .firstKeyCode = 0,
@@ -914,13 +914,13 @@ XkbFilterEvents(ClientPtr client, int nEvents, xEvent *xE)
     if (client->xkbClientFlags & _XkbClientInitialized) {
         if ((xkbDebugFlags & 0x10) &&
             (type == KeyPress || type == KeyRelease ||
-             type == DeviceKeyPress || type == DeviceKeyRelease))
+             type == client->context->DeviceKeyPress || type == client->context->DeviceKeyRelease))
             DebugF("[xkb] XkbFilterWriteEvents (XKB client): state 0x%04x\n",
                    xE[0].u.keyButtonPointer.state);
 
         if (dev->deviceGrab.grab != NullGrab && dev->deviceGrab.fromPassiveGrab
-            && (type == KeyPress || type == KeyRelease || type == DeviceKeyPress
-                || type == DeviceKeyRelease)) {
+            && (type == KeyPress || type == KeyRelease || type == client->context->DeviceKeyPress
+                || type == client->context->DeviceKeyRelease)) {
             unsigned int state, flags;
 
             flags = client->xkbClientFlags;
@@ -949,8 +949,8 @@ XkbFilterEvents(ClientPtr client, int nEvents, xEvent *xE)
     else {
         if ((xkbDebugFlags & 0x4) &&
             (xE[0].u.u.type == KeyPress || xE[0].u.u.type == KeyRelease ||
-             xE[0].u.u.type == DeviceKeyPress ||
-             xE[0].u.u.type == DeviceKeyRelease)) {
+             xE[0].u.u.type == client->context->DeviceKeyPress ||
+             xE[0].u.u.type == client->context->DeviceKeyRelease)) {
             DebugF("[xkb] XKbFilterWriteEvents (non-XKB):\n");
             DebugF("[xkb] event= 0x%04x\n", xE[0].u.keyButtonPointer.state);
             DebugF("[xkb] lookup= 0x%02x, grab= 0x%02x\n",
@@ -975,7 +975,7 @@ XkbFilterEvents(ClientPtr client, int nEvents, xEvent *xE)
             xE[0].u.enterLeave.state &= 0x1F00;
             xE[0].u.enterLeave.state |= xkbi->state.compat_grab_mods;
         }
-        else if (type >= DeviceKeyPress && type <= DeviceMotionNotify) {
+        else if (type >= client->context->DeviceKeyPress && type <= client->context->DeviceMotionNotify) {
             CARD16 old, new;
             deviceKeyButtonPointer *kbp = (deviceKeyButtonPointer *) &xE[0];
 

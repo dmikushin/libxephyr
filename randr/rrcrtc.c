@@ -971,7 +971,7 @@ static Bool RRCrtcInScreen(ScreenPtr pScreen, RRCrtcPtr findCrtc)
     if (findCrtc == NULL)
         return FALSE;
 
-    if (!dixPrivateKeyRegistered(rrPrivKey))
+    if (!dixPrivateKeyRegistered(rrPrivKey(pScreen->context)))
         return FALSE;
 
     pScrPriv = rrGetScrPriv(pScreen);
@@ -2057,7 +2057,7 @@ RRHasScanoutPixmap(ScreenPtr pScreen)
     int i;
 
     /* Bail out if RandR wasn't initialized. */
-    if (!dixPrivateKeyRegistered(rrPrivKey))
+    if (!dixPrivateKeyRegistered(rrPrivKey(pScreen->context)))
         return FALSE;
 
     pScrPriv = rrGetScrPriv(pScreen);

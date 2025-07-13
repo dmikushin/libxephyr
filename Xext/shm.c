@@ -479,8 +479,8 @@ doShmPutImage(DrawablePtr dst, GCPtr pGC,
 
     if (format == ZPixmap || (format == XYPixmap && depth == 1)) {
         pPixmap = GetScratchPixmapHeader(dst->pScreen, w, h, depth,
-                                         BitsPerPixel(depth),
-                                         PixmapBytePad(w, depth), data);
+                                         BitsPerPixel(depth, dst->pScreen->context),
+                                         PixmapBytePad(w, depth, dst->pScreen->context), data);
         if (!pPixmap)
             return;
         pGC->ops->CopyArea((DrawablePtr) pPixmap, dst, pGC, sx, sy, sw, sh, dx,
@@ -533,18 +533,18 @@ ProcShmPutImage(ClientPtr client)
     if (stuff->format == XYBitmap) {
         if (stuff->depth != 1)
             return BadMatch;
-        length = PixmapBytePad(stuff->totalWidth, 1);
+        length = PixmapBytePad(stuff->totalWidth, 1, client->context);
     }
     else if (stuff->format == XYPixmap) {
         if (pDraw->depth != stuff->depth)
             return BadMatch;
-        length = PixmapBytePad(stuff->totalWidth, 1);
+        length = PixmapBytePad(stuff->totalWidth, 1, client->context);
         length *= stuff->depth;
     }
     else if (stuff->format == ZPixmap) {
         if (pDraw->depth != stuff->depth)
             return BadMatch;
-        length = PixmapBytePad(stuff->totalWidth, stuff->depth);
+        length = PixmapBytePad(stuff->totalWidth, stuff->depth, client->context);
     }
     else {
         client->errorValue = stuff->format;
@@ -676,10 +676,10 @@ ProcShmGetImage(ClientPtr client)
         .depth = pDraw->depth
     };
     if (stuff->format == ZPixmap) {
-        length = PixmapBytePad(stuff->width, pDraw->depth) * stuff->height;
+        length = PixmapBytePad(stuff->width, pDraw->depth, client->context) * stuff->height;
     }
     else {
-        lenPer = PixmapBytePad(stuff->width, 1) * stuff->height;
+        lenPer = PixmapBytePad(stuff->width, 1, client->context) * stuff->height;
         plane = ((Mask) 1) << (pDraw->depth - 1);
         /* only planes asked for */
         length = lenPer * Ones(stuff->planeMask & (plane | (plane - 1)));
@@ -698,7 +698,7 @@ ProcShmGetImage(ClientPtr client)
                                      shmdesc->addr + stuff->offset);
         if (pVisibleRegion)
             XaceCensorImage(client, pVisibleRegion,
-                    PixmapBytePad(stuff->width, pDraw->depth), pDraw,
+                    PixmapBytePad(stuff->width, pDraw->depth, client->context), pDraw,
                     stuff->x, stuff->y, stuff->width, stuff->height,
                     stuff->format, shmdesc->addr + stuff->offset);
     }
@@ -846,11 +846,11 @@ ProcPanoramiXShmGetImage(ClientPtr client)
     }
 
     if (format == ZPixmap) {
-        widthBytesLine = PixmapBytePad(w, pDraw->depth);
+        widthBytesLine = PixmapBytePad(w, pDraw->depth, context);
         length = widthBytesLine * h;
     }
     else {
-        widthBytesLine = PixmapBytePad(w, 1);
+        widthBytesLine = PixmapBytePad(w, 1, context);
         lenPer = widthBytesLine * h;
         plane = ((Mask) 1) << (pDraw->depth - 1);
         length = lenPer * Ones(planemask & (plane | (plane - 1)));
@@ -969,8 +969,8 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
     }
 
  CreatePmap:
-    size = PixmapBytePad(width, depth) * height;
-    if (sizeof(size) == 4 && BitsPerPixel(depth) > 8) {
+    size = PixmapBytePad(width, depth, client->context) * height;
+    if (sizeof(size) == 4 && BitsPerPixel(depth, client->context) > 8) {
         if (size < width * height)
             return BadAlloc;
     }
@@ -1047,8 +1047,8 @@ fbShmCreatePixmap(ScreenPtr pScreen,
         return NullPixmap;
 
     if (!(*pScreen->ModifyPixmapHeader) (pPixmap, width, height, depth,
-                                         BitsPerPixel(depth),
-                                         PixmapBytePad(width, depth),
+                                         BitsPerPixel(depth, pScreen->context),
+                                         PixmapBytePad(width, depth, pScreen->context),
                                          (void *) addr)) {
         (*pScreen->DestroyPixmap) (pPixmap);
         return NullPixmap;
@@ -1102,8 +1102,8 @@ ProcShmCreatePixmap(ClientPtr client)
     }
 
  CreatePmap:
-    size = PixmapBytePad(width, depth) * height;
-    if (sizeof(size) == 4 && BitsPerPixel(depth) > 8) {
+    size = PixmapBytePad(width, depth, client->context) * height;
+    if (sizeof(size) == 4 && BitsPerPixel(depth, client->context) > 8) {
         if (size < width * height)
             return BadAlloc;
     }

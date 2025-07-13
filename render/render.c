@@ -1058,7 +1058,7 @@ ProcRenderAddGlyphs(ClientPtr client)
 
         glyph_new = &glyphs[i];
 
-        padded_width = PixmapBytePad(gi[i].width, glyphSet->format->depth);
+        padded_width = PixmapBytePad(gi[i].width, glyphSet->format->depth, client->context);
 
         if (gi[i].height &&
             padded_width > (UINT32_MAX - sizeof(GlyphRec)) / gi[i].height)

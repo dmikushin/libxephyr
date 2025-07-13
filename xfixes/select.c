@@ -108,18 +108,18 @@ XFixesSelectionCallback(CallbackListPtr *callbacks, void *data, void *args)
 }
 
 static Bool
-CheckSelectionCallback(void)
+CheckSelectionCallback(XephyrContext* context)
 {
     if (selectionEvents) {
         if (!SelectionCallbackRegistered) {
-            if (!AddCallback(&SelectionCallback, XFixesSelectionCallback, NULL))
+            if (!AddCallback(&context->SelectionCallback, XFixesSelectionCallback, NULL))
                 return FALSE;
             SelectionCallbackRegistered = TRUE;
         }
     }
     else {
         if (SelectionCallbackRegistered) {
-            DeleteCallback(&SelectionCallback, XFixesSelectionCallback, NULL);
+            DeleteCallback(&context->SelectionCallback, XFixesSelectionCallback, NULL);
             SelectionCallbackRegistered = FALSE;
         }
     }
@@ -183,7 +183,7 @@ XFixesSelectSelectionInput(ClientPtr pClient,
             return BadAlloc;
 
         *prev = e;
-        if (!CheckSelectionCallback()) {
+        if (!CheckSelectionCallback(pClient->context)) {
             FreeResource(e->clientResource, 0, pClient->context);
             return BadAlloc;
         }
@@ -247,7 +247,7 @@ SelectionFreeClient(void *data, XID id, XephyrContext* context)
         if (e == old) {
             *prev = e->next;
             free(e);
-            CheckSelectionCallback();
+            CheckSelectionCallback(context);
             break;
         }
     }

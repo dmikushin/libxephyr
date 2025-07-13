@@ -224,7 +224,7 @@ miCopyArea(DrawablePtr pSrcDrawable,
             ppt++->y = y++;
             *pwidth++ = width;
         }
-        pbits = xallocarray(height, PixmapBytePad(width, pSrcDrawable->depth));
+        pbits = xallocarray(height, PixmapBytePad(width, pSrcDrawable->depth, pSrcDrawable->pScreen->context));
         if (pbits) {
             (*pSrcDrawable->pScreen->GetSpans) (pSrcDrawable, width, pptFirst,
                                                 (int *) pwidthFirst, height,
@@ -641,7 +641,7 @@ miGetImage(DrawablePtr pDraw, int sx, int sy, int w, int h,
             ValidateGC((DrawablePtr) pPixmap, pGC);
         }
 
-        linelength = PixmapBytePad(w, depth);
+        linelength = PixmapBytePad(w, depth, pPixmap->drawable.pScreen->context);
         srcx = sx + pDraw->x;
         srcy = sy + pDraw->y;
         for (i = 0; i < h; i++) {

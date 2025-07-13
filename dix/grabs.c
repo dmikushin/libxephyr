@@ -699,17 +699,17 @@ DeletePassiveGrabFromList(GrabPtr pMinuendGrab)
 }
 
 Bool
-GrabIsPointerGrab(GrabPtr grab)
+GrabIsPointerGrab(GrabPtr grab, XephyrContext* context)
 {
     return (grab->type == ButtonPress ||
-            grab->type == DeviceButtonPress || grab->type == XI_ButtonPress);
+            grab->type == context->DeviceButtonPress || grab->type == XI_ButtonPress);
 }
 
 Bool
-GrabIsKeyboardGrab(GrabPtr grab)
+GrabIsKeyboardGrab(GrabPtr grab, XephyrContext* context)
 {
     return (grab->type == KeyPress ||
-            grab->type == DeviceKeyPress || grab->type == XI_KeyPress);
+            grab->type == context->DeviceKeyPress || grab->type == XI_KeyPress);
 }
 
 Bool

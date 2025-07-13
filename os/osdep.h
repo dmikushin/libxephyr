@@ -144,7 +144,7 @@ extern struct ospoll    *server_poll;
 Bool
 listen_to_client(ClientPtr client);
 
-extern Bool NewOutputPending;
+/* extern Bool context->NewOutputPending; */
 
 
 /* in access.c */

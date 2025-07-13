@@ -608,7 +608,19 @@ FlushAllOutput(void)
 {
     OsCommPtr oc;
     register ClientPtr client, tmp;
-    Bool newoutput = NewOutputPending;
+    XephyrContext* context = NULL;
+    Bool newoutput;
+
+    /* Get context from first available client */
+    if (!xorg_list_is_empty(&output_pending_clients)) {
+        client = xorg_list_first_entry(&output_pending_clients, struct _Client, output_pending);
+        context = client->context;
+    }
+    
+    if (!context)
+        return;
+    
+    newoutput = context->NewOutputPending;
 
     if (!newoutput)
         return;
@@ -619,7 +631,7 @@ FlushAllOutput(void)
      * simply wait for the select to tell us when he's ready to receive.
      */
     CriticalOutputPending = FALSE;
-    NewOutputPending = FALSE;
+    context->NewOutputPending = FALSE;
 
     xorg_list_for_each_entry_safe(client, tmp, &output_pending_clients, output_pending) {
         if (client->clientGone)
@@ -628,7 +640,7 @@ FlushAllOutput(void)
             oc = (OsCommPtr) client->osPrivate;
             (void) FlushClient(client, oc, (char *) NULL, 0);
         } else
-            NewOutputPending = TRUE;
+            context->NewOutputPending = TRUE;
     }
 }
 
@@ -793,13 +805,13 @@ WriteToClient(ClientPtr who, int count, const void *__buf)
         output_pending_clear(who);
         if (!any_output_pending()) {
             CriticalOutputPending = FALSE;
-            NewOutputPending = FALSE;
+            who->context->NewOutputPending = FALSE;
         }
 
         return FlushClient(who, oc, buf, count);
     }
 
-    NewOutputPending = TRUE;
+    who->context->NewOutputPending = TRUE;
     output_pending_mark(who);
     memmove((char *) oco->buf + oco->count, buf, count);
     oco->count += count;

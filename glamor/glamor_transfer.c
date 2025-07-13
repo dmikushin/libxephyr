@@ -198,7 +198,7 @@ glamor_download_rect(PixmapPtr pixmap, int x, int y, int w, int h, uint8_t *bits
     box.y2 = y + h;
 
     glamor_download_boxes(pixmap, &box, 1, 0, 0, -x, -y,
-                          bits, PixmapBytePad(w, pixmap->drawable.depth));
+                          bits, PixmapBytePad(w, pixmap->drawable.depth, context));
 }
 
 /*

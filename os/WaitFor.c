@@ -200,7 +200,7 @@ WaitForSomething(Bool are_ready, XephyrContext* context)
             timeout = 0;
 
         BlockHandler(&timeout, context);
-        if (NewOutputPending)
+        if (context->NewOutputPending)
             FlushAllOutput();
         /* keep this check close to select() call to minimize race */
         if (context->dispatchException)
@@ -220,7 +220,7 @@ WaitForSomething(Bool are_ready, XephyrContext* context)
         } else
             are_ready = clients_are_ready();
 
-        if (InputCheckPending())
+        if (InputCheckPending(context))
             return FALSE;
 
         if (are_ready) {

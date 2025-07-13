@@ -692,7 +692,7 @@ extern Bool WindowXI2MaskIsset(DeviceIntPtr dev, WindowPtr win, xEvent *ev);
 extern int GetXI2MaskByte(XI2Mask *mask, DeviceIntPtr dev, int event_type);
 void FixUpEventFromWindow(SpritePtr pSprite,
                           xEvent *xE,
-                          WindowPtr pWin, Window child, Bool calcChild);
+                          WindowPtr pWin, Window child, Bool calcChild, XephyrContext *context);
 extern Bool PointInBorderSize(WindowPtr pWin, int x, int y, XephyrContext* context);
 extern WindowPtr XYToWindow(SpritePtr pSprite, int x, int y);
 extern int EventIsDeliverable(DeviceIntPtr dev, int evtype, WindowPtr win);

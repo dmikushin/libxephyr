@@ -410,13 +410,13 @@ typedef struct _rrScrPriv {
     struct xorg_list leases;
 } rrScrPrivRec, *rrScrPrivPtr;
 
-extern DevPrivateKeyRec rrPrivKeyRec;
+/* extern DevPrivateKeyRec context->rrPrivKeyRec; */
 
-#define rrPrivKey (&rrPrivKeyRec)
+#define rrPrivKey(context) (&(context)->rrPrivKeyRec)
 
-#define rrGetScrPriv(pScr)  ((rrScrPrivPtr)dixLookupPrivate(&(pScr)->devPrivates, rrPrivKey))
+#define rrGetScrPriv(pScr)  ((rrScrPrivPtr)dixLookupPrivate(&(pScr)->devPrivates, rrPrivKey((pScr)->context)))
 #define rrScrPriv(pScr)	rrScrPrivPtr    pScrPriv = rrGetScrPriv(pScr)
-#define SetRRScreen(s,p) dixSetPrivate(&(s)->devPrivates, rrPrivKey, p)
+#define SetRRScreen(s,p) dixSetPrivate(&(s)->devPrivates, rrPrivKey((s)->context), p)
 
 /*
  * each window has a list of context->clients requesting
@@ -447,9 +447,9 @@ typedef struct _RRClient {
 /*  RRTimesRec	times[0]; */
 } RRClientRec, *RRClientPtr;
 
-extern DevPrivateKeyRec RRClientPrivateKeyRec;
+/* extern DevPrivateKeyRec context->RRClientPrivateKeyRec; */
 
-#define RRClientPrivateKey (&RRClientPrivateKeyRec)
+#define RRClientPrivateKey(client) (&(client)->context->RRClientPrivateKeyRec)
 
 #define VERIFY_RR_OUTPUT(id, ptr, a)\
     {\
@@ -501,7 +501,7 @@ extern DevPrivateKeyRec RRClientPrivateKeyRec;
         }\
     }
 
-#define GetRRClient(pClient)    ((RRClientPtr)dixLookupPrivate(&(pClient)->devPrivates, RRClientPrivateKey))
+#define GetRRClient(pClient)    ((RRClientPtr)dixLookupPrivate(&(pClient)->devPrivates, RRClientPrivateKey(pClient)))
 #define rrClientPriv(pClient)	RRClientPtr pRRClient = GetRRClient(pClient)
 
 #ifdef RANDR_12_INTERFACE

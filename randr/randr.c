@@ -61,7 +61,7 @@ RRClientCallback(CallbackListPtr *list, void *closure, void *data)
     NewClientInfoRec *clientinfo = (NewClientInfoRec *) data;
     ClientPtr pClient = clientinfo->client;
 
-    rrClientPriv(pClient);
+    RRClientPtr pRRClient = GetRRClient(pClient);
     RRTimesPtr pTimes = (RRTimesPtr) (pRRClient + 1);
     int i;
 
@@ -290,7 +290,7 @@ RRInit(XephyrContext* context)
             return FALSE;
         context->RRGeneration = context->serverGeneration;
     }
-    if (!dixRegisterPrivateKey(&rrPrivKeyRec, PRIVATE_SCREEN, 0, context))
+    if (!dixRegisterPrivateKey(&context->rrPrivKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
     return TRUE;
@@ -413,7 +413,7 @@ RRExtensionInit(XephyrContext* context)
         return;
 
     
-    if (!dixRegisterPrivateKey(&RRClientPrivateKeyRec, PRIVATE_CLIENT,
+    if (!dixRegisterPrivateKey(&context->RRClientPrivateKeyRec, PRIVATE_CLIENT,
                                sizeof(RRClientRec) +
                                1 * sizeof(RRTimesRec), context))
         return;

@@ -53,10 +53,6 @@
 ** X resources.
 */
 static int glxGeneration;
-/* Moved to XephyrContext:
-RESTYPE __glXContextRes;
-RESTYPE __glXDrawableRes;
-*/
 
 static DevPrivateKeyRec glxClientPrivateKeyRec;
 static GlxServerVendor *glvnd_vendor = NULL;
@@ -104,9 +100,9 @@ DrawableGone(__GLXdrawable * glxPriv, XID xid)
         /* If this was created by glXCreateWindow, free the matching resource */
         if (glxPriv->drawId != glxPriv->pDraw->id) {
             if (xid == glxPriv->drawId)
-                FreeResourceByType(glxPriv->pDraw->id, __glXDrawableRes, TRUE, glxPriv->pDraw->pScreen->context);
+                FreeResourceByType(glxPriv->pDraw->id, glxPriv->pDraw->pScreen->context->__glXDrawableRes, TRUE, glxPriv->pDraw->pScreen->context);
             else
-                FreeResourceByType(glxPriv->drawId, __glXDrawableRes, TRUE, glxPriv->pDraw->pScreen->context);
+                FreeResourceByType(glxPriv->drawId, glxPriv->pDraw->pScreen->context->__glXDrawableRes, TRUE, glxPriv->pDraw->pScreen->context);
         }
         /* otherwise this window was implicitly created by MakeCurrent */
     }
@@ -141,7 +137,7 @@ __glXAddContext(__GLXcontext * cx, XephyrContext* context)
 {
     /* Register this context as a resource.
      */
-    if (!AddResource(cx->id, __glXContextRes, (void *)cx, context)) {
+    if (!AddResource(cx->id, context->__glXContextRes, (void *)cx, context)) {
 	return FALSE;
     }
 
@@ -239,8 +235,8 @@ __glXErrorOccured(void)
 }
 
 /* Moved to XephyrContext:
-static int context->GlxErrorBase;
-int __glXEventBase;
+static int client->context->GlxErrorBase;
+int context->__glXEventBase;
 */
 
 int
@@ -481,11 +477,11 @@ xorgGlxServerPreInit(const ExtensionEntry *extEntry, XephyrContext* context)
         if (!checkScreenVisuals(context))
             return FALSE;
 
-        __glXContextRes = CreateNewResourceType((DeleteType) ContextGone,
+        context->__glXContextRes = CreateNewResourceType((DeleteType) ContextGone,
                                                 "GLXContext");
-        __glXDrawableRes = CreateNewResourceType((DeleteType) DrawableGone,
+        context->__glXDrawableRes = CreateNewResourceType((DeleteType) DrawableGone,
                                                  "GLXDrawable");
-        if (!__glXContextRes || !__glXDrawableRes)
+        if (!context->__glXContextRes || !context->__glXDrawableRes)
             return FALSE;
 
         if (!dixRegisterPrivateKey
@@ -495,9 +491,9 @@ xorgGlxServerPreInit(const ExtensionEntry *extEntry, XephyrContext* context)
             return FALSE;
 
         context->GlxErrorBase = extEntry->errorBase;
-        __glXEventBase = extEntry->eventBase;
+        context->__glXEventBase = extEntry->eventBase;
 
-        SetResourceTypeSizeFunc(__glXDrawableRes, GetGLXDrawableBytes);
+        SetResourceTypeSizeFunc(context->__glXDrawableRes, GetGLXDrawableBytes);
 #if PRESENT
         __glXregisterPresentCompleteNotify();
 #endif

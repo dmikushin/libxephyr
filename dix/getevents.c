@@ -1726,7 +1726,7 @@ GetPointerEvents(InternalEvent *events, DeviceIntPtr pDev, int type,
  * This function is not reentrant. Disable signals before calling.
  *
  * @param device The device to generate the event for
- * @param type Event type, one of ProximityIn or ProximityOut
+ * @param type Event type, one of context->ProximityIn or context->ProximityOut
  * @param keycode Key code of the pressed/released key
  * @param mask Valuator mask for valuators present for this event.
  *
@@ -1741,7 +1741,7 @@ QueueProximityEvents(DeviceIntPtr device, int type, const ValuatorMask *mask)
 }
 
 /**
- * Generate ProximityIn/ProximityOut InternalEvents, accompanied by
+ * Generate context->ProximityIn/context->ProximityOut InternalEvents, accompanied by
  * valuators.
  *
  * The DDX is responsible for allocating the events in the first place via
@@ -1771,7 +1771,7 @@ GetProximityEvents(InternalEvent *events, DeviceIntPtr pDev, int type,
         return 0;
 
     /* Sanity checks. */
-    if ((type != ProximityIn && type != ProximityOut) || !mask_in)
+    if ((type != pDev->context->ProximityIn && type != pDev->context->ProximityOut) || !mask_in)
         return 0;
     if (!pDev->valuator || !pDev->proximity)
         return 0;
@@ -1794,7 +1794,7 @@ GetProximityEvents(InternalEvent *events, DeviceIntPtr pDev, int type,
 
     event = &events->device_event;
     init_device_event(event, pDev, GetTimeInMillis(), EVENT_SOURCE_NORMAL);
-    event->type = (type == ProximityIn) ? ET_ProximityIn : ET_ProximityOut;
+    event->type = (type == pDev->context->ProximityIn) ? ET_ProximityIn : ET_ProximityOut;
 
     clipValuators(pDev, &mask);
 

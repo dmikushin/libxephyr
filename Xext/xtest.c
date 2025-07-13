@@ -188,7 +188,7 @@ ProcXTestFakeInput(ClientPtr client)
         }
 
         /* check type */
-        type -= DeviceValuator;
+        type -= client->context->DeviceValuator;
         switch (type) {
         case XI_DeviceKeyPress:
         case XI_DeviceKeyRelease:
@@ -250,7 +250,7 @@ ProcXTestFakeInput(ClientPtr client)
         base = firstValuator;
         for (n = 1; n < nev; n++) {
             deviceValuator *dv = (deviceValuator *) (ev + n);
-            if (dv->type != DeviceValuator) {
+            if (dv->type != client->context->DeviceValuator) {
                 client->errorValue = dv->type;
                 return BadValue;
             }

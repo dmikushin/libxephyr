@@ -820,10 +820,6 @@ ephyrCrossScreen(ScreenPtr pScreen, Bool entering)
 {
 }
 
-/* Moved to XephyrContext:
-ScreenPtr context->ephyrCursorScreen;
-*/
-
 static void
 ephyrWarpCursor(DeviceIntPtr pDev, ScreenPtr pScreen, int x, int y)
 {

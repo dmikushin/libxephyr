@@ -642,8 +642,8 @@ PanoramiXCreateConnectionBlock(XephyrContext* context)
 
     context->screenInfo.numScreens = i;
 
-    root = (xWindowRoot *) (context->ConnectionInfo + connBlockScreenStart);
-    length = connBlockScreenStart + sizeof(xWindowRoot);
+    root = (xWindowRoot *) (context->ConnectionInfo + context->connBlockScreenStart);
+    length = context->connBlockScreenStart + sizeof(xWindowRoot);
 
     /* overwrite the connection block */
     root->nDepths = PanoramiXNumDepths;
@@ -1218,7 +1218,7 @@ XineramaGetImageData(DrawablePtr *pDrawables,
             while (nbox--) {
                 w = pbox->x2 - pbox->x1;
                 h = pbox->y2 - pbox->y1;
-                ScratchPitch = PixmapBytePad(w, depth);
+                ScratchPitch = PixmapBytePad(w, depth, context);
                 sizeNeeded = ScratchPitch * h;
 
                 if (sizeNeeded > size) {
@@ -1280,7 +1280,7 @@ XineramaGetImageData(DrawablePtr *pDrawables,
                     }
                 }
                 else {
-                    j = BitsPerPixel(depth) >> 3;
+                    j = BitsPerPixel(depth, context) >> 3;
                     x = (pbox->x1 - SrcBox.x1) * j;
                     y = pbox->y1 - SrcBox.y1;
                     w *= j;

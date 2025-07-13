@@ -69,7 +69,7 @@ ProcXIQueryVersion(ClientPtr client)
         return BadValue;
     }
 
-    pXIClient = dixLookupPrivate(&client->devPrivates, XIClientPrivateKey);
+    pXIClient = dixLookupPrivate(&client->devPrivates, XIClientPrivateKey(client));
 
     if (version_compare(XIVersion.major_version, XIVersion.minor_version,
                 stuff->major_version, stuff->minor_version) > 0) {

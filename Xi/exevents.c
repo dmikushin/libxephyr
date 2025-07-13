@@ -222,11 +222,11 @@ XIGetDevice(xEvent *xE, XephyrContext* context)
 {
     DeviceIntPtr pDev = NULL;
 
-    if (xE->u.u.type == DeviceButtonPress ||
-        xE->u.u.type == DeviceButtonRelease ||
-        xE->u.u.type == DeviceMotionNotify ||
-        xE->u.u.type == ProximityIn ||
-        xE->u.u.type == ProximityOut || xE->u.u.type == DevicePropertyNotify) {
+    if (xE->u.u.type == context->DeviceButtonPress ||
+        xE->u.u.type == context->DeviceButtonRelease ||
+        xE->u.u.type == context->DeviceMotionNotify ||
+        xE->u.u.type == context->ProximityIn ||
+        xE->u.u.type == context->ProximityOut || xE->u.u.type == context->DevicePropertyNotify) {
         int rc;
         int id;
 
@@ -811,7 +811,7 @@ UpdateDeviceMotionMask(DeviceIntPtr device, unsigned short state,
     Mask mask;
 
     mask = PointerMotionMask | state | motion_mask;
-    SetMaskForEvent(device->id, mask, DeviceMotionNotify, device->context);
+    SetMaskForEvent(device->id, mask, context->DeviceMotionNotify, device->context);
     SetMaskForEvent(device->id, mask, MotionNotify, device->context);
 }
 
@@ -1088,7 +1088,7 @@ DeliverOneTouchEvent(ClientPtr client, DeviceIntPtr dev, TouchPointInfoPtr ti,
         FatalError("[Xi] %s: XI2 conversion failed in %s"
                    " (%d)\n", context, dev->name, __func__, err);
 
-    FixUpEventFromWindow(&ti->sprite, xi2, win, child, FALSE);
+    FixUpEventFromWindow(&ti->sprite, xi2, win, child, FALSE, context);
     filter = GetEventFilter(dev, xi2);
     if (XaceHook(XACE_RECEIVE_ACCESS, client, win, xi2, 1) != Success)
         return FALSE;
@@ -1394,7 +1394,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
             *client = rClient(iclients, context);
         }
         else if (listener->level == XI) {
-            int xi_type = GetXIType(TouchGetPointerEventType(ev));
+            int xi_type = GetXIType(TouchGetPointerEventType(ev), context);
             Mask xi_filter = event_get_filter_from_type(dev, xi_type);
 
             nt_list_for_each_entry(iclients,
@@ -1501,7 +1501,7 @@ DeliverTouchEmulatedEvent(DeviceIntPtr dev, TouchPointInfoPtr ti,
             if (ev->any.type == ET_TouchEnd &&
                 ti->num_listeners == 1 &&
                 !dev->button->buttonsDown &&
-                dev->deviceGrab.fromPassiveGrab && GrabIsPointerGrab(grab)) {
+                dev->deviceGrab.fromPassiveGrab && GrabIsPointerGrab(grab, dev->context)) {
                 (*dev->deviceGrab.DeactivateGrab) (dev);
                 CheckOldestTouch(dev, context);
                 return Success;
@@ -1908,7 +1908,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* contex
     case ET_KeyRelease:
         if (grab && device->deviceGrab.fromPassiveGrab &&
             (key == device->deviceGrab.activatingKey) &&
-            GrabIsKeyboardGrab(device->deviceGrab.grab))
+            GrabIsKeyboardGrab(device->deviceGrab.grab, device->context))
             deactivateDeviceGrab = TRUE;
         break;
     case ET_ButtonPress:
@@ -1927,7 +1927,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* contex
         event->detail.button = b->map[key];
         if (grab && !b->buttonsDown &&
             device->deviceGrab.fromPassiveGrab &&
-            GrabIsPointerGrab(device->deviceGrab.grab))
+            GrabIsPointerGrab(device->deviceGrab.grab, device->context))
             deactivateDeviceGrab = TRUE;
     default:
         break;
@@ -2234,7 +2234,7 @@ DeliverOneGestureEvent(ClientPtr client, DeviceIntPtr dev, GestureInfoPtr gi,
         FatalError("[Xi] %s: XI2 conversion failed in %s"
                    " (%d)\n", context, dev->name, __func__, err);
 
-    FixUpEventFromWindow(&gi->sprite, xi2, win, child, FALSE);
+    FixUpEventFromWindow(&gi->sprite, xi2, win, child, FALSE, context);
     filter = GetEventFilter(dev, xi2);
     if (XaceHook(XACE_RECEIVE_ACCESS, client, win, xi2, 1) != Success)
         return FALSE;
@@ -2518,7 +2518,7 @@ GrabButton(ClientPtr client, DeviceIntPtr dev, DeviceIntPtr modifier_device,
         return rc;
 
     if (grabtype == XI)
-        type = DeviceButtonPress;
+        type = context->DeviceButtonPress;
     else if (grabtype == XI2)
         type = XI_ButtonPress;
 
@@ -2555,7 +2555,7 @@ GrabKey(ClientPtr client, DeviceIntPtr dev, DeviceIntPtr modifier_device,
             client->errorValue = key;
             return BadValue;
         }
-        type = DeviceKeyPress;
+        type = context->DeviceKeyPress;
     }
     else if (grabtype == XI2)
         type = XI_KeyPress;
@@ -2741,7 +2741,7 @@ AddExtensionClient(WindowPtr pWin, ClientPtr client, Mask mask, int mskidx, Xeph
     others->resource = FakeClientID(client->index, client->context);
     others->next = pWin->optional->inputMasks->inputClients;
     pWin->optional->inputMasks->inputClients = others;
-    if (!AddResource(others->resource, RT_INPUTCLIENT, (void *) pWin, context))
+    if (!AddResource(others->resource, context->RT_INPUTCLIENT, (void *) pWin, context))
         goto bail;
     return Success;
 
@@ -2848,7 +2848,7 @@ InputClientGone(WindowPtr pWin, XID id, XephyrContext* context)
                 }
                 else {
                     other->resource = FakeClientID(0, pWin->drawable.pScreen->context);
-                    if (!AddResource(other->resource, RT_INPUTCLIENT,
+                    if (!AddResource(other->resource, context->RT_INPUTCLIENT,
                                      (void *) pWin, context))
                         return BadAlloc;
                 }
@@ -3129,7 +3129,7 @@ MaybeSendDeviceMotionNotifyHint(deviceKeyButtonPointer *pEvents, Mask mask, Xeph
     if (!dev)
         return 0;
 
-    if (pEvents->type == DeviceMotionNotify) {
+    if (pEvents->type == context->DeviceMotionNotify) {
         if (mask & DevicePointerMotionHintMask) {
             if (WID(dev->valuator->motionHintWindow) == pEvents->event) {
                 return 1;       /* don't send, but pretend we did */
@@ -3155,9 +3155,9 @@ CheckDeviceGrabAndHintWindow(WindowPtr pWin, int type,
     if (!dev)
         return;
 
-    if (type == DeviceMotionNotify)
+    if (type == context->DeviceMotionNotify)
         dev->valuator->motionHintWindow = pWin;
-    else if ((type == DeviceButtonPress) && (!grab) &&
+    else if ((type == context->DeviceButtonPress) && (!grab) &&
              (deliveryMask & DeviceButtonGrabMask)) {
         GrabPtr tempGrab;
 

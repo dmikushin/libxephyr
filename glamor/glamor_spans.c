@@ -215,7 +215,7 @@ glamor_get_spans_gl(DrawablePtr drawable, int wmax,
             char *l;
 
             l = d;
-            d += PixmapBytePad(w, drawable->depth);
+            d += PixmapBytePad(w, drawable->depth, context);
 
             /* clip */
             if (x1 < box->x1) {
@@ -348,7 +348,7 @@ glamor_set_spans_gl(DrawablePtr drawable, GCPtr gc, char *src,
                                 f->format, f->type,
                                 l);
             }
-            s += PixmapBytePad(w, drawable->depth);
+            s += PixmapBytePad(w, drawable->depth, context);
         }
     }
 

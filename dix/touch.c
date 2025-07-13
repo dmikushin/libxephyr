@@ -350,7 +350,7 @@ TouchEndTouch(DeviceIntPtr dev, TouchPointInfoPtr ti)
         if ((grab = dev->deviceGrab.grab)) {
             if (dev->deviceGrab.fromPassiveGrab &&
                 !dev->button->buttonsDown &&
-                !dev->touch->buttonsDown && GrabIsPointerGrab(grab))
+                !dev->touch->buttonsDown && GrabIsPointerGrab(grab, dev->context))
                 (*dev->deviceGrab.DeactivateGrab) (dev);
         }
     }
@@ -768,14 +768,14 @@ TouchAddRegularListener(DeviceIntPtr dev, TouchPointInfoPtr ti,
             if (!xi2mask_isset(iclients->xi2mask, dev, XI_TouchOwnership))
                 TouchEventHistoryAllocate(ti);
 
-            TouchAddListener(ti, iclients->resource, RT_INPUTCLIENT, XI2,
+            TouchAddListener(ti, iclients->resource, dev->context->RT_INPUTCLIENT, XI2,
                              type, TOUCH_LISTENER_AWAITING_BEGIN, win, NULL);
             return TRUE;
         }
     }
 
     if (mask & EVENT_XI1_MASK) {
-        int xitype = GetXIType(TouchGetPointerEventType(ev));
+        int xitype = GetXIType(TouchGetPointerEventType(ev), dev->context);
         Mask xi_filter = event_get_filter_from_type(dev, xitype);
 
         nt_list_for_each_entry(iclients, inputMasks->inputClients, next) {
@@ -783,7 +783,7 @@ TouchAddRegularListener(DeviceIntPtr dev, TouchPointInfoPtr ti,
                 continue;
 
             TouchEventHistoryAllocate(ti);
-            TouchAddListener(ti, iclients->resource, RT_INPUTCLIENT, XI,
+            TouchAddListener(ti, iclients->resource, dev->context->RT_INPUTCLIENT, XI,
                              TOUCH_LISTENER_POINTER_REGULAR,
                              TOUCH_LISTENER_AWAITING_BEGIN,
                              win, NULL);

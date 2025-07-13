@@ -232,7 +232,7 @@ exaPutImage(DrawablePtr pDrawable, GCPtr pGC, int depth, int x, int y,
             int w, int h, int leftPad, int format, char *bits)
 {
     if (!exaDoPutImage(pDrawable, pGC, depth, x, y, w, h, format, bits,
-                       PixmapBytePad(w, pDrawable->depth)))
+                       PixmapBytePad(w, pDrawable->depth, pDrawable->pScreen->context)))
         ExaCheckPutImage(pDrawable, pGC, depth, x, y, w, h, leftPad, format,
                          bits);
 }
@@ -1287,7 +1287,7 @@ exaGetImage(DrawablePtr pDrawable, int x, int y, int w, int h,
 
     ok = pExaScr->info->DownloadFromScreen(pPix, pDrawable->x + x + xoff,
                                            pDrawable->y + y + yoff, w, h, d,
-                                           PixmapBytePad(w, pDrawable->depth));
+                                           PixmapBytePad(w, pDrawable->depth, pDrawable->pScreen->context));
     if (ok) {
         exaWaitSync(pDrawable->pScreen);
         return;

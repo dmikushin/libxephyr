@@ -95,10 +95,6 @@ typedef struct _ephyrScrPriv {
 } EphyrScrPriv;
 
 extern KdCardFuncs ephyrFuncs;
-/* Moved to XephyrContext:
-extern KdKeyboardInfo *ephyrKbd;
-extern KdPointerInfo *ephyrMouse;
-*/
 
 extern miPointerScreenFuncRec ephyrPointerScreenFuncs;
 

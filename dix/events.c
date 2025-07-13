@@ -183,12 +183,12 @@ core_get_type(const xEvent *event)
 
 /* @return the XI2 event type or 0 if the event is not a XI2 event */
 static inline int
-xi2_get_type(const xEvent *event)
+xi2_get_type(const xEvent *event, XephyrContext *context)
 {
     const xGenericEvent *e = (const xGenericEvent *) event;
 
     return (e->type != GenericEvent ||
-            e->extension != IReqCode) ? 0 : e->evtype;
+            e->extension != context->IReqCode) ? 0 : e->evtype;
 }
 
 /**
@@ -280,19 +280,19 @@ NotImplemented(xEvent *from, xEvent *to)
  * @return The matching core event type or 0 if there is none.
  */
 int
-XItoCoreType(int xitype)
+XItoCoreType(int xitype, XephyrContext *context)
 {
     int coretype = 0;
 
-    if (xitype == DeviceMotionNotify)
+    if (xitype == context->DeviceMotionNotify)
         coretype = MotionNotify;
-    else if (xitype == DeviceButtonPress)
+    else if (xitype == context->DeviceButtonPress)
         coretype = ButtonPress;
-    else if (xitype == DeviceButtonRelease)
+    else if (xitype == context->DeviceButtonRelease)
         coretype = ButtonRelease;
-    else if (xitype == DeviceKeyPress)
+    else if (xitype == context->DeviceKeyPress)
         coretype = KeyPress;
-    else if (xitype == DeviceKeyRelease)
+    else if (xitype == context->DeviceKeyRelease)
         coretype = KeyRelease;
 
     return coretype;
@@ -426,7 +426,7 @@ GetEventFilter(DeviceIntPtr dev, xEvent *event)
 
     if (event->u.u.type != GenericEvent)
         return event_get_filter_from_type(dev, event->u.u.type);
-    else if ((evtype = xi2_get_type(event)))
+    else if ((evtype = xi2_get_type(event, dev->context)))
         return event_get_filter_from_xi2type(evtype);
     ErrorF("[dix] Unknown event type %d. No filter\n", dev->context, event->u.u.type);
     return 0;
@@ -458,7 +458,7 @@ WindowXI2MaskIsset(DeviceIntPtr dev, WindowPtr win, xEvent *ev)
     OtherInputMasks *inputMasks = wOtherInputMasks(win);
     int evtype;
 
-    if (!inputMasks || xi2_get_type(ev) == 0)
+    if (!inputMasks || xi2_get_type(ev, dev->context) == 0)
         return 0;
 
     evtype = ((xGenericEvent *) ev)->evtype;
@@ -486,7 +486,7 @@ GetEventMask(DeviceIntPtr dev, xEvent *event, InputClients * other)
     int evtype;
 
     /* XI2 filters are only ever 8 bit, so let's return a 8 bit mask */
-    if ((evtype = xi2_get_type(event))) {
+    if ((evtype = xi2_get_type(event, dev->context))) {
         return GetXI2MaskByte(other->xi2mask, dev, evtype);
     }
     else if (core_get_type(event) != 0)
@@ -659,7 +659,7 @@ XineramaConfineCursorToWindow(DeviceIntPtr pDev,
  * There's only two callers: UpdateDeviceState() and XI's SetMaskForExtEvent().
  * The latter initialises masks for the matching XI events, it's a once-off
  * setting.
- * UDS however changes the mask for MotionNotify and DeviceMotionNotify each
+ * UDS however changes the mask for MotionNotify and context->DeviceMotionNotify each
  * time a button is pressed to include the matching ButtonXMotion mask in the
  * filter.
  *
@@ -1990,7 +1990,7 @@ ReleaseActiveGrabs(ClientPtr client)
  * Deliver the given events to the given client.
  *
  * More than one event may be delivered at a time. This is the case with
- * DeviceMotionNotifies which may be followed by DeviceValuator events.
+ * DeviceMotionNotifies which may be followed by context->DeviceValuator events.
  *
  * TryClientEvents() is the last station before actually writing the events to
  * the socket. Anything that is not filtered here, will get delivered to the
@@ -2062,7 +2062,7 @@ TryClientEvents(ClientPtr client, DeviceIntPtr dev, xEvent *pEvents,
             pEvents->u.u.detail = NotifyNormal;
         }
     }
-    else if (type == DeviceMotionNotify) {
+    else if (type == (dev ? dev->context->DeviceMotionNotify : client->context->DeviceMotionNotify)) {
         if (MaybeSendDeviceMotionNotifyHint((deviceKeyButtonPointer *) pEvents,
                                             mask, dev ? dev->context : client->context) != 0)
             return 1;
@@ -2086,12 +2086,12 @@ TryClientEvents(ClientPtr client, DeviceIntPtr dev, xEvent *pEvents,
         }
 
     }
-    else if (type == DeviceKeyPress) {
+    else if (type == (dev ? dev->context->DeviceKeyPress : client->context->DeviceKeyPress)) {
         if (EventIsKeyRepeat(pEvents)) {
             if (!_XkbWantsDetectableAutoRepeat(client)) {
                 deviceKeyButtonPointer release =
                     *(deviceKeyButtonPointer *) pEvents;
-                release.type = DeviceKeyRelease;
+                release.type = (dev ? dev->context : client->context)->DeviceKeyRelease;
 #ifdef DEBUG_EVENTS
                 ErrorF(" (plus fake xi1 release for repeat)", context);
 #endif
@@ -2129,9 +2129,9 @@ ActivateImplicitGrab(DeviceIntPtr dev, ClientPtr client, WindowPtr win,
 
     if (type == ButtonPress)
         grabtype = CORE;
-    else if (type == DeviceButtonPress)
+    else if (type == dev->context->DeviceButtonPress)
         grabtype = XI;
-    else if ((type = xi2_get_type(event)) == XI_ButtonPress)
+    else if ((type = xi2_get_type(event, dev->context)) == XI_ButtonPress)
         grabtype = XI2;
     else
         return FALSE;
@@ -2209,7 +2209,7 @@ GetClientsForDelivery(DeviceIntPtr dev, WindowPtr win,
 
     if (core_get_type(events) != 0)
         *iclients = (InputClients *) wOtherClients(win);
-    else if (xi2_get_type(events) != 0) {
+    else if (xi2_get_type(events, dev->context) != 0) {
         OtherInputMasks *inputMasks = wOtherInputMasks(win);
 
         /* Has any client selected for the event? */
@@ -2318,7 +2318,7 @@ DeliverEventToWindowMask(DeviceIntPtr dev, WindowPtr win, xEvent *events,
  * context->clients with the matching mask on the window.
  *
  * More than one event may be delivered at a time. This is the case with
- * DeviceMotionNotifies which may be followed by DeviceValuator events.
+ * DeviceMotionNotifies which may be followed by context->DeviceValuator events.
  *
  * @param pWin The window that would get the event.
  * @param pEvents The events to be delivered.
@@ -2394,7 +2394,7 @@ DeliverEventsToWindow(DeviceIntPtr pDev, WindowPtr pWin, xEvent
             /* grab activated */ ;
         else if (type == MotionNotify)
             pDev->valuator->motionHintWindow = pWin;
-        else if (type == DeviceMotionNotify || type == DeviceButtonPress)
+        else if (type == pDev->context->DeviceMotionNotify || type == pDev->context->DeviceButtonPress)
             CheckDeviceGrabAndHintWindow(pWin, type,
                                          (deviceKeyButtonPointer *) pEvents,
                                          grab, client, deliveryMask, pDev->context);
@@ -2422,7 +2422,7 @@ FilterRawEvents(const ClientPtr client, const GrabPtr grab, WindowPtr root)
         return FALSE;
 
     client_xi_version =
-        dixLookupPrivate(&client->devPrivates, XIClientPrivateKey);
+        dixLookupPrivate(&client->devPrivates, XIClientPrivateKey(client));
 
     cmp = version_compare(client_xi_version->major_version,
                           client_xi_version->minor_version, 2, 0);
@@ -2665,14 +2665,14 @@ FixUpXI2SwipeEventFromWindow(SpritePtr pSprite, xXIGestureSwipeEvent *event,
  */
 void
 FixUpEventFromWindow(SpritePtr pSprite,
-                     xEvent *xE, WindowPtr pWin, Window child, Bool calcChild)
+                     xEvent *xE, WindowPtr pWin, Window child, Bool calcChild, XephyrContext *context)
 {
     int evtype;
 
     if (calcChild)
         child = FindChildForEvent(pSprite, pWin);
 
-    if ((evtype = xi2_get_type(xE))) {
+    if ((evtype = xi2_get_type(xE, context))) {
         switch (evtype) {
         case XI_RawKeyPress:
         case XI_RawKeyRelease:
@@ -2750,7 +2750,7 @@ EventIsDeliverable(DeviceIntPtr dev, int evtype, WindowPtr win)
             rc |= EVENT_XI2_MASK;
     }
 
-    if ((type = GetXIType(evtype)) != 0) {
+    if ((type = GetXIType(evtype, dev->context)) != 0) {
         filter = event_get_filter_from_type(dev, type);
 
         /* Check for XI mask */
@@ -2791,7 +2791,7 @@ DeliverEvent(DeviceIntPtr dev, xEvent *xE, int count,
 
     if (XaceHook(XACE_SEND_ACCESS, NULL, dev, win, xE, count) == Success) {
         filter = GetEventFilter(dev, xE);
-        FixUpEventFromWindow(pSprite, xE, win, child, FALSE);
+        FixUpEventFromWindow(pSprite, xE, win, child, FALSE, dev->context);
         deliveries = DeliverEventsToWindow(dev, win, xE, count, filter, grab);
     }
 
@@ -3854,7 +3854,7 @@ ActivatePassiveGrab(DeviceIntPtr device, GrabPtr grab, InternalEvent *event,
     ActivateGrabNoDelivery(device, grab, event, real_event);
 
     if (xE) {
-        FixUpEventFromWindow(pSprite, xE, grab->window, None, TRUE);
+        FixUpEventFromWindow(pSprite, xE, grab->window, None, TRUE, device->context);
 
         /* XXX: XACE? */
         TryClientEvents(rClient(grab, device->context), device, xE, count,
@@ -3946,7 +3946,7 @@ MatchForType(const GrabPtr grab, GrabPtr tmp, enum InputLevel level,
         break;
     case XI:
         grabtype = XI;
-        evtype = GetXIType(event_type);
+        evtype = GetXIType(event_type, context);
         match = XI_MATCH;
         break;
     case CORE:
@@ -4253,7 +4253,7 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
         /* XXX: XACE */
         int filter = GetEventFilter(keybd, xi2);
 
-        FixUpEventFromWindow(ptr->spriteInfo->sprite, xi2, focus, None, FALSE);
+        FixUpEventFromWindow(ptr->spriteInfo->sprite, xi2, focus, None, FALSE, keybd->context);
         deliveries = DeliverEventsToWindow(keybd, focus, xi2, 1,
                                            filter, NullGrab);
         if (deliveries > 0)
@@ -4266,7 +4266,7 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
     rc = EventToXI(event, &xE, &count, keybd->context);
     if (rc == Success &&
         XaceHook(XACE_SEND_ACCESS, NULL, keybd, focus, xE, count) == Success) {
-        FixUpEventFromWindow(ptr->spriteInfo->sprite, xE, focus, None, FALSE);
+        FixUpEventFromWindow(ptr->spriteInfo->sprite, xE, focus, None, FALSE, keybd->context);
         deliveries = DeliverEventsToWindow(keybd, focus, xE, count,
                                            GetEventFilter(keybd, xE), NullGrab);
 
@@ -4283,7 +4283,7 @@ DeliverFocusedEvent(DeviceIntPtr keybd, InternalEvent *event, WindowPtr window)
             if (XaceHook(XACE_SEND_ACCESS, NULL, keybd, focus, core, count) ==
                 Success) {
                 FixUpEventFromWindow(keybd->spriteInfo->sprite, core, focus,
-                                     None, FALSE);
+                                     None, FALSE, keybd->context);
                 deliveries =
                     DeliverEventsToWindow(keybd, focus, core, count,
                                           GetEventFilter(keybd, core),
@@ -4324,7 +4324,7 @@ DeliverOneGrabbedEvent(InternalEvent *event, DeviceIntPtr dev,
         rc = EventToXI2(event, &xE, dev->context);
         count = 1;
         if (rc == Success) {
-            int evtype = xi2_get_type(xE);
+            int evtype = xi2_get_type(xE, dev->context);
 
             mask = GetXI2MaskByte(grab->xi2mask, dev, evtype);
             filter = GetEventFilter(dev, xE);
@@ -4351,7 +4351,7 @@ DeliverOneGrabbedEvent(InternalEvent *event, DeviceIntPtr dev,
     }
 
     if (rc == Success) {
-        FixUpEventFromWindow(pSprite, xE, grab->window, None, TRUE);
+        FixUpEventFromWindow(pSprite, xE, grab->window, None, TRUE, dev->context);
         if (XaceHook(XACE_SEND_ACCESS, 0, dev,
                      grab->window, xE, count) ||
             XaceHook(XACE_RECEIVE_ACCESS, rClient(grab, dev->context),
@@ -4655,12 +4655,12 @@ EventSuppressForWindow(WindowPtr pWin, ClientPtr client,
         for (i = DNPMCOUNT, freed = 0; --i > 0;) {
             if (!DontPropagateRefCnts[i])
                 freed = i;
-            else if (mask == DontPropagateMasks[i])
+            else if (mask == client->context->DontPropagateMasks[i])
                 break;
         }
         if (!i && freed) {
             i = freed;
-            DontPropagateMasks[i] = mask;
+            client->context->DontPropagateMasks[i] = mask;
         }
     }
     if (i || !mask) {
@@ -4721,7 +4721,7 @@ CoreEnterLeaveEvent(DeviceIntPtr mouse,
     event.u.enterLeave.rootX = mouse->spriteInfo->sprite->hot.x;
     event.u.enterLeave.rootY = mouse->spriteInfo->sprite->hot.y;
     /* Counts on the same initial structure of crossing & button events! */
-    FixUpEventFromWindow(mouse->spriteInfo->sprite, &event, pWin, None, FALSE);
+    FixUpEventFromWindow(mouse->spriteInfo->sprite, &event, pWin, None, FALSE, mouse->context);
     /* Enter/Leave events always set child */
     event.u.enterLeave.child = child;
     event.u.enterLeave.flags = event.u.keyButtonPointer.sameScreen ?
@@ -4789,7 +4789,7 @@ DeviceEnterLeaveEvent(DeviceIntPtr mouse,
 
     event = calloc(1, len);
     event->type = GenericEvent;
-    event->extension = IReqCode;
+    event->extension = mouse->context->IReqCode;
     event->evtype = type;
     event->length = (len - sizeof(xEvent)) / 4;
     event->buttons_len = btlen;
@@ -4822,7 +4822,7 @@ DeviceEnterLeaveEvent(DeviceIntPtr mouse,
         event->focus = TRUE;
 
     FixUpEventFromWindow(mouse->spriteInfo->sprite, (xEvent *) event, pWin,
-                         None, FALSE);
+                         None, FALSE, mouse->context);
 
     filter = GetEventFilter(mouse, (xEvent *) event);
 
@@ -5475,7 +5475,7 @@ InitEvents(XephyrContext* context)
     context->currentTime.months = 0;
     context->currentTime.milliseconds = GetTimeInMillis();
     for (i = 0; i < DNPMCOUNT; i++) {
-        DontPropagateMasks[i] = 0;
+        context->DontPropagateMasks[i] = 0;
         DontPropagateRefCnts[i] = 0;
     }
 
@@ -6053,7 +6053,7 @@ ProcRecolorCursor(ClientPtr client)
  * To swap the byte ordering, a callback is called that has to be set up for
  * the given event type.
  *
- * In the case of DeviceMotionNotify trailed by DeviceValuators, the events
+ * In the case of context->DeviceMotionNotify trailed by DeviceValuators, the events
  * can be more than one. Usually it's just one event.
  *
  * Do not modify the event structure passed in. See comment below.
@@ -6307,7 +6307,7 @@ IsWrongPointerBarrierClient(ClientPtr client, DeviceIntPtr dev, xEvent *event)
 {
     xXIBarrierEvent *ev = (xXIBarrierEvent*)event;
 
-    if (ev->type != GenericEvent || ev->extension != IReqCode)
+    if (ev->type != GenericEvent || ev->extension != dev->context->IReqCode)
         return FALSE;
 
     if (ev->evtype != XI_BarrierHit && ev->evtype != XI_BarrierLeave)

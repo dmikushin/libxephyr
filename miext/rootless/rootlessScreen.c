@@ -84,7 +84,7 @@ RootlessUpdateScreenPixmap(ScreenPtr pScreen)
         (*pScreen->SetScreenPixmap) (pPix);
     }
 
-    rowbytes = PixmapBytePad(pScreen->width, pScreen->rootDepth);
+    rowbytes = PixmapBytePad(pScreen->width, pScreen->rootDepth, context);
 
     if (s->pixmap_data_size < rowbytes) {
         free(s->pixmap_data);
@@ -98,7 +98,7 @@ RootlessUpdateScreenPixmap(ScreenPtr pScreen)
 
         pScreen->ModifyPixmapHeader(pPix, pScreen->width, pScreen->height,
                                     pScreen->rootDepth,
-                                    BitsPerPixel(pScreen->rootDepth),
+                                    BitsPerPixel(pScreen->rootDepth, context),
                                     0, s->pixmap_data);
         /* ModifyPixmapHeader ignores zero arguments, so install rowbytes
            by hand. */

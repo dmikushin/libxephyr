@@ -57,10 +57,6 @@
 static Display *dpy;
 static XVisualInfo *visual_info;
 static GLXFBConfig fb_config;
-/* Moved to XephyrContext:
-Bool ephyr_glamor_gles2;
-Bool ephyr_glamor_skip_present;
-*/
 /** @} */
 
 /**

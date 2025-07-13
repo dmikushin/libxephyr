@@ -545,7 +545,7 @@ glamor_pm_is_solid(int depth, unsigned long planemask)
         FbFullMask(depth);
 }
 
-extern int glamor_debug_level;
+/* extern int context->glamor_debug_level; */
 
 /* glamor.c */
 PixmapPtr glamor_get_drawable_pixmap(DrawablePtr drawable);

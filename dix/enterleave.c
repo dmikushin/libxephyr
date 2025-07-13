@@ -610,11 +610,11 @@ DoEnterLeaveEvents(DeviceIntPtr pDev,
 
 static void
 FixDeviceValuator(DeviceIntPtr dev, deviceValuator * ev, ValuatorClassPtr v,
-                  int first)
+                  int first, XephyrContext* context)
 {
     int nval = v->numAxes - first;
 
-    ev->type = DeviceValuator;
+    ev->type = context->DeviceValuator;
     ev->deviceid = dev->id;
     ev->num_valuators = nval < 3 ? nval : 3;
     ev->first_valuator = first;
@@ -634,7 +634,7 @@ static void
 FixDeviceStateNotify(DeviceIntPtr dev, deviceStateNotify * ev, KeyClassPtr k,
                      ButtonClassPtr b, ValuatorClassPtr v, int first)
 {
-    ev->type = DeviceStateNotify;
+    ev->type = dev->context->DeviceStateNotify;
     ev->deviceid = dev->id;
     ev->time = dev->context->currentTime.milliseconds;
     ev->classes_reported = 0;
@@ -725,14 +725,14 @@ DeliverStateNotifyEvent(DeviceIntPtr dev, WindowPtr win)
         if (nbuttons > 32) {
             (ev - 1)->deviceid |= MORE_EVENTS;
             bev = (deviceButtonStateNotify *) ev++;
-            bev->type = DeviceButtonStateNotify;
+            bev->type = dev->context->DeviceButtonStateNotify;
             bev->deviceid = dev->id;
             memcpy((char *) &bev->buttons[4], (char *) &b->down[4],
                    DOWN_LENGTH - 4);
         }
         if (nval > 0) {
             (ev - 1)->deviceid |= MORE_EVENTS;
-            FixDeviceValuator(dev, (deviceValuator *) ev++, v, first);
+            FixDeviceValuator(dev, (deviceValuator *) ev++, v, first, dev->context);
             first += 3;
             nval -= 3;
         }
@@ -745,13 +745,13 @@ DeliverStateNotifyEvent(DeviceIntPtr dev, WindowPtr win)
         if (nkeys > 32) {
             (ev - 1)->deviceid |= MORE_EVENTS;
             kev = (deviceKeyStateNotify *) ev++;
-            kev->type = DeviceKeyStateNotify;
+            kev->type = dev->context->DeviceKeyStateNotify;
             kev->deviceid = dev->id;
             memmove((char *) &kev->keys[0], (char *) &k->down[4], 28);
         }
         if (nval > 0) {
             (ev - 1)->deviceid |= MORE_EVENTS;
-            FixDeviceValuator(dev, (deviceValuator *) ev++, v, first);
+            FixDeviceValuator(dev, (deviceValuator *) ev++, v, first, dev->context);
             first += 3;
             nval -= 3;
         }
@@ -763,7 +763,7 @@ DeliverStateNotifyEvent(DeviceIntPtr dev, WindowPtr win)
         nval -= 3;
         if (nval > 0) {
             (ev - 1)->deviceid |= MORE_EVENTS;
-            FixDeviceValuator(dev, (deviceValuator *) ev++, v, first);
+            FixDeviceValuator(dev, (deviceValuator *) ev++, v, first, dev->context);
             first += 3;
             nval -= 3;
         }
@@ -792,7 +792,7 @@ DeviceFocusEvent(DeviceIntPtr dev, int type, int mode, int detail,
 
     xi2event = calloc(1, len);
     xi2event->type = GenericEvent;
-    xi2event->extension = IReqCode;
+    xi2event->extension = dev->context->IReqCode;
     xi2event->evtype = type;
     xi2event->length = bytes_to_int32(len - sizeof(xEvent));
     xi2event->buttons_len = btlen;
@@ -821,7 +821,7 @@ DeviceFocusEvent(DeviceIntPtr dev, int type, int mode, int detail,
     }
 
     FixUpEventFromWindow(dev->spriteInfo->sprite, (xEvent *) xi2event, pWin,
-                         None, FALSE);
+                         None, FALSE, dev->context);
 
     DeliverEventsToWindow(dev, pWin, (xEvent *) xi2event, 1,
                           GetEventFilter(dev, (xEvent *) xi2event), NullGrab);
@@ -832,7 +832,7 @@ DeviceFocusEvent(DeviceIntPtr dev, int type, int mode, int detail,
     event = (deviceFocus) {
         .deviceid = dev->id,
         .mode = mode,
-        .type = (type == XI_FocusIn) ? DeviceFocusIn : DeviceFocusOut,
+        .type = (type == XI_FocusIn) ? dev->context->DeviceFocusIn : dev->context->DeviceFocusOut,
         .detail = detail,
         .window = pWin->drawable.id,
         .time = dev->context->currentTime.milliseconds
@@ -841,7 +841,7 @@ DeviceFocusEvent(DeviceIntPtr dev, int type, int mode, int detail,
     DeliverEventsToWindow(dev, pWin, (xEvent *) &event, 1,
                           DeviceFocusChangeMask, NullGrab);
 
-    if (event.type == DeviceFocusIn)
+    if (event.type == dev->context->DeviceFocusIn)
         DeliverStateNotifyEvent(dev, pWin);
 }
 

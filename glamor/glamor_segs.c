@@ -146,7 +146,7 @@ static void
 glamor_poly_segment_bail(DrawablePtr drawable, GCPtr gc,
                          int nseg, xSegment *segs)
 {
-    glamor_fallback("to %p (%c)\n", drawable,
+    glamor_fallback("to %p (%c)\n", drawable->pScreen->context, drawable,
                     glamor_get_drawable_location(drawable));
 
     if (gc->lineWidth == 0) {

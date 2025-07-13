@@ -93,7 +93,7 @@ SOFTWARE.
  *   This returns the number of padding units, for depth d and width w.
  * For bitmaps this can be calculated with the macros above.
  * Other depths require either grovelling over the formats field of the
- * context->screenInfo or hardwired constants.
+ * screenInfo or hardwired constants.
  */
 
 typedef struct _PaddingInfo {
@@ -104,25 +104,25 @@ typedef struct _PaddingInfo {
     int bytesPerPixel;          /* only set when notPower2 is TRUE */
     int bitsPerPixel;           /* bits per pixel */
 } PaddingInfo;
-extern _X_EXPORT PaddingInfo PixmapWidthPaddingInfo[];
+/* extern _X_EXPORT PaddingInfo context->PixmapWidthPaddingInfo[]; */
 
 /* The only portable way to get the bpp from the depth is to look it up */
-#define BitsPerPixel(d) (PixmapWidthPaddingInfo[d].bitsPerPixel)
+#define BitsPerPixel(d, context) ((context)->PixmapWidthPaddingInfo[d].bitsPerPixel)
 
-#define PixmapWidthInPadUnits(w, d) \
-    (PixmapWidthPaddingInfo[d].notPower2 ? \
-    (((int)(w) * PixmapWidthPaddingInfo[d].bytesPerPixel +  \
-	         PixmapWidthPaddingInfo[d].bytesPerPixel) >> \
-	PixmapWidthPaddingInfo[d].padBytesLog2) : \
-    ((int)((w) + PixmapWidthPaddingInfo[d].padRoundUp) >> \
-	PixmapWidthPaddingInfo[d].padPixelsLog2))
+#define PixmapWidthInPadUnits(w, d, context) \
+    ((context)->PixmapWidthPaddingInfo[d].notPower2 ? \
+    (((int)(w) * (context)->PixmapWidthPaddingInfo[d].bytesPerPixel +  \
+	         (context)->PixmapWidthPaddingInfo[d].bytesPerPixel) >> \
+	(context)->PixmapWidthPaddingInfo[d].padBytesLog2) : \
+    ((int)((w) + (context)->PixmapWidthPaddingInfo[d].padRoundUp) >> \
+	(context)->PixmapWidthPaddingInfo[d].padPixelsLog2))
 
 /*
  *	Return the number of bytes to which a scanline of the given
  * depth and width will be padded.
  */
-#define PixmapBytePad(w, d) \
-    (PixmapWidthInPadUnits(w, d) << PixmapWidthPaddingInfo[d].padBytesLog2)
+#define PixmapBytePad(w, d, context) \
+    (PixmapWidthInPadUnits(w, d, context) << (context)->PixmapWidthPaddingInfo[d].padBytesLog2)
 
 #define BitmapBytePad(w) \
     (((int)((w) + BITMAP_SCANLINE_PAD - 1) >> LOG2_BITMAP_PAD) << LOG2_BYTES_PER_SCANLINE_PAD)

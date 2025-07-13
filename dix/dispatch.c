@@ -209,7 +209,7 @@ UpdateCurrentTime(XephyrContext* context)
     systime.milliseconds = GetTimeInMillis();
     if (systime.milliseconds < context->currentTime.milliseconds)
         systime.months++;
-    if (InputCheckPending())
+    if (InputCheckPending(context))
         ProcessInputEvents(context);
     if (CompareTimeStamps(systime, context->currentTime) == LATER)
         context->currentTime = systime;
@@ -481,7 +481,7 @@ Dispatch(XephyrContext* context)
     init_client_ready();
 
     while (!dispatchException) {
-        if (InputCheckPending()) {
+        if (InputCheckPending(context)) {
             ProcessInputEvents(context);
             FlushIfCriticalOutputPending();
         }
@@ -501,7 +501,7 @@ Dispatch(XephyrContext* context)
 
             start_tick = SmartScheduleTime;
             while (!isItTimeToYield) {
-                if (InputCheckPending())
+                if (InputCheckPending(context))
                     ProcessInputEvents(context);
 
                 FlushIfCriticalOutputPending();
@@ -1177,12 +1177,12 @@ ProcGrabServer(ClientPtr client)
     grabClient = client;
     mark_client_grab(client);
 
-    if (ServerGrabCallback) {
+    if (client->context->ServerGrabCallback) {
         ServerGrabInfoRec grabinfo;
 
         grabinfo.client = client;
         grabinfo.grabstate = SERVER_GRABBED;
-        CallCallbacks(&ServerGrabCallback, (void *) &grabinfo);
+        CallCallbacks(&client->context->ServerGrabCallback, (void *) &grabinfo);
     }
 
     return Success;
@@ -1205,12 +1205,12 @@ UngrabServer(ClientPtr client)
         AttendClient(client->context->clients[i]);
     }
 
-    if (ServerGrabCallback) {
+    if (client->context->ServerGrabCallback) {
         ServerGrabInfoRec grabinfo;
 
         grabinfo.client = client;
         grabinfo.grabstate = SERVER_UNGRABBED;
-        CallCallbacks(&ServerGrabCallback, (void *) &grabinfo);
+        CallCallbacks(&client->context->ServerGrabCallback, (void *) &grabinfo);
     }
 }
 
@@ -2107,7 +2107,7 @@ ProcPutImage(ClientPtr client)
     else if (stuff->format == ZPixmap) {
         if ((pDraw->depth != stuff->depth) || (stuff->leftPad != 0))
             return BadMatch;
-        length = PixmapBytePad(stuff->width, stuff->depth);
+        length = PixmapBytePad(stuff->width, stuff->depth, client->context);
     }
     else {
         client->errorValue = stuff->format;
@@ -2125,7 +2125,7 @@ ProcPutImage(ClientPtr client)
         return BadLength;
 
     ReformatImage(tmpImage, lengthProto * stuff->height,
-                  stuff->format == ZPixmap ? BitsPerPixel(stuff->depth) : 1,
+                  stuff->format == ZPixmap ? BitsPerPixel(stuff->depth, client->context) : 1,
                   ClientOrder(client));
 
     (*pGC->ops->PutImage) (pDraw, pGC, stuff->depth, stuff->dstX, stuff->dstY,
@@ -2223,7 +2223,7 @@ DoGetImage(ClientPtr client, int format, Drawable drawable,
     xgi.sequenceNumber = client->sequence;
     xgi.depth = pDraw->depth;
     if (format == ZPixmap) {
-        widthBytesLine = PixmapBytePad(width, pDraw->depth);
+        widthBytesLine = PixmapBytePad(width, pDraw->depth, client->context);
         length = widthBytesLine * height;
 
     }
@@ -2292,7 +2292,7 @@ DoGetImage(ClientPtr client, int format, Drawable drawable,
             /* Note that this is NOT a call to WriteSwappedDataToClient,
                as we do NOT byte swap */
             ReformatImage(pBuf, (int) (nlines * widthBytesLine),
-                          BitsPerPixel(pDraw->depth), ClientOrder(client));
+                          BitsPerPixel(pDraw->depth, context), ClientOrder(client));
 
             WriteToClient(client, (int) (nlines * widthBytesLine), pBuf);
             linesDone += nlines;

@@ -92,15 +92,9 @@ static EphyrHostXVars HostX;
 
 static int HostXWantDamageDebug = 0;
 
-extern Bool EphyrWantResize;
-
 char *ephyrResName = NULL;
 int ephyrResNameFromCmd = 0;
 char *ephyrTitle = NULL;
-/* Moved to XephyrContext:
-Bool context->ephyr_glamor = FALSE;
-*/
-extern Bool ephyr_glamor_skip_present;
 
 Bool
 hostx_has_extension(xcb_extension_t *extension)
@@ -960,7 +954,7 @@ hostx_screen_init(KdScreenInfo *screen,
         xcb_configure_window(HostX.conn, scrpriv->win, mask, values);
     }
 
-    if (scrpriv->win_pre_existing == None && !EphyrWantResize) {
+    if (scrpriv->win_pre_existing == None && !context->EphyrWantResize) {
         /* Ask the WM to keep our size static */
         xcb_size_hints_t size_hints = {0};
         size_hints.max_width = size_hints.min_width = width;
@@ -972,7 +966,7 @@ hostx_screen_init(KdScreenInfo *screen,
     }
 
 #ifdef GLAMOR
-    if (!ephyr_glamor_skip_present)
+    if (!context->ephyr_glamor_skip_present)
 #endif
         xcb_map_window(HostX.conn, scrpriv->win);
 

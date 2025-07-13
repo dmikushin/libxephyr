@@ -56,12 +56,12 @@ static int countValuators(DeviceEvent *ev, int *first);
 static int getValuatorEvents(DeviceEvent *ev, deviceValuator * xv, XephyrContext* context);
 static int eventToKeyButtonPointer(DeviceEvent *ev, xEvent **xi, int *count, XephyrContext* context);
 static int eventToDeviceChanged(DeviceChangedEvent *ev, xEvent **dcce, XephyrContext* context);
-static int eventToDeviceEvent(DeviceEvent *ev, xEvent **xi);
-static int eventToRawEvent(RawDeviceEvent *ev, xEvent **xi);
-static int eventToBarrierEvent(BarrierEvent *ev, xEvent **xi);
-static int eventToTouchOwnershipEvent(TouchOwnershipEvent *ev, xEvent **xi);
-static int eventToGestureSwipeEvent(GestureEvent *ev, xEvent **xi);
-static int eventToGesturePinchEvent(GestureEvent *ev, xEvent **xi);
+static int eventToDeviceEvent(DeviceEvent *ev, xEvent **xi, XephyrContext *context);
+static int eventToRawEvent(RawDeviceEvent *ev, xEvent **xi, XephyrContext *context);
+static int eventToBarrierEvent(BarrierEvent *ev, xEvent **xi, XephyrContext *context);
+static int eventToTouchOwnershipEvent(TouchOwnershipEvent *ev, xEvent **xi, XephyrContext *context);
+static int eventToGestureSwipeEvent(GestureEvent *ev, xEvent **xi, XephyrContext *context);
+static int eventToGesturePinchEvent(GestureEvent *ev, xEvent **xi, XephyrContext *context);
 
 /* Do not use, read comments below */
 BOOL EventIsKeyRepeat(xEvent *event);
@@ -279,9 +279,9 @@ EventToXI2(InternalEvent *ev, xEvent **xi, XephyrContext* context)
     case ET_TouchBegin:
     case ET_TouchUpdate:
     case ET_TouchEnd:
-        return eventToDeviceEvent(&ev->device_event, xi);
+        return eventToDeviceEvent(&ev->device_event, xi, context);
     case ET_TouchOwnership:
-        return eventToTouchOwnershipEvent(&ev->touch_ownership_event, xi);
+        return eventToTouchOwnershipEvent(&ev->touch_ownership_event, xi, context);
     case ET_ProximityIn:
     case ET_ProximityOut:
         *xi = NULL;
@@ -296,18 +296,18 @@ EventToXI2(InternalEvent *ev, xEvent **xi, XephyrContext* context)
     case ET_RawTouchBegin:
     case ET_RawTouchUpdate:
     case ET_RawTouchEnd:
-        return eventToRawEvent(&ev->raw_event, xi);
+        return eventToRawEvent(&ev->raw_event, xi, context);
     case ET_BarrierHit:
     case ET_BarrierLeave:
-        return eventToBarrierEvent(&ev->barrier_event, xi);
+        return eventToBarrierEvent(&ev->barrier_event, xi, context);
     case ET_GesturePinchBegin:
     case ET_GesturePinchUpdate:
     case ET_GesturePinchEnd:
-        return eventToGesturePinchEvent(&ev->gesture_event, xi);
+        return eventToGesturePinchEvent(&ev->gesture_event, xi, context);
     case ET_GestureSwipeBegin:
     case ET_GestureSwipeUpdate:
     case ET_GestureSwipeEnd:
-        return eventToGestureSwipeEvent(&ev->gesture_event, xi);
+        return eventToGestureSwipeEvent(&ev->gesture_event, xi, context);
     default:
         break;
     }
@@ -372,25 +372,25 @@ eventToKeyButtonPointer(DeviceEvent *ev, xEvent **xi, int *count, XephyrContext*
 
     switch (ev->type) {
     case ET_Motion:
-        kbp->type = DeviceMotionNotify;
+        kbp->type = context->DeviceMotionNotify;
         break;
     case ET_ButtonPress:
-        kbp->type = DeviceButtonPress;
+        kbp->type = context->DeviceButtonPress;
         break;
     case ET_ButtonRelease:
-        kbp->type = DeviceButtonRelease;
+        kbp->type = context->DeviceButtonRelease;
         break;
     case ET_KeyPress:
-        kbp->type = DeviceKeyPress;
+        kbp->type = context->DeviceKeyPress;
         break;
     case ET_KeyRelease:
-        kbp->type = DeviceKeyRelease;
+        kbp->type = context->DeviceKeyRelease;
         break;
     case ET_ProximityIn:
-        kbp->type = ProximityIn;
+        kbp->type = context->ProximityIn;
         break;
     case ET_ProximityOut:
-        kbp->type = ProximityOut;
+        kbp->type = context->ProximityOut;
         break;
     default:
         break;
@@ -453,7 +453,7 @@ getValuatorEvents(DeviceEvent *ev, deviceValuator * xv, XephyrContext* context)
         INT32 *valuators = &xv->valuator0;      // Treat all 6 vals as an array
         int j;
 
-        xv->type = DeviceValuator;
+        xv->type = context->DeviceValuator;
         xv->first_valuator = first_valuator + i;
         xv->num_valuators = ((num_valuators - i) > 6) ? 6 : (num_valuators - i);
         xv->deviceid = ev->deviceid;
@@ -604,7 +604,7 @@ eventToDeviceChanged(DeviceChangedEvent *dce, xEvent **xi, XephyrContext* contex
     }
 
     dcce->type = GenericEvent;
-    dcce->extension = IReqCode;
+    dcce->extension = context->IReqCode;
     dcce->evtype = XI_DeviceChanged;
     dcce->time = dce->time;
     dcce->deviceid = dce->deviceid;
@@ -663,7 +663,7 @@ count_bits(unsigned char *ptr, int len)
 }
 
 static int
-eventToDeviceEvent(DeviceEvent *ev, xEvent **xi)
+eventToDeviceEvent(DeviceEvent *ev, xEvent **xi, XephyrContext *context)
 {
     int len = sizeof(xXIDeviceEvent);
     xXIDeviceEvent *xde;
@@ -685,7 +685,7 @@ eventToDeviceEvent(DeviceEvent *ev, xEvent **xi)
     *xi = calloc(1, len);
     xde = (xXIDeviceEvent *) * xi;
     xde->type = GenericEvent;
-    xde->extension = IReqCode;
+    xde->extension = context->IReqCode;
     xde->evtype = GetXI2Type(ev->type);
     xde->time = ev->time;
     xde->length = bytes_to_int32(len - sizeof(xEvent));
@@ -745,7 +745,7 @@ eventToDeviceEvent(DeviceEvent *ev, xEvent **xi)
 }
 
 static int
-eventToTouchOwnershipEvent(TouchOwnershipEvent *ev, xEvent **xi)
+eventToTouchOwnershipEvent(TouchOwnershipEvent *ev, xEvent **xi, XephyrContext *context)
 {
     int len = sizeof(xXITouchOwnershipEvent);
     xXITouchOwnershipEvent *xtoe;
@@ -753,7 +753,7 @@ eventToTouchOwnershipEvent(TouchOwnershipEvent *ev, xEvent **xi)
     *xi = calloc(1, len);
     xtoe = (xXITouchOwnershipEvent *) * xi;
     xtoe->type = GenericEvent;
-    xtoe->extension = IReqCode;
+    xtoe->extension = context->IReqCode;
     xtoe->length = bytes_to_int32(len - sizeof(xEvent));
     xtoe->evtype = GetXI2Type(ev->type);
     xtoe->deviceid = ev->deviceid;
@@ -766,7 +766,7 @@ eventToTouchOwnershipEvent(TouchOwnershipEvent *ev, xEvent **xi)
 }
 
 static int
-eventToRawEvent(RawDeviceEvent *ev, xEvent **xi)
+eventToRawEvent(RawDeviceEvent *ev, xEvent **xi, XephyrContext *context)
 {
     xXIRawEvent *raw;
     int vallen, nvals;
@@ -783,7 +783,7 @@ eventToRawEvent(RawDeviceEvent *ev, xEvent **xi)
     *xi = calloc(1, len);
     raw = (xXIRawEvent *) * xi;
     raw->type = GenericEvent;
-    raw->extension = IReqCode;
+    raw->extension = context->IReqCode;
     raw->evtype = GetXI2Type(ev->type);
     raw->time = ev->time;
     raw->length = bytes_to_int32(len - sizeof(xEvent));
@@ -810,7 +810,7 @@ eventToRawEvent(RawDeviceEvent *ev, xEvent **xi)
 }
 
 static int
-eventToBarrierEvent(BarrierEvent *ev, xEvent **xi)
+eventToBarrierEvent(BarrierEvent *ev, xEvent **xi, XephyrContext *context)
 {
     xXIBarrierEvent *barrier;
     int len = sizeof(xXIBarrierEvent);
@@ -818,7 +818,7 @@ eventToBarrierEvent(BarrierEvent *ev, xEvent **xi)
     *xi = calloc(1, len);
     barrier = (xXIBarrierEvent*) *xi;
     barrier->type = GenericEvent;
-    barrier->extension = IReqCode;
+    barrier->extension = context->IReqCode;
     barrier->evtype = GetXI2Type(ev->type);
     barrier->length = bytes_to_int32(len - sizeof(xEvent));
     barrier->deviceid = ev->deviceid;
@@ -839,7 +839,7 @@ eventToBarrierEvent(BarrierEvent *ev, xEvent **xi)
 }
 
 int
-eventToGesturePinchEvent(GestureEvent *ev, xEvent **xi)
+eventToGesturePinchEvent(GestureEvent *ev, xEvent **xi, XephyrContext *context)
 {
     int len = sizeof(xXIGesturePinchEvent);
     xXIGesturePinchEvent *xpe;
@@ -847,7 +847,7 @@ eventToGesturePinchEvent(GestureEvent *ev, xEvent **xi)
     *xi = calloc(1, len);
     xpe = (xXIGesturePinchEvent *) * xi;
     xpe->type = GenericEvent;
-    xpe->extension = IReqCode;
+    xpe->extension = context->IReqCode;
     xpe->evtype = GetXI2Type(ev->type);
     xpe->time = ev->time;
     xpe->length = bytes_to_int32(len - sizeof(xEvent));
@@ -881,7 +881,7 @@ eventToGesturePinchEvent(GestureEvent *ev, xEvent **xi)
 }
 
 int
-eventToGestureSwipeEvent(GestureEvent *ev, xEvent **xi)
+eventToGestureSwipeEvent(GestureEvent *ev, xEvent **xi, XephyrContext *context)
 {
     int len = sizeof(xXIGestureSwipeEvent);
     xXIGestureSwipeEvent *xde;
@@ -889,7 +889,7 @@ eventToGestureSwipeEvent(GestureEvent *ev, xEvent **xi)
     *xi = calloc(1, len);
     xde = (xXIGestureSwipeEvent *) * xi;
     xde->type = GenericEvent;
-    xde->extension = IReqCode;
+    xde->extension = context->IReqCode;
     xde->evtype = GetXI2Type(ev->type);
     xde->time = ev->time;
     xde->length = bytes_to_int32(len - sizeof(xEvent));
@@ -956,31 +956,31 @@ GetCoreType(enum EventType type)
  * equivalent exists.
  */
 int
-GetXIType(enum EventType type)
+GetXIType(enum EventType type, XephyrContext *context)
 {
     int xitype = 0;
 
     switch (type) {
     case ET_Motion:
-        xitype = DeviceMotionNotify;
+        xitype = context->DeviceMotionNotify;
         break;
     case ET_ButtonPress:
-        xitype = DeviceButtonPress;
+        xitype = context->DeviceButtonPress;
         break;
     case ET_ButtonRelease:
-        xitype = DeviceButtonRelease;
+        xitype = context->DeviceButtonRelease;
         break;
     case ET_KeyPress:
-        xitype = DeviceKeyPress;
+        xitype = context->DeviceKeyPress;
         break;
     case ET_KeyRelease:
-        xitype = DeviceKeyRelease;
+        xitype = context->DeviceKeyRelease;
         break;
     case ET_ProximityIn:
-        xitype = ProximityIn;
+        xitype = context->ProximityIn;
         break;
     case ET_ProximityOut:
-        xitype = ProximityOut;
+        xitype = context->ProximityOut;
         break;
     default:
         break;
