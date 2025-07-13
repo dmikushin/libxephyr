@@ -3407,8 +3407,8 @@ InitializeSprite(DeviceIntPtr pDev, WindowPtr pWin)
         pSprite->hotShape = NullRegion;
         pSprite->screen = pScreen;
         /* gotta UNINIT these someplace */
-        RegionNull(&pSprite->Reg1);
-        RegionNull(&pSprite->Reg2);
+        RegionNull(&pSprite->Reg1, pScreen->context);
+        RegionNull(&pSprite->Reg2, pScreen->context);
     }
 #endif
 }

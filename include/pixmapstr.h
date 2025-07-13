@@ -110,13 +110,6 @@ PixmapBox(BoxPtr box, PixmapPtr pixmap)
 }
 
 
-static inline void
-PixmapRegionInit(RegionPtr region, PixmapPtr pixmap)
-{
-    BoxRec box;
-
-    PixmapBox(&box, pixmap);
-    RegionInit(region, &box, 1);
-}
+extern _X_EXPORT void PixmapRegionInit(RegionPtr region, PixmapPtr pixmap, XephyrContext* context);
 
 #endif                          /* PIXMAPSTRUCT_H */

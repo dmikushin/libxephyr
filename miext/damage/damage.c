@@ -175,13 +175,13 @@ damageRegionAppend(DrawablePtr pDrawable, RegionPtr pRegion, Bool clip,
             RegionPtr pTempRegion =
                 NotClippedByChildren((WindowPtr) (pDrawable));
             RegionIntersect(pRegion, pRegion, pTempRegion);
-            RegionDestroy(pTempRegion);
+            RegionDestroy(pTempRegion, pScreen->context);
         }
         /* If subWindowMode is set to an invalid value, don't perform
          * any drawable-based clipping. */
     }
 
-    RegionNull(&clippedRec);
+    RegionNull(&clippedRec, pScreen->context);
     for (; pDamage; pDamage = pNext) {
         pNext = pDamage->pNext;
         /*
@@ -232,7 +232,7 @@ damageRegionAppend(DrawablePtr pDrawable, RegionPtr pRegion, Bool clip,
                 box.y1 = draw_y;
                 box.x2 = draw_x + pDamage->pDrawable->width;
                 box.y2 = draw_y + pDamage->pDrawable->height;
-                RegionInit(&pixClip, &box, 1);
+                RegionInit(&pixClip, &box, 1, pScreen->context);
                 RegionIntersect(pDamageRegion, pRegion, &pixClip);
                 RegionUninit(&pixClip);
             }
@@ -286,6 +286,7 @@ damageRegionAppend(DrawablePtr pDrawable, RegionPtr pRegion, Bool clip,
 static void
 damageRegionProcessPending(DrawablePtr pDrawable)
 {
+    ScreenPtr pScreen = pDrawable->pScreen;
     drawableDamage(pDrawable);
 
     for (; pDamage != NULL; pDamage = pDamage->pNext) {
@@ -299,7 +300,7 @@ damageRegionProcessPending(DrawablePtr pDrawable)
         }
 
         if (pDamage->reportAfter)
-            RegionEmpty(&pDamage->pendingDamage);
+            RegionEmpty(&pDamage->pendingDamage, pScreen->context);
     }
 
 }
@@ -316,7 +317,7 @@ damageDamageBox(DrawablePtr pDrawable, BoxPtr pBox, int subWindowMode)
 {
     RegionRec region;
 
-    RegionInit(&region, pBox, 1);
+    RegionInit(&region, pBox, 1, pDrawable->pScreen->context);
 #if DAMAGE_DEBUG_ENABLE
     _damageRegionAppend(pDrawable, &region, TRUE, subWindowMode, where);
 #else
@@ -1722,8 +1723,8 @@ DamageCreate(DamageReportFunc damageReport,
         return 0;
     pDamage->pNext = 0;
     pDamage->pNextWin = 0;
-    RegionNull(&pDamage->damage);
-    RegionNull(&pDamage->pendingDamage);
+    RegionNull(&pDamage->damage, pScreen->context);
+    RegionNull(&pDamage->pendingDamage, pScreen->context);
 
     pDamage->damageLevel = damageLevel;
     pDamage->isInternal = isInternal;
@@ -1854,6 +1855,7 @@ DamageSubtract(DamagePtr pDamage, const RegionPtr pRegion)
 
     RegionSubtract(&pDamage->damage, &pDamage->damage, pRegion);
     if (pDrawable) {
+        ScreenPtr pScreen = pDrawable->pScreen;
         if (pDrawable->type == DRAWABLE_WINDOW)
             pClip = &((WindowPtr) pDrawable)->borderClip;
         else {
@@ -1863,7 +1865,7 @@ DamageSubtract(DamagePtr pDamage, const RegionPtr pRegion)
             box.y1 = pDrawable->y;
             box.x2 = pDrawable->x + pDrawable->width;
             box.y2 = pDrawable->y + pDrawable->height;
-            RegionInit(&pixmapClip, &box, 1);
+            RegionInit(&pixmapClip, &box, 1, pScreen->context);
             pClip = &pixmapClip;
         }
         RegionTranslate(&pDamage->damage, pDrawable->x, pDrawable->y);
@@ -1878,7 +1880,10 @@ DamageSubtract(DamagePtr pDamage, const RegionPtr pRegion)
 void
 DamageEmpty(DamagePtr pDamage)
 {
-    RegionEmpty(&pDamage->damage);
+    if (pDamage->pDrawable) {
+        ScreenPtr pScreen = pDamage->pDrawable->pScreen;
+        RegionEmpty(&pDamage->damage, pScreen->context);
+    }
 }
 
 RegionPtr
@@ -1937,6 +1942,12 @@ DamageReportDamage(DamagePtr pDamage, RegionPtr pDamageRegion)
     BoxRec tmpBox;
     RegionRec tmpRegion;
     Bool was_empty;
+    ScreenPtr pScreen;
+    
+    if (!pDamage->pDrawable)
+        return;
+    
+    pScreen = pDamage->pDrawable->pScreen;
 
     switch (pDamage->damageLevel) {
     case DamageReportRawRegion:
@@ -1944,7 +1955,7 @@ DamageReportDamage(DamagePtr pDamage, RegionPtr pDamageRegion)
         (*pDamage->damageReport) (pDamage, pDamageRegion, pDamage->closure);
         break;
     case DamageReportDeltaRegion:
-        RegionNull(&tmpRegion);
+        RegionNull(&tmpRegion, pScreen->context);
         RegionSubtract(&tmpRegion, pDamageRegion, &pDamage->damage);
         if (RegionNotEmpty(&tmpRegion)) {
             RegionUnion(&pDamage->damage, &pDamage->damage, pDamageRegion);

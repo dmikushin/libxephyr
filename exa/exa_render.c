@@ -568,7 +568,7 @@ exaCompositeRects(CARD8 op,
          * (see use of DamagePendingRegion in exaCopyDirty)
          */
 
-        RegionInit(&region, &box, 1);
+        RegionInit(&region, &box, 1, pDst->pDrawable->pScreen->context);
 
         DamageRegionAppend(pDst->pDrawable, &region);
 

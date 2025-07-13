@@ -65,7 +65,7 @@ glamor_put_image_gl(DrawablePtr drawable, GCPtr gc, int depth, int x, int y,
     box.y1 = y;
     box.x2 = box.x1 + w;
     box.y2 = box.y1 + h;
-    RegionInit(&region, &box, 1);
+    RegionInit(&region, &box, 1, drawable->pScreen->context);
     RegionIntersect(&region, &region, gc->pCompositeClip);
 
     glamor_get_drawable_deltas(drawable, pixmap, &off_x, &off_y);

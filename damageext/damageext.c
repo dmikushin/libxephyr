@@ -330,14 +330,14 @@ DamageExtSubtractWindowClip(DamageExtPtr pDamageExt)
     XephyrContext *context = pDamageExt->pClient->context;
 
     if (!win->parent)
-        return &PanoramiXScreenRegion;
+        return &context->PanoramiXScreenRegion;
 
     dixLookupResourceByType((void **)&res, win->drawable.id, XRT_WINDOW,
                             pDamageExt->pClient->context->serverClient, DixReadAccess);
     if (!res)
         return NULL;
 
-    ret = RegionCreate(NULL, 0);
+    ret = RegionCreate(NULL, 0, pDamageExt->pClient->context);
     if (!ret)
         return NULL;
 
@@ -358,15 +358,15 @@ DamageExtSubtractWindowClip(DamageExtPtr pDamageExt)
     return ret;
 
 out:
-    RegionDestroy(ret);
+    RegionDestroy(ret, context);
     return NULL;
 }
 
 static void
-DamageExtFreeWindowClip(RegionPtr reg)
+DamageExtFreeWindowClip(RegionPtr reg, DrawablePtr pDrawable)
 {
-    if (reg != &PanoramiXScreenRegion)
-        RegionDestroy(reg);
+    if (reg != &pDrawable->pScreen->context->PanoramiXScreenRegion)
+        RegionDestroy(reg, pDrawable->pScreen->context);
 }
 #endif
 
@@ -391,7 +391,7 @@ DamageExtSubtract(DamageExtPtr pDamageExt, const RegionPtr pRegion)
                 RegionTranslate(clip, -pDraw->x, -pDraw->y);
                 RegionIntersect(damage, damage, clip);
                 RegionTranslate(clip, pDraw->x, pDraw->y);
-                DamageExtFreeWindowClip(clip);
+                DamageExtFreeWindowClip(clip, pDraw);
             }
         }
 

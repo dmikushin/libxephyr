@@ -430,9 +430,9 @@ RootlessMarkOverlappedWindows(WindowPtr pWin, WindowPtr pFirst,
             pChild = pWin;
             while (1) {
                 if (pChild->viewable) {
-                    if (RegionBroken(&pChild->winSize))
+                    if (RegionBroken(&pChild->winSize, pScreen->context))
                         SetWinSize(pChild);
-                    if (RegionBroken(&pChild->borderSize))
+                    if (RegionBroken(&pChild->borderSize, pScreen->context))
                         SetBorderSize(pChild);
                     (*MarkWindow) (pChild);
                     if (pChild->firstChild) {

@@ -207,7 +207,7 @@ createModeFromConfig(const __DRIcoreExtension * core,
     config->config.yInverted = GL_TRUE;
 
 #ifdef COMPOSITE
-    if (!noCompositeExtension) {
+    if (!context->noCompositeExtension) {
         /*
         * Here we decide what fbconfigs will be duplicated for compositing.
         * fgbconfigs marked with duplicatedForConf will be reserved for
@@ -265,7 +265,7 @@ glxConvertConfigs(const __DRIcoreExtension * core,
     }
 
 #ifdef COMPOSITE
-    if (!noCompositeExtension) {
+    if (!context->noCompositeExtension) {
         /* Duplicate fbconfigs for use with compositing visuals */
         for (i = 0; configs[i]; i++) {
             tail->next = createModeFromConfig(core, configs[i], GLX_TRUE_COLOR,

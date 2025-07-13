@@ -44,14 +44,14 @@ void
 miDestroyPicture(PicturePtr pPicture)
 {
     if (pPicture->freeCompClip)
-        RegionDestroy(pPicture->pCompositeClip);
+        RegionDestroy(pPicture->pCompositeClip, pPicture->pDrawable->pScreen->context);
 }
 
 static void
 miDestroyPictureClip(PicturePtr pPicture)
 {
     if (pPicture->clientClip)
-        RegionDestroy(pPicture->clientClip);
+        RegionDestroy(pPicture->clientClip, pPicture->pDrawable->pScreen->context);
     pPicture->clientClip = NULL;
 }
 
@@ -77,7 +77,7 @@ miChangePictureClip(PicturePtr pPicture, int type, void *value, int n)
         clientClip = 0;
         break;
     default:
-        clientClip = RegionFromRects(n, (xRectangle *) value, type);
+        clientClip = RegionFromRects(n, (xRectangle *) value, type, pScreen->context);
         if (!clientClip)
             return BadAlloc;
         free(value);
@@ -127,7 +127,7 @@ miValidatePicture(PicturePtr pPicture, Mask mask)
              */
             if (!pPicture->clientClip) {
                 if (freeCompClip)
-                    RegionDestroy(pPicture->pCompositeClip);
+                    RegionDestroy(pPicture->pCompositeClip, pDrawable->pScreen->context);
                 pPicture->pCompositeClip = pregWin;
                 pPicture->freeCompClip = freeTmpClip;
             }
@@ -149,14 +149,14 @@ miValidatePicture(PicturePtr pPicture, Mask mask)
                     RegionIntersect(pPicture->pCompositeClip,
                                     pregWin, pPicture->clientClip);
                     if (freeTmpClip)
-                        RegionDestroy(pregWin);
+                        RegionDestroy(pregWin, pDrawable->pScreen->context);
                 }
                 else if (freeTmpClip) {
                     RegionIntersect(pregWin, pregWin, pPicture->clientClip);
                     pPicture->pCompositeClip = pregWin;
                 }
                 else {
-                    pPicture->pCompositeClip = RegionCreate(NullBox, 0);
+                    pPicture->pCompositeClip = RegionCreate(NullBox, 0, pDrawable->pScreen->context);
                     RegionIntersect(pPicture->pCompositeClip,
                                     pregWin, pPicture->clientClip);
                 }
@@ -181,7 +181,7 @@ miValidatePicture(PicturePtr pPicture, Mask mask)
             }
             else {
                 pPicture->freeCompClip = TRUE;
-                pPicture->pCompositeClip = RegionCreate(&pixbounds, 1);
+                pPicture->pCompositeClip = RegionCreate(&pixbounds, 1, pDrawable->pScreen->context);
             }
 
             if (pPicture->clientClip) {

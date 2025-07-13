@@ -59,7 +59,7 @@ miBuildRenderColormap(ColormapPtr pColormap, Pixel * pixels, int *nump)
     else {
         int avail = pColormap->pVisual->ColormapEntries;
 
-        policy = PictureCmapPolicy;
+        policy = pColormap->pScreen->context->PictureCmapPolicy;
         if (policy == PictureCmapPolicyDefault) {
             if (avail >= 256 &&
                 (pColormap->pVisual->class | DynamicClass) == PseudoColor)

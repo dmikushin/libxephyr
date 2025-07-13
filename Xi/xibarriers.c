@@ -60,7 +60,6 @@
 #include "eventstr.h"
 #include "mi.h"
 
-RESTYPE PointerBarrierType;
 
 static DevPrivateKeyRec BarrierScreenPrivateKeyRec;
 
@@ -769,12 +768,12 @@ static void remove_master_func(void *res, XID id, void *devid)
 
 void XIBarrierNewMasterDevice(ClientPtr client, int deviceid)
 {
-    FindClientResourcesByType(client, PointerBarrierType, add_master_func, &deviceid, client->context);
+    FindClientResourcesByType(client, client->context->PointerBarrierType, add_master_func, &deviceid, client->context);
 }
 
 void XIBarrierRemoveMasterDevice(ClientPtr client, int deviceid)
 {
-    FindClientResourcesByType(client, PointerBarrierType, remove_master_func, &deviceid, client->context);
+    FindClientResourcesByType(client, client->context->PointerBarrierType, remove_master_func, &deviceid, client->context);
 }
 
 int
@@ -807,7 +806,7 @@ XICreatePointerBarrier(ClientPtr client,
     if ((err = CreatePointerBarrierClient(client, stuff, &barrier)))
         return err;
 
-    if (!AddResource(stuff->barrier, PointerBarrierType, &barrier->barrier, client->context))
+    if (!AddResource(stuff->barrier, client->context->PointerBarrierType, &barrier->barrier, client->context))
         return BadAlloc;
 
     return Success;
@@ -821,7 +820,7 @@ XIDestroyPointerBarrier(ClientPtr client,
     void *barrier;
 
     err = dixLookupResourceByType((void **) &barrier, stuff->barrier,
-                                  PointerBarrierType, client, DixDestroyAccess);
+                                  client->context->PointerBarrierType, client, DixDestroyAccess);
     if (err != Success) {
         client->errorValue = stuff->barrier;
         return err;
@@ -891,7 +890,7 @@ ProcXIBarrierReleasePointer(ClientPtr client)
         }
 
         err = dixLookupResourceByType((void **) &b, barrier_id,
-                                      PointerBarrierType, client, DixReadAccess);
+                                      client->context->PointerBarrierType, client, DixReadAccess);
         if (err != Success) {
             client->errorValue = barrier_id;
             return err;
@@ -931,10 +930,10 @@ XIBarrierInit(XephyrContext* context)
         SetBarrierScreen(pScreen, cs);
     }
 
-    PointerBarrierType = CreateNewResourceType(BarrierFreeBarrier,
+    context->PointerBarrierType = CreateNewResourceType(BarrierFreeBarrier,
                                                "XIPointerBarrier");
 
-    return PointerBarrierType;
+    return context->PointerBarrierType;
 }
 
 void

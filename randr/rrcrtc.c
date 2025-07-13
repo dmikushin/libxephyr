@@ -28,7 +28,6 @@
 
 #include <X11/Xatom.h>
 
-RESTYPE RRCrtcType = 0;
 
 /*
  * Notify the CRTC of some change
@@ -95,7 +94,7 @@ RRCrtcCreate(ScreenPtr pScreen, void *devPrivate)
     pixman_f_transform_init_identity(&crtc->f_transform);
     pixman_f_transform_init_identity(&crtc->f_inverse);
 
-    if (!AddResource(crtc->id, RRCrtcType, (void *) crtc, pScreen->context))
+    if (!AddResource(crtc->id, pScreen->context->RRCrtcType, (void *) crtc, pScreen->context))
         return NULL;
 
     /* attach the screen and crtc together */
@@ -241,7 +240,7 @@ RRDeliverCrtcEvent(ClientPtr client, WindowPtr pWin, RRCrtcPtr crtc)
     RRModePtr mode = crtc->mode;
 
     xRRCrtcChangeNotifyEvent ce = {
-        .type = RRNotify + RREventBase,
+        .type = RRNotify + pScreen->context->RREventBase,
         .subCode = RRNotify_CrtcChange,
         .timestamp = pScrPriv->lastSetTime.milliseconds,
         .window = pWin->drawable.id,
@@ -639,8 +638,8 @@ rrCheckPixmapBounding(ScreenPtr pScreen,
     PixmapPtr screen_pixmap = pScreen->GetScreenPixmap(pScreen);
     rrScrPriv(pScreen);
 
-    PixmapRegionInit(&root_pixmap_region, screen_pixmap);
-    RegionInit(&total_region, NULL, 0);
+    PixmapRegionInit(&root_pixmap_region, screen_pixmap, pScreen->context);
+    RegionInit(&total_region, NULL, 0, pScreen->context);
 
     /* have to iterate all the crtcs of the attached gpu primarys
        and all their output secondarys */
@@ -663,7 +662,7 @@ rrCheckPixmapBounding(ScreenPtr pScreen,
                 continue;
             crtc_to_box(&newbox, crtc);
         }
-        RegionInit(&new_crtc_region, &newbox, 1);
+        RegionInit(&new_crtc_region, &newbox, 1, pScreen->context);
         RegionUnion(&total_region, &total_region, &new_crtc_region);
     }
 
@@ -693,7 +692,7 @@ rrCheckPixmapBounding(ScreenPtr pScreen,
                     continue;
                 crtc_to_box(&newbox, secondary_crtc);
             }
-            RegionInit(&new_crtc_region, &newbox, 1);
+            RegionInit(&new_crtc_region, &newbox, 1, pScreen->context);
             RegionUnion(&total_region, &total_region, &new_crtc_region);
         }
     }
@@ -1121,10 +1120,10 @@ RRCrtcTransformSet(RRCrtcPtr crtc,
  * Initialize crtc type
  */
 Bool
-RRCrtcInit(void)
+RRCrtcInit(XephyrContext* context)
 {
-    RRCrtcType = CreateNewResourceType(RRCrtcDestroyResource, "CRTC");
-    if (!RRCrtcType)
+    context->RRCrtcType = CreateNewResourceType(RRCrtcDestroyResource, "CRTC");
+    if (!context->RRCrtcType)
         return FALSE;
 
     return TRUE;
@@ -1134,9 +1133,9 @@ RRCrtcInit(void)
  * Initialize crtc type error value
  */
 void
-RRCrtcInitErrorValue(void)
+RRCrtcInitErrorValue(XephyrContext* context)
 {
-    SetResourceTypeErrorValue(RRCrtcType, RRErrorBase + BadRRCrtc);
+    SetResourceTypeErrorValue(context->RRCrtcType, context->RRErrorBase + BadRRCrtc);
 }
 
 int
@@ -1318,7 +1317,7 @@ ProcRRSetCrtcConfig(ClientPtr client)
     outputIds = (RROutput *) (stuff + 1);
     for (i = 0; i < numOutputs; i++) {
         ret = dixLookupResourceByType((void **) (outputs + i), outputIds[i],
-                                     RROutputType, client, DixSetAttrAccess);
+                                     client->context->RROutputType, client, DixSetAttrAccess);
         if (ret != Success) {
             free(outputs);
             return ret;
@@ -1508,7 +1507,7 @@ ProcRRGetPanning(ClientPtr client)
     pScrPriv = rrGetScrPriv(pScreen);
 
     if (!pScrPriv)
-        return RRErrorBase + BadRRCrtc;
+        return client->context->RRErrorBase + BadRRCrtc;
 
     rep = (xRRGetPanningReply) {
         .type = X_Reply,
@@ -1590,7 +1589,7 @@ ProcRRSetPanning(ClientPtr client)
     time = ClientTimeToServerTime(stuff->timestamp, client->context);
 
     if (!pScrPriv->rrGetPanning)
-        return RRErrorBase + BadRRCrtc;
+        return client->context->RRErrorBase + BadRRCrtc;
 
     total.x1 = stuff->left;
     total.y1 = stuff->top;
@@ -1642,7 +1641,7 @@ ProcRRGetCrtcGammaSize(ClientPtr client)
 
     /* Gamma retrieval failed, any better error? */
     if (!RRCrtcGammaGet(crtc))
-        return RRErrorBase + BadRRCrtc;
+        return client->context->RRErrorBase + BadRRCrtc;
 
     reply = (xRRGetCrtcGammaSizeReply) {
         .type = X_Reply,
@@ -1673,7 +1672,7 @@ ProcRRGetCrtcGamma(ClientPtr client)
 
     /* Gamma retrieval failed, any better error? */
     if (!RRCrtcGammaGet(crtc))
-        return RRErrorBase + BadRRCrtc;
+        return client->context->RRErrorBase + BadRRCrtc;
 
     len = crtc->gammaSize * 3 * 2;
 

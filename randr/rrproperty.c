@@ -33,7 +33,7 @@ DeliverPropertyEvent(WindowPtr pWin, void *value)
     RREventPtr *pHead, pRREvent;
 
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            RREventType, pWin->drawable.pScreen->context->serverClient, DixReadAccess);
+                            pWin->drawable.pScreen->context->RREventType, pWin->drawable.pScreen->context->serverClient, DixReadAccess);
     if (!pHead)
         return WT_WALKCHILDREN;
 
@@ -68,7 +68,7 @@ static void
 RRDeleteProperty(RROutputRec * output, RRPropertyRec * prop)
 {
     xRROutputPropertyNotifyEvent event = {
-        .type = RREventBase + RRNotify,
+        .type = output->pScreen->context->RREventBase + RRNotify,
         .subCode = RRNotify_OutputProperty,
         .output = output->id,
         .state = PropertyDelete,
@@ -265,7 +265,7 @@ RRChangeOutputProperty(RROutputPtr output, Atom property, Atom type,
 
     if (sendevent) {
         xRROutputPropertyNotifyEvent event = {
-            .type = RREventBase + RRNotify,
+            .type = output->pScreen->context->RREventBase + RRNotify,
             .subCode = RRNotify_OutputProperty,
             .output = output->id,
             .state = PropertyNewValue,
@@ -724,7 +724,7 @@ ProcRRGetOutputProperty(ClientPtr client)
 
     if (stuff->delete && (reply.bytesAfter == 0)) {
         xRROutputPropertyNotifyEvent event = {
-            .type = RREventBase + RRNotify,
+            .type = output->pScreen->context->RREventBase + RRNotify,
             .subCode = RRNotify_OutputProperty,
             .output = output->id,
             .state = PropertyDelete,

@@ -113,7 +113,7 @@ fbCopyWindow(WindowPtr pWin, DDXPointRec ptOldOrg, RegionPtr prgnSrc)
     dy = ptOldOrg.y - pWin->drawable.y;
     RegionTranslate(prgnSrc, -dx, -dy);
 
-    RegionNull(&rgnDst);
+    RegionNull(&rgnDst, pWin->drawable.pScreen->context);
 
     RegionIntersect(&rgnDst, &pWin->borderClip, prgnSrc);
 

@@ -209,7 +209,7 @@ ProcCompositeCreateRegionFromBorderClip(ClientPtr client)
         pBorderClip = &cw->borderClip;
     else
         pBorderClip = &pWin->borderClip;
-    pRegion = XFixesRegionCopy(pBorderClip);
+    pRegion = XFixesRegionCopy(pBorderClip, client->context);
     if (!pRegion)
         return BadAlloc;
     RegionTranslate(pRegion, -pWin->drawable.x, -pWin->drawable.y);
@@ -529,7 +529,7 @@ CompositeExtensionInit(XephyrContext* context)
     int s;
 
     /* Assume initialization is going to fail */
-    noCompositeExtension = TRUE;
+    context->noCompositeExtension = TRUE;
 
     for (s = 0; s < context->screenInfo.numScreens; s++) {
         ScreenPtr pScreen = context->screenInfo.screens[s];
@@ -583,13 +583,13 @@ CompositeExtensionInit(XephyrContext* context)
     CompositeReqCode = (CARD8) extEntry->base;
 
     /* Initialization succeeded */
-    noCompositeExtension = FALSE;
+    context->noCompositeExtension = FALSE;
 }
 
 #ifdef PANORAMIX
 #include "panoramiXsrv.h"
 
-int (*PanoramiXSaveCompositeVector[CompositeNumberRequests]) (ClientPtr);
+/* REMOVED: int (*context->PanoramiXSaveCompositeVector[CompositeNumberRequests]) (ClientPtr); - moved to XephyrContext */
 
 static int
 PanoramiXCompositeRedirectWindow(ClientPtr client)
@@ -610,7 +610,7 @@ PanoramiXCompositeRedirectWindow(ClientPtr client)
 
     FOR_NSCREENS_FORWARD(j) {
         stuff->window = win->info[j].id;
-        rc = (*PanoramiXSaveCompositeVector[stuff->compositeReqType]) (client);
+        rc = (*context->PanoramiXSaveCompositeVector[stuff->compositeReqType]) (client);
         if (rc != Success)
             break;
     }
@@ -637,7 +637,7 @@ PanoramiXCompositeRedirectSubwindows(ClientPtr client)
 
     FOR_NSCREENS_FORWARD(j) {
         stuff->window = win->info[j].id;
-        rc = (*PanoramiXSaveCompositeVector[stuff->compositeReqType]) (client);
+        rc = (*context->PanoramiXSaveCompositeVector[stuff->compositeReqType]) (client);
         if (rc != Success)
             break;
     }
@@ -664,7 +664,7 @@ PanoramiXCompositeUnredirectWindow(ClientPtr client)
 
     FOR_NSCREENS_FORWARD(j) {
         stuff->window = win->info[j].id;
-        rc = (*PanoramiXSaveCompositeVector[stuff->compositeReqType]) (client);
+        rc = (*context->PanoramiXSaveCompositeVector[stuff->compositeReqType]) (client);
         if (rc != Success)
             break;
     }
@@ -691,7 +691,7 @@ PanoramiXCompositeUnredirectSubwindows(ClientPtr client)
 
     FOR_NSCREENS_FORWARD(j) {
         stuff->window = win->info[j].id;
-        rc = (*PanoramiXSaveCompositeVector[stuff->compositeReqType]) (client);
+        rc = (*context->PanoramiXSaveCompositeVector[stuff->compositeReqType]) (client);
         if (rc != Success)
             break;
     }
@@ -910,12 +910,12 @@ PanoramiXCompositeReleaseOverlayWindow(ClientPtr client)
 }
 
 void
-PanoramiXCompositeInit(void)
+PanoramiXCompositeInit(XephyrContext* context)
 {
     int i;
 
     for (i = 0; i < CompositeNumberRequests; i++)
-        PanoramiXSaveCompositeVector[i] = ProcCompositeVector[i];
+        context->PanoramiXSaveCompositeVector[i] = ProcCompositeVector[i];
     /*
      * Stuff in Xinerama aware request processing hooks
      */
@@ -936,12 +936,12 @@ PanoramiXCompositeInit(void)
 }
 
 void
-PanoramiXCompositeReset(void)
+PanoramiXCompositeReset(XephyrContext* context)
 {
     int i;
 
     for (i = 0; i < CompositeNumberRequests; i++)
-        ProcCompositeVector[i] = PanoramiXSaveCompositeVector[i];
+        ProcCompositeVector[i] = context->PanoramiXSaveCompositeVector[i];
 }
 
 #endif

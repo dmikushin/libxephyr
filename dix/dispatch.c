@@ -1793,7 +1793,7 @@ ProcCopyArea(ClientPtr client)
     if (pGC->graphicsExposures) {
         SendGraphicsExpose(client, pRgn, stuff->dstDrawable, X_CopyArea, 0);
         if (pRgn)
-            RegionDestroy(pRgn);
+            RegionDestroy(pRgn, client->context);
     }
 
     return Success;
@@ -1840,7 +1840,7 @@ ProcCopyPlane(ClientPtr client)
     if (pGC->graphicsExposures) {
         SendGraphicsExpose(client, pRgn, stuff->dstDrawable, X_CopyPlane, 0);
         if (pRgn)
-            RegionDestroy(pRgn);
+            RegionDestroy(pRgn, client->context);
     }
     return Success;
 }

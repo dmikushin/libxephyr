@@ -409,13 +409,13 @@ exaHWCopyNtoN(DrawablePtr pSrcDrawable,
         else
             ordering = CT_UNSORTED;
 
-        srcregion = RegionFromRects(nbox, rects, ordering);
+        srcregion = RegionFromRects(nbox, rects, ordering, pDstDrawable->pScreen->context);
         free(rects);
 
         if (!pGC || !exaGCReadsDestination(pDstDrawable, pGC->planemask,
                                            pGC->fillStyle, pGC->alu,
                                            pGC->clientClip != NULL)) {
-            dstregion = RegionCreate(NullBox, 0);
+            dstregion = RegionCreate(NullBox, 0, pDstDrawable->pScreen->context);
             RegionCopy(dstregion, srcregion);
             RegionTranslate(dstregion, dst_off_x - dx - src_off_x,
                             dst_off_y - dy - src_off_y);
@@ -553,11 +553,11 @@ exaHWCopyNtoN(DrawablePtr pSrcDrawable,
  out:
     if (dstregion) {
         RegionUninit(dstregion);
-        RegionDestroy(dstregion);
+        RegionDestroy(dstregion, pDstDrawable->pScreen->context);
     }
     if (srcregion) {
         RegionUninit(srcregion);
-        RegionDestroy(srcregion);
+        RegionDestroy(srcregion, pDstDrawable->pScreen->context);
     }
 
     return ret;
@@ -790,7 +790,7 @@ exaPolyFillRect(DrawablePtr pDrawable, GCPtr pGC, int nrect, xRectangle *prect)
     int xoff, yoff;
     int xorg, yorg;
     int n;
-    RegionPtr pReg = RegionFromRects(nrect, prect, CT_UNSORTED);
+    RegionPtr pReg = RegionFromRects(nrect, prect, CT_UNSORTED, pDrawable->pScreen->context);
 
     /* Compute intersection of rects and clip region */
     RegionTranslate(pReg, pDrawable->x, pDrawable->y);
@@ -922,7 +922,7 @@ exaPolyFillRect(DrawablePtr pDrawable, GCPtr pGC, int nrect, xRectangle *prect)
 
  out:
     RegionUninit(pReg);
-    RegionDestroy(pReg);
+    RegionDestroy(pReg, pDrawable->pScreen->context);
 }
 
 const GCOps exaOps = {
@@ -961,7 +961,7 @@ exaCopyWindow(WindowPtr pWin, DDXPointRec ptOldOrg, RegionPtr prgnSrc)
     dy = ptOldOrg.y - pWin->drawable.y;
     RegionTranslate(prgnSrc, -dx, -dy);
 
-    RegionInit(&rgnDst, NullBox, 0);
+    RegionInit(&rgnDst, NullBox, 0, pWin->drawable.pScreen->context);
 
     RegionIntersect(&rgnDst, &pWin->borderClip, prgnSrc);
 #ifdef COMPOSITE

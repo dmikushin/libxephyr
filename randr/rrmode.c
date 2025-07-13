@@ -23,7 +23,6 @@
 
 #include "randrstr.h"
 
-RESTYPE RRModeType;
 
 static Bool
 RRModeEqual(xRRModeInfo * a, xRRModeInfo * b)
@@ -90,7 +89,7 @@ RRModeCreate(xRRModeInfo * modeInfo, const char *name, ScreenPtr userScreen)
     }
 
     mode->mode.id = FakeClientID(0, userScreen->context);
-    if (!AddResource(mode->mode.id, RRModeType, (void *) mode, userScreen->context)) {
+    if (!AddResource(mode->mode.id, userScreen->context->RRModeType, (void *) mode, userScreen->context)) {
         free(newModes);
         return NULL;
     }
@@ -261,12 +260,12 @@ RRModeDestroyResource(void *value, XID pid, XephyrContext* context)
  * Initialize mode type
  */
 Bool
-RRModeInit(void)
+RRModeInit(XephyrContext* context)
 {
     assert(num_modes == 0);
     assert(modes == NULL);
-    RRModeType = CreateNewResourceType(RRModeDestroyResource, "MODE");
-    if (!RRModeType)
+    context->RRModeType = CreateNewResourceType(RRModeDestroyResource, "MODE");
+    if (!context->RRModeType)
         return FALSE;
 
     return TRUE;
@@ -276,9 +275,9 @@ RRModeInit(void)
  * Initialize mode type error value
  */
 void
-RRModeInitErrorValue(void)
+RRModeInitErrorValue(XephyrContext* context)
 {
-    SetResourceTypeErrorValue(RRModeType, RRErrorBase + BadRRMode);
+    SetResourceTypeErrorValue(context->RRModeType, context->RRErrorBase + BadRRMode);
 }
 
 int

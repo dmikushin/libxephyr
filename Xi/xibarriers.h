@@ -8,7 +8,6 @@
 
 #include "resource.h"
 
-extern _X_EXPORT RESTYPE PointerBarrierType;
 
 struct PointerBarrier {
     INT16 x1, x2, y1, y2;

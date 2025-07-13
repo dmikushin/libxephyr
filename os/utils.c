@@ -118,14 +118,14 @@ __stdcall unsigned long GetTickCount(void);
 /* Bool noTestExtensions = FALSE; - moved to XephyrContext */
 
 #ifdef COMPOSITE
-Bool noCompositeExtension = FALSE;
+/* Bool noCompositeExtension = FALSE; - moved to XephyrContext */
 #endif
 
 #ifdef DAMAGE
-Bool noDamageExtension = FALSE;
+/* Bool noDamageExtension = FALSE; - moved to XephyrContext */
 #endif
 #ifdef DBE
-Bool noDbeExtension = FALSE;
+/* Bool context->noDbeExtension = FALSE; - moved to XephyrContext */
 #endif
 #ifdef DPMSExtension
 #include "dpmsproc.h"
@@ -188,7 +188,7 @@ Bool noGEExtension = FALSE;
 
 
 #ifdef PANORAMIX
-Bool PanoramiXExtensionDisabledHack = FALSE;
+/* REMOVED: Bool PanoramiXExtensionDisabledHack = FALSE; - moved to XephyrContext */
 #endif
 
 int auditTrailLevel = 1;
@@ -976,7 +976,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             noPanoramiXExtension = TRUE;
         }
         else if (strcmp(argv[i], "-disablexineramaextension") == 0) {
-            PanoramiXExtensionDisabledHack = TRUE;
+            context->PanoramiXExtensionDisabledHack = TRUE;
         }
 #endif
         else if (strcmp(argv[i], "-I") == 0) {
@@ -1017,7 +1017,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                 int policy = PictureParseCmapPolicy(argv[i]);
 
                 if (policy != PictureCmapPolicyInvalid)
-                    PictureCmapPolicy = policy;
+                    context->PictureCmapPolicy = policy;
                 else
                     UseMsg(context);
             }

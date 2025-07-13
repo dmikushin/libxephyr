@@ -217,7 +217,7 @@ RootlessGetShape(WindowPtr pWin, RegionPtr pShape)
     /* wBoundingShape is relative to *inner* origin of window.
        Translate by borderWidth to get the outside-relative position. */
 
-    RegionNull(pShape);
+    RegionNull(pShape, pWin->drawable.pScreen->context);
     RegionCopy(pShape, wBoundingShape(pWin));
     RegionTranslate(pShape, pWin->borderWidth, pWin->borderWidth);
 
@@ -678,7 +678,7 @@ RootlessResizeCopyWindow(WindowPtr pWin, DDXPointRec ptOldOrg,
     dx = ptOldOrg.x - pWin->drawable.x;
     dy = ptOldOrg.y - pWin->drawable.y;
     RegionTranslate(prgnSrc, -dx, -dy);
-    RegionNull(&rgnDst);
+    RegionNull(&rgnDst, pScreen->context);
     RegionIntersect(&rgnDst, &pWin->borderClip, prgnSrc);
 
     if (gResizeDeathCount == 1) {
@@ -696,8 +696,8 @@ RootlessResizeCopyWindow(WindowPtr pWin, DDXPointRec ptOldOrg,
            intersect the destination with each source and copy those bits. */
 
         for (i = 0; i < gResizeDeathCount; i++) {
-            RegionInit(&clip, gResizeDeathBounds + 0, 1);
-            RegionNull(&clipped);
+            RegionInit(&clip, gResizeDeathBounds + 0, 1, pWin->drawable.pScreen->context, pWin->drawable.pScreen->context);
+            RegionNull(&clipped, pScreen->context);
             RegionIntersect(&rgnDst, &clip, &clipped);
 
             miCopyRegion(&gResizeDeathPix[i]->drawable,
@@ -741,7 +741,7 @@ RootlessCopyWindow(WindowPtr pWin, DDXPointRec ptOldOrg, RegionPtr prgnSrc)
     dy = ptOldOrg.y - pWin->drawable.y;
     RegionTranslate(prgnSrc, -dx, -dy);
 
-    RegionNull(&rgnDst);
+    RegionNull(&rgnDst, pScreen->context);
     RegionIntersect(&rgnDst, &pWin->borderClip, prgnSrc);
 
     extents = RegionExtents(&rgnDst);
@@ -1314,7 +1314,7 @@ RootlessResizeWindow(WindowPtr pWin, int x, int y,
         box.x2 = x + w;
         box.y2 = y + h;
         RegionUninit(&pWin->winSize);
-        RegionInit(&pWin->winSize, &box, 1);
+        RegionInit(&pWin->winSize, &box, 1, pScreen->context);
         RegionCopy(&pWin->borderSize, &pWin->winSize);
         RegionCopy(&pWin->clipList, &pWin->winSize);
         RegionCopy(&pWin->borderClip, &pWin->winSize);

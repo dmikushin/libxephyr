@@ -25,7 +25,6 @@
 #include "randrstr.h"
 #include <X11/Xatom.h>
 
-RESTYPE RROutputType;
 
 /*
  * Notify the output of some change
@@ -110,7 +109,7 @@ RROutputCreate(ScreenPtr pScreen,
     output->nonDesktop = FALSE;
     output->devPrivate = devPrivate;
 
-    if (!AddResource(output->id, RROutputType, (void *) output, pScreen->context))
+    if (!AddResource(output->id, pScreen->context->RROutputType, (void *) output, pScreen->context))
         return NULL;
 
     pScrPriv->outputs[pScrPriv->numOutputs++] = output;
@@ -346,7 +345,7 @@ RRDeliverOutputEvent(ClientPtr client, WindowPtr pWin, RROutputPtr output)
     RRModePtr mode = crtc ? crtc->mode : NULL;
 
     xRROutputChangeNotifyEvent oe = {
-        .type = RRNotify + RREventBase,
+        .type = RRNotify + pScreen->context->RREventBase,
         .subCode = RRNotify_OutputChange,
         .timestamp = pScrPriv->lastSetTime.milliseconds,
         .configTimestamp = pScrPriv->lastConfigTime.milliseconds,
@@ -427,10 +426,10 @@ RROutputDestroyResource(void *value, XID pid, XephyrContext* context)
  * Initialize output type
  */
 Bool
-RROutputInit(void)
+RROutputInit(XephyrContext* context)
 {
-    RROutputType = CreateNewResourceType(RROutputDestroyResource, "OUTPUT");
-    if (!RROutputType)
+    context->RROutputType = CreateNewResourceType(RROutputDestroyResource, "OUTPUT");
+    if (!context->RROutputType)
         return FALSE;
 
     return TRUE;
@@ -440,9 +439,9 @@ RROutputInit(void)
  * Initialize output type error value
  */
 void
-RROutputInitErrorValue(void)
+RROutputInitErrorValue(XephyrContext* context)
 {
-    SetResourceTypeErrorValue(RROutputType, RRErrorBase + BadRROutput);
+    SetResourceTypeErrorValue(context->RROutputType, context->RRErrorBase + BadRROutput);
 }
 
 #define OutputInfoExtra	(SIZEOF(xRRGetOutputInfoReply) - 32)

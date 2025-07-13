@@ -235,7 +235,7 @@ miComputeClips(WindowPtr pParent,
      */
     if (pParent->redirectDraw != RedirectDrawNone) {
         if (TreatAsTransparent(pParent))
-            RegionEmpty(universe);
+            RegionEmpty(universe, pScreen->context);
         compSetRedirectBorderClip (pParent, universe);
         RegionCopy(universe, &pParent->borderSize);
     }
@@ -304,13 +304,13 @@ miComputeClips(WindowPtr pParent,
 
                     }
                     if (pChild->valdata) {
-                        RegionNull(&pChild->valdata->after.borderExposed);
+                        RegionNull(&pChild->valdata->after.borderExposed, pScreen->context);
                         if (HasParentRelativeBorder(pChild)) {
                             RegionSubtract(&pChild->valdata->after.
                                            borderExposed, &pChild->borderClip,
                                            &pChild->winSize);
                         }
-                        RegionNull(&pChild->valdata->after.exposed);
+                        RegionNull(&pChild->valdata->after.exposed, pScreen->context);
                     }
                     if (pChild->firstChild) {
                         pChild = pChild->firstChild;
@@ -342,14 +342,14 @@ miComputeClips(WindowPtr pParent,
         }
         break;
     case VTBroken:
-        RegionEmpty(&pParent->borderClip);
-        RegionEmpty(&pParent->clipList);
+        RegionEmpty(&pParent->borderClip, pScreen->context);
+        RegionEmpty(&pParent->clipList, pScreen->context);
         break;
     }
 
     borderVisible = pParent->valdata->before.borderVisible;
-    RegionNull(&pParent->valdata->after.borderExposed);
-    RegionNull(&pParent->valdata->after.exposed);
+    RegionNull(&pParent->valdata->after.borderExposed, pScreen->context);
+    RegionNull(&pParent->valdata->after.exposed, pScreen->context);
 
     /*
      * Since the borderClip must not be clipped by the children, we do
@@ -368,7 +368,7 @@ miComputeClips(WindowPtr pParent,
              * use that region and destroy it
              */
             RegionSubtract(exposed, universe, borderVisible);
-            RegionDestroy(borderVisible);
+            RegionDestroy(borderVisible, pScreen->context);
         }
         else {
             RegionSubtract(exposed, universe, &pParent->borderClip);
@@ -394,23 +394,23 @@ miComputeClips(WindowPtr pParent,
         RegionCopy(&pParent->borderClip, universe);
 
     if ((pChild = pParent->firstChild) && pParent->mapped) {
-        RegionNull(&childUniverse);
-        RegionNull(&childUnion);
+        RegionNull(&childUniverse, pScreen->context);
+        RegionNull(&childUnion, pScreen->context);
         if ((pChild->drawable.y < pParent->lastChild->drawable.y) ||
             ((pChild->drawable.y == pParent->lastChild->drawable.y) &&
              (pChild->drawable.x < pParent->lastChild->drawable.x))) {
             for (; pChild; pChild = pChild->nextSib) {
                 if (pChild->viewable && !TreatAsTransparent(pChild))
-                    RegionAppend(&childUnion, &pChild->borderSize);
+                    RegionAppend(&childUnion, &pChild->borderSize, pScreen->context);
             }
         }
         else {
             for (pChild = pParent->lastChild; pChild; pChild = pChild->prevSib) {
                 if (pChild->viewable && !TreatAsTransparent(pChild))
-                    RegionAppend(&childUnion, &pChild->borderSize);
+                    RegionAppend(&childUnion, &pChild->borderSize, pScreen->context);
             }
         }
-        RegionValidate(&childUnion, &overlap);
+        RegionValidate(&childUnion, &overlap, pScreen->context);
 
         for (pChild = pParent->firstChild; pChild; pChild = pChild->nextSib) {
             if (pChild->viewable) {
@@ -572,8 +572,8 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
     if (pChild == NullWindow)
         pChild = pParent->firstChild;
 
-    RegionNull(&childClip);
-    RegionNull(&exposed);
+    RegionNull(&childClip, pScreen->context);
+    RegionNull(&exposed, pScreen->context);
 
     /*
      * compute the area of the parent window occupied
@@ -581,9 +581,9 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
      * is the area which can be divied up among the marked
      * children in their new configuration.
      */
-    RegionNull(&totalClip);
+    RegionNull(&totalClip, pScreen->context);
     viewvals = 0;
-    if (RegionBroken(&pParent->clipList) && !RegionBroken(&pParent->borderClip)) {
+    if (RegionBroken(&pParent->clipList, pScreen->context) && !RegionBroken(&pParent->borderClip, pScreen->context)) {
         kind = VTBroken;
         /*
          * When rebuilding clip lists after out of memory,
@@ -601,7 +601,7 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
             if (pWin->valdata && pWin->viewable)
                 viewvals++;
 
-        RegionEmpty(&pParent->clipList);
+        RegionEmpty(&pParent->clipList, pScreen->context);
     }
     else {
         if ((pChild->drawable.y < pParent->lastChild->drawable.y) ||
@@ -610,7 +610,7 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
             forward = TRUE;
             for (pWin = pChild; pWin; pWin = pWin->nextSib) {
                 if (pWin->valdata) {
-                    RegionAppend(&totalClip, getBorderClip(pWin));
+                    RegionAppend(&totalClip, getBorderClip(pWin), pScreen->context);
                     if (pWin->viewable)
                         viewvals++;
                 }
@@ -621,7 +621,7 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
             pWin = pParent->lastChild;
             while (1) {
                 if (pWin->valdata) {
-                    RegionAppend(&totalClip, getBorderClip(pWin));
+                    RegionAppend(&totalClip, getBorderClip(pWin), pScreen->context);
                     if (pWin->viewable)
                         viewvals++;
                 }
@@ -630,7 +630,7 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
                 pWin = pWin->prevSib;
             }
         }
-        RegionValidate(&totalClip, &overlap);
+        RegionValidate(&totalClip, &overlap, pScreen->context);
     }
 
     /*
@@ -651,25 +651,25 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
              * lower than the cost of multiple Subtracts in the
              * loop below.
              */
-            RegionNull(&childUnion);
+            RegionNull(&childUnion, pScreen->context);
             if (forward) {
                 for (pWin = pChild; pWin; pWin = pWin->nextSib)
                     if (pWin->valdata && pWin->viewable &&
                         !TreatAsTransparent(pWin))
-                        RegionAppend(&childUnion, &pWin->borderSize);
+                        RegionAppend(&childUnion, &pWin->borderSize, pScreen->context);
             }
             else {
                 pWin = pParent->lastChild;
                 while (1) {
                     if (pWin->valdata && pWin->viewable &&
                         !TreatAsTransparent(pWin))
-                        RegionAppend(&childUnion, &pWin->borderSize);
+                        RegionAppend(&childUnion, &pWin->borderSize, pScreen->context);
                     if (pWin == pChild)
                         break;
                     pWin = pWin->prevSib;
                 }
             }
-            RegionValidate(&childUnion, &overlap);
+            RegionValidate(&childUnion, &overlap, pScreen->context);
             if (overlap)
                 RegionUninit(&childUnion);
         }
@@ -690,10 +690,10 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
         }
         else {
             if (pWin->valdata) {
-                RegionEmpty(&pWin->clipList);
+                RegionEmpty(&pWin->clipList, pScreen->context);
                 if (pScreen->ClipNotify)
                     (*pScreen->ClipNotify) (pWin, 0, 0);
-                RegionEmpty(&pWin->borderClip);
+                RegionEmpty(&pWin->borderClip, pScreen->context);
                 pWin->valdata = NULL;
             }
         }
@@ -705,8 +705,8 @@ miValidateTree(WindowPtr pParent,       /* Parent to validate */
         RegionUninit(&childUnion);
     }
 
-    RegionNull(&pParent->valdata->after.exposed);
-    RegionNull(&pParent->valdata->after.borderExposed);
+    RegionNull(&pParent->valdata->after.exposed, pScreen->context);
+    RegionNull(&pParent->valdata->after.borderExposed, pScreen->context);
 
     /*
      * each case below is responsible for updating the

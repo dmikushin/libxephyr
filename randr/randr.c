@@ -40,7 +40,6 @@
 #endif
 
 #define RR_VALIDATE
-static int RRNScreens;
 
 #define wrap(priv,real,mem,func) {\
     priv->mem = real->mem; \
@@ -54,12 +53,7 @@ static int RRNScreens;
 static int ProcRRDispatch(ClientPtr pClient);
 static int SProcRRDispatch(ClientPtr pClient);
 
-int RREventBase;
-int RRErrorBase;
-RESTYPE RRClientType, RREventType;      /* resource types for event masks */
-DevPrivateKeyRec RRClientPrivateKeyRec;
 
-DevPrivateKeyRec rrPrivKeyRec;
 
 static void
 RRClientCallback(CallbackListPtr *list, void *closure, void *data)
@@ -109,7 +103,7 @@ RRCloseScreen(ScreenPtr pScreen)
     free(pScrPriv->crtcs);
     free(pScrPriv->outputs);
     free(pScrPriv);
-    RRNScreens -= 1;            /* ok, one fewer screen with RandR running */
+    pScreen->context->RRNScreens -= 1;            /* ok, one fewer screen with RandR running */
     return (*pScreen->CloseScreen) (pScreen);
 }
 
@@ -278,24 +272,23 @@ SRRNotifyEvent(xEvent *from, xEvent *to)
     }
 }
 
-static int RRGeneration;
 
 Bool
 RRInit(XephyrContext* context)
 {
     
-    if (RRGeneration != context->serverGeneration) {
-        if (!RRModeInit())
+    if (context->RRGeneration != context->serverGeneration) {
+        if (!RRModeInit(context))
             return FALSE;
-        if (!RRCrtcInit())
+        if (!RRCrtcInit(context))
             return FALSE;
-        if (!RROutputInit())
+        if (!RROutputInit(context))
             return FALSE;
-        if (!RRProviderInit())
+        if (!RRProviderInit(context))
             return FALSE;
-        if (!RRLeaseInit())
+        if (!RRLeaseInit(context))
             return FALSE;
-        RRGeneration = context->serverGeneration;
+        context->RRGeneration = context->serverGeneration;
     }
     if (!dixRegisterPrivateKey(&rrPrivKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
@@ -366,7 +359,7 @@ RRScreenInit(ScreenPtr pScreen)
 
     RRMonitorInit(pScreen);
 
-    RRNScreens += 1;            /* keep count of screens that implement randr */
+    pScreen->context->RRNScreens += 1;            /* keep count of screens that implement randr */
     return TRUE;
 }
 
@@ -380,7 +373,7 @@ RRFreeClient(void *data, XID id, XephyrContext* context)
     pRREvent = (RREventPtr) data;
     pWin = pRREvent->window;
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            RREventType, context->serverClient, DixDestroyAccess);
+                            context->RREventType, context->serverClient, DixDestroyAccess);
     if (pHead) {
         pPrev = 0;
         for (pCur = *pHead; pCur && pCur != pRREvent; pCur = pCur->next)
@@ -404,7 +397,7 @@ RRFreeEvents(void *data, XID id, XephyrContext* context)
     pHead = (RREventPtr *) data;
     for (pCur = *pHead; pCur; pCur = pNext) {
         pNext = pCur->next;
-        FreeResource(pCur->clientResource, RRClientType, context);
+        FreeResource(pCur->clientResource, context->RRClientType, context);
         free((void *) pCur);
     }
     free((void *) pHead);
@@ -416,7 +409,7 @@ RRExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
-    if (RRNScreens == 0)
+    if (context->RRNScreens == 0)
         return;
 
     
@@ -427,28 +420,28 @@ RRExtensionInit(XephyrContext* context)
     if (!AddCallback(&context->ClientStateCallback, RRClientCallback, 0))
         return;
 
-    RRClientType = CreateNewResourceType(RRFreeClient, "RandRClient");
-    if (!RRClientType)
+    context->RRClientType = CreateNewResourceType(RRFreeClient, "RandRClient");
+    if (!context->RRClientType)
         return;
-    RREventType = CreateNewResourceType(RRFreeEvents, "RandREvent");
-    if (!RREventType)
+    context->RREventType = CreateNewResourceType(RRFreeEvents, "RandREvent");
+    if (!context->RREventType)
         return;
     extEntry = AddExtension(RANDR_NAME, RRNumberEvents, RRNumberErrors,
                             ProcRRDispatch, SProcRRDispatch,
                             NULL, StandardMinorOpcode);
     if (!extEntry)
         return;
-    RRErrorBase = extEntry->errorBase;
-    RREventBase = extEntry->eventBase;
-    EventSwapVector[RREventBase + RRScreenChangeNotify] = (EventSwapPtr)
+    context->RRErrorBase = extEntry->errorBase;
+    context->RREventBase = extEntry->eventBase;
+    EventSwapVector[context->RREventBase + RRScreenChangeNotify] = (EventSwapPtr)
         SRRScreenChangeNotifyEvent;
-    EventSwapVector[RREventBase + RRNotify] = (EventSwapPtr)
+    EventSwapVector[context->RREventBase + RRNotify] = (EventSwapPtr)
         SRRNotifyEvent;
 
-    RRModeInitErrorValue();
-    RRCrtcInitErrorValue();
-    RROutputInitErrorValue();
-    RRProviderInitErrorValue();
+    RRModeInitErrorValue(context);
+    RRCrtcInitErrorValue(context);
+    RROutputInitErrorValue(context);
+    RRProviderInitErrorValue(context);
 #ifdef PANORAMIX
     RRXineramaExtensionInit(context);
 #endif
@@ -471,7 +464,7 @@ RRDeliverResourceEvent(ClientPtr client, WindowPtr pWin)
     rrScrPriv(pScreen);
 
     xRRResourceChangeNotifyEvent re = {
-        .type = RRNotify + RREventBase,
+        .type = RRNotify + pScreen->context->RREventBase,
         .subCode = RRNotify_ResourceChange,
         .timestamp = pScrPriv->lastSetTime.milliseconds,
         .window = pWin->drawable.id
@@ -493,7 +486,7 @@ TellChanged(WindowPtr pWin, void *value)
     int i;
 
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            RREventType, pScreen->context->serverClient, DixReadAccess);
+                            pScreen->context->RREventType, pScreen->context->serverClient, DixReadAccess);
     if (!pHead)
         return WT_WALKCHILDREN;
 

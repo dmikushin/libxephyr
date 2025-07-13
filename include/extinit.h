@@ -54,17 +54,17 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "extnsionst.h"
 
 #ifdef COMPOSITE
-extern _X_EXPORT Bool noCompositeExtension;
+/* extern _X_EXPORT Bool noCompositeExtension; - moved to XephyrContext */
 extern void CompositeExtensionInit(XephyrContext* context);
 #endif
 
 #ifdef DAMAGE
-extern _X_EXPORT Bool noDamageExtension;
+/* extern _X_EXPORT Bool noDamageExtension; - moved to XephyrContext */
 extern void DamageExtensionInit(XephyrContext* context);
 #endif
 
 #if defined(DBE)
-extern _X_EXPORT Bool noDbeExtension;
+/* extern _X_EXPORT Bool noDbeExtension; - moved to XephyrContext */
 extern void DbeExtensionInit(XephyrContext* context);
 #endif
 

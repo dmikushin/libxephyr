@@ -188,7 +188,7 @@ compRedirectWindow(ClientPtr pClient, WindowPtr pWin, int update)
 
         anyMarked = compMarkWindows(pWin, &pLayerWin);
 
-        RegionNull(&cw->borderClip);
+        RegionNull(&cw->borderClip, pWin->drawable.pScreen->context);
         cw->update = CompositeRedirectAutomatic;
         cw->clients = 0;
         cw->oldx = COMP_ORIGIN_INVALID;

@@ -49,6 +49,9 @@ SOFTWARE.
 
 typedef struct pixman_region16 RegionRec, *RegionPtr;
 
+/* Forward declaration to avoid circular dependency */
+typedef struct _XephyrContext XephyrContext;
+
 #include "miscstruct.h"
 
 #include <limits.h>
@@ -68,9 +71,6 @@ typedef struct pixman_region16 RegionRec, *RegionPtr;
 
 typedef struct pixman_region16_data RegDataRec, *RegDataPtr;
 
-extern _X_EXPORT BoxRec RegionEmptyBox;
-extern _X_EXPORT RegDataRec RegionEmptyData;
-extern _X_EXPORT RegDataRec RegionBrokenData;
 static inline Bool
 RegionNil(RegionPtr reg)
 {
@@ -79,11 +79,7 @@ RegionNil(RegionPtr reg)
 
 /* not a region */
 
-static inline Bool
-RegionNar(RegionPtr reg)
-{
-    return ((reg)->data == &RegionBrokenData);
-}
+extern _X_EXPORT Bool RegionNar(RegionPtr reg, XephyrContext* context);
 
 static inline int
 RegionNumRects(RegionPtr reg)
@@ -136,25 +132,7 @@ RegionSizeof(size_t n)
         return 0;
 }
 
-static inline void
-RegionInit(RegionPtr _pReg, BoxPtr _rect, int _size)
-{
-    if ((_rect) != NULL) {
-        (_pReg)->extents = *(_rect);
-        (_pReg)->data = (RegDataPtr) NULL;
-    }
-    else {
-        size_t rgnSize;
-        (_pReg)->extents = RegionEmptyBox;
-        if (((_size) > 1) && ((rgnSize = RegionSizeof(_size)) > 0) &&
-            (((_pReg)->data = (RegDataPtr) malloc(rgnSize)) != NULL)) {
-            (_pReg)->data->size = (_size);
-            (_pReg)->data->numRects = 0;
-        }
-        else
-            (_pReg)->data = &RegionEmptyData;
-    }
-}
+extern _X_EXPORT void RegionInit(RegionPtr _pReg, BoxPtr _rect, int _size, XephyrContext* context);
 
 static inline Bool
 RegionInitBoxes(RegionPtr pReg, BoxPtr boxes, int nBoxes)
@@ -185,20 +163,9 @@ RegionNotEmpty(RegionPtr _pReg)
     return !RegionNil(_pReg);
 }
 
-static inline Bool
-RegionBroken(RegionPtr _pReg)
-{
-    return RegionNar(_pReg);
-}
+extern _X_EXPORT Bool RegionBroken(RegionPtr _pReg, XephyrContext* context);
 
-static inline void
-RegionEmpty(RegionPtr _pReg)
-{
-    RegionUninit(_pReg);
-    (_pReg)->extents.x2 = (_pReg)->extents.x1;
-    (_pReg)->extents.y2 = (_pReg)->extents.y1;
-    (_pReg)->data = &RegionEmptyData;
-}
+extern _X_EXPORT void RegionEmpty(RegionPtr _pReg, XephyrContext* context);
 
 static inline BoxPtr
 RegionExtents(RegionPtr _pReg)
@@ -206,21 +173,17 @@ RegionExtents(RegionPtr _pReg)
     return (&(_pReg)->extents);
 }
 
-static inline void
-RegionNull(RegionPtr _pReg)
-{
-    (_pReg)->extents = RegionEmptyBox;
-    (_pReg)->data = &RegionEmptyData;
-}
+extern _X_EXPORT void RegionNull(RegionPtr _pReg, XephyrContext* context);
 
-extern _X_EXPORT void InitRegions(void);
+extern _X_EXPORT void InitRegions(XephyrContext* context);
 
 extern _X_EXPORT RegionPtr RegionCreate(BoxPtr /*rect */ ,
-                                        int /*size */ );
+                                        int /*size */ ,
+                                        XephyrContext* /*context*/);
 
-extern _X_EXPORT void RegionDestroy(RegionPtr /*pReg */ );
+extern _X_EXPORT void RegionDestroy(RegionPtr /*pReg */ , XephyrContext* /*context*/);
 
-extern _X_EXPORT RegionPtr RegionDuplicate(RegionPtr /* pOld */);
+extern _X_EXPORT RegionPtr RegionDuplicate(RegionPtr /* pOld */, XephyrContext* /*context*/);
 
 static inline Bool
 RegionCopy(RegionPtr dst, RegionPtr src)
@@ -245,14 +208,17 @@ RegionUnion(RegionPtr newReg,   /* destination Region */
 }
 
 extern _X_EXPORT Bool RegionAppend(RegionPtr /*dstrgn */ ,
-                                   RegionPtr /*rgn */ );
+                                   RegionPtr /*rgn */ ,
+                                   XephyrContext* /*context*/);
 
 extern _X_EXPORT Bool RegionValidate(RegionPtr /*badreg */ ,
-                                     Bool * /*pOverlap */ );
+                                     Bool * /*pOverlap */ ,
+                                     XephyrContext* /*context*/);
 
 extern _X_EXPORT RegionPtr RegionFromRects(int /*nrects */ ,
                                            xRectanglePtr /*prect */ ,
-                                           int /*ctype */ );
+                                           int /*ctype */ ,
+                                           XephyrContext* /*context*/);
 
 /*-
  *-----------------------------------------------------------------------
@@ -315,7 +281,7 @@ RegionTranslate(RegionPtr pReg, int x, int y)
     pixman_region_translate(pReg, x, y);
 }
 
-extern _X_EXPORT Bool RegionBreak(RegionPtr /*pReg */ );
+extern _X_EXPORT Bool RegionBreak(RegionPtr /*pReg */ , XephyrContext* /*context*/);
 
 static inline Bool
 RegionContainsPoint(RegionPtr pReg, int x, int y, BoxPtr box    /* "return" value */
@@ -331,7 +297,8 @@ RegionEqual(RegionPtr reg1, RegionPtr reg2)
 }
 
 extern _X_EXPORT Bool RegionRectAlloc(RegionPtr /*pRgn */ ,
-                                      int       /*n */
+                                      int       /*n */ ,
+                                      XephyrContext* /*context*/
     );
 
 #ifdef DEBUG
@@ -345,7 +312,7 @@ extern _X_EXPORT void RegionPrint(RegionPtr /*pReg */, XephyrContext* /*context*
 #ifdef INCLUDE_LEGACY_REGION_DEFINES
 
 #define REGION_NIL				RegionNil
-#define REGION_NAR				RegionNar
+#define REGION_NAR(reg)				RegionNar(reg, context)
 #define REGION_NUM_RECTS			RegionNumRects
 #define REGION_SIZE				RegionSize
 #define REGION_RECTS				RegionRects
@@ -355,9 +322,9 @@ extern _X_EXPORT void RegionPrint(RegionPtr /*pReg */, XephyrContext* /*context*
 #define REGION_END				RegionEnd
 #define REGION_SZOF				RegionSizeof
 #define BITMAP_TO_REGION			BitmapToRegion
-#define REGION_CREATE(pScreen, r, s)		RegionCreate(r,s)
+#define REGION_CREATE(pScreen, r, s)		RegionCreate(r,s,context)
 #define REGION_COPY(pScreen, d, r)		RegionCopy(d, r)
-#define REGION_DESTROY(pScreen, r)		RegionDestroy(r)
+#define REGION_DESTROY(pScreen, r)		RegionDestroy(r, context)
 #define REGION_INTERSECT(pScreen, res, r1, r2)	RegionIntersect(res, r1, r2)
 #define REGION_UNION(pScreen, res, r1, r2)	RegionUnion(res, r1, r2)
 #define REGION_SUBTRACT(pScreen, res, r1, r2)	RegionSubtract(res, r1, r2)
@@ -370,14 +337,14 @@ extern _X_EXPORT void RegionPrint(RegionPtr /*pReg */, XephyrContext* /*context*
 #define REGION_VALIDATE(pScreen, r, o)		RegionValidate(r, o)
 #define RECTS_TO_REGION(pScreen, n, r, c)	RegionFromRects(n, r, c)
 #define REGION_BREAK(pScreen, r)		RegionBreak(r)
-#define REGION_INIT(pScreen, r, b, s)		RegionInit(r, b, s)
+#define REGION_INIT(pScreen, r, b, s)		RegionInit(r, b, s, context)
 #define REGION_UNINIT(pScreen, r)		RegionUninit(r)
 #define REGION_RESET(pScreen, r, b)		RegionReset(r, b)
 #define REGION_NOTEMPTY(pScreen, r)		RegionNotEmpty(r)
-#define REGION_BROKEN(pScreen, r)		RegionBroken(r)
-#define REGION_EMPTY(pScreen, r)		RegionEmpty(r)
+#define REGION_BROKEN(pScreen, r)		RegionBroken(r, context)
+#define REGION_EMPTY(pScreen, r)		RegionEmpty(r, context)
 #define REGION_EXTENTS(pScreen, r)		RegionExtents(r)
-#define REGION_NULL(pScreen, r)			RegionNull(r)
+#define REGION_NULL(pScreen, r)			RegionNull(r, context)
 
 #endif                          /* INCLUDE_LEGACY_REGION_DEFINES */
 #endif                          /* REGIONSTRUCT_H */

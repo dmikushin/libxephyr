@@ -11,7 +11,7 @@
 /* REMOVED: extern _X_EXPORT int PanoramiXNumScreens; - moved to XephyrContext */
 /* REMOVED: extern _X_EXPORT int PanoramiXPixWidth; - moved to XephyrContext */
 /* REMOVED: extern _X_EXPORT int PanoramiXPixHeight; - moved to XephyrContext */
-extern _X_EXPORT RegionRec PanoramiXScreenRegion;
+/* REMOVED: extern _X_EXPORT RegionRec context->PanoramiXScreenRegion; - moved to XephyrContext */
 
 extern _X_EXPORT VisualID PanoramiXTranslateVisualID(int screen, VisualID orig, XephyrContext* context);
 extern _X_EXPORT void PanoramiXConsolidate(XephyrContext* context);

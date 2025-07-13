@@ -621,10 +621,10 @@ CreateRootWindow(ScreenPtr pScreen)
     box.y1 = 0;
     box.x2 = pScreen->width;
     box.y2 = pScreen->height;
-    RegionInit(&pWin->clipList, &box, 1);
-    RegionInit(&pWin->winSize, &box, 1);
-    RegionInit(&pWin->borderSize, &box, 1);
-    RegionInit(&pWin->borderClip, &box, 1);
+    RegionInit(&pWin->clipList, &box, 1, pWin->drawable.pScreen->context);
+    RegionInit(&pWin->winSize, &box, 1, pWin->drawable.pScreen->context);
+    RegionInit(&pWin->borderSize, &box, 1, pScreen->context);
+    RegionInit(&pWin->borderClip, &box, 1, pScreen->context);
 
     pWin->drawable.class = InputOutput;
     pWin->optional->visual = pScreen->rootVisual;
@@ -650,7 +650,7 @@ CreateRootWindow(ScreenPtr pScreen)
     if (enableBackingStore)
         pScreen->backingStoreSupport = WhenMapped;
 #ifdef COMPOSITE
-    if (noCompositeExtension)
+    if (pScreen->context->noCompositeExtension)
         pScreen->backingStoreSupport = NotUseful;
 #endif
 
@@ -891,10 +891,10 @@ CreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
     pWin->drawable.y = pParent->drawable.y + y + (int) bw;
 
     /* set up clip list correctly for unobscured WindowPtr */
-    RegionNull(&pWin->clipList);
-    RegionNull(&pWin->borderClip);
-    RegionNull(&pWin->winSize);
-    RegionNull(&pWin->borderSize);
+    RegionNull(&pWin->clipList, client->context);
+    RegionNull(&pWin->borderClip, pScreen->context);
+    RegionNull(&pWin->winSize, pScreen->context);
+    RegionNull(&pWin->borderSize, pScreen->context);
 
     pHead = RealChildHead(pParent);
     if (pHead) {
@@ -1005,11 +1005,11 @@ FreeWindowResources(WindowPtr pWin)
     RegionUninit(&pWin->borderClip);
     RegionUninit(&pWin->borderSize);
     if (wBoundingShape(pWin))
-        RegionDestroy(wBoundingShape(pWin));
+        RegionDestroy(wBoundingShape(pWin), pWin->drawable.pScreen->context);
     if (wClipShape(pWin))
-        RegionDestroy(wClipShape(pWin));
+        RegionDestroy(wClipShape(pWin), pWin->drawable.pScreen->context);
     if (wInputShape(pWin))
-        RegionDestroy(wInputShape(pWin));
+        RegionDestroy(wInputShape(pWin), pWin->drawable.pScreen->context);
     if (pWin->borderIsPixel == FALSE)
         (*pScreen->DestroyPixmap) (pWin->border.pixmap);
     if (pWin->backgroundState == BackgroundPixmap)
@@ -1584,7 +1584,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
         && pWin->viewable && HasBorder(pWin)) {
         RegionRec exposed;
 
-        RegionNull(&exposed);
+        RegionNull(&exposed, pScreen->context);
         RegionSubtract(&exposed, &pWin->borderClip, &pWin->winSize);
         pWin->drawable.pScreen->PaintWindow(pWin, &exposed, PW_BORDER);
         RegionUninit(&exposed);
@@ -1963,7 +1963,7 @@ WindowExtents(WindowPtr pWin, BoxPtr pBox)
 static RegionPtr
 MakeBoundingRegion(WindowPtr pWin, BoxPtr pBox)
 {
-    RegionPtr pRgn = RegionCreate(pBox, 1);
+    RegionPtr pRgn = RegionCreate(pBox, 1, pWin->drawable.pScreen->context);
 
     if (wBoundingShape(pWin)) {
         RegionTranslate(pRgn, -pWin->origin.x, -pWin->origin.y);
@@ -1985,8 +1985,8 @@ ShapeOverlap(WindowPtr pWin, BoxPtr pWinBox, WindowPtr pSib, BoxPtr pSibBox)
     pSibRgn = MakeBoundingRegion(pSib, pSibBox);
     RegionIntersect(pWinRgn, pWinRgn, pSibRgn);
     ret = RegionNotEmpty(pWinRgn);
-    RegionDestroy(pWinRgn);
-    RegionDestroy(pSibRgn);
+    RegionDestroy(pWinRgn, pWin->drawable.pScreen->context);
+    RegionDestroy(pSibRgn, pWin->drawable.pScreen->context);
     return ret;
 }
 
@@ -2708,7 +2708,7 @@ MapWindow(WindowPtr pWin, ClientPtr client)
             (*pScreen->ClipNotify) (pWin, 0, 0);
         if (pScreen->PostValidateTree)
             (*pScreen->PostValidateTree) (NullWindow, pWin, VTMap);
-        RegionNull(&temp);
+        RegionNull(&temp, pScreen->context);
         RegionCopy(&temp, &pWin->clipList);
         (*pScreen->WindowExposures) (pWin, &temp);
         RegionUninit(&temp);
@@ -3004,7 +3004,7 @@ PointInWindowIsVisible(WindowPtr pWin, int x, int y)
 RegionPtr
 NotClippedByChildren(WindowPtr pWin)
 {
-    RegionPtr pReg = RegionCreate(NullBox, 1);
+    RegionPtr pReg = RegionCreate(NullBox, 1, pWin->drawable.pScreen->context);
 
     if (pWin->parent ||
         screenIsSaved != SCREEN_SAVER_ON ||
@@ -3657,7 +3657,7 @@ SetRootClip(ScreenPtr pScreen, int enable)
             if (HasBorder(pWin)) {
                 RegionPtr borderVisible;
 
-                borderVisible = RegionCreate(NullBox, 1);
+                borderVisible = RegionCreate(NullBox, 1, pScreen->context);
                 RegionSubtract(borderVisible,
                                &pWin->borderClip, &pWin->winSize);
                 pWin->valdata->before.borderVisible = borderVisible;
@@ -3675,15 +3675,15 @@ SetRootClip(ScreenPtr pScreen, int enable)
         box.x2 = pScreen->width;
         box.y2 = pScreen->height;
 
-        RegionInit(&pWin->winSize, &box, 1);
-        RegionInit(&pWin->borderSize, &box, 1);
+        RegionInit(&pWin->winSize, &box, 1, pScreen->context);
+        RegionInit(&pWin->borderSize, &box, 1, pScreen->context);
 
         /*
          * Use REGION_BREAK to avoid optimizations in ValidateTree
          * that assume the root borderClip can't change well, normally
-         * it doesn't...)
+         * it doesn't..., pScreen->context)
          */
-        RegionBreak(&pWin->clipList);
+        RegionBreak(&pWin->clipList, pScreen->context);
 
 	/* For INPUT_ONLY, empty the borderClip so no rendering will ever
 	 * be attempted to the screen pixmap (only redirected windows),
@@ -3691,11 +3691,11 @@ SetRootClip(ScreenPtr pScreen, int enable)
         if (WasViewable && mode == ROOT_CLIP_FULL)
             RegionReset(&pWin->borderClip, &box);
         else
-            RegionEmpty(&pWin->borderClip);
+            RegionEmpty(&pWin->borderClip, pScreen->context);
     }
     else {
-        RegionEmpty(&pWin->borderClip);
-        RegionBreak(&pWin->clipList);
+        RegionEmpty(&pWin->borderClip, pScreen->context);
+        RegionBreak(&pWin->clipList, pScreen->context);
     }
 
     ResizeChildrenWinSize(pWin, 0, 0, 0, 0);

@@ -455,7 +455,7 @@ glamor_image_text(DrawablePtr drawable, GCPtr gc,
         }
         box.y1 = drawable->y + y - gc->font->info.fontAscent;
         box.y2 = drawable->y + y + gc->font->info.fontDescent;
-        RegionInit(&region, &box, 1);
+        RegionInit(&region, &box, 1, drawable->pScreen->context);
         RegionIntersect(&region, &region, gc->pCompositeClip);
         RegionTranslate(&region, off_x, off_y);
         glamor_solid_boxes(pixmap, RegionRects(&region), RegionNumRects(&region), gc->bgPixel);

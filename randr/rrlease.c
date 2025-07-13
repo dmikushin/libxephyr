@@ -25,7 +25,6 @@
 #include "swaprep.h"
 #include <unistd.h>
 
-RESTYPE RRLeaseType;
 
 /*
  * Notify of some lease change
@@ -43,7 +42,7 @@ RRDeliverLeaseEvent(ClientPtr client, WindowPtr window)
                                   lease->state == RRLeaseTerminating))
         {
             xRRLeaseNotifyEvent le = (xRRLeaseNotifyEvent) {
-                .type = RRNotify + RREventBase,
+                .type = RRNotify + client->context->RREventBase,
                 .subCode = RRNotify_Lease,
                 .timestamp = client->context->currentTime.milliseconds,
                 .window = window->drawable.id,
@@ -197,10 +196,10 @@ RRLeaseDestroyResource(void *value, XID pid, XephyrContext* context)
  * Create the lease resource type during server initialization
  */
 Bool
-RRLeaseInit(void)
+RRLeaseInit(XephyrContext* context)
 {
-    RRLeaseType = CreateNewResourceType(RRLeaseDestroyResource, "LEASE");
-    if (!RRLeaseType)
+    context->RRLeaseType = CreateNewResourceType(RRLeaseDestroyResource, "LEASE");
+    if (!context->RRLeaseType)
         return FALSE;
     return TRUE;
 }
@@ -255,7 +254,7 @@ ProcRRCreateLease(ClientPtr client)
         RRCrtcPtr crtc;
 
 	rc = dixLookupResourceByType((void **)&crtc, crtcIds[c],
-                                     RRCrtcType, client, DixSetAttrAccess);
+                                     client->context->RRCrtcType, client, DixSetAttrAccess);
 
         if (rc != Success) {
             client->errorValue = crtcIds[c];
@@ -277,7 +276,7 @@ ProcRRCreateLease(ClientPtr client)
         RROutputPtr output;
 
 	rc = dixLookupResourceByType((void **)&output, outputIds[o],
-                                     RROutputType, client, DixSetAttrAccess);
+                                     client->context->RROutputType, client, DixSetAttrAccess);
         if (rc != Success) {
             client->errorValue = outputIds[o];
             goto bail_lease;
@@ -298,7 +297,7 @@ ProcRRCreateLease(ClientPtr client)
 
     xorg_list_add(&lease->list, &scr_priv->leases);
 
-    if (!AddResource(stuff->lid, RRLeaseType, lease, client->context)) {
+    if (!AddResource(stuff->lid, client->context->RRLeaseType, lease, client->context)) {
         close(fd);
         return BadAlloc;
     }

@@ -111,7 +111,7 @@ miCopyArea(DrawablePtr pSrcDrawable,
         box.x2 = pSrcDrawable->x + (int) pSrcDrawable->width;
         box.y2 = pSrcDrawable->y + (int) pSrcDrawable->height;
 
-        prgnSrcClip = RegionCreate(&box, 1);
+        prgnSrcClip = RegionCreate(&box, 1, pSrcDrawable->pScreen->context);
         realSrcClip = 1;
     }
     else {
@@ -147,7 +147,7 @@ miCopyArea(DrawablePtr pSrcDrawable,
         free(pwidthFirst);
         free(pptFirst);
         if (realSrcClip)
-            RegionDestroy(prgnSrcClip);
+            RegionDestroy(prgnSrcClip, pSrcDrawable->pScreen->context);
         return NULL;
     }
 
@@ -247,7 +247,7 @@ miCopyArea(DrawablePtr pSrcDrawable,
     prgnExposed = miHandleExposures(pSrcDrawable, pDstDrawable, pGC, xIn, yIn,
                                     widthSrc, heightSrc, xOut, yOut);
     if (realSrcClip)
-        RegionDestroy(prgnSrcClip);
+        RegionDestroy(prgnSrcClip, pSrcDrawable->pScreen->context);
 
     free(ordering);
     free(pwidthFirst);
@@ -414,7 +414,7 @@ miOpqStipDrawable(DrawablePtr pDraw, GCPtr pGC, RegionPtr prgnSrc,
        to destroy what it's sent.  note that this means we don't
        have to free prgnSrcClip ourselves.
      */
-    prgnSrcClip = RegionCreate(NULL, 0);
+    prgnSrcClip = RegionCreate(NULL, 0, pDraw->pScreen->context);
     RegionCopy(prgnSrcClip, prgnSrc);
     RegionTranslate(prgnSrcClip, srcx, 0);
     (*pGCT->funcs->ChangeClip) (pGCT, CT_REGION, prgnSrcClip, 0);
@@ -543,7 +543,7 @@ miCopyPlane(DrawablePtr pSrcDrawable,
         box.x2 = box.x1;
     if (box.y1 > box.y2)
         box.y2 = box.y1;
-    prgnSrc = RegionCreate(&box, 1);
+    prgnSrc = RegionCreate(&box, 1, pSrcDrawable->pScreen->context);
 
     if (pSrcDrawable->type != DRAWABLE_PIXMAP) {
         /* clip to visible drawable */
@@ -552,7 +552,7 @@ miCopyPlane(DrawablePtr pSrcDrawable,
             RegionPtr clipList = NotClippedByChildren((WindowPtr) pSrcDrawable);
 
             RegionIntersect(prgnSrc, prgnSrc, clipList);
-            RegionDestroy(clipList);
+            RegionDestroy(clipList, pSrcDrawable->pScreen->context);
         }
         else
             RegionIntersect(prgnSrc, prgnSrc,
@@ -581,7 +581,7 @@ miCopyPlane(DrawablePtr pSrcDrawable,
     }
     prgnExposed = miHandleExposures(pSrcDrawable, pDstDrawable, pGC, srcx, srcy,
                                     width, height, dstx, dsty);
-    RegionDestroy(prgnSrc);
+    RegionDestroy(prgnSrc, pSrcDrawable->pScreen->context);
     return prgnExposed;
 }
 
@@ -714,11 +714,11 @@ miPutImage(DrawablePtr pDraw, GCPtr pGC, int depth,
         box.y1 = 0;
         box.x2 = w;
         box.y2 = h;
-        prgnSrc = RegionCreate(&box, 1);
+        prgnSrc = RegionCreate(&box, 1, pDraw->pScreen->context);
 
         miOpqStipDrawable(pDraw, pGC, prgnSrc, (MiBits *) pImage,
                           leftPad, w, h, x, y);
-        RegionDestroy(prgnSrc);
+        RegionDestroy(prgnSrc, pDraw->pScreen->context);
         break;
 
     case XYPixmap:

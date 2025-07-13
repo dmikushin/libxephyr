@@ -174,11 +174,11 @@ Equipment Corporation.
 
 #define RECTALLOC_BAIL(pReg,n,bail) \
 if (!(pReg)->data || (((pReg)->data->numRects + (n)) > (pReg)->data->size)) \
-    if (!RegionRectAlloc(pReg, n)) { goto bail; }
+    if (!RegionRectAlloc(pReg, n, context)) { goto bail; }
 
 #define RECTALLOC(pReg,n) \
 if (!(pReg)->data || (((pReg)->data->numRects + (n)) > (pReg)->data->size)) \
-    if (!RegionRectAlloc(pReg, n)) { return FALSE; }
+    if (!RegionRectAlloc(pReg, n, context)) { return FALSE; }
 
 #define ADDRECT(pNextRect,nx1,ny1,nx2,ny2)	\
 {						\
@@ -189,11 +189,11 @@ if (!(pReg)->data || (((pReg)->data->numRects + (n)) > (pReg)->data->size)) \
     pNextRect++;				\
 }
 
-#define NEWRECT(pReg,pNextRect,nx1,ny1,nx2,ny2)			\
+#define NEWRECT(pReg,pNextRect,nx1,ny1,nx2,ny2,context)		\
 {									\
     if (!(pReg)->data || ((pReg)->data->numRects == (pReg)->data->size))\
     {									\
-	if (!RegionRectAlloc(pReg, 1))					\
+	if (!RegionRectAlloc(pReg, 1, context))				\
 	    return FALSE;						\
 	pNextRect = RegionTop(pReg);					\
     }									\
@@ -215,57 +215,106 @@ if (((numRects) < ((reg)->data->size >> 1)) && ((reg)->data->size > 50)) \
     }									 \
 }
 
-BoxRec RegionEmptyBox = { 0, 0, 0, 0 };
-RegDataRec RegionEmptyData = { 0, 0 };
 
-RegDataRec RegionBrokenData = { 0, 0 };
-static RegionRec RegionBrokenRegion = { {0, 0, 0, 0}, &RegionBrokenData };
+/* RegionBrokenRegion is now in context */
+
+Bool
+RegionNar(RegionPtr reg, XephyrContext* context)
+{
+    return ((reg)->data == &context->RegionBrokenData);
+}
 
 void
-InitRegions(void)
+RegionInit(RegionPtr _pReg, BoxPtr _rect, int _size, XephyrContext* context)
 {
-    pixman_region_set_static_pointers(&RegionEmptyBox, &RegionEmptyData,
-                                      &RegionBrokenData);
+    if ((_rect) != NULL) {
+        (_pReg)->extents = *(_rect);
+        (_pReg)->data = (RegDataPtr) NULL;
+    }
+    else {
+        size_t rgnSize;
+        (_pReg)->extents = context->RegionEmptyBox;
+        if (((_size) > 1) && ((rgnSize = RegionSizeof(_size)) > 0) &&
+            (((_pReg)->data = (RegDataPtr) malloc(rgnSize)) != NULL)) {
+            (_pReg)->data->size = (_size);
+            (_pReg)->data->numRects = 0;
+        }
+        else
+            (_pReg)->data = &context->RegionEmptyData;
+    }
+}
+
+Bool
+RegionBroken(RegionPtr _pReg, XephyrContext* context)
+{
+    return RegionNar(_pReg, context);
+}
+
+void
+RegionEmpty(RegionPtr _pReg, XephyrContext* context)
+{
+    RegionUninit(_pReg);
+    (_pReg)->extents.x2 = (_pReg)->extents.x1;
+    (_pReg)->extents.y2 = (_pReg)->extents.y1;
+    (_pReg)->data = &context->RegionEmptyData;
+}
+
+void
+RegionNull(RegionPtr _pReg, XephyrContext* context)
+{
+    (_pReg)->extents = context->RegionEmptyBox;
+    (_pReg)->data = &context->RegionEmptyData;
+}
+
+void
+InitRegions(XephyrContext* context)
+{
+    pixman_region_set_static_pointers(&context->RegionEmptyBox, &context->RegionEmptyData,
+                                      &context->RegionBrokenData);
+    
+    /* Initialize the broken region */
+    context->RegionBrokenRegion.extents = (BoxRec){0, 0, 0, 0};
+    context->RegionBrokenRegion.data = &context->RegionBrokenData;
 }
 
 /*****************************************************************
- *   RegionCreate(rect, size)
+ *   RegionCreate(rect, size, context)
  *     This routine does a simple malloc to make a structure of
  *     REGION of "size" number of rectangles.
  *****************************************************************/
 
 RegionPtr
-RegionCreate(BoxPtr rect, int size)
+RegionCreate(BoxPtr rect, int size, XephyrContext* context)
 {
     RegionPtr pReg;
 
     pReg = (RegionPtr) malloc(sizeof(RegionRec));
     if (!pReg)
-        return &RegionBrokenRegion;
+        return &context->RegionBrokenRegion;
 
-    RegionInit(pReg, rect, size);
+    RegionInit(pReg, rect, size, context);
 
     return pReg;
 }
 
 void
-RegionDestroy(RegionPtr pReg)
+RegionDestroy(RegionPtr pReg, XephyrContext* context)
 {
     pixman_region_fini(pReg);
-    if (pReg != &RegionBrokenRegion)
+    if (pReg->data != &context->RegionBrokenData)  /* Check if it's broken region */
         free(pReg);
 }
 
 RegionPtr
-RegionDuplicate(RegionPtr pOld)
+RegionDuplicate(RegionPtr pOld, XephyrContext* context)
 {
     RegionPtr   pNew;
 
-    pNew = RegionCreate(&pOld->extents, 0);
+    pNew = RegionCreate(&pOld->extents, 0, context);
     if (!pNew)
         return NULL;
     if (!RegionCopy(pNew, pOld)) {
-        RegionDestroy(pNew);
+        RegionDestroy(pNew, context);
         return NULL;
     }
     return pNew;
@@ -301,7 +350,7 @@ RegionIsValid(RegionPtr reg)
     if (!numRects)
         return ((reg->extents.x1 == reg->extents.x2) &&
                 (reg->extents.y1 == reg->extents.y2) &&
-                (reg->data->size || (reg->data == &RegionEmptyData)));
+                (reg->data->size || (reg->data == &context->RegionEmptyData)));
     else if (numRects == 1)
         return !reg->data;
     else {
@@ -332,16 +381,16 @@ RegionIsValid(RegionPtr reg)
 #endif                          /* DEBUG */
 
 Bool
-RegionBreak(RegionPtr pReg)
+RegionBreak(RegionPtr pReg, XephyrContext* context)
 {
     xfreeData(pReg);
-    pReg->extents = RegionEmptyBox;
-    pReg->data = &RegionBrokenData;
+    pReg->extents = context->RegionEmptyBox;
+    pReg->data = &context->RegionBrokenData;
     return FALSE;
 }
 
 Bool
-RegionRectAlloc(RegionPtr pRgn, int n)
+RegionRectAlloc(RegionPtr pRgn, int n, XephyrContext* context)
 {
     RegDataPtr data;
     size_t rgnSize;
@@ -351,7 +400,7 @@ RegionRectAlloc(RegionPtr pRgn, int n)
         rgnSize = RegionSizeof(n);
         pRgn->data = (rgnSize > 0) ? malloc(rgnSize) : NULL;
         if (!pRgn->data)
-            return RegionBreak(pRgn);
+            return RegionBreak(pRgn, context);
         pRgn->data->numRects = 1;
         *RegionBoxptr(pRgn) = pRgn->extents;
     }
@@ -359,7 +408,7 @@ RegionRectAlloc(RegionPtr pRgn, int n)
         rgnSize = RegionSizeof(n);
         pRgn->data = (rgnSize > 0) ? malloc(rgnSize) : NULL;
         if (!pRgn->data)
-            return RegionBreak(pRgn);
+            return RegionBreak(pRgn, context);
         pRgn->data->numRects = 0;
     }
     else {
@@ -372,7 +421,7 @@ RegionRectAlloc(RegionPtr pRgn, int n)
         rgnSize = RegionSizeof(n);
         data = (rgnSize > 0) ? realloc(pRgn->data, rgnSize) : NULL;
         if (!data)
-            return RegionBreak(pRgn);
+            return RegionBreak(pRgn, context);
         pRgn->data = data;
     }
     pRgn->data->size = n;
@@ -487,7 +536,7 @@ RegionCoalesce(RegionPtr pReg,  /* Region to coalesce                */
  */
 
 _X_INLINE static Bool
-RegionAppendNonO(RegionPtr pReg, BoxPtr r, BoxPtr rEnd, int y1, int y2)
+RegionAppendNonO(RegionPtr pReg, BoxPtr r, BoxPtr rEnd, int y1, int y2, XephyrContext* context)
 {
     BoxPtr pNextRect;
     int newRects;
@@ -564,7 +613,7 @@ typedef Bool (*OverlapProcPtr) (RegionPtr pReg,
                                 BoxPtr r1End,
                                 BoxPtr r2,
                                 BoxPtr r2End,
-                                short y1, short y2, Bool *pOverlap);
+                                short y1, short y2, Bool *pOverlap, XephyrContext* context);
 
 static Bool
 RegionOp(RegionPtr newReg,      /* Place to store result         */
@@ -576,7 +625,8 @@ RegionOp(RegionPtr newReg,      /* Place to store result         */
          /* in region 1 ? */
          Bool appendNon2,       /* Append non-overlapping bands  */
          /* in region 2 ? */
-         Bool *pOverlap)
+         Bool *pOverlap,
+         XephyrContext* context)
 {
     BoxPtr r1;                  /* Pointer into first region     */
     BoxPtr r2;                  /* Pointer into 2d region        */
@@ -601,8 +651,8 @@ RegionOp(RegionPtr newReg,      /* Place to store result         */
     /*
      * Break any region computed from a broken region
      */
-    if (RegionNar(reg1) || RegionNar(reg2))
-        return RegionBreak(newReg);
+    if (RegionNar(reg1, context) || RegionNar(reg2, context))
+        return RegionBreak(newReg, context);
 
     /*
      * Initialization:
@@ -625,18 +675,18 @@ RegionOp(RegionPtr newReg,      /* Place to store result         */
     if (((newReg == reg1) && (newSize > 1)) ||
         ((newReg == reg2) && (numRects > 1))) {
         oldData = newReg->data;
-        newReg->data = &RegionEmptyData;
+        newReg->data = &context->RegionEmptyData;
     }
     /* guess at new size */
     if (numRects > newSize)
         newSize = numRects;
     newSize <<= 1;
     if (!newReg->data)
-        newReg->data = &RegionEmptyData;
+        newReg->data = &context->RegionEmptyData;
     else if (newReg->data->size)
         newReg->data->numRects = 0;
     if (newSize > newReg->data->size)
-        if (!RegionRectAlloc(newReg, newSize))
+        if (!RegionRectAlloc(newReg, newSize, context))
             return FALSE;
 
     /*
@@ -694,7 +744,7 @@ RegionOp(RegionPtr newReg,      /* Place to store result         */
                 bot = min(r1->y2, r2y1);
                 if (top != bot) {
                     curBand = newReg->data->numRects;
-                    RegionAppendNonO(newReg, r1, r1BandEnd, top, bot);
+                    RegionAppendNonO(newReg, r1, r1BandEnd, top, bot, context);
                     Coalesce(newReg, prevBand, curBand);
                 }
             }
@@ -706,7 +756,7 @@ RegionOp(RegionPtr newReg,      /* Place to store result         */
                 bot = min(r2->y2, r1y1);
                 if (top != bot) {
                     curBand = newReg->data->numRects;
-                    RegionAppendNonO(newReg, r2, r2BandEnd, top, bot);
+                    RegionAppendNonO(newReg, r2, r2BandEnd, top, bot, context);
                     Coalesce(newReg, prevBand, curBand);
                 }
             }
@@ -724,7 +774,7 @@ RegionOp(RegionPtr newReg,      /* Place to store result         */
         if (ybot > ytop) {
             curBand = newReg->data->numRects;
             (*overlapFunc) (newReg, r1, r1BandEnd, r2, r2BandEnd, ytop, ybot,
-                            pOverlap);
+                            pOverlap, context);
             Coalesce(newReg, prevBand, curBand);
         }
 
@@ -751,7 +801,7 @@ RegionOp(RegionPtr newReg,      /* Place to store result         */
         /* Do first nonOverlap1Func call, which may be able to coalesce */
         FindBand(r1, r1BandEnd, r1End, r1y1);
         curBand = newReg->data->numRects;
-        RegionAppendNonO(newReg, r1, r1BandEnd, max(r1y1, ybot), r1->y2);
+        RegionAppendNonO(newReg, r1, r1BandEnd, max(r1y1, ybot), r1->y2, context);
         Coalesce(newReg, prevBand, curBand);
         /* Just append the rest of the boxes  */
         AppendRegions(newReg, r1BandEnd, r1End);
@@ -761,7 +811,7 @@ RegionOp(RegionPtr newReg,      /* Place to store result         */
         /* Do first nonOverlap2Func call, which may be able to coalesce */
         FindBand(r2, r2BandEnd, r2End, r2y1);
         curBand = newReg->data->numRects;
-        RegionAppendNonO(newReg, r2, r2BandEnd, max(r2y1, ybot), r2->y2);
+        RegionAppendNonO(newReg, r2, r2BandEnd, max(r2y1, ybot), r2->y2, context);
         Coalesce(newReg, prevBand, curBand);
         /* Append rest of boxes */
         AppendRegions(newReg, r2BandEnd, r2End);
@@ -771,7 +821,7 @@ RegionOp(RegionPtr newReg,      /* Place to store result         */
 
     if (!(numRects = newReg->data->numRects)) {
         xfreeData(newReg);
-        newReg->data = &RegionEmptyData;
+        newReg->data = &context->RegionEmptyData;
     }
     else if (numRects == 1) {
         newReg->extents = *RegionBoxptr(newReg);
@@ -865,7 +915,7 @@ RegionSetExtents(RegionPtr pReg)
 	if (x2 < r->x2) x2 = r->x2;				\
     } else {							\
 	/* Add current rectangle, start new one */		\
-	NEWRECT(pReg, pNextRect, x1, y1, x2, y2);		\
+	NEWRECT(pReg, pNextRect, x1, y1, x2, y2, context);	\
 	x1 = r->x1;						\
 	x2 = r->x2;						\
     }								\
@@ -893,7 +943,7 @@ RegionSetExtents(RegionPtr pReg)
 RegionUnionO(RegionPtr pReg,
              BoxPtr r1,
              BoxPtr r1End,
-             BoxPtr r2, BoxPtr r2End, short y1, short y2, Bool *pOverlap)
+             BoxPtr r2, BoxPtr r2End, short y1, short y2, Bool *pOverlap, XephyrContext* context)
 {
     BoxPtr pNextRect;
     int x1;                     /* left and right side of current union */
@@ -936,7 +986,7 @@ RegionUnionO(RegionPtr pReg,
     }
 
     /* Add current rectangle */
-    NEWRECT(pReg, pNextRect, x1, y1, x2, y2);
+    NEWRECT(pReg, pNextRect, x1, y1, x2, y2, context);
 
     return TRUE;
 }
@@ -963,16 +1013,16 @@ RegionUnionO(RegionPtr pReg,
  *
  */
 Bool
-RegionAppend(RegionPtr dstrgn, RegionPtr rgn)
+RegionAppend(RegionPtr dstrgn, RegionPtr rgn, XephyrContext* context)
 {
     int numRects, dnumRects, size;
     BoxPtr new, old;
     Bool prepend;
 
-    if (RegionNar(rgn))
-        return RegionBreak(dstrgn);
+    if (RegionNar(rgn, context))
+        return RegionBreak(dstrgn, context);
 
-    if (!rgn->data && (dstrgn->data == &RegionEmptyData)) {
+    if (!rgn->data && (dstrgn->data == &context->RegionEmptyData)) {
         dstrgn->extents = rgn->extents;
         dstrgn->data = NULL;
         return TRUE;
@@ -1133,7 +1183,7 @@ QuickSortRects(BoxRec rects[], int numRects)
  */
 
 Bool
-RegionValidate(RegionPtr badreg, Bool *pOverlap)
+RegionValidate(RegionPtr badreg, Bool *pOverlap, XephyrContext* context)
 {
     /* Descriptor for regions under construction  in Step 2. */
     typedef struct {
@@ -1162,7 +1212,7 @@ RegionValidate(RegionPtr badreg, Bool *pOverlap)
     }
     numRects = badreg->data->numRects;
     if (!numRects) {
-        if (RegionNar(badreg))
+        if (RegionNar(badreg, context))
             return FALSE;
         good(badreg);
         return TRUE;
@@ -1188,7 +1238,7 @@ RegionValidate(RegionPtr badreg, Bool *pOverlap)
     /* Note that step 2 code will never overflow the ri[0].reg rects array */
     ri = (RegionInfo *) malloc(4 * sizeof(RegionInfo));
     if (!ri)
-        return RegionBreak(badreg);
+        return RegionBreak(badreg, context);
     sizeRI = 4;
     numRI = 1;
     ri[0].prevBand = 0;
@@ -1258,7 +1308,7 @@ RegionValidate(RegionPtr badreg, Bool *pOverlap)
         rit->curBand = 0;
         rit->reg.extents = *box;
         rit->reg.data = NULL;
-        if (!RegionRectAlloc(&rit->reg, (i + numRI) / numRI))   /* MUST force allocation */
+        if (!RegionRectAlloc(&rit->reg, (i + numRI) / numRI, context))   /* MUST force allocation */
             goto bail;
  NextRect:;
     }                           /* for i */
@@ -1286,7 +1336,7 @@ RegionValidate(RegionPtr badreg, Bool *pOverlap)
         for (j = numRI & 1; j < (half + (numRI & 1)); j++) {
             reg = &ri[j].reg;
             hreg = &ri[j + half].reg;
-            if (!RegionOp(reg, reg, hreg, RegionUnionO, TRUE, TRUE, pOverlap))
+            if (!RegionOp(reg, reg, hreg, RegionUnionO, TRUE, TRUE, pOverlap, context))
                 ret = FALSE;
             if (hreg->extents.x1 < reg->extents.x1)
                 reg->extents.x1 = hreg->extents.x1;
@@ -1308,11 +1358,11 @@ RegionValidate(RegionPtr badreg, Bool *pOverlap)
     for (i = 0; i < numRI; i++)
         xfreeData(&ri[i].reg);
     free(ri);
-    return RegionBreak(badreg);
+    return RegionBreak(badreg, context);
 }
 
 RegionPtr
-RegionFromRects(int nrects, xRectangle *prect, int ctype)
+RegionFromRects(int nrects, xRectangle *prect, int ctype, XephyrContext* context)
 {
 
     RegionPtr pRgn;
@@ -1322,8 +1372,8 @@ RegionFromRects(int nrects, xRectangle *prect, int ctype)
     int i;
     int x1, y1, x2, y2;
 
-    pRgn = RegionCreate(NullBox, 0);
-    if (RegionNar(pRgn))
+    pRgn = RegionCreate(NullBox, 0, context);
+    if (RegionNar(pRgn, context))
         return pRgn;
     if (!nrects)
         return pRgn;
@@ -1346,7 +1396,7 @@ RegionFromRects(int nrects, xRectangle *prect, int ctype)
     rgnSize = RegionSizeof(nrects);
     pData = (rgnSize > 0) ? malloc(rgnSize) : NULL;
     if (!pData) {
-        RegionBreak(pRgn);
+        RegionBreak(pRgn, context);
         return pRgn;
     }
     pBox = (BoxPtr) (pData + 1);
@@ -1373,7 +1423,7 @@ RegionFromRects(int nrects, xRectangle *prect, int ctype)
             Bool overlap;       /* result ignored */
 
             pRgn->extents.x1 = pRgn->extents.x2 = 0;
-            RegionValidate(pRgn, &overlap);
+            RegionValidate(pRgn, &overlap, context);
         }
         else
             RegionSetExtents(pRgn);

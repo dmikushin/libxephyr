@@ -194,7 +194,7 @@ ExaFallbackPrepareReg(DrawablePtr pDrawable,
         box.x2 = box.x1 + width;
         box.y2 = box.y1 + height;
 
-        RegionInit(&reg, &box, 1);
+        RegionInit(&reg, &box, 1, pScreen->context);
         pExaScr->prepare_access_reg(pPixmap, index, &reg);
         RegionUninit(&reg);
     }
@@ -456,7 +456,7 @@ ExaSrcValidate(DrawablePtr pDrawable,
     box.x2 = box.x1 + width;
     box.y2 = box.y1 + height;
 
-    RegionInit(&reg, &box, 1);
+    RegionInit(&reg, &box, 1, pScreen->context);
     RegionUnion(dst, dst, &reg);
     RegionUninit(&reg);
 
@@ -488,11 +488,11 @@ ExaPrepareCompositeReg(ScreenPtr pScreen,
     ExaScreenPriv(pScreen);
     Bool ret;
 
-    RegionNull(&region);
+    RegionNull(&region, pScreen->context);
 
     if (pSrc->pDrawable) {
         pSrcPix = exaGetDrawablePixmap(pSrc->pDrawable);
-        RegionNull(&pExaScr->srcReg);
+        RegionNull(&pExaScr->srcReg, pScreen->context);
         srcReg = &pExaScr->srcReg;
         pExaScr->srcPix = pSrcPix;
         if (pSrc != pDst)
@@ -503,7 +503,7 @@ ExaPrepareCompositeReg(ScreenPtr pScreen,
 
     if (pMask && pMask->pDrawable) {
         pMaskPix = exaGetDrawablePixmap(pMask->pDrawable);
-        RegionNull(&pExaScr->maskReg);
+        RegionNull(&pExaScr->maskReg, pScreen->context);
         maskReg = &pExaScr->maskReg;
         pExaScr->maskPix = pMaskPix;
         if (pMask != pDst && pMask != pSrc)

@@ -88,12 +88,12 @@ present_vblank_init(present_vblank_ptr vblank,
     vblank->serial = serial;
 
     if (valid) {
-        vblank->valid = RegionDuplicate(valid);
+        vblank->valid = RegionDuplicate(valid, screen->context);
         if (!vblank->valid)
             goto no_mem;
     }
     if (update) {
-        vblank->update = RegionDuplicate(update);
+        vblank->update = RegionDuplicate(update, screen->context);
         if (!vblank->update)
             goto no_mem;
     }
@@ -217,9 +217,9 @@ present_vblank_destroy(present_vblank_ptr vblank)
 
     /* Free regions */
     if (vblank->valid)
-        RegionDestroy(vblank->valid);
+        RegionDestroy(vblank->valid, vblank->screen->context);
     if (vblank->update)
-        RegionDestroy(vblank->update);
+        RegionDestroy(vblank->update, vblank->screen->context);
 
     if (vblank->wait_fence)
         present_fence_destroy(vblank->wait_fence);

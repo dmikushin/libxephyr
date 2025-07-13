@@ -29,15 +29,14 @@
 
 #include <X11/Xatom.h>
 
-RESTYPE RRProviderType = 0;
 
 /*
  * Initialize provider type error value
  */
 void
-RRProviderInitErrorValue(void)
+RRProviderInitErrorValue(XephyrContext* context)
 {
-    SetResourceTypeErrorValue(RRProviderType, RRErrorBase + BadRRProvider);
+    SetResourceTypeErrorValue(context->RRProviderType, context->RRErrorBase + BadRRProvider);
 }
 
 #define ADD_PROVIDER(_pScreen) do {                                 \
@@ -410,7 +409,7 @@ RRProviderCreate(ScreenPtr pScreen, const char *name,
     provider->name[nameLength] = '\0';
     provider->changed = FALSE;
 
-    if (!AddResource (provider->id, RRProviderType, (void *) provider, pScreen->context))
+    if (!AddResource (provider->id, pScreen->context->RRProviderType, (void *) provider, pScreen->context))
         return NULL;
     pScrPriv->provider = provider;
     return provider;
@@ -451,20 +450,20 @@ RRProviderDestroyResource (void *value, XID pid, XephyrContext* context)
 }
 
 Bool
-RRProviderInit(void)
+RRProviderInit(XephyrContext* context)
 {
-    RRProviderType = CreateNewResourceType(RRProviderDestroyResource, "Provider");
-    if (!RRProviderType)
+    context->RRProviderType = CreateNewResourceType(RRProviderDestroyResource, "Provider");
+    if (!context->RRProviderType)
         return FALSE;
 
     return TRUE;
 }
 
 extern _X_EXPORT Bool
-RRProviderLookup(XID id, RRProviderPtr *provider_p)
+RRProviderLookup(XID id, RRProviderPtr *provider_p, XephyrContext* context)
 {
     int rc = dixLookupResourceByType((void **)provider_p, id,
-                                   RRProviderType, NullClient, DixReadAccess);
+                                   context->RRProviderType, NullClient, DixReadAccess);
     if (rc == Success)
         return TRUE;
     return FALSE;
@@ -478,7 +477,7 @@ RRDeliverProviderEvent(ClientPtr client, WindowPtr pWin, RRProviderPtr provider)
     rrScrPriv(pScreen);
 
     xRRProviderChangeNotifyEvent pe = {
-        .type = RRNotify + RREventBase,
+        .type = RRNotify + pScreen->context->RREventBase,
         .subCode = RRNotify_ProviderChange,
         .timestamp = pScrPriv->lastSetTime.milliseconds,
         .window = pWin->drawable.id,

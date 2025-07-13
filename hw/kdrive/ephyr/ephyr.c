@@ -1257,7 +1257,7 @@ ephyrPutColors(ScreenPtr pScreen, int n, xColorItem * pdefs)
         box.y1 = 0;
         box.x2 = pScreen->width;
         box.y2 = pScreen->height;
-        RegionInit(&region, &box, 1);
+        RegionInit(&region, &box, 1, pScreen->context);
         DamageReportDamage(scrpriv->pDamage, &region);
         RegionUninit(&region);
     }

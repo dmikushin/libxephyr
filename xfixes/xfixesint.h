@@ -311,9 +311,13 @@ Bool
 
 /* Xinerama */
 #ifdef PANORAMIX
+#ifndef XFixesNumberRequests
+#define XFixesNumberRequests 35
+#endif
+typedef struct _XephyrContext XephyrContext;
 extern int (*PanoramiXSaveXFixesVector[XFixesNumberRequests]) (ClientPtr);
-void PanoramiXFixesInit(void);
-void PanoramiXFixesReset(void);
+void PanoramiXFixesInit(XephyrContext* context);
+void PanoramiXFixesReset(XephyrContext* context);
 #endif
 
 #endif                          /* _XFIXESINT_H_ */

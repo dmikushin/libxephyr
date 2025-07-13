@@ -15,7 +15,7 @@
 
 
 #ifdef PANORAMIX
-extern _X_EXPORT Bool PanoramiXExtensionDisabledHack;
+/* REMOVED: extern _X_EXPORT Bool PanoramiXExtensionDisabledHack; - moved to XephyrContext */
 #endif
 
 #ifdef XSELINUX

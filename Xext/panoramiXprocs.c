@@ -1188,7 +1188,7 @@ PanoramiXCopyArea(ClientPtr client)
             sourceBox.x2 = max(sourceBox.x1 + width, 32767);
             sourceBox.y2 = max(sourceBox.y1 + height, 32767);
 
-            RegionInit(&rgn, &sourceBox, 1);
+            RegionInit(&rgn, &sourceBox, 1, client->context);
 
             /* subtract the (screen-space) clips of the source drawables */
             FOR_NSCREENS(j) {
@@ -1209,7 +1209,7 @@ PanoramiXCopyArea(ClientPtr client)
                     RegionTranslate(&rgn, screen->x, screen->y);
 
                 if (pGC->subWindowMode == IncludeInferiors)
-                    RegionDestroy(sd);
+                    RegionDestroy(sd, client->context);
             }
 
             /* -dx/-dy to get back to dest-relative, plus request offsets */
@@ -1229,7 +1229,7 @@ PanoramiXCopyArea(ClientPtr client)
         RegionRec totalReg;
         int rc;
 
-        RegionNull(&totalReg);
+        RegionNull(&totalReg, context);
         FOR_NSCREENS_BACKWARD(j) {
             RegionPtr pRgn;
 
@@ -1272,8 +1272,8 @@ PanoramiXCopyArea(ClientPtr client)
                                     context->screenInfo.screens[j]->x,
                                     context->screenInfo.screens[j]->y);
                 }
-                RegionAppend(&totalReg, pRgn);
-                RegionDestroy(pRgn);
+                RegionAppend(&totalReg, pRgn, context);
+                RegionDestroy(pRgn, context);
             }
 
             if (dstShared)
@@ -1283,7 +1283,7 @@ PanoramiXCopyArea(ClientPtr client)
         if (pGC->graphicsExposures) {
             Bool overlap;
 
-            RegionValidate(&totalReg, &overlap);
+            RegionValidate(&totalReg, &overlap, context);
             SendGraphicsExpose(client, &totalReg, stuff->dstDrawable,
                                X_CopyArea, 0);
             RegionUninit(&totalReg);
@@ -1343,7 +1343,7 @@ PanoramiXCopyPlane(ClientPtr client)
     dstx = stuff->dstX;
     dsty = stuff->dstY;
 
-    RegionNull(&totalReg);
+    RegionNull(&totalReg, client->context);
     FOR_NSCREENS_BACKWARD(j) {
         RegionPtr pRgn;
 
@@ -1386,8 +1386,8 @@ PanoramiXCopyPlane(ClientPtr client)
                                        stuff->dstX, stuff->dstY,
                                        stuff->bitPlane);
         if (pGC->graphicsExposures && pRgn) {
-            RegionAppend(&totalReg, pRgn);
-            RegionDestroy(pRgn);
+            RegionAppend(&totalReg, pRgn, context);
+            RegionDestroy(pRgn, context);
         }
 
         if (dstShared)
@@ -1397,7 +1397,7 @@ PanoramiXCopyPlane(ClientPtr client)
     if (pGC->graphicsExposures) {
         Bool overlap;
 
-        RegionValidate(&totalReg, &overlap);
+        RegionValidate(&totalReg, &overlap, context);
         SendGraphicsExpose(client, &totalReg, stuff->dstDrawable,
                            X_CopyPlane, 0);
         RegionUninit(&totalReg);

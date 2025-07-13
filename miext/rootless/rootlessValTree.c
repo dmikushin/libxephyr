@@ -224,13 +224,13 @@ RootlessComputeClips(WindowPtr pParent, ScreenPtr pScreen,
 
                     }
                     if (pChild->valdata) {
-                        RegionNull(&pChild->valdata->after.borderExposed);
+                        RegionNull(&pChild->valdata->after.borderExposed, pScreen->context);
                         if (HasParentRelativeBorder(pChild)) {
                             RegionSubtract(&pChild->valdata->after.
                                            borderExposed, &pChild->borderClip,
                                            &pChild->winSize);
                         }
-                        RegionNull(&pChild->valdata->after.exposed);
+                        RegionNull(&pChild->valdata->after.exposed, pScreen->context);
                     }
                     if (pChild->firstChild) {
                         pChild = pChild->firstChild;
@@ -262,14 +262,14 @@ RootlessComputeClips(WindowPtr pParent, ScreenPtr pScreen,
         }
         break;
     case VTBroken:
-        RegionEmpty(&pParent->borderClip);
-        RegionEmpty(&pParent->clipList);
+        RegionEmpty(&pParent->borderClip, pScreen->context);
+        RegionEmpty(&pParent->clipList, pScreen->context);
         break;
     }
 
     borderVisible = pParent->valdata->before.borderVisible;
-    RegionNull(&pParent->valdata->after.borderExposed);
-    RegionNull(&pParent->valdata->after.exposed);
+    RegionNull(&pParent->valdata->after.borderExposed, pScreen->context);
+    RegionNull(&pParent->valdata->after.exposed, pScreen->context);
 
     /*
      * Since the borderClip must not be clipped by the children, we do
@@ -288,7 +288,7 @@ RootlessComputeClips(WindowPtr pParent, ScreenPtr pScreen,
              * use that region and destroy it
              */
             RegionSubtract(exposed, universe, borderVisible);
-            RegionDestroy(borderVisible);
+            RegionDestroy(borderVisible, pScreen->context);
         }
         else {
             RegionSubtract(exposed, universe, &pParent->borderClip);
@@ -316,8 +316,8 @@ RootlessComputeClips(WindowPtr pParent, ScreenPtr pScreen,
         RegionCopy(&pParent->borderClip, universe);
 
     if ((pChild = pParent->firstChild) && pParent->mapped) {
-        RegionNull(&childUniverse);
-        RegionNull(&childUnion);
+        RegionNull(&childUniverse, pScreen->context);
+        RegionNull(&childUnion, pScreen->context);
         if ((pChild->drawable.y < pParent->lastChild->drawable.y) ||
             ((pChild->drawable.y == pParent->lastChild->drawable.y) &&
              (pChild->drawable.x < pParent->lastChild->drawable.x))) {
@@ -482,13 +482,13 @@ RootlessMiValidateTree(WindowPtr pRoot, /* Parent to validate */
     if (pChild == NullWindow)
         pChild = pRoot->firstChild;
 
-    RegionNull(&childClip);
-    RegionNull(&exposed);
+    RegionNull(&childClip, pScreen->context);
+    RegionNull(&exposed, pScreen->context);
 
-    if (RegionBroken(&pRoot->clipList) && !RegionBroken(&pRoot->borderClip)) {
+    if (RegionBroken(&pRoot->clipList, pScreen->context) && !RegionBroken(&pRoot->borderClip, pScreen->context), pScreen->context) {
         // fixme this might not work, but hopefully doesn't happen anyway.
         kind = VTBroken;
-        RegionNull(&pRoot->clipList);
+        RegionNull(&pRoot->clipList, pScreen->context);
         ErrorF("ValidateTree: BUSTED!\n", context);
     }
 
@@ -510,10 +510,10 @@ RootlessMiValidateTree(WindowPtr pRoot, /* Parent to validate */
         }
         else {
             if (pWin->valdata) {
-                RegionEmpty(&pWin->clipList);
+                RegionEmpty(&pWin->clipList, pScreen->context);
                 if (pScreen->ClipNotify)
                     (*pScreen->ClipNotify) (pWin, 0, 0);
-                RegionEmpty(&pWin->borderClip);
+                RegionEmpty(&pWin->borderClip, pScreen->context);
                 pWin->valdata = NULL;
             }
         }
@@ -523,8 +523,8 @@ RootlessMiValidateTree(WindowPtr pRoot, /* Parent to validate */
 
     /* The root is never clipped by its children, so nothing on the root
        is ever exposed by moving or mapping its children. */
-    RegionNull(&pRoot->valdata->after.exposed);
-    RegionNull(&pRoot->valdata->after.borderExposed);
+    RegionNull(&pRoot->valdata->after.exposed, pScreen->context);
+    RegionNull(&pRoot->valdata->after.borderExposed, pScreen->context);
 
     return 1;
 }

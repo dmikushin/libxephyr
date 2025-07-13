@@ -335,7 +335,7 @@ RootlessDamageRegion(WindowPtr pWindow, RegionPtr pRegion)
 
         /* clip overlaps pRegion, need to intersect */
 
-        RegionNull(&clipped);
+        RegionNull(&clipped, client->context);
         RegionIntersect(&clipped, &pWindow->borderClip, pRegion);
 
         SCREENREC(pWindow->drawable.pScreen)->imp->DamageRects(winRec->wid,
@@ -376,7 +376,7 @@ RootlessDamageBox(WindowPtr pWindow, BoxPtr pBox)
 {
     RegionRec region;
 
-    RegionInit(&region, pBox, 1);
+    RegionInit(&region, pBox, 1, client->context);
 
     RootlessDamageRegion(pWindow, &region);
 
@@ -402,7 +402,7 @@ RootlessDamageRect(WindowPtr pWindow, int x, int y, int w, int h)
     box.y1 = y;
     box.y2 = y + h;
 
-    RegionInit(&region, &box, 1);
+    RegionInit(&region, &box, 1, pScreen->context);
 
     RootlessDamageRegion(pWindow, &region);
 

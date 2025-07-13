@@ -34,7 +34,8 @@ __glamor_compute_clipped_regions(int block_w,
                                  int x, int y,
                                  int w, int h,
                                  RegionPtr region,
-                                 int *n_region, int reverse, int upsidedown)
+                                 int *n_region, int reverse, int upsidedown,
+                                 XephyrContext* context)
 {
     glamor_pixmap_clipped_regions *clipped_regions;
     BoxPtr extent;
@@ -123,7 +124,7 @@ __glamor_compute_clipped_regions(int block_w,
             RegionInitBoxes(&temp_region, &temp_box, 1);
             DEBUGF("block idx %d \n", temp_block_idx);
             DEBUGRegionPrint(&temp_region);
-            current_region = RegionCreate(NULL, 4);
+            current_region = RegionCreate(NULL, 4, context);
             RegionIntersect(current_region, &temp_region, region);
             DEBUGF("i %d j %d  region: \n", i, j);
             DEBUGRegionPrint(current_region);
@@ -133,7 +134,7 @@ __glamor_compute_clipped_regions(int block_w,
                 k++;
             }
             else
-                RegionDestroy(current_region);
+                RegionDestroy(current_region, context);
             RegionUninit(&temp_region);
         }
     }
@@ -179,7 +180,7 @@ glamor_compute_clipped_regions_ext(PixmapPtr pixmap,
             *n_region = 0;
             return NULL;
         }
-        clipped_regions[0].region = RegionCreate(NULL, 1);
+        clipped_regions[0].region = RegionCreate(NULL, 1, pixmap->drawable.pScreen->context);
         clipped_regions[0].block_idx = 0;
         RegionCopy(clipped_regions[0].region, region);
         *n_region = 1;
@@ -200,7 +201,8 @@ glamor_compute_clipped_regions_ext(PixmapPtr pixmap,
                                                            pixmap->drawable.width,
                                                            pixmap->drawable.height,
                                                            region, n_region,
-                                                           reverse, upsidedown);
+                                                           reverse, upsidedown,
+                                                           pixmap->drawable.pScreen->context);
 
         if (clipped_regions == NULL) {
             *n_region = 0;
@@ -231,7 +233,8 @@ glamor_compute_clipped_regions_ext(PixmapPtr pixmap,
                                                          clipped_regions[i].
                                                          region,
                                                          &inner_n_regions,
-                                                         reverse, upsidedown);
+                                                         reverse, upsidedown,
+                                                         pixmap->drawable.pScreen->context);
         for (j = 0; j < inner_n_regions; j++) {
             result_regions[k].region = inner_regions[j].region;
             result_regions[k].block_idx = clipped_regions[i].block_idx;
@@ -251,7 +254,7 @@ glamor_compute_clipped_regions_ext(PixmapPtr pixmap,
  * Then apply a normal clip we can get what we want.
  */
 static RegionPtr
-_glamor_convert_pad_region(RegionPtr region, int w, int h)
+_glamor_convert_pad_region(RegionPtr region, int w, int h, XephyrContext* context)
 {
     RegionPtr pad_region;
     int nrect;
@@ -260,7 +263,7 @@ _glamor_convert_pad_region(RegionPtr region, int w, int h)
 
     nrect = RegionNumRects(region);
     box = RegionRects(region);
-    pad_region = RegionCreate(NULL, 4);
+    pad_region = RegionCreate(NULL, 4, context);
     if (pad_region == NULL)
         return NULL;
     while (nrect--) {
@@ -277,11 +280,11 @@ _glamor_convert_pad_region(RegionPtr region, int w, int h)
         else if (pad_box.y1 >= h && pad_box.y2 > h)
             pad_box.y1 = h - 1;
         RegionInitBoxes(&temp_region, &pad_box, 1);
-        RegionAppend(pad_region, &temp_region);
+        RegionAppend(pad_region, &temp_region, context);
         RegionUninit(&temp_region);
         box++;
     }
-    RegionValidate(pad_region, &overlap);
+    RegionValidate(pad_region, &overlap, context);
     return pad_region;
 }
 
@@ -363,7 +366,7 @@ _glamor_compute_clipped_regions(PixmapPtr pixmap,
     DEBUGRegionPrint(region);
     if (glamor_pixmap_priv_is_small(pixmap_priv)) {
         clipped_regions = calloc(1, sizeof(*clipped_regions));
-        clipped_regions[0].region = RegionCreate(NULL, 1);
+        clipped_regions[0].region = RegionCreate(NULL, 1, pixmap->drawable.pScreen->context);
         clipped_regions[0].block_idx = 0;
         RegionCopy(clipped_regions[0].region, region);
         *n_region = 1;
@@ -381,7 +384,7 @@ _glamor_compute_clipped_regions(PixmapPtr pixmap,
             saved_region = region;
             region =
                 _glamor_convert_pad_region(saved_region, pixmap_width,
-                                           pixmap_height);
+                                           pixmap_height, pixmap->drawable.pScreen->context);
             if (region == NULL) {
                 *n_region = 0;
                 return NULL;
@@ -394,9 +397,10 @@ _glamor_compute_clipped_regions(PixmapPtr pixmap,
                                                            pixmap->drawable.width,
                                                            pixmap->drawable.height,
                                                            region, n_region,
-                                                           reverse, upsidedown);
+                                                           reverse, upsidedown,
+                                                           pixmap->drawable.pScreen->context);
         if (saved_region)
-            RegionDestroy(region);
+            RegionDestroy(region, pixmap->drawable.pScreen->context);
         return clipped_regions;
     }
     extent = RegionExtents(region);
@@ -499,8 +503,8 @@ _glamor_compute_clipped_regions(PixmapPtr pixmap,
             else
                 repeat_box.y2 = shift_y + priv->box_array[idx].y2;
 
-            current_region = RegionCreate(NULL, 4);
-            RegionInit(&temp_region, NULL, 4);
+            current_region = RegionCreate(NULL, 4, pixmap->drawable.pScreen->context);
+            RegionInit(&temp_region, NULL, 4, pixmap->drawable.pScreen->context);
             DEBUGF("init repeat box %d %d %d %d \n",
                    repeat_box.x1, repeat_box.y1, repeat_box.x2, repeat_box.y2);
 
@@ -521,7 +525,7 @@ _glamor_compute_clipped_regions(PixmapPtr pixmap,
                         RegionIntersect(&temp_region, &repeat_region, region);
                         DEBUGF("clip result:\n");
                         DEBUGRegionPrint(&temp_region);
-                        RegionAppend(current_region, &temp_region);
+                        RegionAppend(current_region, &temp_region, pixmap->drawable.pScreen->context);
                         RegionUninit(&repeat_region);
                     }
                 }
@@ -640,7 +644,7 @@ _glamor_compute_clipped_regions(PixmapPtr pixmap,
                             DEBUGF("for transform result:\n");
                             DEBUGRegionPrint(&temp_region);
                         }
-                        RegionAppend(current_region, &temp_region);
+                        RegionAppend(current_region, &temp_region, pixmap->drawable.pScreen->context);
                         RegionUninit(&repeat_region);
                         y_idx++;
                     }
@@ -660,7 +664,7 @@ _glamor_compute_clipped_regions(PixmapPtr pixmap,
                 m++;
             }
             else
-                RegionDestroy(current_region);
+                RegionDestroy(current_region, pixmap->drawable.pScreen->context);
             RegionUninit(&temp_region);
         }
     }
@@ -701,7 +705,7 @@ glamor_compute_transform_clipped_regions(PixmapPtr pixmap,
     RegionPtr temp_region;
     glamor_pixmap_clipped_regions *ret;
 
-    temp_region = RegionCreate(NULL, 4);
+    temp_region = RegionCreate(NULL, 4, pixmap->drawable.pScreen->context);
     temp_extent = RegionExtents(region);
     DEBUGF("dest region \n");
     DEBUGRegionPrint(region);
@@ -738,7 +742,7 @@ glamor_compute_transform_clipped_regions(PixmapPtr pixmap,
                                           n_region,
                                           repeat_type, 1, reverse, upsidedown);
     DEBUGF("n_regions = %d \n", *n_region);
-    RegionDestroy(temp_region);
+    RegionDestroy(temp_region, pixmap->drawable.pScreen->context);
 
     return ret;
 }
@@ -774,14 +778,14 @@ glamor_merge_clipped_regions(PixmapPtr pixmap,
     pixmap_width = pixmap->drawable.width;
     pixmap_height =pixmap->drawable.height;
 
-    temp_region = RegionCreate(NULL, 4);
+    temp_region = RegionCreate(NULL, 4, pixmap->drawable.pScreen->context);
     for (i = 0; i < *n_regions; i++) {
         DEBUGF("Region %d:\n", i);
         DEBUGRegionPrint(clipped_regions[i].region);
-        RegionAppend(temp_region, clipped_regions[i].region);
+        RegionAppend(temp_region, clipped_regions[i].region, pixmap->drawable.pScreen->context);
     }
 
-    RegionValidate(temp_region, &overlap);
+    RegionValidate(temp_region, &overlap, pixmap->drawable.pScreen->context);
     DEBUGF("temp region: \n");
     DEBUGRegionPrint(temp_region);
 
@@ -859,8 +863,8 @@ glamor_merge_clipped_regions(PixmapPtr pixmap,
     }
     /* The first region will be released at caller side. */
     for (i = 1; i < *n_regions; i++)
-        RegionDestroy(clipped_regions[i].region);
-    RegionDestroy(temp_region);
+        RegionDestroy(clipped_regions[i].region, pixmap->drawable.pScreen->context);
+    RegionDestroy(temp_region, pixmap->drawable.pScreen->context);
     priv->box = temp_box;
     priv->fbo = glamor_pixmap_detach_fbo(temp_priv);
     DEBUGF("priv box x1 %d y1 %d x2 %d y2 %d \n",
@@ -1341,7 +1345,7 @@ glamor_composite_largepixmap_region(CARD8 op,
                                             dest->pDrawable->y);
                             COMPOSITE_REGION(clipped_source_regions[j].region);
                         }
-                        RegionDestroy(clipped_mask_regions[k].region);
+                        RegionDestroy(clipped_mask_regions[k].region, dest->pDrawable->pScreen->context);
                     }
                     free(clipped_mask_regions);
                     if (null_mask)
@@ -1370,7 +1374,7 @@ glamor_composite_largepixmap_region(CARD8 op,
                     }
                 }
                 if (clipped_source_regions && clipped_source_regions[j].region)
-                    RegionDestroy(clipped_source_regions[j].region);
+                    RegionDestroy(clipped_source_regions[j].region, dest->pDrawable->pScreen->context);
             }
             free(clipped_source_regions);
             if (null_source)
@@ -1433,7 +1437,7 @@ glamor_composite_largepixmap_region(CARD8 op,
                                         dest->pDrawable->x, dest->pDrawable->y);
                         COMPOSITE_REGION(clipped_dest_regions[i].region);
                     }
-                    RegionDestroy(clipped_mask_regions[k].region);
+                    RegionDestroy(clipped_mask_regions[k].region, dest_pixmap->drawable.pScreen->context);
                 }
                 free(clipped_mask_regions);
                 if (null_mask)
@@ -1450,7 +1454,7 @@ glamor_composite_largepixmap_region(CARD8 op,
                 COMPOSITE_REGION(clipped_dest_regions[i].region);
             }
         }
-        RegionDestroy(clipped_dest_regions[i].region);
+        RegionDestroy(clipped_dest_regions[i].region, dest_pixmap->drawable.pScreen->context);
     }
     free(clipped_dest_regions);
     free(need_free_source_pixmap_priv);

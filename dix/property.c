@@ -106,7 +106,6 @@ dixLookupProperty(PropertyPtr *result, WindowPtr pWin, Atom propertyName,
     return rc;
 }
 
-CallbackListPtr PropertyStateCallback;
 
 static void
 deliverPropertyNotifyEvent(WindowPtr pWin, int state, PropertyPtr pProp)
@@ -126,7 +125,7 @@ deliverPropertyNotifyEvent(WindowPtr pWin, int state, PropertyPtr pProp)
     };
     event.u.u.type = PropertyNotify;
 
-    CallCallbacks(&PropertyStateCallback, &rec);
+    CallCallbacks(&pWin->drawable.pScreen->context->PropertyStateCallback, &rec);
     DeliverEvents(pWin, &event, 1, (WindowPtr) NULL);
 }
 

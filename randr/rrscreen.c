@@ -97,7 +97,7 @@ RRDeliverScreenEvent(ClientPtr client, WindowPtr pWin, ScreenPtr pScreen)
     WindowPtr pRoot = pScreen->root;
 
     xRRScreenChangeNotifyEvent se = {
-        .type = RRScreenChangeNotify + RREventBase,
+        .type = RRScreenChangeNotify + pScreen->context->RREventBase,
         .rotation = (CARD8) (crtc ? crtc->rotation : RR_Rotate_0),
         .timestamp = pScrPriv->lastSetTime.milliseconds,
         .configTimestamp = pScrPriv->lastConfigTime.milliseconds,

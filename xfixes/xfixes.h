@@ -49,7 +49,7 @@ extern int XFixesErrorBase;
 }
 
 extern RegionPtr
- XFixesRegionCopy(RegionPtr pRegion);
+ XFixesRegionCopy(RegionPtr pRegion, XephyrContext* context);
 
 #include "xibarriers.h"
 

@@ -778,7 +778,7 @@ glamor_copy_window(WindowPtr window, DDXPointRec old_origin, RegionPtr src_regio
     dy = old_origin.y - window->drawable.y;
     RegionTranslate(src_region, -dx, -dy);
 
-    RegionNull(&dst_region);
+    RegionNull(&dst_region, window->drawable.pScreen->context);
 
     RegionIntersect(&dst_region, &window->borderClip, src_region);
 

@@ -266,7 +266,7 @@ miDoCopy(DrawablePtr pSrcDrawable,
 
     /* Check to see if the region is empty */
     if (box_x1 >= box_x2 || box_y1 >= box_y2) {
-        RegionNull(&rgnDst);
+        RegionNull(&rgnDst, pDstDrawable->pScreen->context);
     }
     else {
         BoxRec box;
@@ -275,7 +275,7 @@ miDoCopy(DrawablePtr pSrcDrawable,
         box.y1 = box_y1;
         box.x2 = box_x2;
         box.y2 = box_y2;
-        RegionInit(&rgnDst, &box, 1);
+        RegionInit(&rgnDst, &box, 1, pDstDrawable->pScreen->context);
     }
 
     /* Clip against complex source if needed */
@@ -305,6 +305,6 @@ miDoCopy(DrawablePtr pSrcDrawable,
                                         yOut - pDstDrawable->y);
     RegionUninit(&rgnDst);
     if (freeSrcClip)
-        RegionDestroy(prgnSrcClip);
+        RegionDestroy(prgnSrcClip, pDstDrawable->pScreen->context);
     return prgnExposed;
 }

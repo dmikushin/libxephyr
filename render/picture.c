@@ -49,9 +49,6 @@
 DevPrivateKeyRec PictureScreenPrivateKeyRec;
 DevPrivateKeyRec PictureWindowPrivateKeyRec;
 static int PictureGeneration;
-RESTYPE PictureType;
-RESTYPE PictFormatType;
-int PictureCmapPolicy = PictureCmapPolicyDefault;
 
 PictFormatPtr
 PictureWindowFormat(WindowPtr pWindow)
@@ -72,7 +69,7 @@ PictureDestroyWindow(WindowPtr pWindow)
     while ((pPicture = GetPictureWindow(pWindow))) {
         SetPictureWindow(pWindow, pPicture->pNext);
         if (pPicture->id)
-            FreeResource(pPicture->id, PictureType, pScreen->context);
+            FreeResource(pPicture->id, pScreen->context->PictureType, pScreen->context);
         FreePicture((void *) pPicture, pPicture->id, pScreen->context);
     }
     pScreen->DestroyWindow = ps->DestroyWindow;
@@ -619,12 +616,12 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
     CARD32 type, a, r, g, b;
 
     if (PictureGeneration != pScreen->context->serverGeneration) {
-        PictureType = CreateNewResourceType(FreePicture, "PICTURE");
-        if (!PictureType)
+        pScreen->context->PictureType = CreateNewResourceType(FreePicture, "PICTURE");
+        if (!pScreen->context->PictureType)
             return FALSE;
-        SetResourceTypeSizeFunc(PictureType, GetPictureBytes);
-        PictFormatType = CreateNewResourceType(FreePictFormat, "PICTFORMAT");
-        if (!PictFormatType)
+        SetResourceTypeSizeFunc(pScreen->context->PictureType, GetPictureBytes);
+        pScreen->context->PictFormatType = CreateNewResourceType(FreePictFormat, "PICTFORMAT");
+        if (!pScreen->context->PictFormatType)
             return FALSE;
         pScreen->context->GlyphSetType = CreateNewResourceType(FreeGlyphSet, "GLYPHSET");
         if (!pScreen->context->GlyphSetType)
@@ -644,7 +641,7 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
     }
     for (n = 0; n < nformats; n++) {
         if (!AddResource
-            (formats[n].id, PictFormatType, (void *) (formats + n), pScreen->context)) {
+            (formats[n].id, pScreen->context->PictFormatType, (void *) (formats + n), pScreen->context)) {
             int i;
             for (i = 0; i < n; i++)
                 FreeResource(formats[i].id, RT_NONE, pScreen->context);
@@ -767,7 +764,7 @@ CreatePicture(Picture pid,
     pPicture->format = pFormat->format | (pDrawable->bitsPerPixel << 24);
 
     /* security creation/labeling check */
-    *error = XaceHook(XACE_RESOURCE_ACCESS, client, pid, PictureType, pPicture,
+    *error = XaceHook(XACE_RESOURCE_ACCESS, client, pid, pDrawable->pScreen->context->PictureType, pPicture,
                       RT_PIXMAP, pDrawable, DixCreateAccess | DixSetAttrAccess);
     if (*error != Success)
         goto out;
@@ -1019,7 +1016,7 @@ cpAlphaMap(void **result, XID id, ScreenPtr screen, ClientPtr client, Mask mode)
         id = res->info[screen->myNum].id;
     }
 #endif
-    return dixLookupResourceByType(result, id, PictureType, client, mode);
+    return dixLookupResourceByType(result, id, screen->context->PictureType, client, mode);
 }
 
 static int
@@ -1264,7 +1261,7 @@ SetPictureClipRects(PicturePtr pPicture,
     RegionPtr clientClip;
     int result;
 
-    clientClip = RegionFromRects(nRect, rects, CT_UNSORTED);
+    clientClip = RegionFromRects(nRect, rects, CT_UNSORTED, pScreen->context);
     if (!clientClip)
         return BadAlloc;
     result = (*ps->ChangePictureClip) (pPicture, CT_REGION,
@@ -1291,11 +1288,11 @@ SetPictureClipRegion(PicturePtr pPicture,
     if (pRegion) {
         type = CT_REGION;
         clientClip = RegionCreate(RegionExtents(pRegion),
-                                  RegionNumRects(pRegion));
+                                  RegionNumRects(pRegion), pScreen->context);
         if (!clientClip)
             return BadAlloc;
         if (!RegionCopy(clientClip, pRegion)) {
-            RegionDestroy(clientClip);
+            RegionDestroy(clientClip, pScreen->context);
             return BadAlloc;
         }
     }

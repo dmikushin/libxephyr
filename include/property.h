@@ -57,7 +57,6 @@ typedef struct _PropertyStateRec {
     int state;
 } PropertyStateRec;
 
-extern CallbackListPtr PropertyStateCallback;
 
 extern _X_EXPORT int dixLookupProperty(PropertyPtr * /*result */ ,
                                        WindowPtr /*pWin */ ,

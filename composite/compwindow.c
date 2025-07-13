@@ -111,7 +111,7 @@ compRepaintBorder(ClientPtr pClient, void *closure)
     if (rc == Success) {
         RegionRec exposed;
 
-        RegionNull(&exposed);
+        RegionNull(&exposed, pWindow->drawable.pScreen->context);
         RegionSubtract(&exposed, &pWindow->borderClip, &pWindow->winSize);
         pWindow->drawable.pScreen->PaintWindow(pWindow, &exposed, PW_BORDER);
         RegionUninit(&exposed);
@@ -512,7 +512,7 @@ compCopyWindow(WindowPtr pWin, DDXPointRec ptOldOrg, RegionPtr prgnSrc)
             dy = ptOldOrg.y - pWin->drawable.y;
             RegionTranslate(prgnSrc, -dx, -dy);
 
-            RegionNull(&rgnDst);
+            RegionNull(&rgnDst, pScreen->context);
 
             RegionIntersect(&rgnDst, &pWin->borderClip, prgnSrc);
 
@@ -632,7 +632,7 @@ compSetRedirectBorderClip(WindowPtr pWin, RegionPtr pRegion)
     CompWindowPtr cw = GetCompWindow(pWin);
     RegionRec damage;
 
-    RegionNull(&damage);
+    RegionNull(&damage, pWin->drawable.pScreen->context);
     /*
      * Align old border clip with new border clip
      */

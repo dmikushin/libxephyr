@@ -76,7 +76,7 @@ extern VisualPtr glxMatchVisual(ScreenPtr pScreen,
 /* REMOVED: int context->PanoramiXPixHeight = 0; - moved to XephyrContext */
 /* REMOVED: int context->PanoramiXNumScreens = 0; - moved to XephyrContext */
 
-_X_EXPORT RegionRec PanoramiXScreenRegion = { {0, 0, 0, 0}, NULL };
+/* REMOVED: RegionRec context->PanoramiXScreenRegion - moved to XephyrContext */
 
 static int PanoramiXNumDepths;
 static DepthPtr PanoramiXDepths;
@@ -160,7 +160,7 @@ XineramaCloseScreen(ScreenPtr pScreen)
     pScreen->CreateGC = pScreenPriv->CreateGC;
 
     if (pScreen->myNum == 0)
-        RegionUninit(&PanoramiXScreenRegion);
+        RegionUninit(&pScreen->context->PanoramiXScreenRegion);
 
     free(pScreenPriv);
 
@@ -385,7 +385,7 @@ XineramaInitData(XephyrContext* context)
 {
     int i, w, h;
 
-    RegionNull(&PanoramiXScreenRegion);
+    RegionNull(&context->PanoramiXScreenRegion, context);
     FOR_NSCREENS(i) {
         BoxRec TheBox;
         RegionRec ScreenRegion;
@@ -397,8 +397,8 @@ XineramaInitData(XephyrContext* context)
         TheBox.y1 = pScreen->y;
         TheBox.y2 = TheBox.y1 + pScreen->height;
 
-        RegionInit(&ScreenRegion, &TheBox, 1);
-        RegionUnion(&PanoramiXScreenRegion, &PanoramiXScreenRegion,
+        RegionInit(&ScreenRegion, &TheBox, 1, context);
+        RegionUnion(&context->PanoramiXScreenRegion, &context->PanoramiXScreenRegion,
                     &ScreenRegion);
         RegionUninit(&ScreenRegion);
     }
@@ -423,7 +423,7 @@ XineramaInitData(XephyrContext* context)
 void
 XineramaReinitData(XephyrContext* context)
 {
-    RegionUninit(&PanoramiXScreenRegion);
+    RegionUninit(&context->PanoramiXScreenRegion);
     XineramaInitData(context);
 }
 
@@ -584,11 +584,11 @@ PanoramiXExtensionInit(XephyrContext* context)
     ProcVector[X_StoreColors] = PanoramiXStoreColors;
     ProcVector[X_StoreNamedColor] = PanoramiXStoreNamedColor;
 
-    PanoramiXRenderInit();
-    PanoramiXFixesInit();
+    PanoramiXRenderInit(context);
+    PanoramiXFixesInit(context);
     PanoramiXDamageInit(context);
 #ifdef COMPOSITE
-    PanoramiXCompositeInit();
+    PanoramiXCompositeInit(context);
 #endif
 
 }
@@ -890,11 +890,11 @@ PanoramiXResetProc(ExtensionEntry * extEntry)
     int i;
     XephyrContext* context = (XephyrContext*)extEntry->extPrivate;
 
-    PanoramiXRenderReset();
-    PanoramiXFixesReset();
+    PanoramiXRenderReset(context);
+    PanoramiXFixesReset(context);
     PanoramiXDamageReset();
 #ifdef COMPOSITE
-    PanoramiXCompositeReset ();
+    PanoramiXCompositeReset(context);
 #endif
     context->screenInfo.numScreens = context->PanoramiXNumScreens;
     for (i = 256; i--;)
@@ -1029,6 +1029,7 @@ ProcXineramaIsActive(ClientPtr client)
 {
     /* REQUEST(xXineramaIsActiveReq); */
     xXineramaIsActiveReply rep;
+    XephyrContext *context = client->context;
 
     REQUEST_SIZE_MATCH(xXineramaIsActiveReq);
 
@@ -1039,7 +1040,7 @@ ProcXineramaIsActive(ClientPtr client)
 #if 1
         /* The following hack fools context->clients into thinking that Xinerama
          * is disabled even though it is not. */
-        .state = !noPanoramiXExtension && !PanoramiXExtensionDisabledHack
+        .state = !noPanoramiXExtension && !context->PanoramiXExtensionDisabledHack
 #else
         .state = !noPanoramiXExtension;
 #endif
@@ -1174,8 +1175,8 @@ XineramaGetImageData(DrawablePtr *pDrawables,
     SrcBox.x2 = SrcBox.x1 + width;
     SrcBox.y2 = SrcBox.y1 + height;
 
-    RegionInit(&SrcRegion, &SrcBox, 1);
-    RegionNull(&GrabRegion);
+    RegionInit(&SrcRegion, &SrcBox, 1, pDraw->pScreen->context);
+    RegionNull(&GrabRegion, pDraw->pScreen->context);
 
     depth = (format == XYPixmap) ? 1 : pDraw->depth;
 
@@ -1191,7 +1192,7 @@ XineramaGetImageData(DrawablePtr *pDrawables,
         TheBox.y1 = pScreen->y;
         TheBox.y2 = TheBox.y1 + pScreen->height;
 
-        RegionInit(&ScreenRegion, &TheBox, 1);
+        RegionInit(&ScreenRegion, &TheBox, 1, pScreen->context);
         inOut = RegionContainsRect(&ScreenRegion, &SrcBox);
         if (inOut == rgnPART)
             RegionIntersect(&GrabRegion, &SrcRegion, &ScreenRegion);

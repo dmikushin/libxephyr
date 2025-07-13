@@ -236,7 +236,7 @@ PixmapStartDirtyTracking(DrawablePtr src,
         box.x2 = dirty_update->x + secondary_dst->drawable.width;
         box.y2 = dirty_update->y + secondary_dst->drawable.height;
     }
-    RegionInit(&dstregion, &box, 1);
+    RegionInit(&dstregion, &box, 1, screen->context);
     damageregion = DamageRegion(dirty_update->damage);
     RegionUnion(damageregion, damageregion, &dstregion);
     RegionUninit(&dstregion);
@@ -387,7 +387,7 @@ Bool PixmapSyncDirtyHelper(PixmapDirtyUpdatePtr dirty)
         box.x2 = dst->drawable.width;
         box.y2 = dst->drawable.height;
     }
-    RegionInit(&pixregion, &box, 1);
+    RegionInit(&pixregion, &box, 1, pScreen->context);
 
     /*
      * SourceValidate is used by the software cursor code
@@ -414,4 +414,13 @@ Bool PixmapSyncDirtyHelper(PixmapDirtyUpdatePtr dirty)
         PixmapDirtyCompositeRotate(dst, dirty, &pixregion);
     pScreen->SourceValidate = SourceValidate;
     return TRUE;
+}
+
+void
+PixmapRegionInit(RegionPtr region, PixmapPtr pixmap, XephyrContext* context)
+{
+    BoxRec box;
+
+    PixmapBox(&box, pixmap);
+    RegionInit(region, &box, 1, context);
 }

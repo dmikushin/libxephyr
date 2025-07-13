@@ -66,7 +66,6 @@ typedef XID RRCrtc;
 typedef XID RRProvider;
 typedef XID RRLease;
 
-extern int RREventBase, RRErrorBase;
 
 extern int (*ProcRandrVector[RRNumberRequests]) (ClientPtr);
 extern int (*SProcRandrVector[RRNumberRequests]) (ClientPtr);
@@ -411,7 +410,7 @@ typedef struct _rrScrPriv {
     struct xorg_list leases;
 } rrScrPrivRec, *rrScrPrivPtr;
 
-extern _X_EXPORT DevPrivateKeyRec rrPrivKeyRec;
+extern DevPrivateKeyRec rrPrivKeyRec;
 
 #define rrPrivKey (&rrPrivKeyRec)
 
@@ -448,16 +447,14 @@ typedef struct _RRClient {
 /*  RRTimesRec	times[0]; */
 } RRClientRec, *RRClientPtr;
 
-extern RESTYPE RRClientType, RREventType;     /* resource types for event masks */
 extern DevPrivateKeyRec RRClientPrivateKeyRec;
 
 #define RRClientPrivateKey (&RRClientPrivateKeyRec)
-extern _X_EXPORT RESTYPE RRCrtcType, RRModeType, RROutputType, RRProviderType, RRLeaseType;
 
 #define VERIFY_RR_OUTPUT(id, ptr, a)\
     {\
 	int rc = dixLookupResourceByType((void **)&(ptr), id,\
-	                                 RROutputType, client, a);\
+	                                 client->context->RROutputType, client, a);\
 	if (rc != Success) {\
 	    client->errorValue = id;\
 	    return rc;\
@@ -467,7 +464,7 @@ extern _X_EXPORT RESTYPE RRCrtcType, RRModeType, RROutputType, RRProviderType, R
 #define VERIFY_RR_CRTC(id, ptr, a)\
     {\
 	int rc = dixLookupResourceByType((void **)&(ptr), id,\
-	                                 RRCrtcType, client, a);\
+	                                 client->context->RRCrtcType, client, a);\
 	if (rc != Success) {\
 	    client->errorValue = id;\
 	    return rc;\
@@ -477,7 +474,7 @@ extern _X_EXPORT RESTYPE RRCrtcType, RRModeType, RROutputType, RRProviderType, R
 #define VERIFY_RR_MODE(id, ptr, a)\
     {\
 	int rc = dixLookupResourceByType((void **)&(ptr), id,\
-	                                 RRModeType, client, a);\
+	                                 client->context->RRModeType, client, a);\
 	if (rc != Success) {\
 	    client->errorValue = id;\
 	    return rc;\
@@ -487,7 +484,7 @@ extern _X_EXPORT RESTYPE RRCrtcType, RRModeType, RROutputType, RRProviderType, R
 #define VERIFY_RR_PROVIDER(id, ptr, a)\
     {\
         int rc = dixLookupResourceByType((void **)&(ptr), id,\
-                                         RRProviderType, client, a);\
+                                         client->context->RRProviderType, client, a);\
         if (rc != Success) {\
             client->errorValue = id;\
             return rc;\
@@ -497,7 +494,7 @@ extern _X_EXPORT RESTYPE RRCrtcType, RRModeType, RROutputType, RRProviderType, R
 #define VERIFY_RR_LEASE(id, ptr, a)\
     {\
         int rc = dixLookupResourceByType((void **)&(ptr), id,\
-                                         RRLeaseType, client, a);\
+                                         client->context->RRLeaseType, client, a);\
         if (rc != Success) {\
             client->errorValue = id;\
             return rc;\
@@ -760,13 +757,13 @@ RRCrtcTransformSet(RRCrtcPtr crtc,
  * Initialize crtc type
  */
 extern _X_EXPORT Bool
- RRCrtcInit(void);
+ RRCrtcInit(XephyrContext* context);
 
 /*
  * Initialize crtc type error value
  */
 extern _X_EXPORT void
- RRCrtcInitErrorValue(void);
+ RRCrtcInitErrorValue(XephyrContext* context);
 
 /*
  * Detach and free a scanout pixmap
@@ -841,7 +838,7 @@ void
 RRTerminateLease(RRLeasePtr lease);
 
 Bool
-RRLeaseInit(void);
+RRLeaseInit(XephyrContext* context);
 
 /* rrmode.c */
 /*
@@ -866,13 +863,13 @@ extern _X_EXPORT RRModePtr *RRModesForScreen(ScreenPtr pScreen, int *num_ret);
  * Initialize mode type
  */
 extern _X_EXPORT Bool
- RRModeInit(void);
+ RRModeInit(XephyrContext* context);
 
 /*
  * Initialize mode type error value
  */
 extern _X_EXPORT void
- RRModeInitErrorValue(void);
+ RRModeInitErrorValue(XephyrContext* context);
 
 extern _X_EXPORT int
  ProcRRCreateMode(ClientPtr client);
@@ -953,13 +950,13 @@ extern _X_EXPORT int
  * Initialize output type
  */
 extern _X_EXPORT Bool
- RROutputInit(void);
+ RROutputInit(XephyrContext* context);
 
 /*
  * Initialize output type error value
  */
 extern _X_EXPORT void
- RROutputInitErrorValue(void);
+ RROutputInitErrorValue(XephyrContext* context);
 
 /* rrpointer.c */
 extern _X_EXPORT void
@@ -1017,7 +1014,7 @@ extern _X_EXPORT int
 /* rrprovider.c */
 #define PRIME_SYNC_PROP         "PRIME Synchronization"
 extern _X_EXPORT void
-RRProviderInitErrorValue(void);
+RRProviderInitErrorValue(XephyrContext* context);
 
 extern _X_EXPORT int
 ProcRRGetProviders(ClientPtr client);
@@ -1032,7 +1029,7 @@ extern _X_EXPORT int
 ProcRRSetProviderOffloadSink(ClientPtr client);
 
 extern _X_EXPORT Bool
-RRProviderInit(void);
+RRProviderInit(XephyrContext* context);
 
 extern _X_EXPORT RRProviderPtr
 RRProviderCreate(ScreenPtr pScreen, const char *name,
@@ -1045,7 +1042,7 @@ extern _X_EXPORT void
 RRProviderSetCapabilities(RRProviderPtr provider, uint32_t capabilities);
 
 extern _X_EXPORT Bool
-RRProviderLookup(XID id, RRProviderPtr *provider_p);
+RRProviderLookup(XID id, RRProviderPtr *provider_p, XephyrContext* context);
 
 extern _X_EXPORT void
 RRDeliverProviderEvent(ClientPtr client, WindowPtr pWin, RRProviderPtr provider);

@@ -144,7 +144,7 @@ ephyr_glamor_xv_init(ScreenPtr screen, XephyrContext* context)
                                        sizeof(glamor_port_private *), context);
     for (i = 0; i < adaptor->nPorts; i++) {
         adaptor->pPortPrivates[i].ptr = &port_privates[i];
-        glamor_xv_init_port(&port_privates[i]);
+        glamor_xv_init_port(&port_privates[i], context);
     }
 
     adaptor->pAttributes = glamor_xv_attributes;

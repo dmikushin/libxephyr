@@ -23,8 +23,17 @@
 #include "servermd.h"
 #include "privates.h"
 #include "resource.h"
+#include <X11/extensions/render.h>
+#include <X11/extensions/xfixeswire.h>
 #ifdef CONFIG_UDEV
 #include <libudev.h>
+#endif
+
+#ifndef RenderNumberRequests
+#define RenderNumberRequests 37
+#endif
+#ifndef XFixesNumberRequests  
+#define XFixesNumberRequests 35
 #endif
 
 typedef struct _XephyrContext {
@@ -123,9 +132,11 @@ typedef struct _XephyrContext {
     Bool syncEvents;
     InternalEvent *InputEventList;
     CallbackListPtr PropertyStateCallback;
-    RegionRec RegionBrokenData;
+    RegDataRec RegionBrokenData;
     BoxRec RegionEmptyBox;
-    RegionRec RegionEmptyData;
+    RegDataRec RegionEmptyData;
+    RESTYPE RegionResType;
+    RegionRec RegionBrokenRegion;  /* Special broken region for error handling */
     RESTYPE lastResourceType;
     CallbackListPtr ResourceStateCallback;
     RESTYPE TypeMask;
@@ -155,10 +166,10 @@ typedef struct _XephyrContext {
     int PanoramiXNumScreens;
     int PanoramiXPixHeight;
     int PanoramiXPixWidth;
-    void* PanoramiXSaveCompositeVector;
-    void* PanoramiXSaveRenderVector;
-    void* PanoramiXSaveXFixesVector;
-    RegionPtr PanoramiXScreenRegion;
+    int (*PanoramiXSaveCompositeVector[9]) (ClientPtr client);
+    int (*PanoramiXSaveRenderVector[RenderNumberRequests]) (ClientPtr);
+    int (*PanoramiXSaveXFixesVector[XFixesNumberRequests]) (ClientPtr);
+    RegionRec PanoramiXScreenRegion;
     
     // Additional global variables  
     struct { Mask mask; int type; } EventInfo[32];  // From Xi module
@@ -261,12 +272,13 @@ typedef struct _XephyrContext {
     RESTYPE RRCrtcType;
     int RRErrorBase;
     int RREventBase;
-    int RREventType;
+    RESTYPE RREventType;
     RESTYPE RRLeaseType;
     RESTYPE RRModeType;
     RESTYPE RROutputType;
     RESTYPE RRProviderType;
-    RESTYPE RegionResType;
+    int RRGeneration;
+    int RRNScreens;
     
     // Render module variables
     int RenderErrBase;
@@ -299,6 +311,8 @@ typedef struct _XephyrContext {
     // XTest module variables
     DeviceIntPtr xtestkeyboard;
     DeviceIntPtr xtestpointer;
+    
+    
 } XephyrContext;
 
 

@@ -204,8 +204,8 @@ miOverlayCreateWindow(WindowPtr pWin)
             pTree->visibility = VisibilityNotViewable;
             pWinPriv->tree = pTree;
             if (pWin->parent) {
-                RegionNull(&(pTree->borderClip));
-                RegionNull(&(pTree->clipList));
+                RegionNull(&(pTree->borderClip), pScreen->context);
+                RegionNull(&(pTree->clipList), pScreen->context);
                 RebuildTree(pWin);
             }
             else {
@@ -215,8 +215,8 @@ miOverlayCreateWindow(WindowPtr pWin)
                 fullBox.y1 = 0;
                 fullBox.x2 = pScreen->width;
                 fullBox.y2 = pScreen->height;
-                RegionInit(&(pTree->borderClip), &fullBox, 1);
-                RegionInit(&(pTree->clipList), &fullBox, 1);
+                RegionInit(&(pTree->borderClip), &fullBox, 1, pScreen->context);
+                RegionInit(&(pTree->clipList), &fullBox, 1, pScreen->context);
             }
         }
         else
@@ -352,9 +352,9 @@ miOverlayMarkOverlappedWindows(WindowPtr pWin,
                 pTree = MIOVERLAY_GET_WINDOW_TREE(pChild);
 
             if (pChild->viewable) {
-                if (RegionBroken(&pChild->winSize))
+                if (RegionBroken(&pChild->winSize, pWin->drawable.pScreen->context))
                     SetWinSize(pChild);
-                if (RegionBroken(&pChild->borderSize))
+                if (RegionBroken(&pChild->borderSize, pWin->drawable.pScreen->context))
                     SetBorderSize(pChild);
 
                 if (markAll || RegionContainsRect(&pChild->borderSize, box)) {
@@ -414,9 +414,9 @@ miOverlayMarkOverlappedWindows(WindowPtr pWin,
 
         while (1) {
             if (tChild->pWin->viewable) {
-                if (RegionBroken(&tChild->pWin->winSize))
+                if (RegionBroken(&tChild->pWin->winSize, pWin->drawable.pScreen->context))
                     SetWinSize(tChild->pWin);
-                if (RegionBroken(&tChild->pWin->borderSize))
+                if (RegionBroken(&tChild->pWin->borderSize, pWin->drawable.pScreen->context))
                     SetBorderSize(tChild->pWin);
 
                 if (RegionContainsRect(&(tChild->pWin->borderSize), box)) {
@@ -532,13 +532,13 @@ miOverlayComputeClips(WindowPtr pParent,
                             (*pScreen->ClipNotify) (tChild->pWin, dx, dy);
                     }
                     if (tChild->valdata) {
-                        RegionNull(&tChild->valdata->borderExposed);
+                        RegionNull(&tChild->valdata->borderExposed, pScreen->context);
                         if (HasParentRelativeBorder(tChild->pWin)) {
                             RegionSubtract(&tChild->valdata->borderExposed,
                                            &tChild->borderClip,
                                            &tChild->pWin->winSize);
                         }
-                        RegionNull(&tChild->valdata->exposed);
+                        RegionNull(&tChild->valdata->exposed, pScreen->context);
                     }
                     if (tChild->firstChild) {
                         tChild = tChild->firstChild;
@@ -561,19 +561,19 @@ miOverlayComputeClips(WindowPtr pParent,
         }
         break;
     case VTBroken:
-        RegionEmpty(&tParent->borderClip);
-        RegionEmpty(&tParent->clipList);
+        RegionEmpty(&tParent->borderClip, pScreen->context);
+        RegionEmpty(&tParent->clipList, pScreen->context);
         break;
     }
 
     borderVisible = tParent->valdata->borderVisible;
-    RegionNull(&tParent->valdata->borderExposed);
-    RegionNull(&tParent->valdata->exposed);
+    RegionNull(&tParent->valdata->borderExposed, pScreen->context);
+    RegionNull(&tParent->valdata->exposed, pScreen->context);
 
     if (HasBorder(pParent)) {
         if (borderVisible) {
             RegionSubtract(exposed, universe, borderVisible);
-            RegionDestroy(borderVisible);
+            RegionDestroy(borderVisible, pScreen->context);
         }
         else
             RegionSubtract(exposed, universe, &tParent->borderClip);
@@ -592,15 +592,15 @@ miOverlayComputeClips(WindowPtr pParent,
         RegionCopy(&tParent->borderClip, universe);
 
     if ((tChild = tParent->firstChild) && pParent->mapped) {
-        RegionNull(&childUniverse);
-        RegionNull(&childUnion);
+        RegionNull(&childUniverse, pScreen->context);
+        RegionNull(&childUnion, pScreen->context);
 
         for (; tChild; tChild = tChild->nextSib) {
             if (tChild->pWin->viewable)
-                RegionAppend(&childUnion, &tChild->pWin->borderSize);
+                RegionAppend(&childUnion, &tChild->pWin->borderSize, pScreen->context);
         }
 
-        RegionValidate(&childUnion, &overlap);
+        RegionValidate(&childUnion, &overlap, pScreen->context);
 
         for (tChild = tParent->firstChild; tChild; tChild = tChild->nextSib) {
             if (tChild->pWin->viewable) {
@@ -705,14 +705,14 @@ miOverlayMarkUnrealizedWindow(WindowPtr pChild,
     if ((pChild != pWin) || fromConfigure) {
         miOverlayTreePtr pTree;
 
-        RegionEmpty(&pChild->clipList);
+        RegionEmpty(&pChild->clipList, pWin->drawable.pScreen->context);
         if (pChild->drawable.pScreen->ClipNotify)
             (*pChild->drawable.pScreen->ClipNotify) (pChild, 0, 0);
-        RegionEmpty(&pChild->borderClip);
+        RegionEmpty(&pChild->borderClip, pWin->drawable.pScreen->context);
         if ((pTree = MIOVERLAY_GET_WINDOW_TREE(pChild))) {
             if (pTree->valdata != (miOverlayValDataPtr) UnmapValData) {
-                RegionEmpty(&pTree->clipList);
-                RegionEmpty(&pTree->borderClip);
+                RegionEmpty(&pTree->clipList, pWin->drawable.pScreen->context);
+                RegionEmpty(&pTree->borderClip, pWin->drawable.pScreen->context);
             }
         }
     }
@@ -735,9 +735,9 @@ miOverlayValidateTree(WindowPtr pParent, WindowPtr pChild,      /* first child e
     if (!pChild)
         pChild = pParent->firstChild;
 
-    RegionNull(&totalClip);
-    RegionNull(&childClip);
-    RegionNull(&exposed);
+    RegionNull(&totalClip, pScreen->context);
+    RegionNull(&childClip, pScreen->context);
+    RegionNull(&exposed, pScreen->context);
 
     newParent = pParent;
 
@@ -751,7 +751,7 @@ miOverlayValidateTree(WindowPtr pParent, WindowPtr pChild,      /* first child e
     else
         tChild = tParent->firstChild;
 
-    if (RegionBroken(&tParent->clipList) && !RegionBroken(&tParent->borderClip)) {
+    if (RegionBroken(&tParent->clipList, pScreen->context) && !RegionBroken(&tParent->borderClip, pScreen->context)) {
         kind = VTBroken;
         RegionCopy(&totalClip, &tParent->borderClip);
         RegionIntersect(&totalClip, &totalClip, &tParent->pWin->winSize);
@@ -760,14 +760,14 @@ miOverlayValidateTree(WindowPtr pParent, WindowPtr pChild,      /* first child e
             if (tWin->pWin->viewable)
                 RegionSubtract(&totalClip, &totalClip, &tWin->pWin->borderSize);
         }
-        RegionEmpty(&tParent->clipList);
+        RegionEmpty(&tParent->clipList, pScreen->context);
     }
     else {
         for (tWin = tChild; tWin; tWin = tWin->nextSib) {
             if (tWin->valdata)
-                RegionAppend(&totalClip, &tWin->borderClip);
+                RegionAppend(&totalClip, &tWin->borderClip, pScreen->context);
         }
-        RegionValidate(&totalClip, &overlap);
+        RegionValidate(&totalClip, &overlap, pScreen->context);
     }
 
     if (kind != VTStack)
@@ -782,8 +782,8 @@ miOverlayValidateTree(WindowPtr pParent, WindowPtr pChild,      /* first child e
                 RegionSubtract(&totalClip, &totalClip, &tWin->pWin->borderSize);
             }
             else {              /* Means we are unmapping */
-                RegionEmpty(&tWin->clipList);
-                RegionEmpty(&tWin->borderClip);
+                RegionEmpty(&tWin->clipList, pScreen->context);
+                RegionEmpty(&tWin->borderClip, pScreen->context);
                 tWin->valdata = NULL;
             }
         }
@@ -791,9 +791,9 @@ miOverlayValidateTree(WindowPtr pParent, WindowPtr pChild,      /* first child e
 
     RegionUninit(&childClip);
 
-    if (!((*pPriv->InOverlay) (newParent))) {
-        RegionNull(&tParent->valdata->exposed);
-        RegionNull(&tParent->valdata->borderExposed);
+    if (!((*pPriv->InOverlay) (newParent), pScreen->context)) {
+        RegionNull(&tParent->valdata->exposed, pScreen->context);
+        RegionNull(&tParent->valdata->borderExposed, pScreen->context);
     }
 
     switch (kind) {
@@ -924,9 +924,9 @@ miOverlayMoveWindow(WindowPtr pWin,
 
     oldpt.x = pWin->drawable.x;
     oldpt.y = pWin->drawable.y;
-    if (WasViewable) {
-        RegionNull(&overReg);
-        RegionNull(&underReg);
+    if (WasViewable, pWin->drawable.pScreen->context) {
+        RegionNull(&overReg, pScreen->context);
+        RegionNull(&underReg, pScreen->context);
         if (pTree) {
             RegionCopy(&overReg, &pWin->borderClip);
             RegionCopy(&underReg, &pTree->borderClip);
@@ -996,7 +996,7 @@ miOverlayWindowExposures(WindowPtr pWin, RegionPtr prgn)
 
             box = *RegionExtents(prgn);
             exposures = &expRec;
-            RegionInit(exposures, &box, 1);
+            RegionInit(exposures, &box, 1, pScreen->context);
             RegionReset(prgn, &box);
             /* This is the only reason why we are replacing mi's version
                of this file */
@@ -1015,7 +1015,7 @@ miOverlayWindowExposures(WindowPtr pWin, RegionPtr prgn)
                             pWin->drawable.x, pWin->drawable.y);
         if (exposures == &expRec)
             RegionUninit(exposures);
-        RegionEmpty(prgn);
+        RegionEmpty(prgn, pScreen->context);
     }
 }
 
@@ -1104,10 +1104,10 @@ miOverlayResizeWindow(WindowPtr pWin,
         /*
          * save the visible region of the window
          */
-        oldRegion = RegionCreate(NullBox, 1);
+        oldRegion = RegionCreate(NullBox, 1, pWin->drawable.pScreen->context);
         RegionCopy(oldRegion, &pWin->winSize);
         if (doUnderlay) {
-            oldRegion2 = RegionCreate(NullBox, 1);
+            oldRegion2 = RegionCreate(NullBox, 1, pScreen->context);
             RegionCopy(oldRegion2, &pWin->winSize);
         }
 
@@ -1120,12 +1120,12 @@ miOverlayResizeWindow(WindowPtr pWin,
             g = pChild->winGravity;
             if (g != UnmapGravity) {
                 if (!gravitate[g])
-                    gravitate[g] = RegionCreate(NullBox, 1);
+                    gravitate[g] = RegionCreate(NullBox, 1, pScreen->context);
                 RegionUnion(gravitate[g], gravitate[g], &pChild->borderClip);
 
                 if (doUnderlay) {
                     if (!gravitate2[g])
-                        gravitate2[g] = RegionCreate(NullBox, 0);
+                        gravitate2[g] = RegionCreate(NullBox, 0, pScreen->context);
 
                     if ((tChild = MIOVERLAY_GET_WINDOW_TREE(pChild))) {
                         RegionUnion(gravitate2[g],
@@ -1143,10 +1143,10 @@ miOverlayResizeWindow(WindowPtr pWin,
 
         oldWinClip = oldWinClip2 = NULL;
         if (pWin->bitGravity != ForgetGravity) {
-            oldWinClip = RegionCreate(NullBox, 1);
+            oldWinClip = RegionCreate(NullBox, 1, pScreen->context);
             RegionCopy(oldWinClip, &pWin->clipList);
             if (pTree) {
-                oldWinClip2 = RegionCreate(NullBox, 1);
+                oldWinClip2 = RegionCreate(NullBox, 1, pScreen->context);
                 RegionCopy(oldWinClip2, &pTree->clipList);
             }
         }
@@ -1162,9 +1162,9 @@ miOverlayResizeWindow(WindowPtr pWin,
 
         if ((pWin->drawable.height != h || pWin->drawable.width != w) &&
             HasBorder(pWin)) {
-            borderVisible = RegionCreate(NullBox, 1);
+            borderVisible = RegionCreate(NullBox, 1, pScreen->context);
             if (pTree)
-                borderVisible2 = RegionCreate(NullBox, 1);
+                borderVisible2 = RegionCreate(NullBox, 1, pScreen->context);
             /* for tiled borders, we punt and draw the whole thing */
             if (pWin->borderIsPixel || !moved) {
                 if (shrunk || moved)
@@ -1203,7 +1203,7 @@ miOverlayResizeWindow(WindowPtr pWin,
     pFirstChange = MoveWindowInStack(pWin, pSib);
 
     if (WasViewable) {
-        pRegion = RegionCreate(NullBox, 1);
+        pRegion = RegionCreate(NullBox, 1, pScreen->context);
 
         (*pScreen->MarkOverlappedWindows) (pWin, pFirstChange, NULL);
 
@@ -1280,7 +1280,7 @@ miOverlayResizeWindow(WindowPtr pWin,
                 gravitate2[g] = oldWinClip2;
             else {
                 RegionUnion(gravitate2[g], gravitate2[g], oldWinClip2);
-                RegionDestroy(oldWinClip2);
+                RegionDestroy(oldWinClip2, pScreen->context);
             }
         }
 
@@ -1306,7 +1306,7 @@ miOverlayResizeWindow(WindowPtr pWin,
                 gravitate[g] = oldWinClip;
             else {
                 RegionUnion(gravitate[g], gravitate[g], oldWinClip);
-                RegionDestroy(oldWinClip);
+                RegionDestroy(oldWinClip, pScreen->context);
             }
         }
 
@@ -1400,7 +1400,7 @@ miOverlayResizeWindow(WindowPtr pWin,
                     destClip = gravitate[g];
                 else {
                     RegionUnion(destClip, destClip, gravitate[g]);
-                    RegionDestroy(gravitate[g]);
+                    RegionDestroy(gravitate[g], pScreen->context);
                 }
             }
             if (gravitate2[g]) {
@@ -1408,19 +1408,19 @@ miOverlayResizeWindow(WindowPtr pWin,
                     destClip2 = gravitate2[g];
                 else {
                     RegionUnion(destClip2, destClip2, gravitate2[g]);
-                    RegionDestroy(gravitate2[g]);
+                    RegionDestroy(gravitate2[g], pScreen->context);
                 }
             }
         }
 
-        RegionDestroy(pRegion);
-        RegionDestroy(oldRegion);
+        RegionDestroy(pRegion, pScreen->context);
+        RegionDestroy(oldRegion, pScreen->context);
         if (doUnderlay)
-            RegionDestroy(oldRegion2);
+            RegionDestroy(oldRegion2, pScreen->context);
         if (destClip)
-            RegionDestroy(destClip);
+            RegionDestroy(destClip, pScreen->context);
         if (destClip2)
-            RegionDestroy(destClip2);
+            RegionDestroy(destClip2, pScreen->context);
         (*pScreen->HandleExposures) (pWin->parent);
         if (pScreen->PostValidateTree)
             (*pScreen->PostValidateTree) (pWin->parent, pFirstChange, VTOther);
@@ -1442,7 +1442,7 @@ miOverlaySetShape(WindowPtr pWin, int kind)
             if (HasBorder(pWin)) {
                 RegionPtr borderVisible;
 
-                borderVisible = RegionCreate(NullBox, 1);
+                borderVisible = RegionCreate(NullBox, 1, pScreen->context);
                 RegionSubtract(borderVisible,
                                &pWin->borderClip, &pWin->winSize);
                 pWin->valdata->before.borderVisible = borderVisible;
@@ -1451,7 +1451,7 @@ miOverlaySetShape(WindowPtr pWin, int kind)
                     miOverlayTreePtr pTree = MIOVERLAY_GET_WINDOW_TREE(pWin);
                     RegionPtr borderVisible2;
 
-                    borderVisible2 = RegionCreate(NULL, 1);
+                    borderVisible2 = RegionCreate(NULL, 1, pScreen->context);
                     RegionSubtract(borderVisible2,
                                    &pTree->borderClip, &pWin->winSize);
                     pTree->valdata->borderVisible = borderVisible2;
@@ -1504,7 +1504,7 @@ miOverlayChangeBorderWidth(WindowPtr pWin, unsigned int width)
             if (HadBorder) {
                 RegionPtr borderVisible;
 
-                borderVisible = RegionCreate(NULL, 1);
+                borderVisible = RegionCreate(NULL, 1, pScreen->context);
                 RegionSubtract(borderVisible,
                                &pWin->borderClip, &pWin->winSize);
                 pWin->valdata->before.borderVisible = borderVisible;
@@ -1512,7 +1512,7 @@ miOverlayChangeBorderWidth(WindowPtr pWin, unsigned int width)
                     miOverlayTreePtr pTree = MIOVERLAY_GET_WINDOW_TREE(pWin);
                     RegionPtr borderVisible2;
 
-                    borderVisible2 = RegionCreate(NULL, 1);
+                    borderVisible2 = RegionCreate(NULL, 1, pScreen->context);
                     RegionSubtract(borderVisible2,
                                    &pTree->borderClip, &pWin->winSize);
                     pTree->valdata->borderVisible = borderVisible2;
@@ -1551,9 +1551,9 @@ miOverlaySetRootClip(ScreenPtr pScreen, Bool enable)
         RegionReset(&pTree->borderClip, &box);
     }
     else
-        RegionEmpty(&pTree->borderClip);
+        RegionEmpty(&pTree->borderClip, pScreen->context);
 
-    RegionBreak(&pTree->clipList);
+    RegionBreak(&pTree->clipList, pScreen->context);
 }
 
 static void
@@ -1602,7 +1602,7 @@ miOverlayClearToBackground(WindowPtr pWin,
     box.y1 = y1;
     box.y2 = y2;
 
-    RegionInit(&reg, &box, 1);
+    RegionInit(&reg, &box, 1, pScreen->context);
 
     RegionIntersect(&reg, &reg, clipList);
     if (generateExposures)
@@ -1647,6 +1647,7 @@ miOverlayCopyUnderlay(ScreenPtr pScreen)
 void
 miOverlayComputeCompositeClip(GCPtr pGC, WindowPtr pWin)
 {
+    ScreenPtr pScreen = pWin->drawable.pScreen;
     miOverlayTreePtr pTree = MIOVERLAY_GET_WINDOW_TREE(pWin);
     RegionPtr pregWin;
     Bool freeTmpClip, freeCompClip;
@@ -1657,7 +1658,7 @@ miOverlayComputeCompositeClip(GCPtr pGC, WindowPtr pWin)
     }
 
     if (pGC->subWindowMode == IncludeInferiors) {
-        pregWin = RegionCreate(NullBox, 1);
+        pregWin = RegionCreate(NullBox, 1, pWin->drawable.pScreen->context);
         freeTmpClip = TRUE;
         if (pWin->parent || (screenIsSaved != SCREEN_SAVER_ON) ||
             !HasSaverWindow(pGC->pScreen)) {
@@ -1671,7 +1672,7 @@ miOverlayComputeCompositeClip(GCPtr pGC, WindowPtr pWin)
     freeCompClip = pGC->freeCompClip;
     if (!pGC->clientClip) {
         if (freeCompClip)
-            RegionDestroy(pGC->pCompositeClip);
+            RegionDestroy(pGC->pCompositeClip, pWin->drawable.pScreen->context);
         pGC->pCompositeClip = pregWin;
         pGC->freeCompClip = freeTmpClip;
     }
@@ -1683,14 +1684,14 @@ miOverlayComputeCompositeClip(GCPtr pGC, WindowPtr pWin)
         if (freeCompClip) {
             RegionIntersect(pGC->pCompositeClip, pregWin, pGC->clientClip);
             if (freeTmpClip)
-                RegionDestroy(pregWin);
+                RegionDestroy(pregWin, pScreen->context);
         }
         else if (freeTmpClip) {
             RegionIntersect(pregWin, pregWin, pGC->clientClip);
             pGC->pCompositeClip = pregWin;
         }
         else {
-            pGC->pCompositeClip = RegionCreate(NullBox, 0);
+            pGC->pCompositeClip = RegionCreate(NullBox, 0, pScreen->context);
             RegionIntersect(pGC->pCompositeClip, pregWin, pGC->clientClip);
         }
         pGC->freeCompClip = TRUE;
@@ -1710,7 +1711,7 @@ miOverlayCollectUnderlayRegions(WindowPtr pWin, RegionPtr *region)
         return FALSE;
     }
 
-    *region = RegionCreate(NullBox, 0);
+    *region = RegionCreate(NullBox, 0, pWin->drawable.pScreen->context);
 
     CollectUnderlayChildrenRegions(pWin, *region);
 
@@ -1827,7 +1828,7 @@ CollectUnderlayChildrenRegions(WindowPtr pWin, RegionPtr pReg)
 
     while (1) {
         if ((pTree = MIOVERLAY_GET_WINDOW_TREE(pChild))) {
-            RegionAppend(pReg, &pTree->borderClip);
+            RegionAppend(pReg, &pTree->borderClip, pWin->drawable.pScreen->context);
             hasUnderlay = TRUE;
         }
         else if (pChild->firstChild) {
@@ -1847,7 +1848,7 @@ CollectUnderlayChildrenRegions(WindowPtr pWin, RegionPtr pReg)
     if (hasUnderlay) {
         Bool overlap;
 
-        RegionValidate(pReg, &overlap);
+        RegionValidate(pReg, &overlap, pWin->drawable.pScreen->context);
     }
 
     return hasUnderlay;

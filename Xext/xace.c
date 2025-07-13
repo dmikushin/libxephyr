@@ -241,8 +241,8 @@ XaceCensorImage(ClientPtr client,
     imageBox.y1 = pDraw->y + y;
     imageBox.x2 = pDraw->x + x + w;
     imageBox.y2 = pDraw->y + y + h;
-    RegionInit(&imageRegion, &imageBox, 1);
-    RegionNull(&censorRegion);
+    RegionInit(&imageRegion, &imageBox, 1, client->context);
+    RegionNull(&censorRegion, client->context);
 
     /* censorRegion = imageRegion - visibleRegion */
     RegionSubtract(&censorRegion, &imageRegion, pVisibleRegion);

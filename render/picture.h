@@ -169,11 +169,9 @@ typedef enum _PictFormatShort {
 #define PictureCmapPolicyColor	    3
 #define PictureCmapPolicyAll	    4
 
-extern int PictureCmapPolicy;
 
 extern int PictureParseCmapPolicy(const char *name);
 
-extern int RenderErrBase;
 
 /* Fixed point updates from Carl Worth, USC, Information Sciences Institute */
 

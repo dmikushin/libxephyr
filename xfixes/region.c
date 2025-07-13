@@ -40,20 +40,20 @@ RegionResFree(void *data, XID id, XephyrContext* context)
 {
     RegionPtr pRegion = (RegionPtr) data;
 
-    RegionDestroy(pRegion);
+    RegionDestroy(pRegion, context);
     return Success;
 }
 
 RegionPtr
-XFixesRegionCopy(RegionPtr pRegion)
+XFixesRegionCopy(RegionPtr pRegion, XephyrContext* context)
 {
     RegionPtr pNew = RegionCreate(RegionExtents(pRegion),
-                                  RegionNumRects(pRegion));
+                                  RegionNumRects(pRegion), context);
 
     if (!pNew)
         return 0;
     if (!RegionCopy(pNew, pRegion)) {
-        RegionDestroy(pNew);
+        RegionDestroy(pNew, context);
         return 0;
     }
     return pNew;
@@ -83,7 +83,7 @@ ProcXFixesCreateRegion(ClientPtr client)
         return BadLength;
     things >>= 3;
 
-    pRegion = RegionFromRects(things, (xRectangle *) (stuff + 1), CT_UNSORTED);
+    pRegion = RegionFromRects(things, (xRectangle *) (stuff + 1), CT_UNSORTED, client->context);
     if (!pRegion)
         return BadAlloc;
     if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
@@ -186,7 +186,7 @@ ProcXFixesCreateRegionFromWindow(ClientPtr client)
         return BadValue;
     }
     if (copy && pRegion)
-        pRegion = XFixesRegionCopy(pRegion);
+        pRegion = XFixesRegionCopy(pRegion, client->context);
     if (!pRegion)
         return BadAlloc;
     if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
@@ -225,7 +225,7 @@ ProcXFixesCreateRegionFromGC(ClientPtr client)
 
     if (pGC->clientClip) {
         pClip = (RegionPtr) pGC->clientClip;
-        pRegion = XFixesRegionCopy(pClip);
+        pRegion = XFixesRegionCopy(pClip, client->context);
         if (!pRegion)
             return BadAlloc;
     } else {
@@ -261,13 +261,13 @@ ProcXFixesCreateRegionFromPicture(ClientPtr client)
     REQUEST_SIZE_MATCH(xXFixesCreateRegionFromPictureReq);
     LEGAL_NEW_RESOURCE(stuff->region, client);
 
-    VERIFY_PICTURE(pPicture, stuff->picture, client, DixGetAttrAccess);
+    VERIFY_PICTURE(pPicture, stuff->picture, client, DixGetAttrAccess, client->context);
 
     if (!pPicture->pDrawable)
-        return RenderErrBase + BadPicture;
+        return client->context->RenderErrBase + BadPicture;
 
     if (pPicture->clientClip) {
-        pRegion = XFixesRegionCopy((RegionPtr) pPicture->clientClip);
+        pRegion = XFixesRegionCopy((RegionPtr) pPicture->clientClip, client->context);
         if (!pRegion)
             return BadAlloc;
     } else {
@@ -331,14 +331,14 @@ ProcXFixesSetRegion(ClientPtr client)
         return BadLength;
     things >>= 3;
 
-    pNew = RegionFromRects(things, (xRectangle *) (stuff + 1), CT_UNSORTED);
+    pNew = RegionFromRects(things, (xRectangle *) (stuff + 1), CT_UNSORTED, client->context);
     if (!pNew)
         return BadAlloc;
     if (!RegionCopy(pRegion, pNew)) {
-        RegionDestroy(pNew);
+        RegionDestroy(pNew, client->context);
         return BadAlloc;
     }
-    RegionDestroy(pNew);
+    RegionDestroy(pNew, client->context);
     return Success;
 }
 
@@ -610,7 +610,7 @@ ProcXFixesSetGCClipRegion(ClientPtr client)
     VERIFY_REGION_OR_NONE(pRegion, stuff->region, client, DixReadAccess);
 
     if (pRegion) {
-        pRegion = XFixesRegionCopy(pRegion);
+        pRegion = XFixesRegionCopy(pRegion, client->context);
         if (!pRegion)
             return BadAlloc;
     }
@@ -668,7 +668,7 @@ ProcXFixesSetWindowShapeRegion(ClientPtr client)
         return BadValue;
     }
     if (pRegion) {
-        pRegion = XFixesRegionCopy(pRegion);
+        pRegion = XFixesRegionCopy(pRegion, client->context);
         if (!pRegion)
             return BadAlloc;
         if (!pWin->optional)
@@ -707,7 +707,7 @@ ProcXFixesSetWindowShapeRegion(ClientPtr client)
             pDestRegion = &pRegion;     /* a NULL region pointer */
     }
     if (*pDestRegion)
-        RegionDestroy(*pDestRegion);
+        RegionDestroy(*pDestRegion, pWin->drawable.pScreen->context);
     *pDestRegion = pRegion;
     (*pWin->drawable.pScreen->SetShape) (pWin, stuff->destKind);
     SendShapeNotify(pWin, stuff->destKind);
@@ -737,11 +737,11 @@ ProcXFixesSetPictureClipRegion(ClientPtr client)
     REQUEST(xXFixesSetPictureClipRegionReq);
 
     REQUEST_SIZE_MATCH(xXFixesSetPictureClipRegionReq);
-    VERIFY_PICTURE(pPicture, stuff->picture, client, DixSetAttrAccess);
+    VERIFY_PICTURE(pPicture, stuff->picture, client, DixSetAttrAccess, client->context);
     VERIFY_REGION_OR_NONE(pRegion, stuff->region, client, DixReadAccess);
 
     if (!pPicture->pDrawable)
-        return RenderErrBase + BadPicture;
+        return client->context->RenderErrBase + BadPicture;
 
     return SetPictureClipRegion(pPicture, stuff->xOrigin, stuff->yOrigin,
                                 pRegion);
@@ -788,11 +788,11 @@ ProcXFixesExpandRegion(ClientPtr client)
             pTmp[i].y1 = pSrc[i].y1 - stuff->top;
             pTmp[i].y2 = pSrc[i].y2 + stuff->bottom;
         }
-        RegionEmpty(pDestination);
+        RegionEmpty(pDestination, client->context);
         for (i = 0; i < nBoxes; i++) {
             RegionRec r;
 
-            RegionInit(&r, &pTmp[i], 0);
+            RegionInit(&r, &pTmp[i], 0, client->context);
             RegionUnion(pDestination, pDestination, &r);
         }
         free(pTmp);
@@ -838,7 +838,7 @@ PanoramiXFixesSetGCClipRegion(ClientPtr client)
 
     FOR_NSCREENS_BACKWARD(j) {
         stuff->gc = gc->info[j].id;
-        result = (*PanoramiXSaveXFixesVector[X_XFixesSetGCClipRegion]) (client);
+        result = (*context->PanoramiXSaveXFixesVector[X_XFixesSetGCClipRegion]) (client);
         if (result != Success)
             break;
     }
@@ -876,7 +876,7 @@ PanoramiXFixesSetWindowShapeRegion(ClientPtr client)
             RegionTranslate(reg, -screen->x, -screen->y);
 
         result =
-            (*PanoramiXSaveXFixesVector[X_XFixesSetWindowShapeRegion]) (client);
+            (*context->PanoramiXSaveXFixesVector[X_XFixesSetWindowShapeRegion]) (client);
 
         if (reg)
             RegionTranslate(reg, screen->x, screen->y);
@@ -917,7 +917,7 @@ PanoramiXFixesSetPictureClipRegion(ClientPtr client)
             RegionTranslate(reg, -screen->x, -screen->y);
 
         result =
-            (*PanoramiXSaveXFixesVector[X_XFixesSetPictureClipRegion]) (client);
+            (*context->PanoramiXSaveXFixesVector[X_XFixesSetPictureClipRegion]) (client);
 
         if (reg)
             RegionTranslate(reg, screen->x, screen->y);

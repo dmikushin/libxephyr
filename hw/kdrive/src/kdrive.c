@@ -607,8 +607,8 @@ KdCreateWindow(WindowPtr pWin)
         KdScreenPriv(pWin->drawable.pScreen);
 
         if (!pScreenPriv->enabled) {
-            RegionEmpty(&pWin->borderClip);
-            RegionBreak(&pWin->clipList);
+            RegionEmpty(&pWin->borderClip, pWin->drawable.pScreen->context);
+            RegionBreak(&pWin->clipList, pWin->drawable.pScreen->context);
         }
     }
 #endif

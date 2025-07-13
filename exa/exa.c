@@ -156,7 +156,7 @@ exaPixmapDirty(PixmapPtr pPix, int x1, int y1, int x2, int y2)
     if (box.x1 >= box.x2 || box.y1 >= box.y2)
         return;
 
-    RegionInit(&region, &box, 1);
+    RegionInit(&region, &box, 1, pPix->drawable.pScreen->context);
     DamageDamageRegion(&pPix->drawable, &region);
     RegionUninit(&region);
 }

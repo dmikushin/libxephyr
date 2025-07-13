@@ -140,7 +140,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
     context->display = "0";
 
-    InitRegions();
+    InitRegions(context);
 
     CheckUserParameters(argc, argv, envp, context);
 

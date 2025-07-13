@@ -133,10 +133,10 @@ exaCopyDirty(ExaMigrationPtr migrate, RegionPtr pValidDst, RegionPtr pValidSrc,
         RegionSubtract(&pExaPixmap->validFB, &pExaPixmap->validFB, damage);
     }
 
-    RegionEmpty(damage);
+    RegionEmpty(damage, pPixmap->drawable.pScreen->context);
 
     /* Copy bits valid in source but not in destination */
-    RegionNull(&CopyReg);
+    RegionNull(&CopyReg, pPixmap->drawable.pScreen->context);
     RegionSubtract(&CopyReg, pValidSrc, pValidDst);
 
     if (migrate->as_dst) {
@@ -179,7 +179,7 @@ exaCopyDirty(ExaMigrationPtr migrate, RegionPtr pValidDst, RegionPtr pValidSrc,
                 box.x2 = max(pValidExt->x2, pDamageExt->x2);
                 box.y2 = max(pValidExt->y2, pDamageExt->y2);
 
-                RegionInit(&closure, &box, 0);
+                RegionInit(&closure, &box, 0, pPixmap->drawable.pScreen->context);
                 RegionIntersect(&CopyReg, &CopyReg, &closure);
             }
             else
@@ -450,7 +450,7 @@ exaPixmapSave(ScreenPtr pScreen, ExaOffscreenArea * area)
 
     /* Mark all FB bits as invalid, so all valid system bits get copied to FB
      * next time */
-    RegionEmpty(&pExaPixmap->validFB);
+    RegionEmpty(&pExaPixmap->validFB, pScreen->context);
 }
 
 /**
@@ -545,7 +545,7 @@ exaAssertNotDirty(PixmapPtr pPixmap)
     if (exaPixmapIsPinned(pPixmap) || pExaPixmap->area == NULL)
         return ret;
 
-    RegionNull(&ValidReg);
+    RegionNull(&ValidReg, pPixmap->drawable.pScreen->context);
     RegionIntersect(&ValidReg, &pExaPixmap->validFB, &pExaPixmap->validSys);
     nbox = RegionNumRects(&ValidReg);
 

@@ -156,7 +156,7 @@ miHandleExposures(DrawablePtr pSrcDrawable, DrawablePtr pDstDrawable,
         if (pGC->subWindowMode == IncludeInferiors) {
             prgnSrcClip = NotClippedByChildren(pSrcWin);
             if ((RegionContainsRect(prgnSrcClip, &TsrcBox)) == rgnIN) {
-                RegionDestroy(prgnSrcClip);
+                RegionDestroy(prgnSrcClip, pSrcDrawable->pScreen->context);
                 return NULL;
             }
         }
@@ -164,7 +164,7 @@ miHandleExposures(DrawablePtr pSrcDrawable, DrawablePtr pDstDrawable,
             if ((RegionContainsRect(&pSrcWin->clipList, &TsrcBox)) == rgnIN)
                 return NULL;
             prgnSrcClip = &rgnSrcRec;
-            RegionNull(prgnSrcClip);
+            RegionNull(prgnSrcClip, pSrcDrawable->pScreen->context);
             RegionCopy(prgnSrcClip, &pSrcWin->clipList);
         }
         RegionTranslate(prgnSrcClip, -pSrcDrawable->x, -pSrcDrawable->y);
@@ -182,7 +182,7 @@ miHandleExposures(DrawablePtr pSrcDrawable, DrawablePtr pDstDrawable,
         box.x2 = pSrcDrawable->width;
         box.y2 = pSrcDrawable->height;
         prgnSrcClip = &rgnSrcRec;
-        RegionInit(prgnSrcClip, &box, 1);
+        RegionInit(prgnSrcClip, &box, 1, pSrcDrawable->pScreen->context);
         pSrcWin = NULL;
     }
 
@@ -195,7 +195,7 @@ miHandleExposures(DrawablePtr pSrcDrawable, DrawablePtr pDstDrawable,
         }
         else {
             prgnDstClip = &rgnDstRec;
-            RegionNull(prgnDstClip);
+            RegionNull(prgnDstClip, pSrcDrawable->pScreen->context);
             RegionCopy(prgnDstClip, &((WindowPtr) pDstDrawable)->clipList);
         }
         RegionTranslate(prgnDstClip, -pDstDrawable->x, -pDstDrawable->y);
@@ -208,11 +208,11 @@ miHandleExposures(DrawablePtr pSrcDrawable, DrawablePtr pDstDrawable,
         box.x2 = pDstDrawable->width;
         box.y2 = pDstDrawable->height;
         prgnDstClip = &rgnDstRec;
-        RegionInit(prgnDstClip, &box, 1);
+        RegionInit(prgnDstClip, &box, 1, pSrcDrawable->pScreen->context);
     }
 
     /* drawable-relative source region */
-    RegionInit(&rgnExposed, &srcBox, 1);
+    RegionInit(&rgnExposed, &srcBox, 1, pSrcDrawable->pScreen->context);
 
     /* now get the hidden parts of the source box */
     RegionSubtract(&rgnExposed, &rgnExposed, prgnSrcClip);
@@ -278,19 +278,19 @@ miHandleExposures(DrawablePtr pSrcDrawable, DrawablePtr pDstDrawable,
         RegionUninit(prgnDstClip);
     }
     else if (prgnDstClip != prgnSrcClip) {
-        RegionDestroy(prgnDstClip);
+        RegionDestroy(prgnDstClip, pDstDrawable->pScreen->context);
     }
 
     if (prgnSrcClip == &rgnSrcRec) {
         RegionUninit(prgnSrcClip);
     }
     else {
-        RegionDestroy(prgnSrcClip);
+        RegionDestroy(prgnSrcClip, pSrcDrawable->pScreen->context);
     }
 
     if (pGC->graphicsExposures) {
         /* don't look */
-        RegionPtr exposed = RegionCreate(NullBox, 0);
+        RegionPtr exposed = RegionCreate(NullBox, 0, pDstDrawable->pScreen->context);
 
         *exposed = rgnExposed;
         return exposed;
@@ -380,7 +380,7 @@ miWindowExposures(WindowPtr pWin, RegionPtr prgn)
              */
             BoxRec box = *RegionExtents(prgn);
             exposures = &expRec;
-            RegionInit(exposures, &box, 1);
+            RegionInit(exposures, &box, 1, pWin->drawable.pScreen->context);
             RegionReset(prgn, &box);
             /* miPaintWindow doesn't clip, so we have to */
             RegionIntersect(prgn, prgn, &pWin->clipList);
@@ -391,7 +391,7 @@ miWindowExposures(WindowPtr pWin, RegionPtr prgn)
                             pWin->drawable.x, pWin->drawable.y);
         if (exposures == &expRec)
             RegionUninit(exposures);
-        RegionEmpty(prgn);
+        RegionEmpty(prgn, pWin->drawable.pScreen->context);
     }
 }
 

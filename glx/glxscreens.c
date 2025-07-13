@@ -282,7 +282,7 @@ pickFBConfig(__GLXscreen * pGlxScreen, VisualPtr visual)
         if (config->visualID != 0)
             continue;
 #ifdef COMPOSITE
-        if (!noCompositeExtension) {
+        if (!pGlxScreen->pScreen->context->noCompositeExtension) {
             /* Use only duplicated configs for compIsAlternateVisuals */
             if (!!compIsAlternateVisual(pGlxScreen->pScreen, visual->vid) !=
                 !!config->duplicatedForComp)
@@ -357,7 +357,7 @@ __glXScreenInit(__GLXscreen * pGlxScreen, ScreenPtr pScreen)
             pGlxScreen->visuals[pGlxScreen->numVisuals++] = config;
             config->visualID = visual->vid;
 #ifdef COMPOSITE
-            if (!noCompositeExtension) {
+            if (!pScreen->context->noCompositeExtension) {
                 if (compIsAlternateVisual(pScreen, visual->vid))
                     config->visualSelectGroup++;
             }
@@ -382,7 +382,7 @@ __glXScreenInit(__GLXscreen * pGlxScreen, ScreenPtr pScreen)
          */
         depth = config->redBits + config->greenBits + config->blueBits;
 #ifdef COMPOSITE
-        if (!noCompositeExtension) {
+        if (!pScreen->context->noCompositeExtension) {
             if (config->duplicatedForComp) {
                     depth += config->alphaBits;
                     config->visualSelectGroup++;
@@ -412,7 +412,7 @@ __glXScreenInit(__GLXscreen * pGlxScreen, ScreenPtr pScreen)
             continue;
 
 #ifdef COMPOSITE
-        if (!noCompositeExtension) {
+        if (!pScreen->context->noCompositeExtension) {
             if (config->duplicatedForComp)
                 (void) CompositeRegisterAlternateVisuals(pScreen, &visual->vid, 1);
         }

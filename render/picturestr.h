@@ -350,8 +350,6 @@ extern _X_EXPORT DevPrivateKeyRec PictureScreenPrivateKeyRec;
 extern _X_EXPORT DevPrivateKeyRec PictureWindowPrivateKeyRec;
 #define	PictureWindowPrivateKey (&PictureWindowPrivateKeyRec)
 
-extern RESTYPE PictureType;
-extern RESTYPE PictFormatType;
 /* GlyphSetType is now in context */
 
 #define GetPictureScreen(s) ((PictureScreenPtr)dixLookupPrivate(&(s)->devPrivates, PictureScreenPrivateKey))
@@ -360,18 +358,18 @@ extern RESTYPE PictFormatType;
 #define GetPictureWindow(w) ((PicturePtr)dixLookupPrivate(&(w)->devPrivates, PictureWindowPrivateKey))
 #define SetPictureWindow(w,p) dixSetPrivate(&(w)->devPrivates, PictureWindowPrivateKey, p)
 
-#define VERIFY_PICTURE(pPicture, pid, client, mode) {\
+#define VERIFY_PICTURE(pPicture, pid, client, mode, context) {\
     int tmprc = dixLookupResourceByType((void *)&(pPicture), pid,\
-	                                PictureType, client, mode);\
+	                                context->PictureType, client, mode);\
     if (tmprc != Success)\
 	return tmprc;\
 }
 
-#define VERIFY_ALPHA(pPicture, pid, client, mode) {\
+#define VERIFY_ALPHA(pPicture, pid, client, mode, context) {\
     if (pid == None) \
 	pPicture = 0; \
     else { \
-	VERIFY_PICTURE(pPicture, pid, client, mode); \
+	VERIFY_PICTURE(pPicture, pid, client, mode, context); \
     } \
 } \
 
@@ -546,8 +544,9 @@ CreateConicalGradientPicture(Picture pid,
                              xFixed * stops, xRenderColor * colors, int *error);
 
 #ifdef PANORAMIX
-extern void PanoramiXRenderInit(void);
-extern void PanoramiXRenderReset(void);
+typedef struct _XephyrContext XephyrContext;
+extern void PanoramiXRenderInit(XephyrContext* context);
+extern void PanoramiXRenderReset(XephyrContext* context);
 #endif
 
 /*

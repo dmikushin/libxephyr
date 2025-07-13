@@ -111,7 +111,7 @@ RegionOperate(ClientPtr client,
         RegionTranslate(srcRgn, xoff, yoff);
     if (!pWin->parent) {
         if (srcRgn)
-            RegionDestroy(srcRgn);
+            RegionDestroy(srcRgn, client->context);
         return Success;
     }
 
@@ -122,7 +122,7 @@ RegionOperate(ClientPtr client,
      */
     if (srcRgn == NULL) {
         if (*destRgnp != NULL) {
-            RegionDestroy(*destRgnp);
+            RegionDestroy(*destRgnp, pWin->drawable.pScreen->context);
             *destRgnp = 0;
             /* go on to remove shape and generate ShapeNotify */
         }
@@ -142,7 +142,7 @@ RegionOperate(ClientPtr client,
         switch (op) {
         case ShapeSet:
             if (*destRgnp)
-                RegionDestroy(*destRgnp);
+                RegionDestroy(*destRgnp, pWin->drawable.pScreen->context);
             *destRgnp = srcRgn;
             srcRgn = 0;
             break;
@@ -165,7 +165,7 @@ RegionOperate(ClientPtr client,
             break;
         case ShapeInvert:
             if (!*destRgnp)
-                *destRgnp = RegionCreate((BoxPtr) 0, 0);
+                *destRgnp = RegionCreate((BoxPtr) 0, 0, client->context);
             else
                 RegionSubtract(*destRgnp, srcRgn, *destRgnp);
             break;
@@ -174,7 +174,7 @@ RegionOperate(ClientPtr client,
             return BadValue;
         }
     if (srcRgn)
-        RegionDestroy(srcRgn);
+        RegionDestroy(srcRgn, pWin->drawable.pScreen->context);
     (*pWin->drawable.pScreen->SetShape) (pWin, kind);
     SendShapeNotify(pWin, kind);
     return Success;
@@ -189,7 +189,7 @@ CreateBoundingShape(WindowPtr pWin)
     extents.y1 = -wBorderWidth(pWin);
     extents.x2 = pWin->drawable.width + wBorderWidth(pWin);
     extents.y2 = pWin->drawable.height + wBorderWidth(pWin);
-    return RegionCreate(&extents, 1);
+    return RegionCreate(&extents, 1, pWin->drawable.pScreen->context);
 }
 
 RegionPtr
@@ -201,7 +201,7 @@ CreateClipShape(WindowPtr pWin)
     extents.y1 = 0;
     extents.x2 = pWin->drawable.width;
     extents.y2 = pWin->drawable.height;
-    return RegionCreate(&extents, 1);
+    return RegionCreate(&extents, 1, pWin->drawable.pScreen->context);
 }
 
 static int
@@ -276,7 +276,7 @@ ProcShapeRectangles(ClientPtr client)
     ctype = VerifyRectOrder(nrects, prects, (int) stuff->ordering);
     if (ctype < 0)
         return BadMatch;
-    srcRgn = RegionFromRects(nrects, prects, ctype);
+    srcRgn = RegionFromRects(nrects, prects, ctype, client->context);
 
     if (!pWin->optional)
         MakeWindowOptional(pWin);
@@ -499,7 +499,7 @@ ProcShapeCombine(ClientPtr client)
     }
 
     if (srcRgn) {
-        tmp = RegionCreate((BoxPtr) 0, 0);
+        tmp = RegionCreate((BoxPtr) 0, 0, pDestWin->drawable.pScreen->context);
         RegionCopy(tmp, srcRgn);
         srcRgn = tmp;
     }

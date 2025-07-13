@@ -1045,7 +1045,7 @@ hostx_paint_rect(KdScreenInfo *screen,
         box.x2 = dx + width;
         box.y2 = dy + height;
 
-        RegionInit(&region, &box, 1);
+        RegionInit(&region, &box, 1, context);
         ephyr_glamor_damage_redisplay(scrpriv->glamor, &region, context);
         RegionUninit(&region);
         return;

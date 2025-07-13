@@ -250,22 +250,21 @@ XFixesExtensionInit(XephyrContext* context)
         EventSwapVector[XFixesEventBase + XFixesCursorNotify] =
             (EventSwapPtr) SXFixesCursorNotifyEvent;
         SetResourceTypeErrorValue(RegionResType, XFixesErrorBase + BadRegion);
-        SetResourceTypeErrorValue(PointerBarrierType,
+        SetResourceTypeErrorValue(context->PointerBarrierType,
                                   XFixesErrorBase + BadBarrier);
     }
 }
 
 #ifdef PANORAMIX
 
-int (*PanoramiXSaveXFixesVector[XFixesNumberRequests]) (ClientPtr);
 
 void
-PanoramiXFixesInit(void)
+PanoramiXFixesInit(XephyrContext* context)
 {
     int i;
 
     for (i = 0; i < XFixesNumberRequests; i++)
-        PanoramiXSaveXFixesVector[i] = ProcXFixesVector[i];
+        context->PanoramiXSaveXFixesVector[i] = ProcXFixesVector[i];
     /*
      * Stuff in Xinerama aware request processing hooks
      */
@@ -277,12 +276,12 @@ PanoramiXFixesInit(void)
 }
 
 void
-PanoramiXFixesReset(void)
+PanoramiXFixesReset(XephyrContext* context)
 {
     int i;
 
     for (i = 0; i < XFixesNumberRequests; i++)
-        ProcXFixesVector[i] = PanoramiXSaveXFixesVector[i];
+        ProcXFixesVector[i] = context->PanoramiXSaveXFixesVector[i];
 }
 
 #endif

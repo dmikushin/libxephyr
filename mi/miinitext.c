@@ -141,16 +141,16 @@ static ExtensionModule staticExtensions[] = {
     {RRExtensionInit, "RANDR", &noRRExtension},
 #endif
 #ifdef COMPOSITE
-    {CompositeExtensionInit, "COMPOSITE", &noCompositeExtension},
+    {CompositeExtensionInit, "COMPOSITE", NULL},
 #endif
 #ifdef DAMAGE
-    {DamageExtensionInit, "DAMAGE", &noDamageExtension},
+    {DamageExtensionInit, "DAMAGE", NULL},
 #endif
 #ifdef SCREENSAVER
     {ScreenSaverExtensionInit, "MIT-SCREEN-SAVER", &noScreenSaverExtension},
 #endif
 #ifdef DBE
-    {DbeExtensionInit, "DOUBLE-BUFFER", &noDbeExtension},
+    {DbeExtensionInit, "DOUBLE-BUFFER", NULL},
 #endif
 #ifdef XRECORD
     {RecordExtensionInit, "RECORD", NULL},

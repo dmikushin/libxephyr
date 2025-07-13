@@ -200,7 +200,7 @@ glamor_xv_stop_video(glamor_port_private *port_priv)
 }
 
 static void
-glamor_xv_free_port_data(glamor_port_private *port_priv)
+glamor_xv_free_port_data(glamor_port_private *port_priv, XephyrContext* context)
 {
     int i;
 
@@ -211,7 +211,7 @@ glamor_xv_free_port_data(glamor_port_private *port_priv)
         }
     }
     RegionUninit(&port_priv->clip);
-    RegionNull(&port_priv->clip);
+    RegionNull(&port_priv->clip, context);
 }
 
 int
@@ -484,7 +484,7 @@ glamor_xv_render(glamor_port_private *port_priv, int id)
 
     DamageDamageRegion(port_priv->pDraw, &port_priv->clip);
 
-    glamor_xv_free_port_data(port_priv);
+    glamor_xv_free_port_data(port_priv, screen->context);
 }
 
 int
@@ -649,7 +649,7 @@ glamor_xv_put_image(glamor_port_private *port_priv,
 }
 
 void
-glamor_xv_init_port(glamor_port_private *port_priv)
+glamor_xv_init_port(glamor_port_private *port_priv, XephyrContext* context)
 {
     port_priv->brightness = 0;
     port_priv->contrast = 0;

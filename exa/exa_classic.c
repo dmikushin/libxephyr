@@ -133,8 +133,8 @@ exaCreatePixmap_classic(ScreenPtr pScreen, int w, int h, int depth,
     box.y1 = 0;
     box.x2 = w;
     box.y2 = h;
-    RegionInit(&pExaPixmap->validSys, &box, 0);
-    RegionInit(&pExaPixmap->validFB, &box, 0);
+    RegionInit(&pExaPixmap->validSys, &box, 0, pScreen->context);
+    RegionInit(&pExaPixmap->validFB, &box, 0, pScreen->context);
 
     exaSetAccelBlock(pExaScr, pExaPixmap, w, h, bpp);
 

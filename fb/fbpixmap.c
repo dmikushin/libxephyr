@@ -96,7 +96,7 @@ fbDestroyPixmap(PixmapPtr pPixmap)
     return TRUE;
 }
 
-#define ADDRECT(reg,r,fr,rx1,ry1,rx2,ry2)			\
+#define ADDRECT(reg,r,fr,rx1,ry1,rx2,ry2,context)		\
 if (((rx1) < (rx2)) && ((ry1) < (ry2)) &&			\
     (!((reg)->data->numRects &&					\
        ((r-1)->y1 == (ry1)) &&					\
@@ -106,7 +106,7 @@ if (((rx1) < (rx2)) && ((ry1) < (ry2)) &&			\
 {								\
     if ((reg)->data->numRects == (reg)->data->size)		\
     {								\
-	RegionRectAlloc(reg, 1);					\
+	RegionRectAlloc(reg, 1, context);				\
 	fr = RegionBoxptr(reg);				\
 	r = fr + (reg)->data->numRects;				\
     }								\
@@ -144,7 +144,7 @@ fbPixmapToRegion(PixmapPtr pPix)
     FbBits *pwLine;
     int nWidth;
 
-    pReg = RegionCreate(NULL, 1);
+    pReg = RegionCreate(NULL, 1, pPix->drawable.pScreen->context);
     if (!pReg)
         return NullRegion;
     FirstRect = RegionBoxptr(pReg);
@@ -197,7 +197,7 @@ fbPixmapToRegion(PixmapPtr pPix)
                     if (fInBox) {
                         /* end box */
                         ADDRECT(pReg, rects, FirstRect,
-                                rx1, h, base + ib, h + 1);
+                                rx1, h, base + ib, h + 1, pPix->drawable.pScreen->context);
                         fInBox = FALSE;
                     }
                 }
@@ -222,7 +222,7 @@ fbPixmapToRegion(PixmapPtr pPix)
                     if (fInBox) {
                         /* end box */
                         ADDRECT(pReg, rects, FirstRect,
-                                rx1, h, base + ib, h + 1);
+                                rx1, h, base + ib, h + 1, pPix->drawable.pScreen->context);
                         fInBox = FALSE;
                     }
                 }
@@ -233,7 +233,7 @@ fbPixmapToRegion(PixmapPtr pPix)
         /* If scanline ended with last bit set, end the box */
         if (fInBox) {
             ADDRECT(pReg, rects, FirstRect,
-                    rx1, h, base + (width & FB_MASK), h + 1);
+                    rx1, h, base + (width & FB_MASK), h + 1, pPix->drawable.pScreen->context);
         }
         /* if all rectangles on this line have the same x-coords as
          * those on the previous line, then add 1 to all the previous  y2s and

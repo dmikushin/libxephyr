@@ -48,7 +48,7 @@ glamor_prep_pixmap_box(PixmapPtr pixmap, glamor_access_t access, BoxPtr box)
 
     glamor_make_current(glamor_priv);
 
-    RegionInit(&region, box, 1);
+    RegionInit(&region, box, 1, screen->context);
 
     /* See if it's already mapped */
     if (pixmap->devPrivate.ptr) {
@@ -81,7 +81,7 @@ glamor_prep_pixmap_box(PixmapPtr pixmap, glamor_access_t access, BoxPtr box)
             pixmap->devPrivate.ptr = NULL;
         }
     } else {
-        RegionInit(&priv->prepare_region, box, 1);
+        RegionInit(&priv->prepare_region, box, 1, screen->context);
 
         if (glamor_priv->has_rw_pbo) {
             if (priv->pbo == 0)

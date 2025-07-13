@@ -48,14 +48,14 @@ void
 miDestroyGC(GCPtr pGC)
 {
     if (pGC->freeCompClip)
-        RegionDestroy(pGC->pCompositeClip);
+        RegionDestroy(pGC->pCompositeClip, pGC->pScreen->context);
 }
 
 void
 miDestroyClip(GCPtr pGC)
 {
     if (pGC->clientClip)
-        RegionDestroy(pGC->clientClip);
+        RegionDestroy(pGC->clientClip, pGC->pScreen->context);
     pGC->clientClip = NULL;
 }
 
@@ -73,7 +73,7 @@ miChangeClip(GCPtr pGC, int type, void *pvalue, int nrects)
         pGC->clientClip = pvalue;
     }
     else if (type != CT_NONE) {
-        pGC->clientClip = RegionFromRects(nrects, (xRectangle *) pvalue, type);
+        pGC->clientClip = RegionFromRects(nrects, (xRectangle *) pvalue, type, pGC->pScreen->context);
         free(pvalue);
     }
     pGC->stateChanges |= GCClipMask;
@@ -83,7 +83,7 @@ void
 miCopyClip(GCPtr pgcDst, GCPtr pgcSrc)
 {
     if (pgcSrc->clientClip) {
-        RegionPtr prgnNew = RegionCreate(NULL, 1);
+        RegionPtr prgnNew = RegionCreate(NULL, 1, pgcDst->pScreen->context);
         RegionCopy(prgnNew, (RegionPtr) (pgcSrc->clientClip));
         (*pgcDst->funcs->ChangeClip) (pgcDst, CT_REGION, prgnNew, 0);
     } else {
@@ -125,7 +125,7 @@ miComputeCompositeClip(GCPtr pGC, DrawablePtr pDrawable)
          */
         if (!pGC->clientClip) {
             if (freeCompClip)
-                RegionDestroy(pGC->pCompositeClip);
+                RegionDestroy(pGC->pCompositeClip, pGC->pScreen->context);
             pGC->pCompositeClip = pregWin;
             pGC->freeCompClip = freeTmpClip;
         }
@@ -146,14 +146,14 @@ miComputeCompositeClip(GCPtr pGC, DrawablePtr pDrawable)
             if (freeCompClip) {
                 RegionIntersect(pGC->pCompositeClip, pregWin, pGC->clientClip);
                 if (freeTmpClip)
-                    RegionDestroy(pregWin);
+                    RegionDestroy(pregWin, pGC->pScreen->context);
             }
             else if (freeTmpClip) {
                 RegionIntersect(pregWin, pregWin, pGC->clientClip);
                 pGC->pCompositeClip = pregWin;
             }
             else {
-                pGC->pCompositeClip = RegionCreate(NullBox, 0);
+                pGC->pCompositeClip = RegionCreate(NullBox, 0, pGC->pScreen->context);
                 RegionIntersect(pGC->pCompositeClip, pregWin, pGC->clientClip);
             }
             pGC->freeCompClip = TRUE;
@@ -177,7 +177,7 @@ miComputeCompositeClip(GCPtr pGC, DrawablePtr pDrawable)
         }
         else {
             pGC->freeCompClip = TRUE;
-            pGC->pCompositeClip = RegionCreate(&pixbounds, 1);
+            pGC->pCompositeClip = RegionCreate(&pixbounds, 1, pDrawable->pScreen->context);
         }
 
         if (pGC->clientClip) {
