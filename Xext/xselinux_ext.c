@@ -691,25 +691,25 @@ SELinuxResetProc(ExtensionEntry * extEntry)
 }
 
 void
-SELinuxExtensionInit(void)
+SELinuxExtensionInit(XephyrContext* context)
 {
     /* Check SELinux mode on system, configuration file, and boolean */
     if (!is_selinux_enabled()) {
-        LogMessage(X_INFO, "SELinux: Disabled on system\n");
+        LogMessage(X_INFO, "SELinux: Disabled on system\n", context);
         return;
     }
     if (selinuxEnforcingState == SELINUX_MODE_DISABLED) {
-        LogMessage(X_INFO, "SELinux: Disabled in configuration file\n");
+        LogMessage(X_INFO, "SELinux: Disabled in configuration file\n", context);
         return;
     }
     if (!security_get_boolean_active("xserver_object_manager")) {
-        LogMessage(X_INFO, "SELinux: Disabled by boolean\n");
+        LogMessage(X_INFO, "SELinux: Disabled by boolean\n", context);
         return;
     }
 
     /* Set up XACE hooks */
     SELinuxLabelInit();
-    SELinuxFlaskInit();
+    SELinuxFlaskInit(context);
 
     /* Add extension to server */
     AddExtension(SELINUX_EXTENSION_NAME, SELinuxNumberEvents,

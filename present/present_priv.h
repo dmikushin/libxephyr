@@ -44,9 +44,9 @@
 #define DebugPresent(x)
 #endif
 
-extern int present_request;
-
-extern DevPrivateKeyRec present_screen_private_key;
+// Removed extern declarations - now in XephyrContext
+// extern int present_request;
+// extern DevPrivateKeyRec present_screen_private_key;
 
 typedef struct present_fence *present_fence_ptr;
 
@@ -194,11 +194,12 @@ struct present_screen_priv {
 static inline present_screen_priv_ptr
 present_screen_priv(ScreenPtr screen)
 {
-    return (present_screen_priv_ptr)dixLookupPrivate(&(screen)->devPrivates, &present_screen_private_key);
+    XephyrContext* context = screen->context;
+    return (present_screen_priv_ptr)dixLookupPrivate(&(screen)->devPrivates, &context->present_screen_private_key);
 }
 
 /*
- * Each window has a list of context->clients and event masks
+ * Each window has a list of clients and event masks
  */
 typedef struct present_event *present_event_ptr;
 
@@ -222,12 +223,13 @@ struct present_window_priv {
 
 #define PresentCrtcNeverSet     ((RRCrtcPtr) 1)
 
-extern DevPrivateKeyRec present_window_private_key;
+// extern DevPrivateKeyRec present_window_private_key; // Now in XephyrContext
 
 static inline present_window_priv_ptr
 present_window_priv(WindowPtr window)
 {
-    return (present_window_priv_ptr)dixGetPrivate(&(window)->devPrivates, &present_window_private_key);
+    XephyrContext* context = window->drawable.pScreen->context;
+    return (present_window_priv_ptr)dixGetPrivate(&(window)->devPrivates, &context->present_window_private_key);
 }
 
 present_window_priv_ptr

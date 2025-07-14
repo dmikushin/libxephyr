@@ -121,7 +121,7 @@ KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr adaptors, int num, XephyrCon
     if (KdXVGeneration != context->serverGeneration)
         KdXVGeneration = context->serverGeneration;
 
-    if (noXvExtension)
+    if (context->noXvExtension)
         return FALSE;
 
     if (!dixRegisterPrivateKey(&KdXVWindowKeyRec, PRIVATE_WINDOW, 0, context))

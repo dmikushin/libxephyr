@@ -134,12 +134,12 @@ extern void FreeOsBuffers(OsCommPtr     /*oc */
     );
 
 void
-CloseDownFileDescriptor(OsCommPtr oc);
+CloseDownFileDescriptor(OsCommPtr oc, XephyrContext* context);
 
 #include "dix.h"
 #include "ospoll.h"
 
-extern struct ospoll    *server_poll;
+/* server_poll now in XephyrContext */
 
 Bool
 listen_to_client(ClientPtr client);
@@ -187,8 +187,8 @@ extern int XdmcpOptions(int argc, char **argv, int i);
 extern void XdmcpRegisterConnection(int type, const char *address, int addrlen);
 extern void XdmcpRegisterAuthorizations(void);
 extern void XdmcpRegisterAuthorization(const char *name, int namelen);
-extern void XdmcpInit(void);
-extern void XdmcpReset(void);
+extern void XdmcpInit(XephyrContext* context);
+extern void XdmcpReset(XephyrContext* context);
 extern void XdmcpOpenDisplay(int sock);
 extern void XdmcpCloseDisplay(int sock);
 extern void XdmcpRegisterAuthentication(const char *name,

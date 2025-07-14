@@ -158,14 +158,9 @@ static inline Bool client_is_ready(ClientPtr client)
 Bool
 clients_are_ready(void);
 
-extern struct xorg_list output_pending_clients;
+/* output_pending_clients now in XephyrContext */
 
-static inline void
-output_pending_mark(ClientPtr client)
-{
-    if (!client->clientGone && xorg_list_is_empty(&client->output_pending))
-        xorg_list_append(&client->output_pending, &output_pending_clients);
-}
+void output_pending_mark(ClientPtr client);
 
 static inline void
 output_pending_clear(ClientPtr client)
@@ -173,9 +168,7 @@ output_pending_clear(ClientPtr client)
     xorg_list_del(&client->output_pending);
 }
 
-static inline Bool any_output_pending(void) {
-    return !xorg_list_is_empty(&output_pending_clients);
-}
+Bool any_output_pending(XephyrContext* context);
 
 #define SMART_MAX_PRIORITY  (20)
 #define SMART_MIN_PRIORITY  (-20)

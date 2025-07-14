@@ -126,6 +126,7 @@ AccessXInit(DeviceIntPtr keybd)
 static void
 AccessXKeyboardEvent(DeviceIntPtr keybd, int type, BYTE keyCode, Bool isRepeat)
 {
+    XephyrContext *context = keybd->context;
     DeviceEvent event;
 
     init_device_event(&event, keybd, GetTimeInMillis(), EVENT_SOURCE_NORMAL);
@@ -133,7 +134,7 @@ AccessXKeyboardEvent(DeviceIntPtr keybd, int type, BYTE keyCode, Bool isRepeat)
     event.detail.key = keyCode;
     event.key_repeat = isRepeat;
 
-    if (xkbDebugFlags & 0x8) {
+    if (context->xkbDebugFlags & 0x8) {
         DebugF("[xkb] AXKE: Key %d %s\n", keyCode,
                (event.type == ET_KeyPress ? "down" : "up"));
     }
@@ -457,6 +458,7 @@ AccessXTimeoutExpire(OsTimerPtr timer, CARD32 now, void *arg)
 Bool
 AccessXFilterPressEvent(DeviceEvent *event, DeviceIntPtr keybd)
 {
+    XephyrContext *context = keybd->context;
     XkbSrvInfoPtr xkbi = keybd->key->xkbInfo;
     XkbControlsPtr ctrls = xkbi->desc->ctrls;
     Bool ignoreKeyEvent = FALSE;
@@ -540,7 +542,7 @@ AccessXFilterPressEvent(DeviceEvent *event, DeviceIntPtr keybd)
             ((ctrls->enabled_ctrls & (XkbSlowKeysMask | XkbRepeatKeysMask)) ==
              XkbRepeatKeysMask)) {
             if (BitIsOn(keybd->kbdfeed->ctrl.autoRepeats, key)) {
-                if (xkbDebugFlags & 0x10)
+                if (context->xkbDebugFlags & 0x10)
                     DebugF("Starting software autorepeat...\n");
                 if (xkbi->repeatKey == key)
                     ignoreKeyEvent = TRUE;
@@ -714,7 +716,7 @@ ProcessPointerEvent(InternalEvent *ev, DeviceIntPtr mouse, XephyrContext* contex
     XkbSrvInfoPtr xkbi = NULL;
     unsigned changed = 0;
     ProcessInputProc backupproc;
-    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(mouse);
+    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(mouse, context);
     DeviceEvent *event = &ev->device_event;
 
     dev = IsFloating(mouse) ? mouse : GetMaster(mouse, MASTER_KEYBOARD);

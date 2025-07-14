@@ -78,13 +78,13 @@ typedef struct {
     Bool generateEvent;         /* generate an event during warping? */
 } miPointerRec, *miPointerPtr;
 
-DevPrivateKeyRec context->miPointerScreenKeyRec;
+// DevPrivateKeyRec miPointerScreenKeyRec; // Now in XephyrContext
 
 #define GetScreenPrivate(s) ((miPointerScreenPtr) \
     dixLookupPrivate(&(s)->devPrivates, miPointerScreenKey))
 #define SetupScreen(s)	miPointerScreenPtr  pScreenPriv = GetScreenPrivate(s)
 
-DevPrivateKeyRec context->miPointerPrivKeyRec;
+/* DevPrivateKeyRec miPointerPrivKeyRec; -- moved to context */
 
 #define MIPOINTER(dev) \
     (IsFloating(dev) ? \
@@ -119,6 +119,7 @@ miPointerInitialize(ScreenPtr pScreen,
                     miPointerScreenFuncPtr screenFuncs, Bool waitForUpdate)
 {
     miPointerScreenPtr pScreenPriv;
+    XephyrContext *context = pScreen->context;
 
     if (!dixRegisterPrivateKey(&context->miPointerScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
@@ -162,6 +163,7 @@ miPointerInitialize(ScreenPtr pScreen,
 static Bool
 miPointerCloseScreen(ScreenPtr pScreen)
 {
+    XephyrContext *context = pScreen->context;
     SetupScreen(pScreen);
 
     pScreen->CloseScreen = pScreenPriv->CloseScreen;
@@ -178,6 +180,7 @@ miPointerCloseScreen(ScreenPtr pScreen)
 static Bool
 miPointerRealizeCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
 {
+    XephyrContext *context = pScreen->context;
     SetupScreen(pScreen);
     return (*pScreenPriv->spriteFuncs->RealizeCursor) (pDev, pScreen, pCursor);
 }
@@ -186,6 +189,7 @@ static Bool
 miPointerUnrealizeCursor(DeviceIntPtr pDev,
                          ScreenPtr pScreen, CursorPtr pCursor)
 {
+    XephyrContext *context = pScreen->context;
     SetupScreen(pScreen);
     return (*pScreenPriv->spriteFuncs->UnrealizeCursor) (pDev, pScreen,
                                                          pCursor);
@@ -194,6 +198,7 @@ miPointerUnrealizeCursor(DeviceIntPtr pDev,
 static Bool
 miPointerDisplayCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
 {
+    XephyrContext *context = pDev->spriteInfo->sprite->pDequeueScreen->context;
     miPointerPtr pPointer;
 
     /* return for keyboards */
@@ -220,6 +225,7 @@ miPointerDisplayCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
 static void
 miPointerConstrainCursor(DeviceIntPtr pDev, ScreenPtr pScreen, BoxPtr pBox)
 {
+    XephyrContext *context = pDev->spriteInfo->sprite->pDequeueScreen->context;
     miPointerPtr pPointer;
 
     pPointer = MIPOINTER(pDev);
@@ -271,6 +277,7 @@ static Bool
 miPointerSetCursorPosition(DeviceIntPtr pDev, ScreenPtr pScreen,
                            int x, int y, Bool generateEvent)
 {
+    XephyrContext *context = pScreen->context;
     SetupScreen(pScreen);
     miPointerPtr pPointer = MIPOINTER(pDev);
 
@@ -311,6 +318,7 @@ miRecolorCursor(DeviceIntPtr pDev, ScreenPtr pScr,
 static Bool
 miPointerDeviceInitialize(DeviceIntPtr pDev, ScreenPtr pScreen)
 {
+    XephyrContext *context = pScreen->context;
     miPointerPtr pPointer;
 
     SetupScreen(pScreen);
@@ -351,6 +359,7 @@ miPointerDeviceInitialize(DeviceIntPtr pDev, ScreenPtr pScreen)
 static void
 miPointerDeviceCleanup(DeviceIntPtr pDev, ScreenPtr pScreen)
 {
+    XephyrContext *context = pScreen->context;
     SetupScreen(pScreen);
 
     if (!IsMaster(pDev) && !IsFloating(pDev))
@@ -376,6 +385,7 @@ miPointerDeviceCleanup(DeviceIntPtr pDev, ScreenPtr pScreen)
 void
 miPointerWarpCursor(DeviceIntPtr pDev, ScreenPtr pScreen, int x, int y)
 {
+    XephyrContext *context = pDev->spriteInfo->sprite->pDequeueScreen->context;
     miPointerPtr pPointer;
     BOOL changedScreen = FALSE;
 
@@ -410,6 +420,7 @@ miPointerWarpCursor(DeviceIntPtr pDev, ScreenPtr pScreen, int x, int y)
 void
 miPointerUpdateSprite(DeviceIntPtr pDev)
 {
+    XephyrContext *context = pDev->spriteInfo->sprite->pDequeueScreen->context;
     ScreenPtr pScreen;
     miPointerScreenPtr pScreenPriv;
     CursorPtr pCursor;
@@ -489,6 +500,7 @@ miPointerUpdateSprite(DeviceIntPtr pDev)
 void
 miPointerInvalidateSprite(DeviceIntPtr pDev)
 {
+    XephyrContext *context = pDev->spriteInfo->sprite->pDequeueScreen->context;
     miPointerPtr pPointer;
 
     pPointer = MIPOINTER(pDev);
@@ -506,6 +518,7 @@ miPointerInvalidateSprite(DeviceIntPtr pDev)
 void
 miPointerSetScreen(DeviceIntPtr pDev, int screen_no, int x, int y)
 {
+    XephyrContext *context = pDev->context;
     ScreenPtr pScreen;
     miPointerPtr pPointer;
 
@@ -525,6 +538,7 @@ miPointerSetScreen(DeviceIntPtr pDev, int screen_no, int x, int y)
 ScreenPtr
 miPointerGetScreen(DeviceIntPtr pDev)
 {
+    XephyrContext *context = pDev->spriteInfo->sprite->pDequeueScreen->context;
     miPointerPtr pPointer = MIPOINTER(pDev);
 
     return (pPointer) ? pPointer->pScreen : NULL;
@@ -538,6 +552,7 @@ miPointerGetScreen(DeviceIntPtr pDev)
 Bool
 miPointerSetWaitForUpdate(ScreenPtr pScreen, Bool wait)
 {
+    XephyrContext *context = pScreen->context;
     SetupScreen(pScreen);
     Bool prevWait = pScreenPriv->waitForUpdate;
 
@@ -549,6 +564,7 @@ miPointerSetWaitForUpdate(ScreenPtr pScreen, Bool wait)
 static void
 miPointerMoveNoEvent(DeviceIntPtr pDev, ScreenPtr pScreen, int x, int y)
 {
+    XephyrContext *context = pScreen->context;
     miPointerPtr pPointer;
 
     SetupScreen(pScreen);
@@ -597,6 +613,7 @@ miPointerSetPosition(DeviceIntPtr pDev, int mode, double *screenx,
                      double *screeny,
                      int *nevents, InternalEvent* events)
 {
+    XephyrContext *context = pDev->spriteInfo->sprite->pDequeueScreen->context;
     miPointerScreenPtr pScreenPriv;
     ScreenPtr pScreen;
     ScreenPtr newScreen;
@@ -706,6 +723,7 @@ miPointerSetPosition(DeviceIntPtr pDev, int mode, double *screenx,
 void
 miPointerGetPosition(DeviceIntPtr pDev, int *x, int *y)
 {
+    XephyrContext *context = pDev->spriteInfo->sprite->pDequeueScreen->context;
     *x = MIPOINTER(pDev)->x;
     *y = MIPOINTER(pDev)->y;
 }

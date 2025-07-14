@@ -152,7 +152,7 @@ static void XvMCExtensionInitWrapper(XephyrContext* context) {
 
 #ifdef XSELINUX
 static void SELinuxExtensionInitWrapper(XephyrContext* context) {
-    SELinuxExtensionInit();
+    SELinuxExtensionInit(context);
 }
 #endif
 
@@ -167,10 +167,10 @@ static Bool *noTestExtensionsPtr = NULL;
 
 /* List of built-in (statically linked) extensions */
 static ExtensionModule staticExtensions[] = {
-    {GEExtensionInit, "Generic Event Extension", &noGEExtension},
+    {GEExtensionInit, "Generic Event Extension", NULL}, /* will be set to &context->noGEExtension at runtime */
     {ShapeExtensionInitWrapper, "SHAPE", NULL},
 #ifdef MITSHM
-    {ShmExtensionInit, "MIT-SHM", &noMITShmExtension},
+    {ShmExtensionInit, "MIT-SHM", NULL}, /* will be set to &context->noMITShmExtension at runtime */
 #endif
     {XInputExtensionInit, "XInputExtension", NULL},
 #ifdef XTEST
@@ -187,13 +187,13 @@ static ExtensionModule staticExtensions[] = {
     {PanoramiXExtensionInit, "XINERAMA", &noPanoramiXExtension},
 #endif
     /* must be before Render to layer DisplayCursor correctly */
-    {XFixesExtensionInit, "XFIXES", &noXFixesExtension},
+    {XFixesExtensionInit, "XFIXES", NULL}, /* will be set to &context->noXFixesExtension at runtime */
 #ifdef XF86BIGFONT
     {XFree86BigfontExtensionInitWrapper, "XFree86-Bigfont", &noXFree86BigfontExtension},
 #endif
-    {RenderExtensionInit, "RENDER", &noRenderExtension},
+    {RenderExtensionInit, "RENDER", NULL}, /* will be set to &context->noRenderExtension at runtime */
 #ifdef RANDR
-    {RRExtensionInit, "RANDR", &noRRExtension},
+    {RRExtensionInit, "RANDR", NULL}, /* will be set to &context->noRRExtension at runtime */
 #endif
 #ifdef COMPOSITE
     {CompositeExtensionInit, "COMPOSITE", NULL},
@@ -202,7 +202,7 @@ static ExtensionModule staticExtensions[] = {
     {DamageExtensionInit, "DAMAGE", NULL},
 #endif
 #ifdef SCREENSAVER
-    {ScreenSaverExtensionInit, "MIT-SCREEN-SAVER", &noScreenSaverExtension},
+    {ScreenSaverExtensionInit, "MIT-SCREEN-SAVER", NULL}, /* will be set to &context->noScreenSaverExtension at runtime */
 #endif
 #ifdef DBE
     {DbeExtensionInit, "DOUBLE-BUFFER", NULL},
@@ -220,17 +220,17 @@ static ExtensionModule staticExtensions[] = {
     {dri3_extension_init_wrapper, "DRI3", NULL},
 #endif
 #ifdef RES
-    {ResExtensionInitWrapper, "X-Resource", &noResExtension},
+    {ResExtensionInitWrapper, "X-Resource", NULL}, /* will be set to &context->noResExtension at runtime */
 #endif
 #ifdef XV
-    {XvExtensionInit, "XVideo", &noXvExtension},
-    {XvMCExtensionInitWrapper, "XVideo-MotionCompensation", &noXvExtension},
+    {XvExtensionInit, "XVideo", NULL}, /* will be set to &context->noXvExtension at runtime */
+    {XvMCExtensionInitWrapper, "XVideo-MotionCompensation", NULL}, /* will be set to &context->noXvExtension at runtime */
 #endif
 #ifdef XSELINUX
     {SELinuxExtensionInitWrapper, "SELinux", &noSELinuxExtension},
 #endif
 #ifdef GLXEXT
-    {GlxExtensionInit, "GLX", &noGlxExtension},
+    {GlxExtensionInit, "GLX", NULL}, /* will be set to &context->noGlxExtension at runtime */
 #endif
 };
 
@@ -314,13 +314,55 @@ UpdateExtensionPointers(XephyrContext* context)
     /* Update extension module pointers to use context-based flags */
     for (i = 0; i < ARRAY_SIZE(staticExtensions); i++) {
         ext = (ExtensionModule *)&staticExtensions[i];
+        
+        /* Update pointers based on extension name */
+        if (strcmp(ext->name, "Generic Event Extension") == 0) {
+            ext->disablePtr = &context->noGEExtension;
+        }
+#ifdef MITSHM
+        else if (strcmp(ext->name, "MIT-SHM") == 0) {
+            ext->disablePtr = &context->noMITShmExtension;
+        }
+#endif
+        else if (strcmp(ext->name, "XFIXES") == 0) {
+            ext->disablePtr = &context->noXFixesExtension;
+        }
+        else if (strcmp(ext->name, "RENDER") == 0) {
+            ext->disablePtr = &context->noRenderExtension;
+        }
+#ifdef RANDR
+        else if (strcmp(ext->name, "RANDR") == 0) {
+            ext->disablePtr = &context->noRRExtension;
+        }
+#endif
+#ifdef SCREENSAVER
+        else if (strcmp(ext->name, "MIT-SCREEN-SAVER") == 0) {
+            ext->disablePtr = &context->noScreenSaverExtension;
+        }
+#endif
+#ifdef RES
+        else if (strcmp(ext->name, "X-Resource") == 0) {
+            ext->disablePtr = &context->noResExtension;
+        }
+#endif
+#ifdef XV
+        else if (strcmp(ext->name, "XVideo") == 0 || 
+                 strcmp(ext->name, "XVideo-MotionCompensation") == 0) {
+            ext->disablePtr = &context->noXvExtension;
+        }
+#endif
+#ifdef GLXEXT
+        else if (strcmp(ext->name, "GLX") == 0) {
+            ext->disablePtr = &context->noGlxExtension;
+        }
+#endif
 #ifdef XTEST
-        if (strcmp(ext->name, "XTEST") == 0) {
+        else if (strcmp(ext->name, "XTEST") == 0) {
             ext->disablePtr = noTestExtensionsPtr;
         }
 #endif
 #ifdef XRECORD
-        if (strcmp(ext->name, "RECORD") == 0) {
+        else if (strcmp(ext->name, "RECORD") == 0) {
             ext->disablePtr = noTestExtensionsPtr;
         }
 #endif

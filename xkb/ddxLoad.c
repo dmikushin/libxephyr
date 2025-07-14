@@ -146,8 +146,8 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata, XephyrContext* cont
                  "\"%s%sxkbcomp\" -w %d %s -xkm \"%s\" "
                  "-em1 %s -emp %s -eml %s \"%s%s.xkm\"",
                  xkbbindir, xkbbindirsep,
-                 ((xkbDebugFlags < 2) ? 1 :
-                  ((xkbDebugFlags > 10) ? 10 : (int) xkbDebugFlags)),
+                 ((context->xkbDebugFlags < 2) ? 1 :
+                  ((context->xkbDebugFlags > 10) ? 10 : (int) context->xkbDebugFlags)),
                  xkbbasedirflag ? xkbbasedirflag : "", xkmfile,
                  PRE_ERROR_MSG, ERROR_PREFIX, POST_ERROR_MSG1,
                  xkm_output_dir, keymap) == -1)
@@ -177,7 +177,7 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata, XephyrContext* cont
         if (fclose(out) == 0 && System(buf) >= 0)
 #endif
         {
-            if (xkbDebugFlags)
+            if (context->xkbDebugFlags)
                 DebugF("[xkb] xkb executes: %s\n", buf);
             free(buf);
 #ifdef WIN32
@@ -217,7 +217,7 @@ xkb_write_keymap_for_names_cb(FILE *out, void *userdata)
 {
     XkbKeymapNamesCtx *ctx = userdata;
 #ifdef DEBUG
-    if (xkbDebugFlags) {
+    if (context->xkbDebugFlags) {
         ErrorF("[xkb] XkbDDXCompileKeymapByNames compiling keymap:\n", context);
         XkbWriteXKBKeymapForNames(stderr, ctx->names, ctx->xkb, ctx->want, ctx->need);
     }

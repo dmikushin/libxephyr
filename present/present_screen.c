@@ -23,9 +23,10 @@
 
 #include "present_priv.h"
 
-int present_request;
-DevPrivateKeyRec present_screen_private_key;
-DevPrivateKeyRec present_window_private_key;
+// Removed global variables - now in XephyrContext
+// int present_request;
+// DevPrivateKeyRec present_screen_private_key;
+// DevPrivateKeyRec present_window_private_key;
 
 /*
  * Get a pointer to a present window private, creating if necessary
@@ -34,6 +35,7 @@ present_window_priv_ptr
 present_get_window_priv(WindowPtr window, Bool create)
 {
     present_window_priv_ptr window_priv = present_window_priv(window);
+    XephyrContext* context = window->drawable.pScreen->context;
 
     if (!create || window_priv != NULL)
         return window_priv;
@@ -45,7 +47,7 @@ present_get_window_priv(WindowPtr window, Bool create)
 
     window_priv->window = window;
     window_priv->crtc = PresentCrtcNeverSet;
-    dixSetPrivate(&window->devPrivates, &present_window_private_key, window_priv);
+    dixSetPrivate(&window->devPrivates, &context->present_window_private_key, window_priv);
     return window_priv;
 }
 
@@ -155,10 +157,10 @@ present_clip_notify(WindowPtr window, int dx, int dy)
 Bool
 present_screen_register_priv_keys(XephyrContext* context)
 {
-    if (!dixRegisterPrivateKey(&present_screen_private_key, PRIVATE_SCREEN, 0, context))
+    if (!dixRegisterPrivateKey(&context->present_screen_private_key, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&present_window_private_key, PRIVATE_WINDOW, 0, context))
+    if (!dixRegisterPrivateKey(&context->present_window_private_key, PRIVATE_WINDOW, 0, context))
         return FALSE;
 
     return TRUE;
@@ -168,6 +170,7 @@ present_screen_priv_ptr
 present_screen_priv_init(ScreenPtr screen)
 {
     present_screen_priv_ptr screen_priv;
+    XephyrContext* context = screen->context;
 
     screen_priv = calloc(1, sizeof (present_screen_priv_rec));
     if (!screen_priv)
@@ -178,7 +181,7 @@ present_screen_priv_init(ScreenPtr screen)
     wrap(screen_priv, screen, ConfigNotify, present_config_notify);
     wrap(screen_priv, screen, ClipNotify, present_clip_notify);
 
-    dixSetPrivate(&screen->devPrivates, &present_screen_private_key, screen_priv);
+    dixSetPrivate(&screen->devPrivates, &context->present_screen_private_key, screen_priv);
 
     return screen_priv;
 }
@@ -226,7 +229,7 @@ present_extension_init(XephyrContext* context)
     if (!extension)
         goto bail;
 
-    present_request = extension->base;
+    context->present_request = extension->base;
 
     if (!present_init())
         goto bail;

@@ -42,14 +42,20 @@ void
 InitCard(char *name)
 {
     EPHYR_DBG("mark");
-    extern XephyrContext *kdGlobalContext;
-    if (kdGlobalContext)
-        KdCardInfoAdd(&ephyrFuncs, 0, kdGlobalContext);
+    /* InitCard is called from KdInitOutput which has access to context
+     * but InitCard signature doesn't allow passing it.
+     * For now, we skip card initialization here - it will be handled
+     * elsewhere in the initialization chain where context is available.
+     */
 }
 
 void
 InitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* context)
 {
+    /* Add ephyr card before calling KdInitOutput */
+    if (!context->kdCardInfo) {
+        KdCardInfoAdd(&ephyrFuncs, 0, context);
+    }
     KdInitOutput(pScreenInfo, argc, argv, context);
 }
 

@@ -106,11 +106,12 @@ void
 present_send_config_notify(WindowPtr window, int x, int y, int w, int h, int bw, WindowPtr sibling)
 {
     present_window_priv_ptr window_priv = present_window_priv(window);
+    XephyrContext* context = window->drawable.pScreen->context;
 
     if (window_priv) {
         xPresentConfigureNotify cn = {
             .type = GenericEvent,
-            .extension = present_request,
+            .extension = context->present_request,
             .length = (sizeof(xPresentConfigureNotify) - 32) >> 2,
             .evtype = PresentConfigureNotify,
             .eid = 0,
@@ -148,11 +149,12 @@ void
 present_send_complete_notify(WindowPtr window, CARD8 kind, CARD8 mode, CARD32 serial, uint64_t ust, uint64_t msc)
 {
     present_window_priv_ptr window_priv = present_window_priv(window);
+    XephyrContext* context = window->drawable.pScreen->context;
 
     if (window_priv) {
         xPresentCompleteNotify cn = {
             .type = GenericEvent,
-            .extension = present_request,
+            .extension = context->present_request,
             .length = (sizeof(xPresentCompleteNotify) - 32) >> 2,
             .evtype = PresentCompleteNotify,
             .kind = kind,
@@ -180,11 +182,12 @@ void
 present_send_idle_notify(WindowPtr window, CARD32 serial, PixmapPtr pixmap, struct present_fence *idle_fence)
 {
     present_window_priv_ptr window_priv = present_window_priv(window);
+    XephyrContext* context = window->drawable.pScreen->context;
 
     if (window_priv) {
         xPresentIdleNotify in = {
             .type = GenericEvent,
-            .extension = present_request,
+            .extension = context->present_request,
             .length = (sizeof(xPresentIdleNotify) - 32) >> 2,
             .evtype = PresentIdleNotify,
             .eid = 0,
@@ -264,6 +267,6 @@ present_event_init(XephyrContext* context)
     if (!present_event_type)
         return FALSE;
 
-    GERegisterExtension(present_request, present_event_swap, context);
+    GERegisterExtension(context->present_request, present_event_swap, context);
     return TRUE;
 }

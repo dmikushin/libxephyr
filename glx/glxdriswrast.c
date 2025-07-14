@@ -301,6 +301,7 @@ swrastPutImage(__DRIdrawable * draw, int op,
     __GLXDRIdrawable *drawable = loaderPrivate;
     DrawablePtr pDraw = drawable->base.pDraw;
     GCPtr gc;
+    XephyrContext *context = pDraw->pScreen->context;
     __GLXcontext *cx = context->lastGLContext;
 
     if ((gc = GetScratchGC(pDraw->depth, pDraw->pScreen))) {
@@ -323,6 +324,7 @@ swrastGetImage(__DRIdrawable * draw,
     __GLXDRIdrawable *drawable = loaderPrivate;
     DrawablePtr pDraw = drawable->base.pDraw;
     ScreenPtr pScreen = pDraw->pScreen;
+    XephyrContext *context = pScreen->context;
     __GLXcontext *cx = context->lastGLContext;
 
     pScreen->SourceValidate(pDraw, x, y, w, h, IncludeInferiors);

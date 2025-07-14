@@ -26,6 +26,8 @@
 #ifndef DBUS_CORE_H
 #define DBUS_CORE_H
 
+typedef struct _XephyrContext XephyrContext;
+
 #ifdef NEED_DBUS
 #include <dbus/dbus.h>
 
@@ -41,15 +43,15 @@ struct dbus_core_hook {
     struct dbus_core_hook *next;
 };
 
-int dbus_core_init(void);
-void dbus_core_fini(void);
+int dbus_core_init(XephyrContext* context);
+void dbus_core_fini(XephyrContext* context);
 int dbus_core_add_hook(struct dbus_core_hook *hook);
 void dbus_core_remove_hook(struct dbus_core_hook *hook);
 
 #else
 
-#define dbus_core_init()
-#define dbus_core_fini()
+#define dbus_core_init(context)
+#define dbus_core_fini(context)
 
 #endif
 

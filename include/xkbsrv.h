@@ -284,11 +284,9 @@ typedef struct {
 	device->public.realInputProc = oldprocs->realInputProc; \
 	device->unwrapProc = oldprocs->unwrapProc;
 
-extern _X_EXPORT DevPrivateKeyRec xkbDevicePrivateKeyRec;
+/* xkbDevicePrivateKeyRec now in XephyrContext */
 
-#define xkbDevicePrivateKey (&xkbDevicePrivateKeyRec)
-
-#define XKBDEVICEINFO(dev) ((xkbDeviceInfoPtr)dixLookupPrivate(&(dev)->devPrivates, xkbDevicePrivateKey))
+#define XKBDEVICEINFO(dev, ctx) ((xkbDeviceInfoPtr)dixLookupPrivate(&(dev)->devPrivates, &(ctx)->xkbDevicePrivateKeyRec))
 
 extern void xkbUnwrapProc(DeviceIntPtr, DeviceHandleProc, void *);
 
@@ -308,7 +306,7 @@ extern void xkbUnwrapProc(DeviceIntPtr, DeviceHandleProc, void *);
 extern _X_EXPORT const char *XkbBaseDirectory;
 extern _X_EXPORT const char *XkbBinDirectory;
 
-extern _X_EXPORT CARD32 xkbDebugFlags;
+/* xkbDebugFlags now in XephyrContext */
 
 #define	_XkbLibError(c,l,d)     /* Epoch fail */
 

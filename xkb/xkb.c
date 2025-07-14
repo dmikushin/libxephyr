@@ -49,8 +49,8 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 static int XkbErrorBase;
 /* int XkbReqCode; - moved to XephyrContext */
 /* int XkbKeyboardErrorCode; - moved to XephyrContext */
-CARD32 xkbDebugFlags = 0;
-static CARD32 xkbDebugCtrls = 0;
+/* CARD32 xkbDebugFlags = 0; - moved to XephyrContext */
+// static CARD32 context->xkbDebugCtrls = 0; // moved to XephyrContext
 
 static RESTYPE RT_XKBCLIENT;
 
@@ -171,6 +171,7 @@ _XkbCheckRequestBounds(ClientPtr client, void *stuff, void *from, void *to) {
 int
 ProcXkbUseExtension(ClientPtr client)
 {
+    XephyrContext *context = client->context;
     REQUEST(xkbUseExtensionReq);
     xkbUseExtensionReply rep;
     int supported;
@@ -189,7 +190,7 @@ ProcXkbUseExtension(ClientPtr client)
         if (stuff->wantedMajor == 0)
             client->xkbClientFlags |= _XkbClientIsAncient;
     }
-    else if (xkbDebugFlags & 0x1) {
+    else if (context->xkbDebugFlags & 0x1) {
         ErrorF
             ("[xkb] Rejecting client %d (0x%lx) (wants %d.%02d, have %d.%02d)\n", client->context,
              client->index, (long) client->clientAsMask, stuff->wantedMajor,
@@ -6928,6 +6929,7 @@ ProcXkbSetDeviceInfo(ClientPtr client)
 int
 ProcXkbSetDebuggingFlags(ClientPtr client)
 {
+    XephyrContext *context = client->context;
     CARD32 newFlags, newCtrls, extraLength;
     xkbSetDebuggingFlagsReply rep;
     int rc;
@@ -6939,13 +6941,13 @@ ProcXkbSetDebuggingFlags(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    newFlags = xkbDebugFlags & (~stuff->affectFlags);
+    newFlags = context->xkbDebugFlags & (~stuff->affectFlags);
     newFlags |= (stuff->flags & stuff->affectFlags);
-    newCtrls = xkbDebugCtrls & (~stuff->affectCtrls);
+    newCtrls = context->xkbDebugCtrls & (~stuff->affectCtrls);
     newCtrls |= (stuff->ctrls & stuff->affectCtrls);
-    if (xkbDebugFlags || newFlags || stuff->msgLength) {
+    if (context->xkbDebugFlags || newFlags || stuff->msgLength) {
         ErrorF("[xkb] XkbDebug: Setting debug flags to 0x%lx\n", client->context, (long) newFlags);
-        if (newCtrls != xkbDebugCtrls)
+        if (newCtrls != context->xkbDebugCtrls)
             ErrorF("[xkb] XkbDebug: Setting debug controls to 0x%lx\n", client->context, (long) newCtrls);
     }
     extraLength = (stuff->length << 2) - sz_xkbSetDebuggingFlagsReq;
@@ -6966,8 +6968,8 @@ ProcXkbSetDebuggingFlags(ClientPtr client)
         }
         ErrorF("[xkb] XkbDebug: %s\n", client->context, msg);
     }
-    xkbDebugFlags = newFlags;
-    xkbDebugCtrls = newCtrls;
+    context->xkbDebugFlags = newFlags;
+    context->xkbDebugCtrls = newCtrls;
 
     rep = (xkbSetDebuggingFlagsReply) {
         .type = X_Reply,

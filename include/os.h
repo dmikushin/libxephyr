@@ -137,7 +137,7 @@ extern _X_EXPORT void CreateWellKnownSockets(XephyrContext* context);
 
 extern _X_EXPORT void ResetWellKnownSockets(XephyrContext* context);
 
-extern _X_EXPORT void CloseWellKnownConnections(void);
+extern _X_EXPORT void CloseWellKnownConnections(XephyrContext* context);
 
 extern _X_EXPORT XID AuthorizationIDOfClient(ClientPtr /*client */ );
 
@@ -156,11 +156,11 @@ typedef void (*NotifyFdProcPtr)(int fd, int ready, void *data);
 #define X_NOTIFY_WRITE  0x2
 #define X_NOTIFY_ERROR  0x4     /* don't need to select for, always reported */
 
-extern _X_EXPORT Bool SetNotifyFd(int fd, NotifyFdProcPtr notify_fd, int mask, void *data);
+extern _X_EXPORT Bool SetNotifyFd(int fd, NotifyFdProcPtr notify_fd, int mask, void *data, XephyrContext* context);
 
-static inline void RemoveNotifyFd(int fd)
+static inline void RemoveNotifyFd(int fd, XephyrContext* context)
 {
-    (void) SetNotifyFd(fd, NULL, X_NOTIFY_NONE, NULL);
+    (void) SetNotifyFd(fd, NULL, X_NOTIFY_NONE, NULL, context);
 }
 
 extern _X_EXPORT int OnlyListenToOneClient(ClientPtr /*client */ );

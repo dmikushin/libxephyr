@@ -839,13 +839,13 @@ SELinuxFlaskReset(XephyrContext* context)
     /* Tear down SELinux stuff */
     audit_close(audit_fd);
     avc_netlink_release_fd();
-    RemoveNotifyFd(netlink_fd);
+    RemoveNotifyFd(netlink_fd, context);
 
     avc_destroy();
 }
 
 void
-SELinuxFlaskInit(void)
+SELinuxFlaskInit(XephyrContext* context)
 {
     struct selinux_opt avc_option = { AVC_OPT_SETENFORCE, (char *) 0 };
     char *ctx;
@@ -853,11 +853,11 @@ SELinuxFlaskInit(void)
 
     switch (selinuxEnforcingState) {
     case SELINUX_MODE_ENFORCING:
-        LogMessage(X_INFO, "SELinux: Configured in enforcing mode\n");
+        LogMessage(X_INFO, "SELinux: Configured in enforcing mode\n", context);
         avc_option.value = (char *) 1;
         break;
     case SELINUX_MODE_PERMISSIVE:
-        LogMessage(X_INFO, "SELinux: Configured in permissive mode\n");
+        LogMessage(X_INFO, "SELinux: Configured in permissive mode\n", context);
         avc_option.value = (char *) 0;
         break;
     default:
@@ -910,7 +910,7 @@ SELinuxFlaskInit(void)
         FatalError("SELinux: Failed to create atom\n", context);
 
     netlink_fd = avc_netlink_acquire_fd();
-    SetNotifyFd(netlink_fd, SELinuxNetlinkNotify, X_NOTIFY_READ, NULL);
+    SetNotifyFd(netlink_fd, SELinuxNetlinkNotify, X_NOTIFY_READ, NULL, context);
 
     /* Register callbacks */
     ret &= AddCallback(&context->ClientStateCallback, SELinuxClientState, NULL);

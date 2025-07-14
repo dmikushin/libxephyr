@@ -147,7 +147,7 @@ extern _X_EXPORT void miSetZeroLineBias(ScreenPtr /* pScreen */ ,
 #define IsXDecreasingOctant(_octant)	((_octant) & XDECREASING)
 #define IsYDecreasingOctant(_octant)	((_octant) & YDECREASING)
 
-/* extern _X_EXPORT DevPrivateKeyRec context->miZeroLineScreenKeyRec; */
+/* extern _X_EXPORT DevPrivateKeyRec miZeroLineScreenKeyRec; - moved to XephyrContext */
 
 #define miZeroLineScreenKey (&context->miZeroLineScreenKeyRec)
 

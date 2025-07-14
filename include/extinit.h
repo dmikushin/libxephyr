@@ -73,11 +73,11 @@ extern _X_EXPORT Bool noDPMSExtension;
 extern void DPMSExtensionInit(XephyrContext* context);
 #endif
 
-extern Bool noGEExtension;
+/* extern Bool noGEExtension; - moved to XephyrContext */
 extern void GEExtensionInit(XephyrContext* context);
 
 #ifdef GLXEXT
-extern _X_EXPORT Bool noGlxExtension;
+/* extern _X_EXPORT Bool noGlxExtension; - moved to XephyrContext */
 extern void GlxExtensionInit(XephyrContext* context);
 #endif
 
@@ -87,7 +87,7 @@ extern void PanoramiXExtensionInit(XephyrContext* context);
 #endif
 
 #ifdef RANDR
-extern _X_EXPORT Bool noRRExtension;
+/* extern _X_EXPORT Bool noRRExtension; - moved to XephyrContext */
 extern void RRExtensionInit(XephyrContext* context);
 #endif
 
@@ -95,23 +95,23 @@ extern void RRExtensionInit(XephyrContext* context);
 extern void RecordExtensionInit(XephyrContext* context);
 #endif
 
-extern _X_EXPORT Bool noRenderExtension;
+/* extern _X_EXPORT Bool noRenderExtension; - moved to XephyrContext */
 extern void RenderExtensionInit(XephyrContext* context);
 
 #if defined(RES)
-extern _X_EXPORT Bool noResExtension;
+/* extern _X_EXPORT Bool noResExtension; - moved to XephyrContext */
 extern void ResExtensionInit(XephyrContext* context);
 #endif
 
 #if defined(SCREENSAVER)
-extern _X_EXPORT Bool noScreenSaverExtension;
+/* extern _X_EXPORT Bool noScreenSaverExtension; - moved to XephyrContext */
 extern void ScreenSaverExtensionInit(XephyrContext* context);
 #endif
 
 extern void ShapeExtensionInit(XephyrContext* context);
 
 #ifdef MITSHM
-extern _X_EXPORT Bool noMITShmExtension;
+/* extern _X_EXPORT Bool noMITShmExtension; - moved to XephyrContext */
 extern void ShmExtensionInit(XephyrContext* context);
 #endif
 
@@ -131,7 +131,7 @@ extern void XFree86BigfontExtensionInit(void);
 
 extern void BigReqExtensionInit(XephyrContext* context);
 
-extern _X_EXPORT Bool noXFixesExtension;
+/* extern _X_EXPORT Bool noXFixesExtension; - moved to XephyrContext */
 extern void XFixesExtensionInit(XephyrContext* context);
 
 extern void XInputExtensionInit(XephyrContext* context);
@@ -140,7 +140,7 @@ extern void XkbExtensionInit(XephyrContext* context);
 
 #if defined(XSELINUX)
 extern _X_EXPORT Bool noSELinuxExtension;
-extern void SELinuxExtensionInit(void);
+extern void SELinuxExtensionInit(XephyrContext* context);
 #endif
 
 #ifdef XTEST
@@ -148,7 +148,7 @@ extern void XTestExtensionInit(XephyrContext* context);
 #endif
 
 #if defined(XV)
-extern _X_EXPORT Bool noXvExtension;
+/* extern _X_EXPORT Bool noXvExtension; - moved to XephyrContext */
 extern void XvExtensionInit(XephyrContext* context);
 extern void XvMCExtensionInit(XephyrContext* context);
 #endif

@@ -293,11 +293,12 @@ miScreenInit(ScreenPtr pScreen, void *pbits,  /* pointer to screen bits */
     return miScreenDevPrivateInit(pScreen, width, pbits);
 }
 
-DevPrivateKeyRec context->miZeroLineScreenKeyRec;
+/* DevPrivateKeyRec miZeroLineScreenKeyRec; - moved to XephyrContext */
 
 void
 miSetZeroLineBias(ScreenPtr pScreen, unsigned int bias)
 {
+    XephyrContext *context = pScreen->context;
     if (!dixRegisterPrivateKey(&context->miZeroLineScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return;
 

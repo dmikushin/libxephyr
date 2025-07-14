@@ -40,11 +40,12 @@
 #include "globals.h"
 #include "micmap.h"
 
-DevPrivateKeyRec context->micmapScrPrivateKeyRec;
+/* DevPrivateKeyRec micmapScrPrivateKeyRec; */
 
 int
 miListInstalledColormaps(ScreenPtr pScreen, Colormap * pmaps)
 {
+    XephyrContext *context = pScreen->context;
     if (GetInstalledmiColormap(pScreen)) {
         *pmaps = GetInstalledmiColormap(pScreen)->mid;
         return 1;
@@ -236,6 +237,7 @@ miExpandDirectColors(ColormapPtr pmap, int ndef, xColorItem * indefs,
 Bool
 miCreateDefColormap(ScreenPtr pScreen)
 {
+    XephyrContext *context = pScreen->context;
     unsigned short zero = 0, ones = 0xFFFF;
     Pixel wp, bp;
     VisualPtr pVisual;

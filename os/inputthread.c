@@ -193,12 +193,13 @@ InputReady(int fd, int xevents, void *data)
 int
 InputThreadRegisterDev(int fd,
                        NotifyFdProcPtr readInputProc,
-                       void *readInputArgs)
+                       void *readInputArgs,
+                       XephyrContext* context)
 {
     InputThreadDevice *dev, *old;
 
     if (!inputThreadInfo)
-        return SetNotifyFd(fd, readInputProc, X_NOTIFY_READ, readInputArgs);
+        return SetNotifyFd(fd, readInputProc, X_NOTIFY_READ, readInputArgs, context);
 
     input_lock();
 
@@ -249,7 +250,7 @@ InputThreadRegisterDev(int fd,
  * @return 1 if success; 0 otherwise.
  */
 int
-InputThreadUnregisterDev(int fd)
+InputThreadUnregisterDev(int fd, XephyrContext* context)
 {
     InputThreadDevice *dev;
     Bool found_device = FALSE;
@@ -258,7 +259,7 @@ InputThreadUnregisterDev(int fd)
      * DisableDevice time, evdev tries to call this function again through
      * xf86RemoveEnabledDevice) */
     if (!inputThreadInfo) {
-        RemoveNotifyFd(fd);
+        RemoveNotifyFd(fd, context);
         return 1;
     }
 
@@ -429,7 +430,7 @@ InputThreadPreInit(XephyrContext* context)
         flags |= FD_CLOEXEC;
         (void)fcntl(inputThreadInfo->readPipe, F_SETFD, flags);
     }
-    SetNotifyFd(inputThreadInfo->readPipe, InputThreadNotifyPipe, X_NOTIFY_READ, NULL);
+    SetNotifyFd(inputThreadInfo->readPipe, InputThreadNotifyPipe, X_NOTIFY_READ, NULL, context);
 
     inputThreadInfo->writePipe = fds[1];
 
@@ -459,7 +460,7 @@ InputThreadPreInit(XephyrContext* context)
  *
  */
 void
-InputThreadInit(void)
+InputThreadInit(XephyrContext* context)
 {
     pthread_attr_t attr;
 
@@ -492,7 +493,7 @@ InputThreadInit(void)
  * This function is supposed to be called at server shutdown time only.
  */
 void
-InputThreadFini(void)
+InputThreadFini(XephyrContext* context)
 {
     InputThreadDevice *dev, *next;
 
@@ -511,7 +512,7 @@ InputThreadFini(void)
     xorg_list_init(&inputThreadInfo->devs);
     ospoll_destroy(inputThreadInfo->fds);
 
-    RemoveNotifyFd(inputThreadInfo->readPipe);
+    RemoveNotifyFd(inputThreadInfo->readPipe, context);
     close(inputThreadInfo->readPipe);
     close(inputThreadInfo->writePipe);
     inputThreadInfo->readPipe = -1;
@@ -538,20 +539,21 @@ void input_unlock(void) {}
 void input_force_unlock(void) {}
 
 void InputThreadPreInit(XephyrContext* context) {}
-void InputThreadInit(void) {}
-void InputThreadFini(void) {}
+void InputThreadInit(XephyrContext* context) {}
+void InputThreadFini(XephyrContext* context) {}
 int in_input_thread(void) { return 0; }
 
 int InputThreadRegisterDev(int fd,
                            NotifyFdProcPtr readInputProc,
-                           void *readInputArgs)
+                           void *readInputArgs,
+                           XephyrContext* context)
 {
-    return SetNotifyFd(fd, readInputProc, X_NOTIFY_READ, readInputArgs);
+    return SetNotifyFd(fd, readInputProc, X_NOTIFY_READ, readInputArgs, context);
 }
 
-extern int InputThreadUnregisterDev(int fd)
+extern int InputThreadUnregisterDev(int fd, XephyrContext* context)
 {
-    RemoveNotifyFd(fd);
+    RemoveNotifyFd(fd, context);
     return 1;
 }
 

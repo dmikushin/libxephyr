@@ -187,7 +187,7 @@ YieldControlNoInput(ClientPtr client)
     OsCommPtr oc = client->osPrivate;
     YieldControl(client->context);
     if (oc->trans_conn)
-        ospoll_reset_events(server_poll, oc->fd);
+        ospoll_reset_events(client->context->server_poll, oc->fd);
 }
 
 static void
@@ -612,8 +612,8 @@ FlushAllOutput(void)
     Bool newoutput;
 
     /* Get context from first available client */
-    if (!xorg_list_is_empty(&output_pending_clients)) {
-        client = xorg_list_first_entry(&output_pending_clients, struct _Client, output_pending);
+    if (!xorg_list_is_empty(&context->output_pending_clients)) {
+        client = xorg_list_first_entry(&context->output_pending_clients, struct _Client, output_pending);
         context = client->context;
     }
     
@@ -633,7 +633,7 @@ FlushAllOutput(void)
     CriticalOutputPending = FALSE;
     context->NewOutputPending = FALSE;
 
-    xorg_list_for_each_entry_safe(client, tmp, &output_pending_clients, output_pending) {
+    xorg_list_for_each_entry_safe(client, tmp, &context->output_pending_clients, output_pending) {
         if (client->clientGone)
             continue;
         if (!client_is_ready(client)) {
@@ -672,7 +672,7 @@ AbortClient(ClientPtr client)
     OsCommPtr oc = client->osPrivate;
 
     if (oc->trans_conn) {
-        CloseDownFileDescriptor(oc);
+        CloseDownFileDescriptor(oc, client->context);
         mark_client_ready(client);
     }
 }
@@ -803,7 +803,7 @@ WriteToClient(ClientPtr who, int count, const void *__buf)
 #endif
     if (oco->count == 0 || oco->count + count + padBytes > oco->size) {
         output_pending_clear(who);
-        if (!any_output_pending()) {
+        if (!any_output_pending(who->context)) {
             CriticalOutputPending = FALSE;
             who->context->NewOutputPending = FALSE;
         }
@@ -949,7 +949,7 @@ FlushClient(ClientPtr who, OsCommPtr oc, const void *__extraBuf, int extraCount)
                         extraBuf + written, len);
 
             oco->count = notWritten;    /* this will include the pad */
-            ospoll_listen(server_poll, oc->fd, X_NOTIFY_WRITE);
+            ospoll_listen(who->context->server_poll, oc->fd, X_NOTIFY_WRITE);
 
             /* return only the amount explicitly requested */
             return extraCount;

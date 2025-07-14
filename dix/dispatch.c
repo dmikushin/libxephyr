@@ -255,14 +255,27 @@ void Dispatch(XephyrContext* context);
 
 static struct xorg_list ready_clients;
 static struct xorg_list saved_ready_clients;
-struct xorg_list output_pending_clients;
+/* output_pending_clients now in XephyrContext */
 
 static void
-init_client_ready(void)
+init_client_ready(XephyrContext* context)
 {
     xorg_list_init(&ready_clients);
     xorg_list_init(&saved_ready_clients);
-    xorg_list_init(&output_pending_clients);
+    xorg_list_init(&context->output_pending_clients);
+}
+
+void
+output_pending_mark(ClientPtr client)
+{
+    if (!client->clientGone && xorg_list_is_empty(&client->output_pending))
+        xorg_list_append(&client->output_pending, &client->context->output_pending_clients);
+}
+
+Bool
+any_output_pending(XephyrContext* context)
+{
+    return !xorg_list_is_empty(&context->output_pending_clients);
 }
 
 Bool
@@ -478,7 +491,7 @@ Dispatch(XephyrContext* context)
     nClients = 0;
 
     SmartScheduleSlice = SmartScheduleInterval;
-    init_client_ready();
+    init_client_ready(context);
 
     while (!context->dispatchException) {
         if (InputCheckPending(context)) {

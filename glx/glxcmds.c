@@ -196,9 +196,13 @@ validGlxDrawable(ClientPtr client, XID id, int type, int access_mode,
 }
 
 void
-__glXContextDestroy(__GLXcontext * context)
+__glXContextDestroy(__GLXcontext * glxContext)
 {
-    context->lastGLContext = NULL;
+    if (glxContext->currentClient) {
+        XephyrContext *context = glxContext->currentClient->context;
+        if (context->lastGLContext == glxContext)
+            context->lastGLContext = NULL;
+    }
 }
 
 static void
@@ -644,7 +648,7 @@ xorgGlxMakeCurrent(ClientPtr client, GLXContextTag tag, XID drawId, XID readId,
         if (!(*prevglxc->loseCurrent) (prevglxc))
             return __glXError(GLXBadContext, client->context);
 
-        context->lastGLContext = NULL;
+        client->context->lastGLContext = NULL;
         if (!prevglxc->isDirect) {
             prevglxc->drawPriv = NULL;
             prevglxc->readPriv = NULL;
@@ -656,9 +660,9 @@ xorgGlxMakeCurrent(ClientPtr client, GLXContextTag tag, XID drawId, XID readId,
         glxc->readPriv = readPriv;
 
         /* make the context current */
-        context->lastGLContext = glxc;
+        client->context->lastGLContext = glxc;
         if (!(*glxc->makeCurrent) (glxc)) {
-            context->lastGLContext = NULL;
+            client->context->lastGLContext = NULL;
             glxc->drawPriv = NULL;
             glxc->readPriv = NULL;
             return __glXError(GLXBadContext, client->context);

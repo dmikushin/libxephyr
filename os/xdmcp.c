@@ -568,24 +568,24 @@ XdmcpRegisterDisplayClass(const char *name, int length)
 }
 
 static void
-xdmcp_reset(void)
+xdmcp_reset(XephyrContext* context)
 {
     timeOutRtx = 0;
     if (xdmcpSocket >= 0)
-        SetNotifyFd(xdmcpSocket, XdmcpSocketNotify, X_NOTIFY_READ, NULL);
+        SetNotifyFd(xdmcpSocket, XdmcpSocketNotify, X_NOTIFY_READ, NULL, context);
 #if defined(IPv6) && defined(AF_INET6)
     if (xdmcpSocket6 >= 0)
-        SetNotifyFd(xdmcpSocket6, XdmcpSocketNotify, X_NOTIFY_READ, NULL);
+        SetNotifyFd(xdmcpSocket6, XdmcpSocketNotify, X_NOTIFY_READ, NULL, context);
 #endif
     xdmcp_timer = TimerSet(NULL, 0, 0, XdmcpTimerNotify, NULL);
     send_packet();
 }
 
 static void
-xdmcp_start(void)
+xdmcp_start(XephyrContext* context)
 {
     get_xdmcp_sock();
-    xdmcp_reset();
+    xdmcp_reset(context);
 }
 
 /*
@@ -594,7 +594,7 @@ xdmcp_start(void)
  */
 
 void
-XdmcpInit(void)
+XdmcpInit(XephyrContext* context)
 {
     state = XDM_INIT_STATE;
 #ifdef HASXDMAUTH
@@ -607,16 +607,16 @@ XdmcpInit(void)
                                   strlen(defaultDisplayClass));
         AccessUsingXdmcp();
         DisplayNumber = (CARD16) atoi(context->display);
-        xdmcp_start();
+        xdmcp_start(context);
     }
 }
 
 void
-XdmcpReset(void)
+XdmcpReset(XephyrContext* context)
 {
     state = XDM_INIT_STATE;
     if (state != XDM_OFF)
-        xdmcp_reset();
+        xdmcp_reset(context);
 }
 
 /*

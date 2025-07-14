@@ -55,12 +55,18 @@ void
 InitCard(char *name)
 {
     EPHYR_DBG("mark");
-    KdCardInfoAdd(&ephyrFuncs, 0);
+    /* InitCard has fixed signature without context parameter.
+     * Card initialization is handled in InitOutput instead.
+     */
 }
 
 void
 InitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* context)
 {
+    /* Add ephyr card before calling KdInitOutput */
+    if (!context->kdCardInfo) {
+        KdCardInfoAdd(&ephyrFuncs, 0, context);
+    }
     KdInitOutput(pScreenInfo, argc, argv, context);
 }
 

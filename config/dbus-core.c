@@ -45,6 +45,7 @@ struct dbus_core_info {
     struct dbus_core_hook *hooks;
 };
 static struct dbus_core_info bus_info = { .fd = -1 };
+static XephyrContext* g_context = NULL;
 
 static CARD32 reconnect_timer(OsTimerPtr timer, CARD32 time, void *arg);
 
@@ -68,7 +69,7 @@ socket_handler(int fd, int ready, void *data)
  * after ourselves, and call all registered disconnect hooks.
  */
 static void
-teardown(void)
+teardown(XephyrContext* context)
 {
     struct dbus_core_hook *hook;
 
@@ -84,7 +85,7 @@ teardown(void)
         dbus_connection_unref(bus_info.connection);
 
     if (bus_info.fd != -1)
-        RemoveNotifyFd(bus_info.fd);
+        RemoveNotifyFd(bus_info.fd, context);
     bus_info.fd = -1;
     bus_info.connection = NULL;
 
@@ -109,7 +110,7 @@ message_filter(DBusConnection * connection, DBusMessage * message, void *data)
     if (dbus_message_is_signal(message, DBUS_INTERFACE_LOCAL, "Disconnected")) {
         DebugF("[dbus-core] disconnected from bus\n");
         bus_info.connection = NULL;
-        teardown();
+        teardown(g_context);
 
         if (bus_info.timer)
             TimerFree(bus_info.timer);
@@ -128,7 +129,7 @@ message_filter(DBusConnection * connection, DBusMessage * message, void *data)
  * @return 1 on success, 0 on failure.
  */
 static int
-connect_to_bus(void)
+connect_to_bus(XephyrContext* context)
 {
     DBusError error;
     struct dbus_core_hook *hook;
@@ -157,7 +158,7 @@ connect_to_bus(void)
     }
 
     dbus_error_free(&error);
-    SetNotifyFd(bus_info.fd, socket_handler, X_NOTIFY_READ, &bus_info);
+    SetNotifyFd(bus_info.fd, socket_handler, X_NOTIFY_READ, &bus_info, context);
 
     for (hook = bus_info.hooks; hook; hook = hook->next) {
         if (hook->connect)
@@ -180,7 +181,7 @@ connect_to_bus(void)
 static CARD32
 reconnect_timer(OsTimerPtr timer, CARD32 time, void *arg)
 {
-    if (connect_to_bus()) {
+    if (connect_to_bus(g_context)) {
         TimerFree(bus_info.timer);
         bus_info.timer = NULL;
         return 0;
@@ -222,20 +223,22 @@ dbus_core_remove_hook(struct dbus_core_hook *hook)
 
 #ifdef NEED_DBUS
 int
-dbus_core_init(void)
+dbus_core_init(XephyrContext* context)
 {
     memset(&bus_info, 0, sizeof(bus_info));
     bus_info.fd = -1;
     bus_info.hooks = NULL;
-    if (!connect_to_bus())
+    g_context = context;
+    if (!connect_to_bus(context))
         bus_info.timer = TimerSet(NULL, 0, 1, reconnect_timer, NULL);
 
     return 1;
 }
 
 void
-dbus_core_fini(void)
+dbus_core_fini(XephyrContext* context)
 {
-    teardown();
+    teardown(context);
+    g_context = NULL;
 }
 #endif

@@ -130,31 +130,31 @@ static XephyrContext* utils_signal_context = NULL;
 /* Bool noDamageExtension = FALSE; - moved to XephyrContext */
 #endif
 #ifdef DBE
-/* Bool context->noDbeExtension = FALSE; - moved to XephyrContext */
+/* Bool noDbeExtension = FALSE; - moved to XephyrContext */
 #endif
 #ifdef DPMSExtension
 #include "dpmsproc.h"
 Bool noDPMSExtension = FALSE;
 #endif
 #ifdef GLXEXT
-Bool noGlxExtension = FALSE;
+/* Bool noGlxExtension = FALSE; - moved to XephyrContext */
 #endif
 #ifdef SCREENSAVER
-Bool noScreenSaverExtension = FALSE;
+/* Bool noScreenSaverExtension = FALSE; - moved to XephyrContext */
 #endif
 #ifdef MITSHM
-Bool noMITShmExtension = FALSE;
+/* Bool noMITShmExtension = FALSE; - moved to XephyrContext */
 #endif
 #ifdef RANDR
-Bool noRRExtension = FALSE;
+/* Bool noRRExtension = FALSE; - moved to XephyrContext */
 #endif
-Bool noRenderExtension = FALSE;
+/* Bool noRenderExtension = FALSE; - moved to XephyrContext */
 
 #ifdef XCSECURITY
 Bool noSecurityExtension = FALSE;
 #endif
 #ifdef RES
-Bool noResExtension = FALSE;
+/* Bool noResExtension = FALSE; - moved to XephyrContext */
 #endif
 #ifdef XF86BIGFONT
 Bool noXFree86BigfontExtension = FALSE;
@@ -168,7 +168,7 @@ Bool noXFree86DRIExtension = FALSE;
 #ifdef XF86VIDMODE
 Bool noXFree86VidModeExtension = FALSE;
 #endif
-Bool noXFixesExtension = FALSE;
+/* Bool noXFixesExtension = FALSE; - moved to XephyrContext */
 #ifdef PANORAMIX
 /* Xinerama is disabled by default unless enabled via +xinerama */
 Bool noPanoramiXExtension = TRUE;
@@ -178,13 +178,13 @@ Bool noSELinuxExtension = FALSE;
 int selinuxEnforcingState = SELINUX_MODE_DEFAULT;
 #endif
 #ifdef XV
-Bool noXvExtension = FALSE;
+/* Bool noXvExtension = FALSE; - moved to XephyrContext */
 #endif
 #ifdef DRI2
-Bool context->noDRI2Extension = FALSE;
+/* Bool noDRI2Extension = FALSE; - moved to XephyrContext */
 #endif
 
-Bool noGEExtension = FALSE;
+/* Bool noGEExtension = FALSE; - moved to XephyrContext */
 
 #define X_INCLUDE_NETDB_H
 #include <X11/Xos_r.h>

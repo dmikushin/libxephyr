@@ -593,6 +593,7 @@ POLYLINE(DrawablePtr pDrawable,
     INT32 *pts = (INT32 *) ptsOrig;
     int xoff = pDrawable->x;
     int yoff = pDrawable->y;
+    XephyrContext *context = pDrawable->pScreen->context;
     unsigned int bias = miGetZeroLineBias(pDrawable->pScreen);
     BoxPtr pBox = RegionExtents(fbGetCompositeClip(pGC));
 
@@ -713,6 +714,7 @@ POLYSEGMENT(DrawablePtr pDrawable, GCPtr pGC, int nseg, xSegment * pseg)
     INT32 *pts = (INT32 *) pseg;
     int xoff = pDrawable->x;
     int yoff = pDrawable->y;
+    XephyrContext *context = pDrawable->pScreen->context;
     unsigned int bias = miGetZeroLineBias(pDrawable->pScreen);
     BoxPtr pBox = RegionExtents(fbGetCompositeClip(pGC));
 

@@ -469,7 +469,7 @@ config_udev_fini(XephyrContext* context)
 
     udev = udev_monitor_get_udev(context->udev_monitor);
 
-    RemoveNotifyFd(udev_monitor_get_fd(context->udev_monitor));
+    RemoveNotifyFd(udev_monitor_get_fd(context->udev_monitor), context);
     udev_monitor_unref(context->udev_monitor);
     context->udev_monitor = NULL;
     udev_unref(udev);

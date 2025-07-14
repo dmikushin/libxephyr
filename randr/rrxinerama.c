@@ -85,7 +85,7 @@ static int ProcRRXineramaIsActive(ClientPtr client);
 static int ProcRRXineramaQueryScreens(ClientPtr client);
 static int _X_COLD SProcRRXineramaDispatch(ClientPtr client);
 
-Bool noRRXineramaExtension = FALSE;
+/* Bool noRRXineramaExtension = FALSE; - moved to XephyrContext */
 
 /* Proc */
 
@@ -420,7 +420,7 @@ RRXineramaExtensionInit(XephyrContext* context)
         return;
 #endif
 
-    if (noRRXineramaExtension)
+    if (context->noRRXineramaExtension)
       return;
 
     /*

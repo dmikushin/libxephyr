@@ -660,7 +660,7 @@ typedef struct _QdEvent {
 } QdEventRec;
 
 /**
- * syncEvents is the global structure for queued events.
+ * context->syncEvents is the global structure for queued events.
  *
  * Devices can be frozen through GrabModeSync pointer grabs. If this is the
  * case, events from these devices are added to "pending" instead of being
@@ -687,7 +687,7 @@ typedef struct _EventSyncInfo {
     TimeStamp time;
 } EventSyncInfoRec, *EventSyncInfoPtr;
 
-extern EventSyncInfoRec syncEvents;
+/* syncEvents now in XephyrContext */
 
 /**
  * Given a sprite, returns the window at the bottom of the trace (i.e. the

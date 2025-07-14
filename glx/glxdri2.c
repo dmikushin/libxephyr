@@ -103,6 +103,7 @@ copy_box(__GLXdrawable * drawable,
 {
     BoxRec box;
     RegionRec region;
+    XephyrContext *context = drawable->pDraw->pScreen->context;
     __GLXcontext *cx = context->lastGLContext;
 
     box.x1 = x;

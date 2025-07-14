@@ -182,7 +182,7 @@ typedef struct _ClientResource {
     XID endFakeID;
 } ClientResourceRec;
 
-RESTYPE context->lastResourceType;
+/* RESTYPE context->lastResourceType; - moved to context */
 static RESTYPE lastResourceClass;
 
 struct ResourceType {
@@ -645,6 +645,7 @@ Bool
 InitClientResources(ClientPtr client)
 {
     int i, j;
+    XephyrContext *context = client->context;
 
     if (client == client->context->serverClient) {
         context->lastResourceType = RT_LASTPREDEF;

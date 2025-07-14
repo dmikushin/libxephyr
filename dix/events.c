@@ -252,7 +252,7 @@ extern BOOL EventIsKeyRepeat(xEvent *event);
  */
 /* inputInfo is now accessed via context->inputInfo */
 
-EventSyncInfoRec syncEvents;
+/* EventSyncInfoRec syncEvents; - moved to XephyrContext */
 
 static struct DeviceEventTime {
     Bool reset;
@@ -503,13 +503,14 @@ static void
 SyntheticMotion(DeviceIntPtr dev, int x, int y)
 {
     int screenno = 0;
+    XephyrContext *context = dev->context;
 
 #ifdef PANORAMIX
     if (!noPanoramiXExtension)
         screenno = dev->spriteInfo->sprite->screen->myNum;
 #endif
     PostSyntheticMotion(dev, x, y, screenno,
-                        (syncEvents.playingEvents) ? syncEvents.time.
+                        (context->syncEvents.playingEvents) ? context->syncEvents.time.
                         milliseconds : dev->context->currentTime.milliseconds);
 
 }
@@ -894,8 +895,9 @@ ConfineCursorToWindow(DeviceIntPtr pDev, WindowPtr pWin, Bool generateEvents,
                       Bool confineToScreen)
 {
     SpritePtr pSprite = pDev->spriteInfo->sprite;
+    XephyrContext *context = pDev->context;
 
-    if (syncEvents.playingEvents) {
+    if (context->syncEvents.playingEvents) {
         CheckVirtualMotion(pDev, (QdEventPtr) NULL, pWin);
         SyntheticMotion(pDev, pSprite->hot.x, pSprite->hot.y);
     }
@@ -981,8 +983,9 @@ PostNewCursor(DeviceIntPtr pDev)
     GrabPtr grab = pDev->deviceGrab.grab;
     SpritePtr pSprite = pDev->spriteInfo->sprite;
     CursorPtr pCursor;
+    XephyrContext *context = pDev->context;
 
-    if (syncEvents.playingEvents)
+    if (context->syncEvents.playingEvents)
         return;
     if (grab) {
         if (grab->cursor) {
@@ -1102,7 +1105,8 @@ NoticeTimeMillis(const DeviceIntPtr dev, CARD32 *ms)
 void
 NoticeEventTime(InternalEvent *ev, DeviceIntPtr dev)
 {
-    if (!syncEvents.playingEvents)
+    XephyrContext *context = dev->context;
+    if (!context->syncEvents.playingEvents)
         NoticeTimeMillis(dev, &ev->any.time);
 }
 
@@ -1153,8 +1157,8 @@ EnqueueEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* context)
     int eventlen;
     DeviceEvent *event = &ev->device_event;
 
-    if (!xorg_list_is_empty(&syncEvents.pending))
-        tail = xorg_list_last_entry(&syncEvents.pending, QdEventRec, next);
+    if (!xorg_list_is_empty(&context->syncEvents.pending))
+        tail = xorg_list_last_entry(&context->syncEvents.pending, QdEventRec, next);
 
     NoticeTimeMillis(device, &ev->any.time);
 
@@ -1218,11 +1222,11 @@ EnqueueEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* context)
     qe->months = device->context->currentTime.months;
     qe->event = (InternalEvent *) (qe + 1);
     memcpy(qe->event, event, eventlen);
-    xorg_list_append(&qe->next, &syncEvents.pending);
+    xorg_list_append(&qe->next, &context->syncEvents.pending);
 }
 
 /**
- * Run through the list of events queued up in syncEvents.
+ * Run through the list of events queued up in context->syncEvents.
  * For each event do:
  * If the device for this event is not frozen anymore, take it and process it
  * as usually.
@@ -1239,14 +1243,14 @@ PlayReleasedEvents(XephyrContext* context)
     DeviceIntPtr pDev;
 
  restart:
-    xorg_list_for_each_entry_safe(qe, tmp, &syncEvents.pending, next) {
+    xorg_list_for_each_entry_safe(qe, tmp, &context->syncEvents.pending, next) {
         if (!qe->device->deviceGrab.sync.frozen) {
             xorg_list_del(&qe->next);
             pDev = qe->device;
             if (qe->event->any.type == ET_Motion)
                 CheckVirtualMotion(pDev, qe, NullWindow);
-            syncEvents.time.months = qe->months;
-            syncEvents.time.milliseconds = qe->event->any.time;
+            context->syncEvents.time.months = qe->months;
+            context->syncEvents.time.milliseconds = qe->event->any.time;
 #ifdef PANORAMIX
             /* Translate back to the sprite screen since processInputProc
                will translate from sprite screen to screen 0 upon reentry
@@ -1319,24 +1323,24 @@ FreezeThaw(DeviceIntPtr dev, Bool frozen)
 static void
 ComputeFreezes(XephyrContext* context)
 {
-    DeviceIntPtr replayDev = syncEvents.replayDev;
+    DeviceIntPtr replayDev = context->syncEvents.replayDev;
     GrabPtr grab;
     DeviceIntPtr dev;
 
     for (dev = context->inputInfo.devices; dev; dev = dev->next)
         FreezeThaw(dev, dev->deviceGrab.sync.other ||
                    (dev->deviceGrab.sync.state >= FROZEN));
-    if (syncEvents.playingEvents ||
-        (!replayDev && xorg_list_is_empty(&syncEvents.pending)))
+    if (context->syncEvents.playingEvents ||
+        (!replayDev && xorg_list_is_empty(&context->syncEvents.pending)))
         return;
-    syncEvents.playingEvents = TRUE;
+    context->syncEvents.playingEvents = TRUE;
     if (replayDev) {
         InternalEvent *event = replayDev->deviceGrab.sync.event;
 
-        syncEvents.replayDev = (DeviceIntPtr) NULL;
+        context->syncEvents.replayDev = (DeviceIntPtr) NULL;
 
         if (!CheckDeviceGrabs(replayDev, event,
-                              syncEvents.replayWin)) {
+                              context->syncEvents.replayWin)) {
             if (IsTouchEvent(event)) {
                 TouchPointInfoPtr ti =
                     TouchFindByClientID(replayDev, event->device_event.touchid);
@@ -1371,7 +1375,7 @@ ComputeFreezes(XephyrContext* context)
             break;
         }
     }
-    syncEvents.playingEvents = FALSE;
+    context->syncEvents.playingEvents = FALSE;
     for (dev = context->inputInfo.devices; dev; dev = dev->next) {
         if (DevHasCursor(dev)) {
             /* the following may have been skipped during replay,
@@ -1590,6 +1594,7 @@ void
 ActivatePointerGrab(DeviceIntPtr mouse, GrabPtr grab,
                     TimeStamp time, Bool autoGrab)
 {
+    XephyrContext *context = mouse->context;
     GrabInfoPtr grabinfo = &mouse->deviceGrab;
     GrabPtr oldgrab = grabinfo->grab;
     WindowPtr oldWin = (grabinfo->grab) ?
@@ -1612,8 +1617,8 @@ ActivatePointerGrab(DeviceIntPtr mouse, GrabPtr grab,
 			  && oldWin == grab->window))
         DoEnterLeaveEvents(mouse, mouse->id, oldWin, grab->window, NotifyGrab);
     mouse->valuator->motionHintWindow = NullWindow;
-    if (syncEvents.playingEvents)
-        grabinfo->grabTime = syncEvents.time;
+    if (context->syncEvents.playingEvents)
+        grabinfo->grabTime = context->syncEvents.time;
     else
         grabinfo->grabTime = time;
     grabinfo->grab = AllocGrab(grab, mouse->context);
@@ -1710,6 +1715,7 @@ void
 ActivateKeyboardGrab(DeviceIntPtr keybd, GrabPtr grab, TimeStamp time,
                      Bool passive)
 {
+    XephyrContext *context = keybd->context;
     GrabInfoPtr grabinfo = &keybd->deviceGrab;
     GrabPtr oldgrab = grabinfo->grab;
     WindowPtr oldWin;
@@ -1735,8 +1741,8 @@ ActivateKeyboardGrab(DeviceIntPtr keybd, GrabPtr grab, TimeStamp time,
 	! (grabinfo->grab && oldWin == grabinfo->grab->window
 			  && oldWin == grab->window))
         DoFocusEvents(keybd, oldWin, grab->window, NotifyGrab);
-    if (syncEvents.playingEvents)
-        grabinfo->grabTime = syncEvents.time;
+    if (context->syncEvents.playingEvents)
+        grabinfo->grabTime = context->syncEvents.time;
     else
         grabinfo->grabTime = time;
     grabinfo->grab = AllocGrab(grab, keybd->context);
@@ -1794,6 +1800,7 @@ DeactivateKeyboardGrab(DeviceIntPtr keybd)
 void
 AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
 {
+    XephyrContext *context = thisDev->context;
     Bool thisGrabbed, otherGrabbed, othersFrozen, thisSynced;
     TimeStamp grabTime;
     DeviceIntPtr dev;
@@ -1871,10 +1878,10 @@ AllowSome(ClientPtr client, TimeStamp time, DeviceIntPtr thisDev, int newState)
         if (thisGrabbed && grabinfo->sync.state == FROZEN_WITH_EVENT) {
             if (thisSynced)
                 grabinfo->sync.other = NullGrab;
-            syncEvents.replayDev = thisDev;
-            syncEvents.replayWin = grabinfo->grab->window;
+            context->syncEvents.replayDev = thisDev;
+            context->syncEvents.replayWin = grabinfo->grab->window;
             (*grabinfo->DeactivateGrab) (thisDev);
-            syncEvents.replayDev = (DeviceIntPtr) NULL;
+            context->syncEvents.replayDev = (DeviceIntPtr) NULL;
         }
         break;
     case THAW_OTHERS:          /* AsyncOthers */
@@ -3120,6 +3127,7 @@ ActivateEnterGrab(DeviceIntPtr dev, WindowPtr old, WindowPtr win)
 Bool
 CheckMotion(DeviceEvent *ev, DeviceIntPtr pDev)
 {
+    XephyrContext *context = pDev->context;
     WindowPtr prevSpriteWin, newSpriteWin;
     SpritePtr pSprite = pDev->spriteInfo->sprite;
 
@@ -3127,7 +3135,7 @@ CheckMotion(DeviceEvent *ev, DeviceIntPtr pDev)
 
     prevSpriteWin = pSprite->win;
 
-    if (ev && !syncEvents.playingEvents) {
+    if (ev && !context->syncEvents.playingEvents) {
         /* GetPointerEvents() guarantees that pointer events have the correct
            rootX/Y set already. */
         switch (ev->type) {
@@ -3509,6 +3517,7 @@ WindowHasNewCursor(WindowPtr pWin)
 void
 NewCurrentScreen(DeviceIntPtr pDev, ScreenPtr newScreen, int x, int y)
 {
+    XephyrContext *context = pDev->context;
     DeviceIntPtr ptr;
     SpritePtr pSprite;
 
@@ -3533,7 +3542,7 @@ NewCurrentScreen(DeviceIntPtr pDev, ScreenPtr newScreen, int x, int y)
                                               TRUE);
             /* if the pointer wasn't confined, the DDX won't get
                told of the pointer warp so we reposition it here */
-            if (!syncEvents.playingEvents)
+            if (!context->syncEvents.playingEvents)
                 (*pSprite->screen->SetCursorPosition) (ptr,
                                                        pSprite->screen,
                                                        pSprite->hotPhys.x +
@@ -5463,15 +5472,15 @@ InitEvents(XephyrContext* context)
         LastEventTimeToggleResetFlag(i, FALSE);
     }
 
-    syncEvents.replayDev = (DeviceIntPtr) NULL;
-    syncEvents.replayWin = NullWindow;
-    if (syncEvents.pending.next)
-        xorg_list_for_each_entry_safe(qe, tmp, &syncEvents.pending, next)
+    context->syncEvents.replayDev = (DeviceIntPtr) NULL;
+    context->syncEvents.replayWin = NullWindow;
+    if (context->syncEvents.pending.next)
+        xorg_list_for_each_entry_safe(qe, tmp, &context->syncEvents.pending, next)
             free(qe);
-    xorg_list_init(&syncEvents.pending);
-    syncEvents.playingEvents = FALSE;
-    syncEvents.time.months = 0;
-    syncEvents.time.milliseconds = 0;   /* hardly matters */
+    xorg_list_init(&context->syncEvents.pending);
+    context->syncEvents.playingEvents = FALSE;
+    context->syncEvents.time.months = 0;
+    context->syncEvents.time.milliseconds = 0;   /* hardly matters */
     context->currentTime.months = 0;
     context->currentTime.milliseconds = GetTimeInMillis();
     for (i = 0; i < DNPMCOUNT; i++) {

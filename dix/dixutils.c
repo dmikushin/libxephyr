@@ -916,4 +916,4 @@ InitCallbackManager(void)
  * unconditionally clears the dispatch table even if the given
  * context wasn't current.
  */
-void *context->lastGLContext = NULL;
+/* void *lastGLContext = NULL; -- moved to context */

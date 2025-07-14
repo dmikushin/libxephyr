@@ -210,8 +210,8 @@ OsInit(XephyrContext* context)
 #ifdef BUSFAULT
         busfault_init();
 #endif
-        server_poll = ospoll_create();
-        if (!server_poll)
+        context->server_poll = ospoll_create();
+        if (!context->server_poll)
             FatalError("failed to allocate poll structure", context);
 
 #ifdef HAVE_BACKTRACE

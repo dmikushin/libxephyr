@@ -118,6 +118,7 @@ miZeroLine(DrawablePtr pDraw, GCPtr pGC, int mode,      /* Origin or Previous */
     int width, height;
     int adx, ady;
     int octant;
+    XephyrContext *context = pDraw->pScreen->context;
     unsigned int bias = miGetZeroLineBias(pDraw->pScreen);
     int e, e1, e2, e3;          /* Bresenham error terms */
     int length;                 /* length of lines == # of pixels on major axis */

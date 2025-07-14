@@ -30,7 +30,7 @@
 #include "misync.h"
 #include "misyncstr.h"
 
-DevPrivateKeyRec context->miSyncScreenPrivateKey;
+/* DevPrivateKeyRec miSyncScreenPrivateKey; - moved to context */
 
 /* Default implementations of the sync screen functions */
 void
@@ -88,6 +88,7 @@ miSyncFenceDeleteTrigger(SyncTrigger * pTrigger)
 void
 miSyncInitFence(ScreenPtr pScreen, SyncFence * pFence, Bool initially_triggered)
 {
+    XephyrContext *context = pScreen->context;
     SyncScreenPrivPtr pScreenPriv = SYNC_SCREEN_PRIV(pScreen);
 
     static const SyncFenceFuncsRec miSyncFenceFuncs = {
@@ -113,6 +114,7 @@ miSyncDestroyFence(SyncFence * pFence)
 
     if (pFence->sync.initialized) {
         ScreenPtr pScreen = pFence->pScreen;
+        XephyrContext *context = pScreen->context;
         SyncScreenPrivPtr pScreenPriv = SYNC_SCREEN_PRIV(pScreen);
         SyncTriggerList *ptl, *pNext;
 
@@ -147,6 +149,7 @@ miSyncTriggerFence(SyncFence * pFence)
 SyncScreenFuncsPtr
 miSyncGetScreenFuncs(ScreenPtr pScreen)
 {
+    XephyrContext *context = pScreen->context;
     SyncScreenPrivPtr pScreenPriv = SYNC_SCREEN_PRIV(pScreen);
 
     return &pScreenPriv->funcs;
@@ -155,6 +158,7 @@ miSyncGetScreenFuncs(ScreenPtr pScreen)
 static Bool
 SyncCloseScreen(ScreenPtr pScreen)
 {
+    XephyrContext *context = pScreen->context;
     SyncScreenPrivPtr pScreenPriv = SYNC_SCREEN_PRIV(pScreen);
 
     pScreen->CloseScreen = pScreenPriv->CloseScreen;
@@ -166,6 +170,7 @@ Bool
 miSyncSetup(ScreenPtr pScreen)
 {
     SyncScreenPrivPtr pScreenPriv;
+    XephyrContext *context = pScreen->context;
 
     static const SyncScreenFuncsRec miSyncScreenFuncs = {
         &miSyncScreenCreateFence,

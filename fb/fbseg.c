@@ -354,6 +354,7 @@ fbSegment(DrawablePtr pDrawable,
     int octant;
     int dashoff;
     int doff;
+    XephyrContext *context = pDrawable->pScreen->context;
     unsigned int bias = miGetZeroLineBias(pDrawable->pScreen);
     unsigned int oc1;           /* outcode of point 1 */
     unsigned int oc2;           /* outcode of point 2 */

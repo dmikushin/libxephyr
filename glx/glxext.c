@@ -115,7 +115,9 @@ DrawableGone(__GLXdrawable * glxPriv, XID xid)
             glFlush();
             /* just force a re-bind the next time through */
             (*c->loseCurrent) (c);
-            context->lastGLContext = NULL;
+            if (c->currentClient) {
+                c->currentClient->context->lastGLContext = NULL;
+            }
         }
         if (c->drawPriv == glxPriv)
             c->drawPriv = NULL;
@@ -177,8 +179,11 @@ __glXFreeContext(__GLXcontext * cx)
     free(cx->feedbackBuf);
     free(cx->selectBuf);
     free(cx->largeCmdBuf);
-    if (cx == context->lastGLContext) {
-        context->lastGLContext = NULL;
+    if (cx->pGlxScreen && cx->pGlxScreen->pScreen) {
+        XephyrContext *context = cx->pGlxScreen->pScreen->context;
+        if (cx == context->lastGLContext) {
+            context->lastGLContext = NULL;
+        }
     }
 
     /* We can get here through both regular dispatching from
@@ -235,8 +240,8 @@ __glXErrorOccured(void)
 }
 
 /* Moved to XephyrContext:
-static int client->context->GlxErrorBase;
-int context->__glXEventBase;
+static int GlxErrorBase;
+int __glXEventBase;
 */
 
 int
@@ -324,7 +329,8 @@ xorgGlxCloseExtension(const ExtensionEntry *extEntry)
         glxServer.destroyVendor(glvnd_vendor);
         glvnd_vendor = NULL;
     }
-    context->lastGLContext = NULL;
+    /* Clear context->lastGLContext - Since we don't have access to all screens,
+       we can't clear them all. This will be handled when screens are accessed. */
 }
 
 static int
@@ -623,7 +629,7 @@ __glXForceCurrent(__GLXclientState * cl, GLXContextTag tag, int *error)
     if (cx->wait && (*cx->wait) (cx, cl, error))
         return NULL;
 
-    if (cx == context->lastGLContext) {
+    if (cx == client->context->lastGLContext) {
         /* No need to re-bind */
         return cx;
     }
@@ -636,10 +642,10 @@ __glXForceCurrent(__GLXclientState * cl, GLXContextTag tag, int *error)
          * refcount's
          */
         (*cx->loseCurrent) (cx);
-        context->lastGLContext = cx;
+        client->context->lastGLContext = cx;
         if (!(*cx->makeCurrent) (cx)) {
             /* Bind failed, and set the error code.  Bummer */
-            context->lastGLContext = NULL;
+            client->context->lastGLContext = NULL;
             cl->client->errorValue = cx->id;
             *error = __glXError(GLXBadContextState, cl->client->context);
             return 0;

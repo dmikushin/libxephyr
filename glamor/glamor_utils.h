@@ -668,6 +668,7 @@ glamor_is_large_pixmap(PixmapPtr pixmap)
 static inline void
 glamor_make_current(glamor_screen_private *glamor_priv)
 {
+    XephyrContext *context = glamor_priv->screen->context;
     if (context->lastGLContext != glamor_priv->ctx.ctx) {
         context->lastGLContext = glamor_priv->ctx.ctx;
         glamor_priv->ctx.make_current(&glamor_priv->ctx);

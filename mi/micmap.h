@@ -9,7 +9,7 @@
 #define SetInstalledmiColormap(s,c) \
     (dixSetPrivate(&(s)->devPrivates, micmapScrPrivateKey, c))
 
-/* extern _X_EXPORT DevPrivateKeyRec context->micmapScrPrivateKeyRec; */
+/* extern _X_EXPORT DevPrivateKeyRec micmapScrPrivateKeyRec; */
 
 #define micmapScrPrivateKey (&context->micmapScrPrivateKeyRec)
 

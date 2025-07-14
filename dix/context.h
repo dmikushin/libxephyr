@@ -23,6 +23,7 @@
 #include "servermd.h"
 #include "privates.h"
 #include "resource.h"
+#include "list.h"
 #include <X11/extensions/render.h>
 #include <X11/extensions/xfixeswire.h>
 #include <X11/extensions/XI.h>
@@ -116,7 +117,7 @@ typedef struct _XephyrContext {
     volatile char dispatchException;
     OsTimerPtr dispatchExceptionTimer;
     Bool isItTimeToYield;
-    fd_set output_pending_clients;
+    struct xorg_list output_pending_clients;
     PaddingInfo PixmapWidthPaddingInfo[33];
     CallbackListPtr ServerGrabCallback;
     Bool SmartScheduleLatencyLimited;
@@ -130,7 +131,13 @@ typedef struct _XephyrContext {
     Mask DontPropagateMasks[MAXDEVICES];
     CallbackListPtr EventCallback;
     Mask event_filters[MAXDEVICES][MAXEVENTS];
-    Bool syncEvents;
+    struct {
+        Bool playingEvents;
+        TimeStamp time;
+        DeviceIntPtr replayDev;
+        WindowPtr replayWin;
+        struct xorg_list pending;
+    } syncEvents;
     InternalEvent *InputEventList;
     CallbackListPtr PropertyStateCallback;
     RegDataRec RegionBrokenData;
@@ -315,6 +322,7 @@ typedef struct _XephyrContext {
     
     // XKB module variables
     int xkbDebugFlags;
+    CARD32 xkbDebugCtrls;
     DevPrivateKeyRec xkbDevicePrivateKeyRec;
     
     // XTest module variables

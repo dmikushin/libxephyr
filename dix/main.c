@@ -278,7 +278,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
         NotifyParentProcess(context);
 
-        InputThreadInit();
+        InputThreadInit(context);
 
         /* Signal libxephyr that server is ready (if available) */
         extern void xephyr_signal_ready(void) __attribute__((weak));
@@ -311,7 +311,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
         CloseInput(context);
 
-        InputThreadFini();
+        InputThreadFini(context);
 
         for (i = 0; i < context->screenInfo.numScreens; i++)
             context->screenInfo.screens[i]->root = NullWindow;
@@ -358,7 +358,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         ClearWorkQueue(context);
 
         if (context->dispatchException & DE_TERMINATE) {
-            CloseWellKnownConnections();
+            CloseWellKnownConnections(context);
         }
 
         OsCleanup((context->dispatchException & DE_TERMINATE) != 0, context);

@@ -47,7 +47,7 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "dixgrabs.h"
 #define EXTENSION_EVENT_BASE 64
 
-DevPrivateKeyRec xkbDevicePrivateKeyRec;
+/* xkbDevicePrivateKeyRec now in XephyrContext */
 
 static void XkbFakePointerMotion(DeviceIntPtr dev, unsigned flags, int x,
                                  int y);
@@ -55,7 +55,8 @@ static void XkbFakePointerMotion(DeviceIntPtr dev, unsigned flags, int x,
 void
 xkbUnwrapProc(DeviceIntPtr device, DeviceHandleProc proc, void *data)
 {
-    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(device);
+    XephyrContext *context = device->context;
+    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(device, context);
     ProcessInputProc backupproc;
 
     if (xkbPrivPtr->unwrapProc)
@@ -69,14 +70,15 @@ xkbUnwrapProc(DeviceIntPtr device, DeviceHandleProc proc, void *data)
 Bool
 XkbInitPrivates(XephyrContext* context)
 {
-    return dixRegisterPrivateKey(&xkbDevicePrivateKeyRec, PRIVATE_DEVICE,
+    return dixRegisterPrivateKey(&context->xkbDevicePrivateKeyRec, PRIVATE_DEVICE,
                                  sizeof(xkbDeviceInfoRec), context);
 }
 
 void
 XkbSetExtension(DeviceIntPtr device, ProcessInputProc proc)
 {
-    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(device);
+    XephyrContext *context = device->context;
+    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(device, context);
 
     WRAP_PROCESS_INPUT_PROC(device, xkbPrivPtr, proc, xkbUnwrapProc);
 }
@@ -830,11 +832,12 @@ static int
 _XkbFilterRedirectKey(XkbSrvInfoPtr xkbi,
                       XkbFilterPtr filter, unsigned keycode, XkbAction *pAction)
 {
+    XephyrContext *context = xkbi->device->context;
     DeviceEvent ev;
     int x, y;
     XkbStateRec old, old_prev;
     unsigned mods, mask;
-    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(xkbi->device);
+    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(xkbi->device, context);
     ProcessInputProc backupproc;
 
     if ((filter->keycode != 0) && (filter->keycode != keycode))
@@ -1341,6 +1344,7 @@ XkbActionGetFilter(DeviceIntPtr dev, DeviceEvent *event, KeyCode key,
 void
 XkbHandleActions(DeviceIntPtr dev, DeviceIntPtr kbd, DeviceEvent *event)
 {
+    XephyrContext *context = dev->context;
     int key, bit, i;
     XkbSrvInfoPtr xkbi;
     KeyClassPtr keyc;
@@ -1351,7 +1355,7 @@ XkbHandleActions(DeviceIntPtr dev, DeviceIntPtr kbd, DeviceEvent *event)
     Bool pressEvent;
     ProcessInputProc backupproc;
 
-    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(dev);
+    xkbDeviceInfoPtr xkbPrivPtr = XKBDEVICEINFO(dev, context);
 
     keyc = kbd->key;
     xkbi = keyc->xkbInfo;

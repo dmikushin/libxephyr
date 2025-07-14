@@ -896,6 +896,7 @@ XkbSendNotification(DeviceIntPtr kbd,
 void
 XkbFilterEvents(ClientPtr client, int nEvents, xEvent *xE)
 {
+    XephyrContext *context = client->context;
     DeviceIntPtr dev = NULL;
     XkbSrvInfoPtr xkbi;
     CARD8 type = xE[0].u.u.type;
@@ -912,7 +913,7 @@ XkbFilterEvents(ClientPtr client, int nEvents, xEvent *xE)
     xkbi = dev->key->xkbInfo;
 
     if (client->xkbClientFlags & _XkbClientInitialized) {
-        if ((xkbDebugFlags & 0x10) &&
+        if ((context->xkbDebugFlags & 0x10) &&
             (type == KeyPress || type == KeyRelease ||
              type == client->context->DeviceKeyPress || type == client->context->DeviceKeyRelease))
             DebugF("[xkb] XkbFilterWriteEvents (XKB client): state 0x%04x\n",
@@ -947,7 +948,7 @@ XkbFilterEvents(ClientPtr client, int nEvents, xEvent *xE)
         }
     }
     else {
-        if ((xkbDebugFlags & 0x4) &&
+        if ((context->xkbDebugFlags & 0x4) &&
             (xE[0].u.u.type == KeyPress || xE[0].u.u.type == KeyRelease ||
              xE[0].u.u.type == client->context->DeviceKeyPress ||
              xE[0].u.u.type == client->context->DeviceKeyRelease)) {

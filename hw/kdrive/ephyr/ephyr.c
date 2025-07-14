@@ -47,12 +47,12 @@
 extern Bool ephyr_glamor;
 
 /* Moved to XephyrContext:
-KdKeyboardInfo *context->ephyrKbd;
-KdPointerInfo *context->ephyrMouse;
+KdKeyboardInfo *ephyrKbd;
+KdPointerInfo *ephyrMouse;
 */
 /* Moved to XephyrContext:
-Bool context->ephyrNoDRI = FALSE;
-Bool context->ephyrNoXV = FALSE;
+Bool ephyrNoDRI = FALSE;
+Bool ephyrNoXV = FALSE;
 */
 
 static int mouseState = 0;
@@ -1124,7 +1124,7 @@ ephyrXcbProcessEvents(XephyrContext* context, Bool queued_only)
              * closed), exit now.
              */
             if (xcb_connection_has_error(conn)) {
-                CloseWellKnownConnections();
+                CloseWellKnownConnections(context);
                 OsCleanup(1, context);
                 exit(1);
             }
@@ -1289,7 +1289,7 @@ static Status
 MouseEnable(KdPointerInfo * pi)
 {
     ((EphyrPointerPrivate *) pi->driverPrivate)->enabled = TRUE;
-    SetNotifyFd(hostx_get_fd(), ephyrXcbNotify, X_NOTIFY_READ, NULL);
+    SetNotifyFd(hostx_get_fd(), ephyrXcbNotify, X_NOTIFY_READ, NULL, pi->context);
     return Success;
 }
 
@@ -1297,7 +1297,7 @@ static void
 MouseDisable(KdPointerInfo * pi)
 {
     ((EphyrPointerPrivate *) pi->driverPrivate)->enabled = FALSE;
-    RemoveNotifyFd(hostx_get_fd());
+    RemoveNotifyFd(hostx_get_fd(), pi->context);
     return;
 }
 

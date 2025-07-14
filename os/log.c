@@ -871,7 +871,7 @@ AbortServer(XephyrContext* context)
 #ifdef XF86BIGFONT
     XF86BigfontCleanup();
 #endif
-    CloseWellKnownConnections();
+    CloseWellKnownConnections(context);
     OsCleanup(TRUE, context);
     AbortDevices(context);
     ddxGiveUp(EXIT_ERR_ABORT);

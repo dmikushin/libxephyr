@@ -265,9 +265,9 @@ GestureSetupListener(DeviceIntPtr dev, GestureInfoPtr gi, InternalEvent *ev, Xep
      * ReplayDevice then the search starts from the descendant of the grab window, otherwise
      * the search starts at the root window. The search ends at deepest child window. */
     i = 0;
-    if (syncEvents.playingEvents) {
+    if (context->syncEvents.playingEvents) {
         while (i < dev->spriteInfo->sprite->spriteTraceGood) {
-            if (dev->spriteInfo->sprite->spriteTrace[i++] == syncEvents.replayWin)
+            if (dev->spriteInfo->sprite->spriteTrace[i++] == context->syncEvents.replayWin)
                 break;
         }
     }

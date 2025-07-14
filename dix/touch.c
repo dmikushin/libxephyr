@@ -463,7 +463,7 @@ TouchEventHistoryReplay(TouchPointInfoPtr ti, DeviceIntPtr dev, XID resource)
            listener. If that is a touch listener, everything is dandy.
            If the TouchBegin however triggers a sync passive grab, the
            TouchUpdate events must be sent to EnqueueEvent so the events end
-           up in syncEvents.pending to be forwarded correctly in a
+           up in context->syncEvents.pending to be forwarded correctly in a
            subsequent ComputeFreeze().
 
            However, if we just send them to EnqueueEvent the sync'ing device

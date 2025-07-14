@@ -47,6 +47,7 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 void
 XkbProcessKeyboardEvent(DeviceEvent *event, DeviceIntPtr keybd)
 {
+    XephyrContext *context = keybd->context;
     KeyClassPtr keyc = keybd->key;
     XkbSrvInfoPtr xkbi;
     int key;
@@ -55,7 +56,7 @@ XkbProcessKeyboardEvent(DeviceEvent *event, DeviceIntPtr keybd)
 
     xkbi = keyc->xkbInfo;
     key = event->detail.key;
-    if (xkbDebugFlags & 0x8)
+    if (context->xkbDebugFlags & 0x8)
         DebugF("[xkb] XkbPKE: Key %d %s\n", key,
                (event->type == ET_KeyPress ? "down" : "up"));
 
@@ -168,7 +169,7 @@ ProcessKeyboardEvent(InternalEvent *ev, DeviceIntPtr keybd, XephyrContext* conte
     KeyClassPtr keyc = keybd->key;
     XkbSrvInfoPtr xkbi = NULL;
     ProcessInputProc backup_proc;
-    xkbDeviceInfoPtr xkb_priv = XKBDEVICEINFO(keybd);
+    xkbDeviceInfoPtr xkb_priv = XKBDEVICEINFO(keybd, context);
     DeviceEvent *event = &ev->device_event;
     int is_press = (event->type == ET_KeyPress);
     int is_release = (event->type == ET_KeyRelease);

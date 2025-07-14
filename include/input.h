@@ -814,14 +814,15 @@ extern _X_EXPORT void input_force_unlock(void);
 extern _X_EXPORT int in_input_thread(void);
 
 extern void InputThreadPreInit(XephyrContext* context);
-extern void InputThreadInit(void);
-extern void InputThreadFini(void);
+extern void InputThreadInit(XephyrContext* context);
+extern void InputThreadFini(XephyrContext* context);
 
 extern int InputThreadRegisterDev(int fd,
                                   NotifyFdProcPtr readInputProc,
-                                  void *readInputArgs);
+                                  void *readInputArgs,
+                                  XephyrContext* context);
 
-extern int InputThreadUnregisterDev(int fd);
+extern int InputThreadUnregisterDev(int fd, XephyrContext* context);
 
 /* InputThreadEnable is now in context */
 

@@ -311,6 +311,7 @@ ProcXResQueryClientResources(ClientPtr client)
     xXResQueryClientResourcesReply rep;
     int i, clientID, num_types;
     int *counts;
+    XephyrContext *context = client->context;
 
     REQUEST_SIZE_MATCH(xXResQueryClientResourcesReq);
 

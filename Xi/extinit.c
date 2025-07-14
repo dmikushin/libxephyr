@@ -358,7 +358,7 @@ static int BadEvent = 1;
  */
 
 /* Moved to XephyrContext:
-DevPrivateKeyRec context->XIClientPrivateKeyRec;
+DevPrivateKeyRec XIClientPrivateKeyRec;
 */
 
 /*****************************************************************

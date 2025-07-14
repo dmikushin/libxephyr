@@ -65,16 +65,16 @@
 static InternalEvent *xtest_evlist;
 
 /**
- * xtestpointer
+ * context->xtestpointer
  * is the virtual pointer for XTest. It is the first slave
  * device of the VCP.
- * xtestkeyboard
+ * context->xtestkeyboard
  * is the virtual keyboard for XTest. It is the first slave
  * device of the VCK
  *
  * Neither of these devices can be deleted.
  */
-DeviceIntPtr xtestpointer, xtestkeyboard;
+/* xtestpointer and xtestkeyboard now in XephyrContext */
 
 #ifdef PANORAMIX
 #include "panoramiX.h"
@@ -567,19 +567,19 @@ void
 InitXTestDevices(XephyrContext* context)
 {
     if (AllocXTestDevice(context->serverClient, "Virtual core",
-                         &xtestpointer, &xtestkeyboard,
+                         &context->xtestpointer, &context->xtestkeyboard,
                          context->inputInfo.pointer, context->inputInfo.keyboard) != Success)
          FatalError("Failed to allocate XTest devices", context);
 
-    if (ActivateDevice(xtestpointer, TRUE) != Success ||
-        ActivateDevice(xtestkeyboard, TRUE) != Success)
+    if (ActivateDevice(context->xtestpointer, TRUE) != Success ||
+        ActivateDevice(context->xtestkeyboard, TRUE) != Success)
         FatalError("Failed to activate XTest core devices.", context);
-    if (!EnableDevice(xtestpointer, TRUE) || !EnableDevice(xtestkeyboard, TRUE))
+    if (!EnableDevice(context->xtestpointer, TRUE) || !EnableDevice(context->xtestkeyboard, TRUE))
         FatalError("Failed to enable XTest core devices.", context);
 
-    AttachDevice(NULL, xtestpointer, context->inputInfo.pointer);
+    AttachDevice(NULL, context->xtestpointer, context->inputInfo.pointer);
 
-    AttachDevice(NULL, xtestkeyboard, context->inputInfo.keyboard);
+    AttachDevice(NULL, context->xtestkeyboard, context->inputInfo.keyboard);
 }
 
 /**

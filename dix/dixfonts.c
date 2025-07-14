@@ -87,6 +87,9 @@ static int size_slept_fpes = 0;
 static FontPathElementPtr *slept_fpes = (FontPathElementPtr *) 0;
 static xfont2_pattern_cache_ptr patternCache;
 
+/* Store context for xfont2 callbacks that don't have context parameter */
+static XephyrContext *font_callback_context = NULL;
+
 static int
 FontToXError(int err)
 {
@@ -1980,7 +1983,7 @@ add_fs_fd(int fd, FontFdHandlerProcPtr handler, void *data)
     entry->fd = fd;
     entry->data = data;
     entry->handler = handler;
-    if (!SetNotifyFd(fd, fs_fd_handler, X_NOTIFY_READ, entry)) {
+    if (!SetNotifyFd(fd, fs_fd_handler, X_NOTIFY_READ, entry, font_callback_context)) {
         free(entry);
         return FALSE;
     }
@@ -2000,7 +2003,7 @@ remove_fs_fd(int fd)
             break;
         }
     }
-    RemoveNotifyFd(fd);
+    RemoveNotifyFd(fd, font_callback_context);
 }
 
 static void
@@ -2079,6 +2082,9 @@ static const xfont2_client_funcs_rec xfont2_client_funcs = {
 void
 InitFonts(XephyrContext* context)
 {
+    /* Store context for xfont2 callbacks */
+    font_callback_context = context;
+    
     if (context->fontPatternCache)
 	xfont2_free_font_pattern_cache(context->fontPatternCache);
     context->fontPatternCache = xfont2_make_font_pattern_cache();

@@ -126,13 +126,13 @@ SOFTWARE.
 
 #include "probes.h"
 
-struct ospoll   *server_poll;
+/* server_poll now in XephyrContext */
 
 /* REMOVED: Bool NoListenAll; - moved to XephyrContext */
 
 static Bool RunFromSmartParent; /* send SIGUSR1 to parent process */
 /* REMOVED: Bool RunFromSigStopParent; - moved to XephyrContext */
-static char dynamic_display[7]; /* context->display name */
+static char dynamic_display[7]; /* display name */
 /* REMOVED: Bool PartialNetwork; - moved to XephyrContext */
 static Pid_t ParentProcess;
 
@@ -151,7 +151,12 @@ static XtransConnInfo *ListenTransConns = NULL;
 static int *ListenTransFds = NULL;
 static int ListenTransCount;
 
-static void ErrorConnMax(XtransConnInfo /* trans_conn */ );
+struct ConnMaxData {
+    XtransConnInfo trans_conn;
+    XephyrContext *context;
+};
+
+static void ErrorConnMax(XtransConnInfo trans_conn, XephyrContext *context);
 
 static XtransConnInfo
 lookup_trans_conn(int fd)
@@ -264,7 +269,7 @@ CreateWellKnownSockets(XephyrContext* context)
                 break;
             }
             else
-                CloseWellKnownConnections();
+                CloseWellKnownConnections(context);
         }
         if (!found)
             FatalError("Failed to find a socket to listen on", context);
@@ -281,7 +286,7 @@ CreateWellKnownSockets(XephyrContext* context)
         int fd = _XSERVTransGetConnectionNumber(ListenTransConns[i]);
 
         ListenTransFds[i] = fd;
-        SetNotifyFd(fd, EstablishNewConnections, X_NOTIFY_READ, NULL);
+        SetNotifyFd(fd, EstablishNewConnections, X_NOTIFY_READ, context, context);
 
         if (!_XSERVTransIsLocal(ListenTransConns[i]))
             DefineSelf (fd, context);
@@ -301,7 +306,7 @@ CreateWellKnownSockets(XephyrContext* context)
     InitParentProcess();
 
 #ifdef XDMCP
-    XdmcpInit();
+    XdmcpInit(context);
 #endif
 }
 
@@ -322,7 +327,7 @@ ResetWellKnownSockets(XephyrContext* context)
                  * Remove it from out list.
                  */
 
-                RemoveNotifyFd(ListenTransFds[i]);
+                RemoveNotifyFd(ListenTransFds[i], context);
                 ListenTransFds[i] = ListenTransFds[ListenTransCount - 1];
                 ListenTransConns[i] = ListenTransConns[ListenTransCount - 1];
                 ListenTransCount -= 1;
@@ -341,7 +346,7 @@ ResetWellKnownSockets(XephyrContext* context)
     }
     for (i = 0; i < ListenTransCount; i++)
         SetNotifyFd(ListenTransFds[i], EstablishNewConnections, X_NOTIFY_READ,
-                    NULL);
+                    context, context);
 
     ResetAuthorization();
     ResetHosts(context->display, context);
@@ -349,12 +354,12 @@ ResetWellKnownSockets(XephyrContext* context)
      * restart XDMCP
      */
 #ifdef XDMCP
-    XdmcpReset();
+    XdmcpReset(context);
 #endif
 }
 
 void
-CloseWellKnownConnections(void)
+CloseWellKnownConnections(XephyrContext* context)
 {
     int i;
 
@@ -363,7 +368,7 @@ CloseWellKnownConnections(void)
             _XSERVTransClose(ListenTransConns[i]);
             ListenTransConns[i] = NULL;
             if (ListenTransFds != NULL)
-                RemoveNotifyFd(ListenTransFds[i]);
+                RemoveNotifyFd(ListenTransFds[i], context);
         }
     }
     ListenTransCount = 0;
@@ -603,7 +608,7 @@ ClientReady(int fd, int xevents, void *data)
     if (xevents & X_NOTIFY_READ)
         mark_client_ready(client);
     if (xevents & X_NOTIFY_WRITE) {
-        ospoll_mute(server_poll, fd, X_NOTIFY_WRITE);
+        ospoll_mute(client->context->server_poll, fd, X_NOTIFY_WRITE);
         client->context->NewOutputPending = TRUE;
     }
 }
@@ -629,7 +634,7 @@ AllocNewConnection(XtransConnInfo trans_conn, int fd, CARD32 conn_time, XephyrCo
         return NullClient;
     }
     client->local = ComputeLocalClient(client);
-    ospoll_add(server_poll, fd,
+    ospoll_add(context->server_poll, fd,
                ospoll_trigger_edge,
                ClientReady,
                client);
@@ -690,7 +695,7 @@ EstablishNewConnections(int curconn, int ready, void *data)
         new_trans_conn->flags = new_trans_conn->flags | TRANS_NOXAUTH;
 
     if (!AllocNewConnection(new_trans_conn, newconn, connect_time, context)) {
-        ErrorConnMax(new_trans_conn);
+        ErrorConnMax(new_trans_conn, context);
     }
     return;
 }
@@ -705,7 +710,9 @@ EstablishNewConnections(int curconn, int ready, void *data)
 static void
 ConnMaxNotify(int fd, int events, void *data)
 {
-    XtransConnInfo trans_conn = data;
+    struct ConnMaxData *conn_data = (struct ConnMaxData *)data;
+    XtransConnInfo trans_conn = conn_data->trans_conn;
+    XephyrContext *context = conn_data->context;
     char order = 0;
 
     /* try to read the byte-order of the connection */
@@ -735,15 +742,26 @@ ConnMaxNotify(int fd, int events, void *data)
         iov[2].iov_base = pad;
         (void) _XSERVTransWritev(trans_conn, iov, 3);
     }
-    RemoveNotifyFd(trans_conn->fd);
+    RemoveNotifyFd(trans_conn->fd, context);
     _XSERVTransClose(trans_conn);
+    free(conn_data);
 }
 
 static void
-ErrorConnMax(XtransConnInfo trans_conn)
+ErrorConnMax(XtransConnInfo trans_conn, XephyrContext *context)
 {
-    if (!SetNotifyFd(trans_conn->fd, ConnMaxNotify, X_NOTIFY_READ, trans_conn))
+    struct ConnMaxData *conn_data = malloc(sizeof(struct ConnMaxData));
+    if (!conn_data) {
         _XSERVTransClose(trans_conn);
+        return;
+    }
+    conn_data->trans_conn = trans_conn;
+    conn_data->context = context;
+    
+    if (!SetNotifyFd(trans_conn->fd, ConnMaxNotify, X_NOTIFY_READ, conn_data, context)) {
+        free(conn_data);
+        _XSERVTransClose(trans_conn);
+    }
 }
 
 /************
@@ -752,14 +770,14 @@ ErrorConnMax(XtransConnInfo trans_conn)
  ************/
 
 void
-CloseDownFileDescriptor(OsCommPtr oc)
+CloseDownFileDescriptor(OsCommPtr oc, XephyrContext* context)
 {
     if (oc->trans_conn) {
         int connection = oc->fd;
 #ifdef XDMCP
         XdmcpCloseDisplay(connection);
 #endif
-        ospoll_remove(server_poll, connection);
+        ospoll_remove(context->server_poll, connection);
         _XSERVTransDisconnect(oc->trans_conn);
         _XSERVTransClose(oc->trans_conn);
         oc->trans_conn = NULL;
@@ -782,7 +800,7 @@ CloseDownConnection(ClientPtr client)
 
     if (oc->output)
 	FlushClient(client, oc, (char *) NULL, 0);
-    CloseDownFileDescriptor(oc);
+    CloseDownFileDescriptor(oc, client->context);
     FreeOsBuffers(oc);
     free(client->osPrivate);
     client->osPrivate = (void *) NULL;
@@ -816,11 +834,11 @@ HandleNotifyFd(int fd, int xevents, void *data)
  *****************/
 
 Bool
-SetNotifyFd(int fd, NotifyFdProcPtr notify, int mask, void *data)
+SetNotifyFd(int fd, NotifyFdProcPtr notify, int mask, void *data, XephyrContext* context)
 {
     struct notify_fd *n;
 
-    n = ospoll_data(server_poll, fd);
+    n = ospoll_data(context->server_poll, fd);
     if (!n) {
         if (mask == 0)
             return TRUE;
@@ -828,23 +846,23 @@ SetNotifyFd(int fd, NotifyFdProcPtr notify, int mask, void *data)
         n = calloc(1, sizeof (struct notify_fd));
         if (!n)
             return FALSE;
-        ospoll_add(server_poll, fd,
+        ospoll_add(context->server_poll, fd,
                    ospoll_trigger_level,
                    HandleNotifyFd,
                    n);
     }
 
     if (mask == 0) {
-        ospoll_remove(server_poll, fd);
+        ospoll_remove(context->server_poll, fd);
         free(n);
     } else {
         int listen = mask & ~n->mask;
         int mute = n->mask & ~mask;
 
         if (listen)
-            ospoll_listen(server_poll, fd, listen);
+            ospoll_listen(context->server_poll, fd, listen);
         if (mute)
-            ospoll_mute(server_poll, fd, mute);
+            ospoll_mute(context->server_poll, fd, mute);
         n->mask = mask;
         n->data = data;
         n->notify = notify;
@@ -1046,7 +1064,7 @@ ListenOnOpenFD(int fd, int noxauth, XephyrContext* context)
     ListenTransConns[ListenTransCount] = ciptr;
     ListenTransFds[ListenTransCount] = fd;
 
-    SetNotifyFd(fd, EstablishNewConnections, X_NOTIFY_READ, NULL);
+    SetNotifyFd(fd, EstablishNewConnections, X_NOTIFY_READ, context, context);
 
     /* Increment the count */
     ListenTransCount++;
@@ -1071,7 +1089,7 @@ AddClientOnOpenFD(int fd, XephyrContext *context)
     connect_time = GetTimeInMillis();
 
     if (!AllocNewConnection(ciptr, fd, connect_time, context)) {
-        ErrorConnMax(ciptr);
+        ErrorConnMax(ciptr, context);
         return FALSE;
     }
 
@@ -1105,9 +1123,9 @@ set_poll_client(ClientPtr client)
 
     if (oc->trans_conn) {
         if (listen_to_client(client))
-            ospoll_listen(server_poll, oc->trans_conn->fd, X_NOTIFY_READ);
+            ospoll_listen(client->context->server_poll, oc->trans_conn->fd, X_NOTIFY_READ);
         else
-            ospoll_mute(server_poll, oc->trans_conn->fd, X_NOTIFY_READ);
+            ospoll_mute(client->context->server_poll, oc->trans_conn->fd, X_NOTIFY_READ);
     }
 }
 
