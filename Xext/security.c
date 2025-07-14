@@ -577,7 +577,7 @@ ProcSecurityRevokeAuthorization(ClientPtr client)
 
     rc = dixLookupResourceByType((void **) &pAuth, stuff->authId,
                                  SecurityAuthorizationResType, client,
-                                 DixDestroyAccess);
+                                 DixDestroyAccess, context);
     if (rc != Success)
         return rc;
 
@@ -962,7 +962,7 @@ SecurityClientState(CallbackListPtr *pcbl, void *unused, void *calldata)
         state->authId = AuthorizationIDOfClient(pci->client);
         rc = dixLookupResourceByType((void **) &pAuth, state->authId,
                                      SecurityAuthorizationResType, context->serverClient,
-                                     DixGetAttrAccess);
+                                     DixGetAttrAccess, context);
         if (rc == Success) {
             /* it is a generated authorization */
             pAuth->refcnt++;
@@ -978,7 +978,7 @@ SecurityClientState(CallbackListPtr *pcbl, void *unused, void *calldata)
     case ClientStateRetained:
         rc = dixLookupResourceByType((void **) &pAuth, state->authId,
                                      SecurityAuthorizationResType, context->serverClient,
-                                     DixGetAttrAccess);
+                                     DixGetAttrAccess, context);
         if (rc == Success && state->live) {
             /* it is a generated authorization */
             pAuth->refcnt--;
@@ -1012,15 +1012,15 @@ SecurityResetProc(ExtensionEntry * extEntry)
     if (context) {
         DeleteCallback(&context->ClientStateCallback, SecurityClientState, NULL);
         
-        XaceDeleteCallback(XACE_EXT_DISPATCH, SecurityExtension, NULL);
-        XaceDeleteCallback(XACE_RESOURCE_ACCESS, SecurityResource, NULL);
-        XaceDeleteCallback(XACE_DEVICE_ACCESS, SecurityDevice, NULL);
-        XaceDeleteCallback(XACE_PROPERTY_ACCESS, SecurityProperty, NULL);
-        XaceDeleteCallback(XACE_SEND_ACCESS, SecuritySend, NULL);
-        XaceDeleteCallback(XACE_RECEIVE_ACCESS, SecurityReceive, NULL);
-        XaceDeleteCallback(XACE_CLIENT_ACCESS, SecurityClient, NULL);
-        XaceDeleteCallback(XACE_EXT_ACCESS, SecurityExtension, NULL);
-        XaceDeleteCallback(XACE_SERVER_ACCESS, SecurityServer, NULL);
+        XaceDeleteCallback(XACE_EXT_DISPATCH, SecurityExtension, NULL, context);
+        XaceDeleteCallback(XACE_RESOURCE_ACCESS, SecurityResource, NULL, context);
+        XaceDeleteCallback(XACE_DEVICE_ACCESS, SecurityDevice, NULL, context);
+        XaceDeleteCallback(XACE_PROPERTY_ACCESS, SecurityProperty, NULL, context);
+        XaceDeleteCallback(XACE_SEND_ACCESS, SecuritySend, NULL, context);
+        XaceDeleteCallback(XACE_RECEIVE_ACCESS, SecurityReceive, NULL, context);
+        XaceDeleteCallback(XACE_CLIENT_ACCESS, SecurityClient, NULL, context);
+        XaceDeleteCallback(XACE_EXT_ACCESS, SecurityExtension, NULL, context);
+        XaceDeleteCallback(XACE_SERVER_ACCESS, SecurityServer, NULL, context);
     }
 }
 
@@ -1035,18 +1035,18 @@ SecurityResetProc(ExtensionEntry * extEntry)
  */
 
 void
-SecurityExtensionInit(void)
+SecurityExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
     int ret = TRUE;
 
     SecurityAuthorizationResType =
         CreateNewResourceType(SecurityDeleteAuthorization,
-                              "SecurityAuthorization");
+                              "SecurityAuthorization", context);
 
     RTEventClient =
         CreateNewResourceType(SecurityDeleteAuthorizationEventClient,
-                              "SecurityEventClient");
+                              "SecurityEventClient", context);
 
     if (!SecurityAuthorizationResType || !RTEventClient)
         return;
@@ -1061,15 +1061,15 @@ SecurityExtensionInit(void)
     /* Register callbacks */
     ret &= AddCallback(&context->ClientStateCallback, SecurityClientState, NULL);
 
-    ret &= XaceRegisterCallback(XACE_EXT_DISPATCH, SecurityExtension, NULL);
-    ret &= XaceRegisterCallback(XACE_RESOURCE_ACCESS, SecurityResource, NULL);
-    ret &= XaceRegisterCallback(XACE_DEVICE_ACCESS, SecurityDevice, NULL);
-    ret &= XaceRegisterCallback(XACE_PROPERTY_ACCESS, SecurityProperty, NULL);
-    ret &= XaceRegisterCallback(XACE_SEND_ACCESS, SecuritySend, NULL);
-    ret &= XaceRegisterCallback(XACE_RECEIVE_ACCESS, SecurityReceive, NULL);
-    ret &= XaceRegisterCallback(XACE_CLIENT_ACCESS, SecurityClient, NULL);
-    ret &= XaceRegisterCallback(XACE_EXT_ACCESS, SecurityExtension, NULL);
-    ret &= XaceRegisterCallback(XACE_SERVER_ACCESS, SecurityServer, NULL);
+    ret &= XaceRegisterCallback(XACE_EXT_DISPATCH, SecurityExtension, NULL, context);
+    ret &= XaceRegisterCallback(XACE_RESOURCE_ACCESS, SecurityResource, NULL, context);
+    ret &= XaceRegisterCallback(XACE_DEVICE_ACCESS, SecurityDevice, NULL, context);
+    ret &= XaceRegisterCallback(XACE_PROPERTY_ACCESS, SecurityProperty, NULL, context);
+    ret &= XaceRegisterCallback(XACE_SEND_ACCESS, SecuritySend, NULL, context);
+    ret &= XaceRegisterCallback(XACE_RECEIVE_ACCESS, SecurityReceive, NULL, context);
+    ret &= XaceRegisterCallback(XACE_CLIENT_ACCESS, SecurityClient, NULL, context);
+    ret &= XaceRegisterCallback(XACE_EXT_ACCESS, SecurityExtension, NULL, context);
+    ret &= XaceRegisterCallback(XACE_SERVER_ACCESS, SecurityServer, NULL, context);
 
     if (!ret)
         FatalError("SecurityExtensionSetup: Failed to register callbacks\n", context);
@@ -1078,7 +1078,7 @@ SecurityExtensionInit(void)
     extEntry = AddExtension(SECURITY_EXTENSION_NAME,
                             XSecurityNumberEvents, XSecurityNumberErrors,
                             ProcSecurityDispatch, SProcSecurityDispatch,
-                            SecurityResetProc, StandardMinorOpcode);
+                            SecurityResetProc, StandardMinorOpcode, context);
     
     /* Store context in extension private data for ResetProc callback */
     extEntry->extPrivate = context;
@@ -1090,7 +1090,7 @@ SecurityExtensionInit(void)
         (EventSwapPtr) SwapSecurityAuthorizationRevokedEvent;
 
     SetResourceTypeErrorValue(SecurityAuthorizationResType,
-                              SecurityErrorBase + XSecurityBadAuthorization);
+                              SecurityErrorBase + XSecurityBadAuthorization, context);
 
     /* Label objects that were created before we could register ourself */
     SecurityLabelInitial();

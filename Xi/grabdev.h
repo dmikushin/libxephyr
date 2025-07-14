@@ -36,7 +36,8 @@ int SProcXGrabDevice(ClientPtr  /* client */
 int ProcXGrabDevice(ClientPtr   /* client */
     );
 
-int CreateMaskFromList(ClientPtr /* client */ ,
+int CreateMaskFromList(XephyrContext * /* context */ ,
+                       ClientPtr /* client */ ,
                        XEventClass * /* list */ ,
                        int /* count */ ,
                        struct tmask /* mask */ [],

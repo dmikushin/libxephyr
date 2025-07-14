@@ -373,7 +373,7 @@ RRFreeClient(void *data, XID id, XephyrContext* context)
     pRREvent = (RREventPtr) data;
     pWin = pRREvent->window;
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            context->RREventType, context->serverClient, DixDestroyAccess);
+                            context->RREventType, context->serverClient, DixDestroyAccess, context);
     if (pHead) {
         pPrev = 0;
         for (pCur = *pHead; pCur && pCur != pRREvent; pCur = pCur->next)
@@ -420,15 +420,15 @@ RRExtensionInit(XephyrContext* context)
     if (!AddCallback(&context->ClientStateCallback, RRClientCallback, 0))
         return;
 
-    context->RRClientType = CreateNewResourceType(RRFreeClient, "RandRClient");
+    context->RRClientType = CreateNewResourceType(RRFreeClient, "RandRClient", context);
     if (!context->RRClientType)
         return;
-    context->RREventType = CreateNewResourceType(RRFreeEvents, "RandREvent");
+    context->RREventType = CreateNewResourceType(RRFreeEvents, "RandREvent", context);
     if (!context->RREventType)
         return;
     extEntry = AddExtension(RANDR_NAME, RRNumberEvents, RRNumberErrors,
                             ProcRRDispatch, SProcRRDispatch,
-                            NULL, StandardMinorOpcode);
+                            NULL, StandardMinorOpcode, context);
     if (!extEntry)
         return;
     context->RRErrorBase = extEntry->errorBase;
@@ -486,7 +486,7 @@ TellChanged(WindowPtr pWin, void *value)
     int i;
 
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            pScreen->context->RREventType, pScreen->context->serverClient, DixReadAccess);
+                            pScreen->context->RREventType, pScreen->context->serverClient, DixReadAccess, pScreen->context);
     if (!pHead)
         return WT_WALKCHILDREN;
 

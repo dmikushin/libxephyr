@@ -192,9 +192,9 @@ SProcXCMiscDispatch(ClientPtr client)
 }
 
 void
-XCMiscExtensionInit(void)
+XCMiscExtensionInit(XephyrContext* context)
 {
     AddExtension(XCMiscExtensionName, 0, 0,
                  ProcXCMiscDispatch, SProcXCMiscDispatch,
-                 NULL, StandardMinorOpcode);
+                 NULL, StandardMinorOpcode, context);
 }

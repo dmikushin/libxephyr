@@ -30,7 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gcstruct.h"
 #include "xacestr.h"
 
-_X_EXPORT CallbackListPtr XaceHooks[XACE_NUM_HOOKS] = { 0 };
+/* _X_EXPORT CallbackListPtr XaceHooks[XACE_NUM_HOOKS] = { 0 }; - moved to XephyrContext */
 
 /* Special-cased hook functions.  Called by Xserver.
  */
@@ -42,7 +42,7 @@ XaceHookDispatch(ClientPtr client, int major)
     ExtensionEntry *ext = GetExtensionEntry(major);
     XaceExtAccessRec erec = { client, ext, DixUseAccess, Success };
     if (ext)
-        CallCallbacks(&XaceHooks[XACE_EXT_DISPATCH], &erec);
+        CallCallbacks(&client->context->XaceHooks[XACE_EXT_DISPATCH], &erec);
     /* On error, pretend extension doesn't exist */
     return (erec.status == Success) ? Success : BadRequest;
 }
@@ -52,7 +52,7 @@ XaceHookPropertyAccess(ClientPtr client, WindowPtr pWin,
                        PropertyPtr *ppProp, Mask access_mode)
 {
     XacePropertyAccessRec rec = { client, pWin, ppProp, access_mode, Success };
-    CallCallbacks(&XaceHooks[XACE_PROPERTY_ACCESS], &rec);
+    CallCallbacks(&client->context->XaceHooks[XACE_PROPERTY_ACCESS], &rec);
     return rec.status;
 }
 
@@ -60,7 +60,7 @@ int
 XaceHookSelectionAccess(ClientPtr client, Selection ** ppSel, Mask access_mode)
 {
     XaceSelectionAccessRec rec = { client, ppSel, access_mode, Success };
-    CallCallbacks(&XaceHooks[XACE_SELECTION_ACCESS], &rec);
+    CallCallbacks(&client->context->XaceHooks[XACE_SELECTION_ACCESS], &rec);
     return rec.status;
 }
 
@@ -83,11 +83,24 @@ XaceHook(int hook, ...)
     } u;
     int *prv = NULL;            /* points to return value from callback */
     va_list ap;                 /* argument list */
-
-    if (!XaceHooks[hook])
-        return Success;
+    ClientPtr client = NULL;
+    XephyrContext* context = NULL;
 
     va_start(ap, hook);
+    
+    /* Get context from the first ClientPtr argument for most hooks */
+    if (hook == XACE_RESOURCE_ACCESS || hook == XACE_DEVICE_ACCESS ||
+        hook == XACE_SEND_ACCESS || hook == XACE_RECEIVE_ACCESS ||
+        hook == XACE_CLIENT_ACCESS || hook == XACE_EXT_ACCESS) {
+        client = va_arg(ap, ClientPtr);
+        if (client)
+            context = client->context;
+        va_end(ap);
+        va_start(ap, hook);
+    }
+    
+    if (!context || !context->XaceHooks[hook])
+        return Success;
 
     /* Marshal arguments for passing to callback.
      * Each callback has its own case, which sets up a structure to hold
@@ -186,7 +199,7 @@ XaceHook(int hook, ...)
     va_end(ap);
 
     /* call callbacks and return result, if any. */
-    CallCallbacks(&XaceHooks[hook], &u);
+    CallCallbacks(&context->XaceHooks[hook], &u);
     return prv ? *prv : Success;
 }
 
@@ -198,11 +211,11 @@ XaceHook(int hook, ...)
  * Returns non-zero if there is a callback, zero otherwise.
  */
 int
-XaceHookIsSet(int hook)
+XaceHookIsSet(int hook, XephyrContext* context)
 {
-    if (hook < 0 || hook >= XACE_NUM_HOOKS)
+    if (hook < 0 || hook >= XACE_NUM_HOOKS || !context)
         return 0;
-    return XaceHooks[hook] != NULL;
+    return context->XaceHooks[hook] != NULL;
 }
 
 /* XaceCensorImage

@@ -78,13 +78,13 @@ typedef struct {
     Bool generateEvent;         /* generate an event during warping? */
 } miPointerRec, *miPointerPtr;
 
-DevPrivateKeyRec miPointerScreenKeyRec;
+DevPrivateKeyRec context->miPointerScreenKeyRec;
 
 #define GetScreenPrivate(s) ((miPointerScreenPtr) \
     dixLookupPrivate(&(s)->devPrivates, miPointerScreenKey))
 #define SetupScreen(s)	miPointerScreenPtr  pScreenPriv = GetScreenPrivate(s)
 
-DevPrivateKeyRec miPointerPrivKeyRec;
+DevPrivateKeyRec context->miPointerPrivKeyRec;
 
 #define MIPOINTER(dev) \
     (IsFloating(dev) ? \
@@ -120,10 +120,10 @@ miPointerInitialize(ScreenPtr pScreen,
 {
     miPointerScreenPtr pScreenPriv;
 
-    if (!dixRegisterPrivateKey(&miPointerScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
+    if (!dixRegisterPrivateKey(&context->miPointerScreenKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&miPointerPrivKeyRec, PRIVATE_DEVICE, 0, pScreen->context))
+    if (!dixRegisterPrivateKey(&context->miPointerPrivKeyRec, PRIVATE_DEVICE, 0, pScreen->context))
         return FALSE;
 
     pScreenPriv = malloc(sizeof(miPointerScreenRec));

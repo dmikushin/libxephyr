@@ -117,7 +117,7 @@ ProcXChangeDeviceDontPropagateList(ClientPtr client)
         return client->context->BadMode;
     }
 
-    if ((rc = CreateMaskFromList(client, (XEventClass *) &stuff[1],
+    if ((rc = CreateMaskFromList(client->context, client, (XEventClass *) &stuff[1],
                                  stuff->count, tmp, NULL,
                                  X_ChangeDeviceDontPropagateList)) != Success)
         return rc;

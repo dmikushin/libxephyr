@@ -76,7 +76,7 @@ compCloseScreen(ScreenPtr pScreen)
     pScreen->SourceValidate = cs->SourceValidate;
 
     free(cs);
-    dixSetPrivate(&pScreen->devPrivates, CompScreenPrivateKey, NULL);
+    dixSetPrivate(&pScreen->devPrivates, CompScreenPrivateKey(pScreen), NULL);
     ret = (*pScreen->CloseScreen) (pScreen);
 
     return ret;
@@ -409,7 +409,7 @@ compScreenInit(ScreenPtr pScreen)
     cs->SourceValidate = pScreen->SourceValidate;
     pScreen->SourceValidate = compSourceValidate;
 
-    dixSetPrivate(&pScreen->devPrivates, CompScreenPrivateKey, cs);
+    dixSetPrivate(&pScreen->devPrivates, CompScreenPrivateKey(pScreen), cs);
 
     RegisterRealChildHeadProc(CompositeRealChildHead);
 

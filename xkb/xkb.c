@@ -45,10 +45,10 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XKMformat.h>
 
-int XkbEventBase;
+/* int XkbEventBase; - moved to XephyrContext */
 static int XkbErrorBase;
-int XkbReqCode;
-int XkbKeyboardErrorCode;
+/* int XkbReqCode; - moved to XephyrContext */
+/* int XkbKeyboardErrorCode; - moved to XephyrContext */
 CARD32 xkbDebugFlags = 0;
 static CARD32 xkbDebugCtrls = 0;
 
@@ -670,7 +670,7 @@ ProcXkbLatchLockState(ClientPtr client)
             if (changed) {
                 sn.keycode = 0;
                 sn.eventType = 0;
-                sn.requestMajor = XkbReqCode;
+                sn.requestMajor = client->context->XkbReqCode;
                 sn.requestMinor = X_kbLatchLockState;
                 sn.changed = changed;
                 XkbSendStateNotify(tmpd, &sn);
@@ -967,7 +967,7 @@ ProcXkbSetControls(ClientPtr client)
             if (XkbComputeControlsNotify(tmpd, &old, ctrl, &cn, FALSE)) {
                 cn.keycode = 0;
                 cn.eventType = 0;
-                cn.requestMajor = XkbReqCode;
+                cn.requestMajor = client->context->XkbReqCode;
                 cn.requestMinor = X_kbSetControls;
                 XkbSendControlsNotify(tmpd, &cn);
             }
@@ -2159,7 +2159,7 @@ SetKeySyms(ClientPtr client,
 
         cn.keycode = 0;
         cn.eventType = 0;
-        cn.requestMajor = XkbReqCode;
+        cn.requestMajor = client->context->XkbReqCode;
         cn.requestMinor = X_kbSetMap;
         old = *xkb->ctrls;
         xkb->ctrls->num_groups = s;
@@ -2622,7 +2622,7 @@ _XkbSetMap(ClientPtr client, DeviceIntPtr dev, xkbSetMapReq * req, char *values)
             return status;      /* oh-oh. what about the other keyboards? */
         nkn.minKeyCode = xkb->min_key_code;
         nkn.maxKeyCode = xkb->max_key_code;
-        nkn.requestMajor = XkbReqCode;
+        nkn.requestMajor = client->context->XkbReqCode;
         nkn.requestMinor = X_kbSetMap;
         nkn.changed = XkbNKN_KeycodesMask;
         XkbSendNewKeyboardNotify(dev, &nkn);
@@ -4008,7 +4008,7 @@ XkbSendNames(ClientPtr client, XkbDescPtr xkb, xkbGetNamesReply * rep)
 
     if ((desc - start) != (length)) {
         ErrorF("[xkb] BOGUS LENGTH in write names, expected %d, got %ld\n",
-               length, (unsigned long) (desc - start));
+               client->context, length, (unsigned long) (desc - start));
     }
     WriteToClient(client, SIZEOF(xkbGetNamesReply), rep);
     WriteToClient(client, length, start);
@@ -5064,7 +5064,7 @@ XkbSendGeometry(ClientPtr client,
         if ((desc - start) != (len)) {
             ErrorF
                 ("[xkb] BOGUS LENGTH in XkbSendGeometry, expected %d, got %ld\n",
-                 len, (unsigned long) (desc - start));
+                 client->context, len, (unsigned long) (desc - start));
         }
     }
     else {
@@ -5652,7 +5652,7 @@ _XkbSetGeometry(ClientPtr client, DeviceIntPtr dev, xkbSetGeometryReq * stuff)
     nkn.deviceID = nkn.oldDeviceID = dev->id;
     nkn.minKeyCode = nkn.oldMinKeyCode = xkb->min_key_code;
     nkn.maxKeyCode = nkn.oldMaxKeyCode = xkb->max_key_code;
-    nkn.requestMajor = XkbReqCode;
+    nkn.requestMajor = client->context->XkbReqCode;
     nkn.requestMinor = X_kbSetGeometry;
     nkn.changed = XkbNKN_GeometryMask;
     XkbSendNewKeyboardNotify(dev, &nkn);
@@ -6185,7 +6185,7 @@ ProcXkbGetKbdByName(ClientPtr client)
         nkn.maxKeyCode = new->max_key_code;
         nkn.oldMinKeyCode = xkb->min_key_code;
         nkn.oldMaxKeyCode = xkb->max_key_code;
-        nkn.requestMajor = XkbReqCode;
+        nkn.requestMajor = client->context->XkbReqCode;
         nkn.requestMinor = X_kbGetKbdByName;
         nkn.changed = XkbNKN_KeycodesMask;
         if (geom_changed)
@@ -6201,7 +6201,7 @@ ProcXkbGetKbdByName(ClientPtr client)
                 continue;
 
             if (tmpd != dev)
-                XkbDeviceApplyKeymap(tmpd, xkb);
+                XkbDeviceApplyKeymap(tmpd, xkb, client->context);
 
             if (tmpd->kbdfeed && tmpd->kbdfeed->xkb_sli) {
                 old_sli = tmpd->kbdfeed->xkb_sli;
@@ -6273,7 +6273,7 @@ CheckDeviceLedFBs(DeviceIntPtr dev,
             class = LedFeedbackClass;
         else {
             client->errorValue = _XkbErrCode2(XkbErr_BadClass, class);
-            return XkbKeyboardErrorCode;
+            return client->context->XkbKeyboardErrorCode;
         }
     }
     classOk = FALSE;
@@ -6322,7 +6322,7 @@ CheckDeviceLedFBs(DeviceIntPtr dev,
         client->errorValue = _XkbErrCode2(XkbErr_BadId, id);
     else
         client->errorValue = _XkbErrCode2(XkbErr_BadClass, class);
-    return XkbKeyboardErrorCode;
+    return client->context->XkbKeyboardErrorCode;
 }
 
 static int
@@ -6775,7 +6775,7 @@ _XkbSetDeviceInfoCheck(ClientPtr client, DeviceIntPtr dev,
 
         if (!dev->button) {
             client->errorValue = _XkbErrCode2(XkbErr_BadClass, ButtonClass);
-            return XkbKeyboardErrorCode;
+            return client->context->XkbKeyboardErrorCode;
         }
         if ((stuff->firstBtn + stuff->nBtns) > dev->button->numButtons) {
             client->errorValue =
@@ -7070,7 +7070,7 @@ XkbExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
-    RT_XKBCLIENT = CreateNewResourceType(XkbClientGone, "XkbClient");
+    RT_XKBCLIENT = CreateNewResourceType(XkbClientGone, "XkbClient", context);
     if (!RT_XKBCLIENT)
         return;
 
@@ -7079,11 +7079,11 @@ XkbExtensionInit(XephyrContext* context)
 
     if ((extEntry = AddExtension(XkbName, XkbNumberEvents, XkbNumberErrors,
                                  ProcXkbDispatch, SProcXkbDispatch,
-                                 NULL, StandardMinorOpcode))) {
-        XkbReqCode = (unsigned char) extEntry->base;
-        XkbEventBase = (unsigned char) extEntry->eventBase;
+                                 NULL, StandardMinorOpcode, context))) {
+        context->XkbReqCode = (unsigned char) extEntry->base;
+        context->XkbEventBase = (unsigned char) extEntry->eventBase;
         XkbErrorBase = (unsigned char) extEntry->errorBase;
-        XkbKeyboardErrorCode = XkbErrorBase + XkbKeyboard;
+        context->XkbKeyboardErrorCode = XkbErrorBase + XkbKeyboard;
     }
     return;
 }

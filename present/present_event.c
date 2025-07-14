@@ -213,7 +213,7 @@ present_select_input(ClientPtr client, XID eid, WindowPtr window, CARD32 mask)
 
     /* Check to see if we're modifying an existing event selection */
     ret = dixLookupResourceByType((void **) &event, eid, present_event_type,
-                                 client, DixWriteAccess);
+                                 client, DixWriteAccess, client->context);
     if (ret == Success) {
         /* Match error for the wrong window; also don't modify some other
          * client's event selection
@@ -260,7 +260,7 @@ present_select_input(ClientPtr client, XID eid, WindowPtr window, CARD32 mask)
 Bool
 present_event_init(XephyrContext* context)
 {
-    present_event_type = CreateNewResourceType(present_free_event, "PresentEvent");
+    present_event_type = CreateNewResourceType(present_free_event, "PresentEvent", context);
     if (!present_event_type)
         return FALSE;
 

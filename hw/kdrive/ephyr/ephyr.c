@@ -657,11 +657,11 @@ ephyrInitScreen(ScreenPtr pScreen)
     KdScreenInfo *screen = pScreenPriv->screen;
 
     EPHYR_LOG("pScreen->myNum:%d\n", pScreen->myNum);
-    hostx_set_screen_number(screen, pScreen->myNum);
+    hostx_set_screen_number(screen, pScreen->myNum, pScreen->context);
     if (pScreen->context->EphyrWantNoHostGrab) {
-        hostx_set_win_title(screen, "xephyr");
+        hostx_set_win_title(screen, "xephyr", pScreen->context);
     } else {
-        hostx_set_win_title(screen, "(ctrl+shift grabs mouse and keyboard)");
+        hostx_set_win_title(screen, "(ctrl+shift grabs mouse and keyboard)", pScreen->context);
     }
     pScreen->CreateColormap = ephyrCreateColormap;
 
@@ -1035,7 +1035,7 @@ ephyrProcessKeyRelease(XephyrContext* context, xcb_generic_event_t *xev)
             xcb_ungrab_pointer(conn, XCB_TIME_CURRENT_TIME);
             grabbed_screen = -1;
             hostx_set_win_title(screen,
-                                "(ctrl+shift grabs mouse and keyboard)");
+                                "(ctrl+shift grabs mouse and keyboard)", context);
         }
         else if (!mod1_down) {
             /* Attempt grab */
@@ -1072,7 +1072,7 @@ ephyrProcessKeyRelease(XephyrContext* context, xcb_generic_event_t *xev)
                     grabbed_screen = scrpriv->mynum;
                     hostx_set_win_title
                         (screen,
-                         "(ctrl+shift releases mouse and keyboard)");
+                         "(ctrl+shift releases mouse and keyboard)", context);
                 }
             }
         }

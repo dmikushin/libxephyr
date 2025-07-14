@@ -33,7 +33,7 @@
 #include "eventstr.h"
 #include <X11/extensions/XI2proto.h>
 
-extern Mask event_filters[MAXDEVICES][MAXEVENTS];
+/* extern Mask context->event_filters[MAXDEVICES][MAXEVENTS]; */
 
 struct _ValuatorMask {
     int8_t last_bit;            /* highest bit set in mask */
@@ -51,7 +51,7 @@ extern int event_get_corestate(DeviceIntPtr mouse, DeviceIntPtr kbd);
 extern void event_set_state(DeviceIntPtr mouse, DeviceIntPtr kbd,
                             DeviceEvent *event);
 extern void event_set_state_gesture(DeviceIntPtr kbd, GestureEvent *event);
-extern Mask event_get_filter_from_type(DeviceIntPtr dev, int evtype);
+extern Mask event_get_filter_from_type(DeviceIntPtr dev, int evtype, XephyrContext* context);
 extern Mask event_get_filter_from_xi2type(int evtype);
 
 FP3232 double_to_fp3232(double in);

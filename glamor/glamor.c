@@ -38,21 +38,26 @@
 #include "glamor_priv.h"
 #include "mipict.h"
 
-DevPrivateKeyRec glamor_screen_private_key;
-DevPrivateKeyRec glamor_pixmap_private_key;
-DevPrivateKeyRec glamor_gc_private_key;
+/* DevPrivateKeyRec context->glamor_screen_private_key; */
+/* DevPrivateKeyRec context->glamor_pixmap_private_key; */
+/* DevPrivateKeyRec glamor_gc_private_key; */
 
 glamor_screen_private *
 glamor_get_screen_private(ScreenPtr screen)
 {
+    XephyrContext* context = screen ? screen->context : NULL;
+    if (!context)
+        return NULL;
     return (glamor_screen_private *)
-        dixLookupPrivate(&screen->devPrivates, &glamor_screen_private_key);
+        dixLookupPrivate(&screen->devPrivates, &context->glamor_screen_private_key);
 }
 
 void
 glamor_set_screen_private(ScreenPtr screen, glamor_screen_private *priv)
 {
-    dixSetPrivate(&screen->devPrivates, &glamor_screen_private_key, priv);
+    XephyrContext* context = screen ? screen->context : NULL;
+    if (context)
+        dixSetPrivate(&screen->devPrivates, &context->glamor_screen_private_key, priv);
 }
 
 /**
@@ -385,8 +390,8 @@ glamor_check_instruction_count(int gl_version, XephyrContext* context)
                           &max_native_alu_instructions);
         if (max_native_alu_instructions < GLAMOR_MIN_ALU_INSTRUCTIONS) {
             LogMessage(X_WARNING,
-                       "glamor requires at least %d instructions (%d reported)\n",
-                       context, GLAMOR_MIN_ALU_INSTRUCTIONS, max_native_alu_instructions);
+                       "glamor requires at least %d instructions (%d reported)\n", context,
+                       GLAMOR_MIN_ALU_INSTRUCTIONS, max_native_alu_instructions);
             return FALSE;
         }
     }
@@ -411,8 +416,8 @@ glamor_debug_output_callback(GLenum source,
         return;
     }
 
-    LogMessageVerb(X_ERROR, 0, "glamor%d: GL error: %*s\n",
-               screen->context, screen->myNum, length, message);
+    LogMessageVerb(X_ERROR, 0, "glamor%d: GL error: %*s\n", screen->context,
+               screen->myNum, length, message);
     xorg_backtrace();
 }
 
@@ -634,27 +639,27 @@ glamor_init(ScreenPtr screen, unsigned int flags)
 
     glamor_priv->flags = flags;
 
-    if (!dixRegisterPrivateKey(&glamor_screen_private_key, PRIVATE_SCREEN, 0, screen->context)) {
+    if (!dixRegisterPrivateKey(&screen->context->glamor_screen_private_key, PRIVATE_SCREEN, 0, screen->context)) {
         LogMessage(X_WARNING,
-                   "glamor%d: Failed to allocate screen private\n",
-                   screen->context, screen->myNum);
+                   "glamor%d: Failed to allocate screen private\n", screen->context,
+                   screen->myNum);
         goto free_glamor_private;
     }
 
     glamor_set_screen_private(screen, glamor_priv);
 
-    if (!dixRegisterPrivateKey(&glamor_pixmap_private_key, PRIVATE_PIXMAP,
+    if (!dixRegisterPrivateKey(&screen->context->glamor_pixmap_private_key, PRIVATE_PIXMAP,
                                sizeof(struct glamor_pixmap_private), screen->context)) {
         LogMessage(X_WARNING,
-                   "glamor%d: Failed to allocate pixmap private\n",
-                   screen->context, screen->myNum);
+                   "glamor%d: Failed to allocate pixmap private\n", screen->context,
+                   screen->myNum);
         goto free_glamor_private;
     }
 
-    if (!dixRegisterPrivateKey(&glamor_gc_private_key, PRIVATE_GC,
+    if (!dixRegisterPrivateKey(&screen->context->glamor_gc_private_key, PRIVATE_GC,
                                sizeof (glamor_gc_private), screen->context)) {
         LogMessage(X_WARNING,
-                   "glamor%d: Failed to allocate gc private\n",
+                   "glamor%d: Failed to allocate gc private\n", screen->context,
                    screen->myNum);
         goto free_glamor_private;
     }
@@ -689,7 +694,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
 
     if (!shading_version_string) {
         LogMessage(X_WARNING,
-                   "glamor%d: Failed to get GLSL version\n",
+                   "glamor%d: Failed to get GLSL version\n", screen->context,
                    screen->myNum);
         goto fail;
     }
@@ -703,7 +708,7 @@ glamor_init(ScreenPtr screen, unsigned int flags)
                &glsl_major,
                &glsl_minor) != 2) {
         LogMessage(X_WARNING,
-                   "glamor%d: Failed to parse GLSL version string %s\n",
+                   "glamor%d: Failed to parse GLSL version string %s\n", screen->context,
                    screen->myNum, shading_version_string);
         goto fail;
     }

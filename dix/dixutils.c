@@ -235,23 +235,23 @@ dixLookupWindow(WindowPtr *pWin, XID id, ClientPtr client, Mask access)
 }
 
 int
-dixLookupGC(GCPtr *pGC, XID id, ClientPtr client, Mask access)
+dixLookupGC(GCPtr *pGC, XID id, ClientPtr client, Mask access, XephyrContext* context)
 {
-    return dixLookupResourceByType((void **) pGC, id, RT_GC, client, access);
+    return dixLookupResourceByType((void **) pGC, id, RT_GC, client, access, context);
 }
 
 int
-dixLookupFontable(FontPtr *pFont, XID id, ClientPtr client, Mask access)
+dixLookupFontable(FontPtr *pFont, XID id, ClientPtr client, Mask access, XephyrContext* context)
 {
     int rc;
     GC *pGC;
 
     client->errorValue = id;    /* EITHER font or gc */
     rc = dixLookupResourceByType((void **) pFont, id, RT_FONT, client,
-                                 access);
+                                 access, context);
     if (rc != BadFont)
         return rc;
-    rc = dixLookupResourceByType((void **) &pGC, id, RT_GC, client, access);
+    rc = dixLookupResourceByType((void **) &pGC, id, RT_GC, client, access, context);
     if (rc == BadGC)
         return BadFont;
     if (rc == Success)
@@ -916,4 +916,4 @@ InitCallbackManager(void)
  * unconditionally clears the dispatch table even if the given
  * context wasn't current.
  */
-void *lastGLContext = NULL;
+void *context->lastGLContext = NULL;

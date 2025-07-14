@@ -73,7 +73,7 @@ typedef struct {
 #define FOR_NSCREENS_BACKWARD(j) for(j = context->PanoramiXNumScreens - 1; j >= 0; j--)
 #define FOR_NSCREENS(j) FOR_NSCREENS_FORWARD(j)
 
-#define IS_SHARED_PIXMAP(r) (((r)->type == XRT_PIXMAP) && (r)->u.pix.shared)
+#define IS_SHARED_PIXMAP(r) (((r)->type == context->XRT_PIXMAP) && (r)->u.pix.shared)
 
-#define IS_ROOT_DRAWABLE(d) (((d)->type == XRT_WINDOW) && (d)->u.win.root)
+#define IS_ROOT_DRAWABLE(d) (((d)->type == context->XRT_WINDOW) && (d)->u.win.root)
 #endif                          /* _PANORAMIX_H_ */

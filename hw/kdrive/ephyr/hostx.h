@@ -100,10 +100,10 @@ void
  hostx_use_preexisting_window(unsigned long win_id);
 
 void
- hostx_use_resname(char *name, int fromcmd);
+ hostx_use_resname(char *name, int fromcmd, XephyrContext* context);
 
 void
- hostx_set_title(char *name);
+ hostx_set_title(char *name, XephyrContext* context);
 
 void
  hostx_handle_signal(int signum);
@@ -112,16 +112,16 @@ int
  hostx_init(XephyrContext* context);
 
 void
-hostx_add_screen(KdScreenInfo *screen, unsigned long win_id, int screen_num, Bool use_geometry, const char *output);
+hostx_add_screen(KdScreenInfo *screen, unsigned long win_id, int screen_num, Bool use_geometry, const char *output, XephyrContext* context);
 
 void
  hostx_set_display_name(char *name);
 
 void
-hostx_set_screen_number(KdScreenInfo *screen, int number);
+hostx_set_screen_number(KdScreenInfo *screen, int number, XephyrContext* context);
 
 void
-hostx_set_win_title(KdScreenInfo *screen, const char *extra_text);
+hostx_set_win_title(KdScreenInfo *screen, const char *extra_text, XephyrContext* context);
 
 int
  hostx_get_depth(void);

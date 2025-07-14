@@ -176,7 +176,7 @@ RegionOperate(ClientPtr client,
     if (srcRgn)
         RegionDestroy(srcRgn, pWin->drawable.pScreen->context);
     (*pWin->drawable.pScreen->SetShape) (pWin, kind);
-    SendShapeNotify(pWin, kind);
+    SendShapeNotify(pWin, kind, client->context);
     return Success;
 }
 
@@ -279,7 +279,7 @@ ProcShapeRectangles(ClientPtr client)
     srcRgn = RegionFromRects(nrects, prects, ctype, client->context);
 
     if (!pWin->optional)
-        MakeWindowOptional(pWin);
+        MakeWindowOptional(pWin, client->context);
     switch (stuff->destKind) {
     case ShapeBounding:
         destRgn = &pWin->optional->boundingShape;
@@ -310,8 +310,8 @@ ProcPanoramiXShapeRectangles(ClientPtr client)
     XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xShapeRectanglesReq);
 
-    result = dixLookupResourceByType((void **) &win, stuff->dest, XRT_WINDOW,
-                                     client, DixWriteAccess);
+    result = dixLookupResourceByType((void **) &win, stuff->dest, context->XRT_WINDOW,
+                                     client, DixWriteAccess, context);
     if (result != Success)
         return result;
 
@@ -366,7 +366,7 @@ ProcShapeMask(ClientPtr client)
         srcRgn = 0;
     else {
         rc = dixLookupResourceByType((void **) &pPixmap, stuff->src,
-                                     RT_PIXMAP, client, DixReadAccess);
+                                     RT_PIXMAP, client, DixReadAccess, client->context);
         if (rc != Success)
             return rc;
         if (pPixmap->drawable.pScreen != pScreen ||
@@ -378,7 +378,7 @@ ProcShapeMask(ClientPtr client)
     }
 
     if (!pWin->optional)
-        MakeWindowOptional(pWin);
+        MakeWindowOptional(pWin, client->context);
     switch (stuff->destKind) {
     case ShapeBounding:
         destRgn = &pWin->optional->boundingShape;
@@ -409,14 +409,14 @@ ProcPanoramiXShapeMask(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xShapeMaskReq);
 
-    result = dixLookupResourceByType((void **) &win, stuff->dest, XRT_WINDOW,
-                                     client, DixWriteAccess);
+    result = dixLookupResourceByType((void **) &win, stuff->dest, context->XRT_WINDOW,
+                                     client, DixWriteAccess, context);
     if (result != Success)
         return result;
 
     if (stuff->src != None) {
         result = dixLookupResourceByType((void **) &pmap, stuff->src,
-                                         XRT_PIXMAP, client, DixReadAccess);
+                                         context->XRT_PIXMAP, client, DixReadAccess, context);
         if (result != Success)
             return result;
     }
@@ -458,7 +458,7 @@ ProcShapeCombine(ClientPtr client)
     if (rc != Success)
         return rc;
     if (!pDestWin->optional)
-        MakeWindowOptional(pDestWin);
+        MakeWindowOptional(pDestWin, client->context);
     switch (stuff->destKind) {
     case ShapeBounding:
         createDefault = CreateBoundingShape;
@@ -507,7 +507,7 @@ ProcShapeCombine(ClientPtr client)
         srcRgn = (*createSrc) (pSrcWin);
 
     if (!pDestWin->optional)
-        MakeWindowOptional(pDestWin);
+        MakeWindowOptional(pDestWin, client->context);
     switch (stuff->destKind) {
     case ShapeBounding:
         destRgn = &pDestWin->optional->boundingShape;
@@ -538,13 +538,13 @@ ProcPanoramiXShapeCombine(ClientPtr client)
     XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xShapeCombineReq);
 
-    result = dixLookupResourceByType((void **) &win, stuff->dest, XRT_WINDOW,
-                                     client, DixWriteAccess);
+    result = dixLookupResourceByType((void **) &win, stuff->dest, context->XRT_WINDOW,
+                                     client, DixWriteAccess, context);
     if (result != Success)
         return result;
 
-    result = dixLookupResourceByType((void **) &win2, stuff->src, XRT_WINDOW,
-                                     client, DixReadAccess);
+    result = dixLookupResourceByType((void **) &win2, stuff->src, context->XRT_WINDOW,
+                                     client, DixReadAccess, context);
     if (result != Success)
         return result;
 
@@ -595,7 +595,7 @@ ProcShapeOffset(ClientPtr client)
         RegionTranslate(srcRgn, stuff->xOff, stuff->yOff);
         (*pWin->drawable.pScreen->SetShape) (pWin, stuff->destKind);
     }
-    SendShapeNotify(pWin, (int) stuff->destKind);
+    SendShapeNotify(pWin, (int) stuff->destKind, client->context);
     return Success;
 }
 
@@ -610,8 +610,8 @@ ProcPanoramiXShapeOffset(ClientPtr client)
     XephyrContext *context = client->context;
     REQUEST_AT_LEAST_SIZE(xShapeOffsetReq);
 
-    result = dixLookupResourceByType((void **) &win, stuff->dest, XRT_WINDOW,
-                                     client, DixWriteAccess);
+    result = dixLookupResourceByType((void **) &win, stuff->dest, context->XRT_WINDOW,
+                                     client, DixWriteAccess, context);
     if (result != Success)
         return result;
 
@@ -703,7 +703,7 @@ ShapeFreeClient(void *data, XID id, XephyrContext* context)
     pShapeEvent = (ShapeEventPtr) data;
     pWin = pShapeEvent->window;
     rc = dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                                 ShapeEventType, context->serverClient, DixReadAccess);
+                                 ShapeEventType, context->serverClient, DixReadAccess, context);
     if (rc == Success) {
         pPrev = 0;
         for (pCur = *pHead; pCur && pCur != pShapeEvent; pCur = pCur->next)
@@ -748,7 +748,7 @@ ProcShapeSelectInput(ClientPtr client)
     if (rc != Success)
         return rc;
     rc = dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                                 ShapeEventType, client, DixWriteAccess);
+                                 ShapeEventType, client, DixWriteAccess, client->context);
     if (rc != Success && rc != BadValue)
         return rc;
 
@@ -830,7 +830,7 @@ ProcShapeSelectInput(ClientPtr client)
  */
 
 void
-SendShapeNotify(WindowPtr pWin, int which)
+SendShapeNotify(WindowPtr pWin, int which, XephyrContext* context)
 {
     ShapeEventPtr *pHead, pShapeEvent;
     BoxRec extents;
@@ -839,7 +839,7 @@ SendShapeNotify(WindowPtr pWin, int which)
     int rc;
 
     rc = dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                                 ShapeEventType, pWin->drawable.pScreen->context->serverClient, DixReadAccess);
+                                 ShapeEventType, pWin->drawable.pScreen->context->serverClient, DixReadAccess, context);
     if (rc != Success)
         return;
     switch (which) {
@@ -919,7 +919,7 @@ ProcShapeInputSelected(ClientPtr client)
     if (rc != Success)
         return rc;
     rc = dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                                 ShapeEventType, client, DixReadAccess);
+                                 ShapeEventType, client, DixReadAccess, client->context);
     if (rc != Success && rc != BadValue)
         return rc;
     enabled = xFalse;
@@ -1232,16 +1232,16 @@ SProcShapeDispatch(ClientPtr client)
 }
 
 void
-ShapeExtensionInit(void)
+ShapeExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
-    ClientType = CreateNewResourceType(ShapeFreeClient, "ShapeClient");
-    ShapeEventType = CreateNewResourceType(ShapeFreeEvents, "ShapeEvent");
+    ClientType = CreateNewResourceType(ShapeFreeClient, "ShapeClient", context);
+    ShapeEventType = CreateNewResourceType(ShapeFreeEvents, "ShapeEvent", context);
     if (ClientType && ShapeEventType &&
         (extEntry = AddExtension(SHAPENAME, ShapeNumberEvents, 0,
                                  ProcShapeDispatch, SProcShapeDispatch,
-                                 NULL, StandardMinorOpcode))) {
+                                 NULL, StandardMinorOpcode, context))) {
         ShapeEventBase = extEntry->eventBase;
         EventSwapVector[ShapeEventBase] = (EventSwapPtr) SShapeNotifyEvent;
     }

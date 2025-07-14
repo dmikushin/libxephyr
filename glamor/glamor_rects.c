@@ -178,7 +178,7 @@ static void
 glamor_poly_fill_rect_bail(DrawablePtr drawable,
                            GCPtr gc, int nrect, xRectangle *prect)
 {
-    glamor_fallback("to %p (%c)\n", drawable,
+    glamor_fallback("to %p (%c)\n", drawable, drawable,
                     glamor_get_drawable_location(drawable));
     if (glamor_prepare_access(drawable, GLAMOR_ACCESS_RW) &&
         glamor_prepare_access_gc(gc)) {

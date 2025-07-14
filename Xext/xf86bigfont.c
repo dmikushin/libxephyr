@@ -355,7 +355,7 @@ ProcXF86BigfontQueryFont(ClientPtr client)
         return BadLength;
     }
 #endif
-    if (dixLookupFontable(&pFont, stuff->id, client, DixGetAttrAccess) !=
+    if (dixLookupFontable(&pFont, stuff->id, client, DixGetAttrAccess, client->context) !=
         Success)
         return BadFont;         /* procotol spec says only error is BadFont */
 
@@ -694,7 +694,7 @@ XFree86BigfontExtensionInit(void)
                      XF86BigfontNumberErrors,
                      ProcXF86BigfontDispatch,
                      SProcXF86BigfontDispatch,
-                     XF86BigfontResetProc, StandardMinorOpcode)) {
+                     XF86BigfontResetProc, StandardMinorOpcode, context)) {
 #ifdef HAS_SHM
 #ifdef MUST_CHECK_FOR_SHM_SYSCALL
         /*

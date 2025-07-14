@@ -259,7 +259,7 @@ fixupDefaultColormaps(FixupFunc fixup, unsigned bytes, XephyrContext* context)
 
         dixLookupResourceByType((void **) &cmap,
                                 context->screenInfo.screens[s]->defColormap, RT_COLORMAP,
-                                context->serverClient, DixCreateAccess);
+                                context->serverClient, DixCreateAccess, context);
         if (cmap &&
             !fixup(&cmap->devPrivates, context->screenInfo.screens[s]->screenSpecificPrivates[PRIVATE_COLORMAP].offset, bytes, context))
             return FALSE;
@@ -575,7 +575,7 @@ static const int offsets[] = {
 };
 
 int
-dixLookupPrivateOffset(RESTYPE type)
+dixLookupPrivateOffset(RESTYPE type, XephyrContext* context)
 {
     /*
      * Special kludge for DBE which registers a new resource type that
@@ -583,11 +583,11 @@ dixLookupPrivateOffset(RESTYPE type)
      */
     if (type & RC_DRAWABLE) {
         if (type == RT_WINDOW)
-            return offsets[RT_WINDOW & TypeMask];
+            return offsets[RT_WINDOW & context->TypeMask];
         else
-            return offsets[RT_PIXMAP & TypeMask];
+            return offsets[RT_PIXMAP & context->TypeMask];
     }
-    type = type & TypeMask;
+    type = type & context->TypeMask;
     if (type < ARRAY_SIZE(offsets))
         return offsets[type];
     return -1;

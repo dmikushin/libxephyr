@@ -23,12 +23,12 @@ extern _X_EXPORT int XineramaDeleteResource(void *, XID, XephyrContext*);
 
 extern _X_EXPORT void XineramaReinitData(XephyrContext* context);
 
-extern _X_EXPORT RESTYPE XRC_DRAWABLE;
-extern _X_EXPORT RESTYPE XRT_WINDOW;
-extern _X_EXPORT RESTYPE XRT_PIXMAP;
-extern _X_EXPORT RESTYPE XRT_GC;
-extern _X_EXPORT RESTYPE XRT_COLORMAP;
-extern _X_EXPORT RESTYPE XRT_PICTURE;
+/* extern _X_EXPORT RESTYPE XRC_DRAWABLE; - moved to XephyrContext */
+/* extern _X_EXPORT RESTYPE context->XRT_WINDOW; */
+/* extern _X_EXPORT RESTYPE context->XRT_PIXMAP; */
+/* extern _X_EXPORT RESTYPE XRT_GC; - moved to XephyrContext */
+/* extern _X_EXPORT RESTYPE XRT_COLORMAP; - moved to XephyrContext */
+/* extern _X_EXPORT RESTYPE XRT_PICTURE; - moved to XephyrContext */
 
 /*
  * Drivers are allowed to wrap this function.  Each wrapper can decide that the

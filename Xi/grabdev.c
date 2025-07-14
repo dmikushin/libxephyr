@@ -125,7 +125,7 @@ ProcXGrabDevice(ClientPtr client)
     if (rc != Success)
         return rc;
 
-    if ((rc = CreateMaskFromList(client, (XEventClass *) &stuff[1],
+    if ((rc = CreateMaskFromList(client->context, client, (XEventClass *) &stuff[1],
                                  stuff->event_count, tmp, dev,
                                  X_GrabDevice)) != Success)
         return rc;
@@ -169,7 +169,7 @@ ProcXGrabDevice(ClientPtr client)
  */
 
 int
-CreateMaskFromList(ClientPtr client, XEventClass * list, int count,
+CreateMaskFromList(XephyrContext *context, ClientPtr client, XEventClass * list, int count,
                    struct tmask *mask, DeviceIntPtr dev, int req)
 {
     int rc, i, j;

@@ -56,7 +56,7 @@ static unsigned nresource;
  * File parsing routines
  */
 static int
-double_size(void *p, unsigned n, unsigned size)
+double_size(void *p, unsigned n, unsigned size, XephyrContext* context)
 {
     char **ptr = (char **) p;
     unsigned s, f;
@@ -73,7 +73,7 @@ double_size(void *p, unsigned n, unsigned size)
 
     *ptr = realloc(*ptr, n);
     if (!*ptr) {
-        dixResetRegistry();
+        dixResetRegistry(context);
         return FALSE;
     }
     memset(*ptr + s, 0, f - s);
@@ -86,17 +86,17 @@ double_size(void *p, unsigned n, unsigned size)
  * Request/event/error registry functions
  */
 static void
-RegisterRequestName(unsigned major, unsigned minor, char *name)
+RegisterRequestName(unsigned major, unsigned minor, char *name, XephyrContext* context)
 {
     while (major >= nmajor) {
-        if (!double_size(&requests, nmajor, sizeof(char **)))
+        if (!double_size(&requests, nmajor, sizeof(char **), context))
             return;
-        if (!double_size(&nminor, nmajor, sizeof(unsigned)))
+        if (!double_size(&nminor, nmajor, sizeof(unsigned), context))
             return;
         nmajor = nmajor ? nmajor * 2 : BASE_SIZE;
     }
     while (minor >= nminor[major]) {
-        if (!double_size(requests + major, nminor[major], sizeof(char *)))
+        if (!double_size(requests + major, nminor[major], sizeof(char *), context))
             return;
         nminor[major] = nminor[major] ? nminor[major] * 2 : BASE_SIZE;
     }
@@ -106,10 +106,10 @@ RegisterRequestName(unsigned major, unsigned minor, char *name)
 }
 
 static void
-RegisterEventName(unsigned event, char *name)
+RegisterEventName(unsigned event, char *name, XephyrContext* context)
 {
     while (event >= nevent) {
-        if (!double_size(&events, nevent, sizeof(char *)))
+        if (!double_size(&events, nevent, sizeof(char *), context))
             return;
         nevent = nevent ? nevent * 2 : BASE_SIZE;
     }
@@ -119,10 +119,10 @@ RegisterEventName(unsigned event, char *name)
 }
 
 static void
-RegisterErrorName(unsigned error, char *name)
+RegisterErrorName(unsigned error, char *name, XephyrContext* context)
 {
     while (error >= nerror) {
-        if (!double_size(&errors, nerror, sizeof(char *)))
+        if (!double_size(&errors, nerror, sizeof(char *), context))
             return;
         nerror = nerror ? nerror * 2 : BASE_SIZE;
     }
@@ -132,7 +132,7 @@ RegisterErrorName(unsigned error, char *name)
 }
 
 void
-RegisterExtensionNames(ExtensionEntry * extEntry)
+RegisterExtensionNames(ExtensionEntry * extEntry, XephyrContext* context)
 {
     char buf[256], *lineobj, *ptr;
     unsigned offset;
@@ -190,15 +190,15 @@ RegisterExtensionNames(ExtensionEntry * extEntry)
         switch (buf[0]) {
         case PROT_REQUEST:
             if (extEntry->base)
-                RegisterRequestName(extEntry->base, offset, lineobj);
+                RegisterRequestName(extEntry->base, offset, lineobj, context);
             else
-                RegisterRequestName(offset, 0, lineobj);
+                RegisterRequestName(offset, 0, lineobj, context);
             continue;
         case PROT_EVENT:
-            RegisterEventName(extEntry->eventBase + offset, lineobj);
+            RegisterEventName(extEntry->eventBase + offset, lineobj, context);
             continue;
         case PROT_ERROR:
-            RegisterErrorName(extEntry->errorBase + offset, lineobj);
+            RegisterErrorName(extEntry->errorBase + offset, lineobj, context);
             continue;
         }
 
@@ -267,12 +267,12 @@ LookupErrorName(int error)
  */
 
 void
-RegisterResourceName(RESTYPE resource, const char *name)
+RegisterResourceName(RESTYPE resource, const char *name, XephyrContext* context)
 {
-    resource &= TypeMask;
+    resource &= context->TypeMask;
 
     while (resource >= nresource) {
-        if (!double_size(&resources, nresource, sizeof(char *)))
+        if (!double_size(&resources, nresource, sizeof(char *), context))
             return;
         nresource = nresource ? nresource * 2 : BASE_SIZE;
     }
@@ -281,9 +281,9 @@ RegisterResourceName(RESTYPE resource, const char *name)
 }
 
 const char *
-LookupResourceName(RESTYPE resource)
+LookupResourceName(RESTYPE resource, XephyrContext* context)
 {
-    resource &= TypeMask;
+    resource &= context->TypeMask;
     if (resource >= nresource)
         return XREGISTRY_UNKNOWN;
 
@@ -341,7 +341,7 @@ dixCloseRegistry(void)
  * Setup and teardown
  */
 void
-dixResetRegistry(void)
+dixResetRegistry(XephyrContext* context)
 {
 #ifdef X_REGISTRY_REQUEST
     ExtensionEntry extEntry = { .name = CORE };
@@ -357,20 +357,20 @@ dixResetRegistry(void)
                    "Failed to open protocol names file " FILENAME "\n");
 
     /* Add the core protocol */
-    RegisterExtensionNames(&extEntry);
+    RegisterExtensionNames(&extEntry, context);
 #endif
 
 #ifdef X_REGISTRY_RESOURCE
     /* Add built-in resources */
-    RegisterResourceName(RT_NONE, "NONE");
-    RegisterResourceName(RT_WINDOW, "WINDOW");
-    RegisterResourceName(RT_PIXMAP, "PIXMAP");
-    RegisterResourceName(RT_GC, "GC");
-    RegisterResourceName(RT_FONT, "FONT");
-    RegisterResourceName(RT_CURSOR, "CURSOR");
-    RegisterResourceName(RT_COLORMAP, "COLORMAP");
-    RegisterResourceName(RT_CMAPENTRY, "COLORMAP ENTRY");
-    RegisterResourceName(RT_OTHERCLIENT, "OTHER CLIENT");
-    RegisterResourceName(RT_PASSIVEGRAB, "PASSIVE GRAB");
+    RegisterResourceName(RT_NONE, "NONE", context);
+    RegisterResourceName(RT_WINDOW, "WINDOW", context);
+    RegisterResourceName(RT_PIXMAP, "PIXMAP", context);
+    RegisterResourceName(RT_GC, "GC", context);
+    RegisterResourceName(RT_FONT, "FONT", context);
+    RegisterResourceName(RT_CURSOR, "CURSOR", context);
+    RegisterResourceName(RT_COLORMAP, "COLORMAP", context);
+    RegisterResourceName(RT_CMAPENTRY, "COLORMAP ENTRY", context);
+    RegisterResourceName(RT_OTHERCLIENT, "OTHER CLIENT", context);
+    RegisterResourceName(RT_PASSIVEGRAB, "PASSIVE GRAB", context);
 #endif
 }

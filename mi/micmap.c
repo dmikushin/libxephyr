@@ -40,7 +40,7 @@
 #include "globals.h"
 #include "micmap.h"
 
-DevPrivateKeyRec micmapScrPrivateKeyRec;
+DevPrivateKeyRec context->micmapScrPrivateKeyRec;
 
 int
 miListInstalledColormaps(ScreenPtr pScreen, Colormap * pmaps)
@@ -78,7 +78,7 @@ miUninstallColormap(ColormapPtr pmap, XephyrContext* context)
         if (pmap->mid != pmap->pScreen->defColormap) {
             dixLookupResourceByType((void **) &curpmap,
                                     pmap->pScreen->defColormap,
-                                    RT_COLORMAP, context->serverClient, DixUseAccess);
+                                    RT_COLORMAP, context->serverClient, DixUseAccess, context);
             (*pmap->pScreen->InstallColormap) (curpmap, context);
         }
     }
@@ -242,7 +242,7 @@ miCreateDefColormap(ScreenPtr pScreen)
     ColormapPtr cmap;
     int alloctype;
 
-    if (!dixRegisterPrivateKey(&micmapScrPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
+    if (!dixRegisterPrivateKey(&context->micmapScrPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
     for (pVisual = pScreen->visuals;

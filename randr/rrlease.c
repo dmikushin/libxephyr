@@ -198,7 +198,7 @@ RRLeaseDestroyResource(void *value, XID pid, XephyrContext* context)
 Bool
 RRLeaseInit(XephyrContext* context)
 {
-    context->RRLeaseType = CreateNewResourceType(RRLeaseDestroyResource, "LEASE");
+    context->RRLeaseType = CreateNewResourceType(RRLeaseDestroyResource, "LEASE", context);
     if (!context->RRLeaseType)
         return FALSE;
     return TRUE;
@@ -254,7 +254,7 @@ ProcRRCreateLease(ClientPtr client)
         RRCrtcPtr crtc;
 
 	rc = dixLookupResourceByType((void **)&crtc, crtcIds[c],
-                                     client->context->RRCrtcType, client, DixSetAttrAccess);
+                                     client->context->RRCrtcType, client, DixSetAttrAccess, client->context);
 
         if (rc != Success) {
             client->errorValue = crtcIds[c];
@@ -276,7 +276,7 @@ ProcRRCreateLease(ClientPtr client)
         RROutputPtr output;
 
 	rc = dixLookupResourceByType((void **)&output, outputIds[o],
-                                     client->context->RROutputType, client, DixSetAttrAccess);
+                                     client->context->RROutputType, client, DixSetAttrAccess, client->context);
         if (rc != Success) {
             client->errorValue = outputIds[o];
             goto bail_lease;

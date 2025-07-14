@@ -131,7 +131,7 @@ ProcXGrabDeviceKey(ClientPtr client)
 
     class = (XEventClass *) (&stuff[1]);        /* first word of values */
 
-    if ((ret = CreateMaskFromList(client, class,
+    if ((ret = CreateMaskFromList(client->context, client, class,
                                   stuff->event_count, tmp, dev,
                                   X_GrabDeviceKey)) != Success)
         return ret;

@@ -65,7 +65,7 @@ SOFTWARE.
 
 #include "opendev.h"
 
-extern CARD8 event_base[];
+/* extern CARD8 event_base[]; - moved to context */
 
 /***********************************************************************
  *
@@ -120,31 +120,31 @@ ProcXOpenDevice(ClientPtr client)
 
     if (dev->key != NULL) {
         evbase[j].class = KeyClass;
-        evbase[j++].event_type_base = event_base[KeyClass];
+        evbase[j++].event_type_base = client->context->event_base[KeyClass];
     }
     if (dev->button != NULL) {
         evbase[j].class = ButtonClass;
-        evbase[j++].event_type_base = event_base[ButtonClass];
+        evbase[j++].event_type_base = client->context->event_base[ButtonClass];
     }
     if (dev->valuator != NULL) {
         evbase[j].class = ValuatorClass;
-        evbase[j++].event_type_base = event_base[ValuatorClass];
+        evbase[j++].event_type_base = client->context->event_base[ValuatorClass];
     }
     if (dev->kbdfeed != NULL || dev->ptrfeed != NULL || dev->leds != NULL ||
         dev->intfeed != NULL || dev->bell != NULL || dev->stringfeed != NULL) {
         evbase[j].class = FeedbackClass;
-        evbase[j++].event_type_base = event_base[FeedbackClass];
+        evbase[j++].event_type_base = client->context->event_base[FeedbackClass];
     }
     if (dev->focus != NULL) {
         evbase[j].class = FocusClass;
-        evbase[j++].event_type_base = event_base[FocusClass];
+        evbase[j++].event_type_base = client->context->event_base[FocusClass];
     }
     if (dev->proximity != NULL) {
         evbase[j].class = ProximityClass;
-        evbase[j++].event_type_base = event_base[ProximityClass];
+        evbase[j++].event_type_base = client->context->event_base[ProximityClass];
     }
     evbase[j].class = OtherClass;
-    evbase[j++].event_type_base = event_base[OtherClass];
+    evbase[j++].event_type_base = client->context->event_base[OtherClass];
     rep = (xOpenDeviceReply) {
         .repType = X_Reply,
         .RepType = X_OpenDevice,

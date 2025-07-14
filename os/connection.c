@@ -131,8 +131,7 @@ struct ospoll   *server_poll;
 /* REMOVED: Bool NoListenAll; - moved to XephyrContext */
 
 static Bool RunFromSmartParent; /* send SIGUSR1 to parent process */
-Bool RunFromSigStopParent;      /* send SIGSTOP to our own process; Upstart (or
-                                   equivalent) will send SIGCONT back. */
+/* REMOVED: Bool RunFromSigStopParent; - moved to XephyrContext */
 static char dynamic_display[7]; /* context->display name */
 /* REMOVED: Bool PartialNetwork; - moved to XephyrContext */
 static Pid_t ParentProcess;
@@ -212,7 +211,7 @@ NotifyParentProcess(XephyrContext* context)
             kill(ParentProcess, SIGUSR1);
         }
     }
-    if (RunFromSigStopParent)
+    if (context->RunFromSigStopParent)
         raise(SIGSTOP);
 #ifdef HAVE_SYSTEMD_DAEMON
     /* If we have been started as a systemd service, tell systemd that
@@ -910,7 +909,7 @@ IgnoreClient(ClientPtr client)
     if (client->ignoreCount > 1)
         return;
 
-    isItTimeToYield = TRUE;
+    client->context->isItTimeToYield = TRUE;
     mark_client_not_ready(client);
 
     oc->flags |= OS_COMM_IGNORED;
@@ -977,7 +976,7 @@ MakeClientGrabPervious(ClientPtr client)
 
     oc->flags &= ~OS_COMM_GRAB_IMPERVIOUS;
     set_poll_client(client);
-    isItTimeToYield = TRUE;
+    client->context->isItTimeToYield = TRUE;
 
     if (client->context->ServerGrabCallback) {
         ServerGrabInfoRec grabinfo;

@@ -42,15 +42,15 @@
 
 extern Bool miDbeInit(ScreenPtr pScreen, DbeScreenPrivPtr pDbeScreenPriv);
 
-extern DevPrivateKeyRec dbeScreenPrivKeyRec;
+/* extern DevPrivateKeyRec dbeScreenPrivKeyRec; */ /* Now in XephyrContext */
 
-#define dbeScreenPrivKey (&dbeScreenPrivKeyRec)
+/* #define dbeScreenPrivKey (&dbeScreenPrivKeyRec) */ /* Now uses context->dbeScreenPrivKeyRec */
 
-extern DevPrivateKeyRec dbeWindowPrivKeyRec;
+/* extern DevPrivateKeyRec dbeWindowPrivKeyRec; */ /* Now in XephyrContext */
 
-#define dbeWindowPrivKey (&dbeWindowPrivKeyRec)
+/* #define dbeWindowPrivKey (&dbeWindowPrivKeyRec) */ /* Now uses context->dbeWindowPrivKeyRec */
 
-extern RESTYPE dbeDrawableResType;
-extern RESTYPE dbeWindowPrivResType;
+/* extern RESTYPE dbeDrawableResType; */ /* Now in XephyrContext */
+/* extern RESTYPE dbeWindowPrivResType; */ /* Now in XephyrContext */
 
 #endif                          /* MIDBE_H */

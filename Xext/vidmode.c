@@ -2127,7 +2127,7 @@ SProcVidModeDispatch(ClientPtr client)
 }
 
 void
-VidModeAddExtension(Bool allow_non_local)
+VidModeAddExtension(Bool allow_non_local, context)
 {
     ExtensionEntry *extEntry;
 
@@ -2141,7 +2141,7 @@ VidModeAddExtension(Bool allow_non_local)
                                  XF86VidModeNumberErrors,
                                  ProcVidModeDispatch,
                                  SProcVidModeDispatch,
-                                 NULL, StandardMinorOpcode))) {
+                                 NULL, StandardMinorOpcode, context))) {
         VidModeErrorBase = extEntry->errorBase;
         VidModeAllowNonLocal = allow_non_local;
     }

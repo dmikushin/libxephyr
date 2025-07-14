@@ -264,7 +264,7 @@ RRModeInit(XephyrContext* context)
 {
     assert(num_modes == 0);
     assert(modes == NULL);
-    context->RRModeType = CreateNewResourceType(RRModeDestroyResource, "MODE");
+    context->RRModeType = CreateNewResourceType(RRModeDestroyResource, "MODE", context);
     if (!context->RRModeType)
         return FALSE;
 
@@ -277,7 +277,7 @@ RRModeInit(XephyrContext* context)
 void
 RRModeInitErrorValue(XephyrContext* context)
 {
-    SetResourceTypeErrorValue(context->RRModeType, context->RRErrorBase + BadRRMode);
+    SetResourceTypeErrorValue(context->RRModeType, context->RRErrorBase + BadRRMode, context);
 }
 
 int

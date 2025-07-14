@@ -317,7 +317,7 @@ SELinuxTypeToClass(RESTYPE type)
 {
     void *tmp;
 
-    tmp = SELinuxArrayGet(&arr_types, type & TypeMask);
+    tmp = SELinuxArrayGet(&arr_types, type & context->TypeMask);
     if (!tmp) {
         unsigned long class = SECCLASS_X_RESOURCE;
 
@@ -342,7 +342,7 @@ SELinuxTypeToClass(RESTYPE type)
         }
 
         tmp = (void *) class;
-        SELinuxArraySet(&arr_types, type & TypeMask, tmp);
+        SELinuxArraySet(&arr_types, type & context->TypeMask, tmp);
     }
 
     return (security_class_t) (unsigned long) tmp;

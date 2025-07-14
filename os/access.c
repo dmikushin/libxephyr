@@ -968,7 +968,7 @@ ResetHosts(const char *display, XephyrContext* context)
     fnamelen = strlen(ETC_HOST_PREFIX) + strlen(ETC_HOST_SUFFIX) +
         strlen(context->display) + 1;
     if (fnamelen > sizeof(fname))
-        FatalError("Display name `%s' is too long\n", context->display);
+        FatalError("Display name `%s' is too long\n", context, context->display);
     snprintf(fname, sizeof(fname), ETC_HOST_PREFIX "%s" ETC_HOST_SUFFIX,
              context->display);
 

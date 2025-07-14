@@ -192,7 +192,7 @@ GEExtensionInit(XephyrContext* context)
     if ((extEntry = AddExtension(GE_NAME,
                                  0, GENumberErrors,
                                  ProcGEDispatch, SProcGEDispatch,
-                                 GEResetProc, StandardMinorOpcode)) != 0) {
+                                 GEResetProc, StandardMinorOpcode, context)) != 0) {
         memset(context->GEExtensions, 0, sizeof(GEExtension) * MAXEXTENSIONS);
 
         EventSwapVector[GenericEvent] = (EventSwapPtr) SGEGenericEvent;

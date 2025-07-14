@@ -85,7 +85,7 @@ ProcRRSelectInput(ClientPtr client)
     if (rc != Success)
         return rc;
     rc = dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                                 client->context->RREventType, client, DixWriteAccess);
+                                 client->context->RREventType, client, DixWriteAccess, client->context);
     if (rc != Success && rc != BadValue)
         return rc;
 

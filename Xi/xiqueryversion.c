@@ -45,7 +45,7 @@
 #include "xiqueryversion.h"
 #include "misc.h"
 
-extern XExtensionVersion XIVersion;     /* defined in getvers.c */
+/* extern XExtensionVersion context->XIVersion;     defined in getvers.c */
 
 /**
  * Return the supported XI version.
@@ -71,13 +71,13 @@ ProcXIQueryVersion(ClientPtr client)
 
     pXIClient = dixLookupPrivate(&client->devPrivates, XIClientPrivateKey(client));
 
-    if (version_compare(XIVersion.major_version, XIVersion.minor_version,
+    if (version_compare(client->context->XIVersion.major_version, client->context->XIVersion.minor_version,
                 stuff->major_version, stuff->minor_version) > 0) {
         major = stuff->major_version;
         minor = stuff->minor_version;
     } else {
-        major = XIVersion.major_version;
-        minor = XIVersion.minor_version;
+        major = client->context->XIVersion.major_version;
+        minor = client->context->XIVersion.minor_version;
     }
 
     if (pXIClient->major_version) {

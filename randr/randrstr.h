@@ -454,7 +454,7 @@ typedef struct _RRClient {
 #define VERIFY_RR_OUTPUT(id, ptr, a)\
     {\
 	int rc = dixLookupResourceByType((void **)&(ptr), id,\
-	                                 client->context->RROutputType, client, a);\
+	                                 client->context->RROutputType, client, a, client->context);\
 	if (rc != Success) {\
 	    client->errorValue = id;\
 	    return rc;\
@@ -464,7 +464,7 @@ typedef struct _RRClient {
 #define VERIFY_RR_CRTC(id, ptr, a)\
     {\
 	int rc = dixLookupResourceByType((void **)&(ptr), id,\
-	                                 client->context->RRCrtcType, client, a);\
+	                                 client->context->RRCrtcType, client, a, client->context);\
 	if (rc != Success) {\
 	    client->errorValue = id;\
 	    return rc;\
@@ -474,7 +474,7 @@ typedef struct _RRClient {
 #define VERIFY_RR_MODE(id, ptr, a)\
     {\
 	int rc = dixLookupResourceByType((void **)&(ptr), id,\
-	                                 client->context->RRModeType, client, a);\
+	                                 client->context->RRModeType, client, a, client->context);\
 	if (rc != Success) {\
 	    client->errorValue = id;\
 	    return rc;\
@@ -484,7 +484,7 @@ typedef struct _RRClient {
 #define VERIFY_RR_PROVIDER(id, ptr, a)\
     {\
         int rc = dixLookupResourceByType((void **)&(ptr), id,\
-                                         client->context->RRProviderType, client, a);\
+                                         client->context->RRProviderType, client, a, client->context);\
         if (rc != Success) {\
             client->errorValue = id;\
             return rc;\
@@ -494,7 +494,7 @@ typedef struct _RRClient {
 #define VERIFY_RR_LEASE(id, ptr, a)\
     {\
         int rc = dixLookupResourceByType((void **)&(ptr), id,\
-                                         client->context->RRLeaseType, client, a);\
+                                         client->context->RRLeaseType, client, a, client->context);\
         if (rc != Success) {\
             client->errorValue = id;\
             return rc;\

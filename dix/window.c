@@ -146,7 +146,6 @@ Equipment Corporation.
  *    ChangeWindowDeviceCursor
  ******/
 
-Bool bgNoneRoot = FALSE;
 
 static unsigned char _back_lsb[4] = { 0x88, 0x22, 0x44, 0x11 };
 static unsigned char _back_msb[4] = { 0x11, 0x44, 0x22, 0x88 };
@@ -395,7 +394,7 @@ PrintPassiveGrabs(XephyrContext* context)
             FreeLocalClientCreds(lcc);
         }
 
-        FindClientResourcesByType(context->clients[i], RT_PASSIVEGRAB, log_grab_info, context);
+        FindClientResourcesByType(context->clients[i], RT_PASSIVEGRAB, log_grab_info, context, context);
     }
     ErrorF("End list of registered passive grabs\n", context);
 }
@@ -471,8 +470,8 @@ WalkTree(ScreenPtr pScreen, VisitWindowProcPtr func, void *data)
 }
 
 /* hack to force no backing store */
-Bool disableBackingStore = FALSE;
-Bool enableBackingStore = FALSE;
+/* Bool disableBackingStore = FALSE; */ /* Now in XephyrContext */
+/* Bool enableBackingStore = FALSE; */ /* Now in XephyrContext */
 
 static void
 SetWindowToDefaults(WindowPtr pWin)
@@ -645,9 +644,9 @@ CreateRootWindow(ScreenPtr pScreen)
     if (!AddResource(pWin->drawable.id, RT_WINDOW, (void *) pWin, pScreen->context))
         return FALSE;
 
-    if (disableBackingStore)
+    if (pScreen->context->disableBackingStore)
         pScreen->backingStoreSupport = NotUseful;
-    if (enableBackingStore)
+    if (pScreen->context->enableBackingStore)
         pScreen->backingStoreSupport = WhenMapped;
 #ifdef COMPOSITE
     if (pScreen->context->noCompositeExtension)
@@ -676,7 +675,7 @@ InitRootWindow(WindowPtr pWin)
         MakeRootTile(pWin);
         backFlag |= CWBackPixmap;
     }
-    else if (pScreen->canDoBGNoneRoot && bgNoneRoot) {
+    else if (pScreen->canDoBGNoneRoot && pScreen->context->bgNoneRoot) {
         pWin->backgroundState = XaceBackgroundNoneState(pWin);
         pWin->background.pixel = pScreen->whitePixel;
         backFlag |= CWBackPixmap;
@@ -854,7 +853,7 @@ CreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
     SetWindowToDefaults(pWin);
 
     if (visual != ancwopt->visual) {
-        if (!MakeWindowOptional(pWin)) {
+        if (!MakeWindowOptional(pWin, pScreen->context)) {
             dixFreeObjectWithPrivates(pWin, PRIVATE_WINDOW);
             *error = BadAlloc;
             return NullWindow;
@@ -931,7 +930,7 @@ CreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
         RecalculateDeliverableEvents(pWin);
 
     if (vmask)
-        *error = ChangeWindowAttributes(pWin, vmask, vlist, wClient(pWin, client->context));
+        *error = ChangeWindowAttributes(pWin, vmask, vlist, wClient(pWin, client->context), client->context);
     else
         *error = Success;
 
@@ -1131,7 +1130,7 @@ SetRootWindowBackground(WindowPtr pWin, ScreenPtr pScreen, Mask *index2)
 {
     /* following the protocol: "Changing the background of a root window to
      * None or ParentRelative restores the default background pixmap" */
-    if (bgNoneRoot) {
+    if (pScreen->context->bgNoneRoot) {
         pWin->backgroundState = XaceBackgroundNoneState(pWin);
         pWin->background.pixel = pScreen->whitePixel;
     }
@@ -1156,7 +1155,7 @@ SetRootWindowBackground(WindowPtr pWin, ScreenPtr pScreen, Mask *index2)
  *****/
 
 int
-ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
+ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client, XephyrContext* context)
 {
     XID *pVlist;
     PixmapPtr pPixmap;
@@ -1218,7 +1217,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
             }
             else {
                 rc = dixLookupResourceByType((void **) &pPixmap, pixID,
-                                             RT_PIXMAP, client, DixReadAccess);
+                                             RT_PIXMAP, client, DixReadAccess, context);
                 if (rc == Success) {
                     if ((pPixmap->drawable.depth != pWin->drawable.depth) ||
                         (pPixmap->drawable.pScreen != pScreen)) {
@@ -1272,7 +1271,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                 }
             }
             rc = dixLookupResourceByType((void **) &pPixmap, pixID, RT_PIXMAP,
-                                         client, DixReadAccess);
+                                         client, DixReadAccess, context);
             if (rc == Success) {
                 if ((pPixmap->drawable.depth != pWin->drawable.depth) ||
                     (pPixmap->drawable.pScreen != pScreen)) {
@@ -1339,7 +1338,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
             break;
         case CWBackingPlanes:
             if (pWin->optional || ((CARD32) *pVlist != (CARD32) ~0L)) {
-                if (!pWin->optional && !MakeWindowOptional(pWin)) {
+                if (!pWin->optional && !MakeWindowOptional(pWin, pScreen->context)) {
                     error = BadAlloc;
                     goto PatchUp;
                 }
@@ -1351,7 +1350,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
             break;
         case CWBackingPixel:
             if (pWin->optional || (CARD32) *pVlist) {
-                if (!pWin->optional && !MakeWindowOptional(pWin)) {
+                if (!pWin->optional && !MakeWindowOptional(pWin, pScreen->context)) {
                     error = BadAlloc;
                     goto PatchUp;
                 }
@@ -1424,7 +1423,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                 goto PatchUp;
             }
             rc = dixLookupResourceByType((void **) &pCmap, cmap, RT_COLORMAP,
-                                         client, DixUseAccess);
+                                         client, DixUseAccess, context);
             if (rc != Success) {
                 error = rc;
                 client->errorValue = cmap;
@@ -1437,7 +1436,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
             }
             if (cmap != wColormap(pWin)) {
                 if (!pWin->optional) {
-                    if (!MakeWindowOptional(pWin)) {
+                    if (!MakeWindowOptional(pWin, pScreen->context)) {
                         error = BadAlloc;
                         goto PatchUp;
                     }
@@ -1452,7 +1451,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
 
                 for (pChild = pWin->firstChild; pChild;
                      pChild = pChild->nextSib) {
-                    if (!pChild->optional && !MakeWindowOptional(pChild)) {
+                    if (!pChild->optional && !MakeWindowOptional(pChild, pScreen->context)) {
                         error = BadAlloc;
                         goto PatchUp;
                     }
@@ -1467,7 +1466,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                 for (pChild = pWin->firstChild; pChild;
                      pChild = pChild->nextSib) {
                     if (pChild->optional->colormap == cmap)
-                        CheckWindowOptionalNeed(pChild);
+                        CheckWindowOptionalNeed(pChild, pScreen->context);
                 }
 
                 xE = (xEvent) {
@@ -1494,7 +1493,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
             }
             else {
                 rc = dixLookupResourceByType((void **) &pCursor, cursorID,
-                                             RT_CURSOR, client, DixUseAccess);
+                                             RT_CURSOR, client, DixUseAccess, context);
                 if (rc != Success) {
                     error = rc;
                     client->errorValue = cursorID;
@@ -1510,7 +1509,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                 for (pChild = pWin->firstChild; pChild;
                      pChild = pChild->nextSib) {
                     if (!pChild->optional && !pChild->cursorIsNone &&
-                        !MakeWindowOptional(pChild)) {
+                        !MakeWindowOptional(pChild, pScreen->context)) {
                         error = BadAlloc;
                         goto PatchUp;
                     }
@@ -1527,7 +1526,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                 }
                 else {
                     if (!pWin->optional) {
-                        if (!MakeWindowOptional(pWin)) {
+                        if (!MakeWindowOptional(pWin, pScreen->context)) {
                             error = BadAlloc;
                             goto PatchUp;
                         }
@@ -1545,7 +1544,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
                          pChild = pChild->nextSib) {
                         if (pChild->optional &&
                             (pChild->optional->cursor == pCursor))
-                            CheckWindowOptionalNeed(pChild);
+                            CheckWindowOptionalNeed(pChild, pScreen->context);
                     }
                 }
 
@@ -1570,7 +1569,7 @@ ChangeWindowAttributes(WindowPtr pWin, Mask vmask, XID *vlist, ClientPtr client)
     }
  PatchUp:
     if (checkOptional)
-        CheckWindowOptionalNeed(pWin);
+        CheckWindowOptionalNeed(pWin, pScreen->context);
 
     /* We SHOULD check for an error value here XXX */
     (*pScreen->ChangeWindowAttributes) (pWin, vmaskCopy);
@@ -2514,7 +2513,7 @@ ReparentWindow(WindowPtr pWin, WindowPtr pParent,
     if (TraverseTree(pWin, CompareWIDs, (void *) &pParent->drawable.id) ==
         WT_STOPWALKING)
         return BadMatch;
-    if (!MakeWindowOptional(pWin))
+    if (!MakeWindowOptional(pWin, pScreen->context))
         return BadAlloc;
 
     if (WasMapped)
@@ -2585,7 +2584,7 @@ ReparentWindow(WindowPtr pWin, WindowPtr pParent,
     (*pScreen->PositionWindow) (pWin, pWin->drawable.x, pWin->drawable.y);
     ResizeChildrenWinSize(pWin, 0, 0, 0, 0);
 
-    CheckWindowOptionalNeed(pWin);
+    CheckWindowOptionalNeed(pWin, pScreen->context);
 
     if (WasMapped)
         MapWindow(pWin, client);
@@ -2782,6 +2781,7 @@ static void
 UnrealizeTree(WindowPtr pWin, Bool fromConfigure)
 {
     WindowPtr pChild;
+    XephyrContext* context = pWin->drawable.pScreen->context;
     UnrealizeWindowProcPtr Unrealize;
     MarkUnrealizedWindowProcPtr MarkUnrealizedWindow;
 
@@ -2797,8 +2797,8 @@ UnrealizeTree(WindowPtr pWin, Bool fromConfigure)
                 PanoramiXRes *win;
                 int rc = dixLookupResourceByType((void **) &win,
                                                  pChild->drawable.id,
-                                                 XRT_WINDOW,
-                                                 pWin->drawable.pScreen->context->serverClient, DixWriteAccess);
+                                                 context->XRT_WINDOW,
+                                                 pWin->drawable.pScreen->context->serverClient, DixWriteAccess, context);
 
                 if (rc == Success)
                     win->u.win.visibility = VisibilityNotViewable;
@@ -3030,7 +3030,7 @@ SendVisibilityNotify(WindowPtr pWin)
 
         Scrnum = pWin->drawable.pScreen->myNum;
 
-        win = PanoramiXFindIDByScrnum(XRT_WINDOW, pWin->drawable.id, Scrnum, pWin->drawable.pScreen->context);
+        win = PanoramiXFindIDByScrnum(context->XRT_WINDOW, pWin->drawable.id, Scrnum, pWin->drawable.pScreen->context);
 
         if (!win || (win->u.win.visibility == visibility))
             return;
@@ -3333,7 +3333,7 @@ FindWindowWithOptional(WindowPtr w)
  */
 
 void
-CheckWindowOptionalNeed(WindowPtr w)
+CheckWindowOptionalNeed(WindowPtr w, XephyrContext* context)
 {
     WindowOptPtr optional;
     WindowOptPtr parentOptional;
@@ -3392,7 +3392,7 @@ CheckWindowOptionalNeed(WindowPtr w)
  */
 
 Bool
-MakeWindowOptional(WindowPtr pWin)
+MakeWindowOptional(WindowPtr pWin, XephyrContext* context)
 {
     WindowOptPtr optional;
     WindowOptPtr parentOptional;
@@ -3450,7 +3450,8 @@ ChangeWindowDeviceCursor(WindowPtr pWin, DeviceIntPtr pDev, CursorPtr pCursor)
     ScreenPtr pScreen;
     WindowPtr pChild;
 
-    if (!pWin->optional && !MakeWindowOptional(pWin))
+    pScreen = pWin->drawable.pScreen;
+    if (!pWin->optional && !MakeWindowOptional(pWin, pScreen->context))
         return BadAlloc;
 
     /* 1) Check if window has device cursor set
@@ -3465,8 +3466,6 @@ ChangeWindowDeviceCursor(WindowPtr pWin, DeviceIntPtr pDev, CursorPtr pCursor)
      *  cursor
      *  2.2) if child has same cursor as new cursor, remove and set to None
      */
-
-    pScreen = pWin->drawable.pScreen;
 
     if (WindowSeekDeviceCursor(pWin, pDev, &pNode, &pPrev)) {
         /* has device cursor */

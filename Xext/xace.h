@@ -54,7 +54,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define XACE_KEY_AVAIL			14
 #define XACE_NUM_HOOKS			15
 
-extern _X_EXPORT CallbackListPtr XaceHooks[XACE_NUM_HOOKS];
+/* extern _X_EXPORT CallbackListPtr context->XaceHooks[XACE_NUM_HOOKS]; */
 
 /* Entry point for hook functions.  Called by Xserver.
  * Required by libdbe and libextmod
@@ -64,13 +64,13 @@ extern _X_EXPORT int XaceHook(int /*hook */ ,
     );
 
 /* determine whether any callbacks are present for the XACE hook */
-extern _X_EXPORT int XaceHookIsSet(int hook);
+extern _X_EXPORT int XaceHookIsSet(int hook, XephyrContext* context);
 
 /* Special-cased hook functions
  */
 extern _X_EXPORT int XaceHookDispatch(ClientPtr ptr, int major);
 #define XaceHookDispatch(c, m) \
-    ((XaceHooks[XACE_EXT_DISPATCH] && (m) >= EXTENSION_BASE) ? \
+    (((c)->context->XaceHooks[XACE_EXT_DISPATCH] && (m) >= EXTENSION_BASE) ? \
     XaceHookDispatch((c), (m)) : \
     Success)
 
@@ -82,13 +82,13 @@ extern _X_EXPORT int XaceHookSelectionAccess(ClientPtr ptr, Selection ** ppSel,
 
 /* Register a callback for a given hook.
  */
-#define XaceRegisterCallback(hook,callback,data) \
-    AddCallback(XaceHooks+(hook), callback, data)
+#define XaceRegisterCallback(hook,callback,data,context) \
+    AddCallback((context)->XaceHooks+(hook), callback, data)
 
 /* Unregister an existing callback for a given hook.
  */
-#define XaceDeleteCallback(hook,callback,data) \
-    DeleteCallback(XaceHooks+(hook), callback, data)
+#define XaceDeleteCallback(hook,callback,data,context) \
+    DeleteCallback((context)->XaceHooks+(hook), callback, data)
 
 /* XTrans wrappers for use by security modules
  */

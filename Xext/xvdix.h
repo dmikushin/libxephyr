@@ -55,20 +55,17 @@ SOFTWARE.
 #include "scrnintstr.h"
 #include <X11/extensions/Xvproto.h>
 
-extern _X_EXPORT unsigned long XvExtensionGeneration;
-extern _X_EXPORT unsigned long XvScreenGeneration;
-extern _X_EXPORT unsigned long XvResourceGeneration;
+// Global variables moved to XephyrContext:
+// XvExtensionGeneration, XvScreenGeneration, XvResourceGeneration
+// XvReqCode, XvEventBase, XvErrorBase
 
-extern _X_EXPORT int XvReqCode;
-extern _X_EXPORT int XvEventBase;
-extern _X_EXPORT int XvErrorBase;
-
-extern _X_EXPORT RESTYPE XvRTPort;
-extern _X_EXPORT RESTYPE XvRTEncoding;
-extern _X_EXPORT RESTYPE XvRTGrab;
-extern _X_EXPORT RESTYPE XvRTVideoNotify;
-extern _X_EXPORT RESTYPE XvRTVideoNotifyList;
-extern _X_EXPORT RESTYPE XvRTPortNotify;
+// Globals moved to XephyrContext:
+// extern _X_EXPORT RESTYPE XvRTPort;
+// extern _X_EXPORT RESTYPE XvRTEncoding;
+// extern _X_EXPORT RESTYPE XvRTGrab;
+// extern _X_EXPORT RESTYPE XvRTVideoNotify;
+// extern _X_EXPORT RESTYPE XvRTVideoNotifyList;
+// extern _X_EXPORT RESTYPE XvRTPortNotify;
 
 typedef struct {
     int numerator;
@@ -198,7 +195,7 @@ typedef struct _XvPortRec {
 #define VALIDATE_XV_PORT(portID, pPort, mode)\
     {\
 	int rc = dixLookupResourceByType((void **)&(pPort), portID,\
-	                                 XvRTPort, client, mode);\
+	                                 client->context->XvRTPort, client, mode, client->context);\
 	if (rc != Success)\
 	    return rc;\
     }
@@ -228,7 +225,7 @@ extern _X_EXPORT int SProcXvDispatch(ClientPtr);
 
 extern _X_EXPORT int XvScreenInit(ScreenPtr, XephyrContext*);
 extern _X_EXPORT DevPrivateKey XvGetScreenKey(void);
-extern _X_EXPORT unsigned long XvGetRTPort(void);
+extern _X_EXPORT unsigned long XvGetRTPort(XephyrContext* context);
 extern _X_EXPORT void XvFreeAdaptor(XvAdaptorPtr pAdaptor);
 extern void _X_EXPORT XvFillColorKey(DrawablePtr pDraw, CARD32 key,
                                      RegionPtr region);

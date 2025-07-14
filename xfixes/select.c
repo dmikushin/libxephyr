@@ -93,7 +93,7 @@ XFixesSelectionCallback(CallbackListPtr *callbacks, void *data, void *args)
         if (e->selection == selection->selection && (e->eventMask & eventMask)) {
             XephyrContext* clientContext = e->pClient ? e->pClient->context : context;
             xXFixesSelectionNotifyEvent ev = {
-                .type = XFixesEventBase + XFixesSelectionNotify,
+                .type = context->XFixesEventBase + XFixesSelectionNotify,
                 .subtype = subtype,
                 .window = e->pWindow->drawable.id,
                 .owner = (subtype == XFixesSetSelectionOwnerNotify) ?
@@ -171,7 +171,7 @@ XFixesSelectSelectionInput(ClientPtr pClient,
          */
         rc = dixLookupResourceByType(&val, pWindow->drawable.id,
                                      SelectionWindowType, pClient->context->serverClient,
-                                     DixGetAttrAccess);
+                                     DixGetAttrAccess, pClient->context);
         if (rc != Success)
             if (!AddResource(pWindow->drawable.id, SelectionWindowType,
                              (void *) pWindow, pClient->context)) {
@@ -273,8 +273,8 @@ Bool
 XFixesSelectionInit(XephyrContext* context)
 {
     SelectionClientType = CreateNewResourceType(SelectionFreeClient,
-                                                "XFixesSelectionClient");
+                                                "XFixesSelectionClient", context);
     SelectionWindowType = CreateNewResourceType(SelectionFreeWindow,
-                                                "XFixesSelectionWindow");
+                                                "XFixesSelectionWindow", context);
     return SelectionClientType && SelectionWindowType;
 }

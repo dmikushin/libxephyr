@@ -69,9 +69,9 @@ ProcBigReqDispatch(ClientPtr client)
 }
 
 void
-BigReqExtensionInit(void)
+BigReqExtensionInit(XephyrContext* context)
 {
     AddExtension(XBigReqExtensionName, 0, 0,
                  ProcBigReqDispatch, ProcBigReqDispatch,
-                 NULL, StandardMinorOpcode);
+                 NULL, StandardMinorOpcode, context);
 }

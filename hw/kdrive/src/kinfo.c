@@ -26,17 +26,16 @@
 #endif
 #include "kdrive.h"
 
-KdCardInfo *kdCardInfo;
 
 KdCardInfo *
-KdCardInfoAdd(KdCardFuncs * funcs, void *closure)
+KdCardInfoAdd(KdCardFuncs * funcs, void *closure, XephyrContext *context)
 {
     KdCardInfo *ci, **prev;
 
     ci = calloc(1, sizeof(KdCardInfo));
     if (!ci)
         return 0;
-    for (prev = &kdCardInfo; *prev; prev = &(*prev)->next);
+    for (prev = &context->kdCardInfo; *prev; prev = &(*prev)->next);
     *prev = ci;
     ci->cfuncs = funcs;
     ci->closure = closure;
@@ -47,22 +46,22 @@ KdCardInfoAdd(KdCardFuncs * funcs, void *closure)
 }
 
 KdCardInfo *
-KdCardInfoLast(void)
+KdCardInfoLast(XephyrContext *context)
 {
     KdCardInfo *ci;
 
-    if (!kdCardInfo)
+    if (!context->kdCardInfo)
         return 0;
-    for (ci = kdCardInfo; ci->next; ci = ci->next);
+    for (ci = context->kdCardInfo; ci->next; ci = ci->next);
     return ci;
 }
 
 void
-KdCardInfoDispose(KdCardInfo * ci)
+KdCardInfoDispose(KdCardInfo * ci, XephyrContext *context)
 {
     KdCardInfo **prev;
 
-    for (prev = &kdCardInfo; *prev; prev = &(*prev)->next)
+    for (prev = &context->kdCardInfo; *prev; prev = &(*prev)->next)
         if (*prev == ci) {
             *prev = ci->next;
             free(ci);
@@ -88,7 +87,7 @@ KdScreenInfoAdd(KdCardInfo * ci)
 }
 
 void
-KdScreenInfoDispose(KdScreenInfo * si)
+KdScreenInfoDispose(KdScreenInfo * si, XephyrContext *context)
 {
     KdCardInfo *ci = si->card;
     KdScreenInfo **prev;
@@ -98,7 +97,7 @@ KdScreenInfoDispose(KdScreenInfo * si)
             *prev = si->next;
             free(si);
             if (!ci->screenList)
-                KdCardInfoDispose(ci);
+                KdCardInfoDispose(ci, context);
             break;
         }
     }

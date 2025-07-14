@@ -580,7 +580,7 @@ extern _X_EXPORT int AllocDevicePair(ClientPtr client,
                                      DeviceProc ptr_proc,
                                      DeviceProc keybd_proc, Bool master);
 extern void DeepCopyDeviceClasses(DeviceIntPtr from,
-                                  DeviceIntPtr to, DeviceChangedEvent *dce);
+                                  DeviceIntPtr to, DeviceChangedEvent *dce, XephyrContext* context);
 
 /* Helper functions. */
 extern _X_EXPORT int generate_modkeymap(ClientPtr client, DeviceIntPtr dev,

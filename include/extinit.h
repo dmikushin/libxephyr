@@ -100,7 +100,7 @@ extern void RenderExtensionInit(XephyrContext* context);
 
 #if defined(RES)
 extern _X_EXPORT Bool noResExtension;
-extern void ResExtensionInit(void);
+extern void ResExtensionInit(XephyrContext* context);
 #endif
 
 #if defined(SCREENSAVER)
@@ -108,7 +108,7 @@ extern _X_EXPORT Bool noScreenSaverExtension;
 extern void ScreenSaverExtensionInit(XephyrContext* context);
 #endif
 
-extern void ShapeExtensionInit(void);
+extern void ShapeExtensionInit(XephyrContext* context);
 
 #ifdef MITSHM
 extern _X_EXPORT Bool noMITShmExtension;
@@ -117,11 +117,11 @@ extern void ShmExtensionInit(XephyrContext* context);
 
 extern void SyncExtensionInit(XephyrContext* context);
 
-extern void XCMiscExtensionInit(void);
+extern void XCMiscExtensionInit(XephyrContext* context);
 
 #ifdef XCSECURITY
 extern _X_EXPORT Bool noSecurityExtension;
-extern void SecurityExtensionInit(void);
+extern void SecurityExtensionInit(XephyrContext* context);
 #endif
 
 #ifdef XF86BIGFONT
@@ -129,7 +129,7 @@ extern _X_EXPORT Bool noXFree86BigfontExtension;
 extern void XFree86BigfontExtensionInit(void);
 #endif
 
-extern void BigReqExtensionInit(void);
+extern void BigReqExtensionInit(XephyrContext* context);
 
 extern _X_EXPORT Bool noXFixesExtension;
 extern void XFixesExtensionInit(XephyrContext* context);
@@ -144,13 +144,13 @@ extern void SELinuxExtensionInit(void);
 #endif
 
 #ifdef XTEST
-extern void XTestExtensionInit(void);
+extern void XTestExtensionInit(XephyrContext* context);
 #endif
 
 #if defined(XV)
 extern _X_EXPORT Bool noXvExtension;
 extern void XvExtensionInit(XephyrContext* context);
-extern void XvMCExtensionInit(void);
+extern void XvMCExtensionInit(XephyrContext* context);
 #endif
 
 #if defined(DRI3)

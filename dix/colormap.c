@@ -470,7 +470,7 @@ TellNoMap(WindowPtr pwin, Colormap * pmid)
             DeliverEvents(pwin, &xE, 1, (WindowPtr) NULL);
         if (pwin->optional) {
             pwin->optional->colormap = None;
-            CheckWindowOptionalNeed(pwin);
+            CheckWindowOptionalNeed(pwin, pwin->drawable.pScreen->context);
         }
     }
 
@@ -1019,7 +1019,7 @@ AllocColor(ColormapPtr pmap,
 
             dixLookupResourceByType((void **) &prootmap,
                                     pmap->pScreen->defColormap, RT_COLORMAP,
-                                    context->clients[client], DixReadAccess);
+                                    context->clients[client], DixReadAccess, context);
 
             if (pmap->class == prootmap->class)
                 FindColorInRootCmap(prootmap, prootmap->red, entries, &rgb,
@@ -1037,7 +1037,7 @@ AllocColor(ColormapPtr pmap,
 
             dixLookupResourceByType((void **) &prootmap,
                                     pmap->pScreen->defColormap, RT_COLORMAP,
-                                    context->clients[client], DixReadAccess);
+                                    context->clients[client], DixReadAccess, context);
 
             if (pmap->class == prootmap->class) {
                 pixR = (*pPix & pVisual->redMask) >> pVisual->offsetRed;
@@ -1475,7 +1475,7 @@ FreeClientPixels(void *value, XID fakeid, XephyrContext* context)
     int rc;
 
     rc = dixLookupResourceByType(&pmap, pcr->mid, RT_COLORMAP, context->serverClient,
-                                 DixRemoveAccess);
+                                 DixRemoveAccess, context);
     if (rc == Success)
         FreePixels((ColormapPtr) pmap, pcr->client);
     free(pcr);

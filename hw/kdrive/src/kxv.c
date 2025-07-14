@@ -133,7 +133,7 @@ KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr adaptors, int num, XephyrCon
         return FALSE;
 
     KdXvScreenKey = XvGetScreenKey();
-    PortResource = XvGetRTPort();
+    PortResource = XvGetRTPort(context);
 
     ScreenPriv = malloc(sizeof(KdXVScreenRec));
     dixSetPrivate(&pScreen->devPrivates, &KdXVScreenPrivateKey, ScreenPriv);

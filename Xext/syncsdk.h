@@ -27,7 +27,7 @@
 #include "misync.h"
 
 extern _X_EXPORT int
- SyncVerifyFence(SyncFence ** ppFence, XID fid, ClientPtr client, Mask mode);
+ SyncVerifyFence(SyncFence ** ppFence, XID fid, ClientPtr client, Mask mode, XephyrContext* context);
 
 extern _X_EXPORT SyncObject*
  SyncCreate(ClientPtr client, XID id, unsigned char type);
@@ -35,7 +35,7 @@ extern _X_EXPORT SyncObject*
 #define VERIFY_SYNC_FENCE(pFence, fid, client, mode)			\
     do {								\
 	int rc;								\
-	rc = SyncVerifyFence(&(pFence), (fid), (client), (mode));	\
+	rc = SyncVerifyFence(&(pFence), (fid), (client), (mode), (client)->context);	\
 	if (Success != rc) return rc;					\
     } while (0)
 

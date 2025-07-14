@@ -447,5 +447,5 @@ DPMSExtensionInit(XephyrContext* context)
     if (context->DPMSEnabled)
         AddExtension(DPMSExtensionName, 0, 0,
                      ProcDPMSDispatch, SProcDPMSDispatch,
-                     DPMSCloseDownExtension, StandardMinorOpcode);
+                     DPMSCloseDownExtension, StandardMinorOpcode, context);
 }

@@ -101,7 +101,7 @@ typedef struct _XkbEventCause {
 				  (c)->mjr= (j),(c)->mnr= (n);\
 				  (c)->client= (cl); }
 #define	XkbSetCauseCoreReq(c,e,cl) XkbSetCauseReq(c,e,0,cl)
-#define	XkbSetCauseXkbReq(c,e,cl)  XkbSetCauseReq(c,XkbReqCode,e,cl)
+#define	XkbSetCauseXkbReq(c,e,cl)  XkbSetCauseReq(c,(cl)->context->XkbReqCode,e,cl)
 #define	XkbSetCauseUnknown(c)	   XkbSetCauseKey(c,0,0)
 
 #define	_OFF_TIMER		0
@@ -302,9 +302,9 @@ extern void xkbUnwrapProc(DeviceIntPtr, DeviceHandleProc, void *);
 
 /***====================================================================***/
 
-extern _X_EXPORT int XkbReqCode;
-extern _X_EXPORT int XkbEventBase;
-extern _X_EXPORT int XkbKeyboardErrorCode;
+/* extern _X_EXPORT int context->XkbReqCode; */
+/* extern _X_EXPORT int context->XkbEventBase; */
+/* extern _X_EXPORT int context->XkbKeyboardErrorCode; */
 extern _X_EXPORT const char *XkbBaseDirectory;
 extern _X_EXPORT const char *XkbBinDirectory;
 
@@ -844,7 +844,8 @@ extern _X_EXPORT Bool XkbCopyDeviceKeymap(DeviceIntPtr /* dst */,
 					  DeviceIntPtr /* src */);
 
 extern _X_EXPORT Bool XkbDeviceApplyKeymap(DeviceIntPtr /* dst */ ,
-                                           XkbDescPtr /* src */ );
+                                           XkbDescPtr /* src */ ,
+                                           XephyrContext* /* context */ );
 
 extern void XkbFilterEvents(ClientPtr /* pClient */ ,
                             int /* nEvents */ ,

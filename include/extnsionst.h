@@ -90,7 +90,8 @@ AddExtension(const char * /*name */ ,
              int (* /*MainProc */ )(ClientPtr /*client */ ),
              int (* /*SwappedMainProc */ )(ClientPtr /*client */ ),
              void (* /*CloseDownProc */ )(ExtensionEntry * /*extension */ ),
-             unsigned short (* /*MinorOpcodeProc */ )(ClientPtr /*client */ )
+             unsigned short (* /*MinorOpcodeProc */ )(ClientPtr /*client */ ),
+             XephyrContext* /*context */
     );
 
 extern _X_EXPORT ExtensionEntry *

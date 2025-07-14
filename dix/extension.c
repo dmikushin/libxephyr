@@ -74,7 +74,8 @@ AddExtension(const char *name, int NumEvents, int NumErrors,
              int (*MainProc) (ClientPtr c1),
              int (*SwappedMainProc) (ClientPtr c2),
              void (*CloseDownProc) (ExtensionEntry * e),
-             unsigned short (*MinorOpcodeProc) (ClientPtr c3))
+             unsigned short (*MinorOpcodeProc) (ClientPtr c3),
+             XephyrContext* context)
 {
     int i;
     ExtensionEntry *ext, **newexts;
@@ -138,7 +139,7 @@ AddExtension(const char *name, int NumEvents, int NumErrors,
     }
 
 #ifdef X_REGISTRY_REQUEST
-    RegisterExtensionNames(ext);
+    RegisterExtensionNames(ext, context);
 #endif
     return ext;
 }

@@ -38,14 +38,14 @@ static DevPrivateKeyRec XvMCScreenKeyRec;
 #define XvMCScreenKey (&XvMCScreenKeyRec)
 static Bool XvMCInUse;
 
-int XvMCReqCode;
-int XvMCEventBase;
+/* int XvMCReqCode; -- moved to context */
+/* int XvMCEventBase; -- moved to context */
 
 static RESTYPE XvMCRTContext;
 static RESTYPE XvMCRTSurface;
 static RESTYPE XvMCRTSubpicture;
 
-int (*XvMCScreenInitProc)(ScreenPtr, int, XvMCAdaptorPtr) = NULL;
+/* int (*XvMCScreenInitProc)(ScreenPtr, int, XvMCAdaptorPtr) = NULL; -- moved to context */
 
 typedef struct {
     int num_adaptors;
@@ -62,7 +62,7 @@ typedef struct {
     (XvMCScreenPtr)(dixLookupPrivate(&(pScreen)->devPrivates, XvMCScreenKey))
 
 static int
-XvMCDestroyContextRes(void *data, XID id)
+XvMCDestroyContextRes(void *data, XID id, XephyrContext* context)
 {
     XvMCContextPtr pContext = (XvMCContextPtr) data;
 
@@ -79,7 +79,7 @@ XvMCDestroyContextRes(void *data, XID id)
 }
 
 static int
-XvMCDestroySurfaceRes(void *data, XID id)
+XvMCDestroySurfaceRes(void *data, XID id, XephyrContext* context)
 {
     XvMCSurfacePtr pSurface = (XvMCSurfacePtr) data;
     XvMCContextPtr pContext = pSurface->context;
@@ -88,13 +88,13 @@ XvMCDestroySurfaceRes(void *data, XID id)
     (*pScreenPriv->adaptors[pContext->adapt_num].DestroySurface) (pSurface);
     free(pSurface);
 
-    XvMCDestroyContextRes((void *) pContext, pContext->context_id);
+    XvMCDestroyContextRes((void *) pContext, pContext->context_id, context);
 
     return Success;
 }
 
 static int
-XvMCDestroySubpictureRes(void *data, XID id)
+XvMCDestroySubpictureRes(void *data, XID id, XephyrContext* context)
 {
     XvMCSubpicturePtr pSubpict = (XvMCSubpicturePtr) data;
     XvMCContextPtr pContext = pSubpict->context;
@@ -103,7 +103,7 @@ XvMCDestroySubpictureRes(void *data, XID id)
     (*pScreenPriv->adaptors[pContext->adapt_num].DestroySubpicture) (pSubpict);
     free(pSubpict);
 
-    XvMCDestroyContextRes((void *) pContext, pContext->context_id);
+    XvMCDestroyContextRes((void *) pContext, pContext->context_id, context);
 
     return Success;
 }
@@ -287,7 +287,7 @@ ProcXvMCDestroyContext(ClientPtr client)
     REQUEST_SIZE_MATCH(xvmcDestroyContextReq);
 
     rc = dixLookupResourceByType(&val, stuff->context_id, XvMCRTContext,
-                                 client, DixDestroyAccess);
+                                 client, DixDestroyAccess, client->context);
     if (rc != Success)
         return rc;
 
@@ -311,7 +311,7 @@ ProcXvMCCreateSurface(ClientPtr client)
     REQUEST_SIZE_MATCH(xvmcCreateSurfaceReq);
 
     result = dixLookupResourceByType((void **) &pContext, stuff->context_id,
-                                     XvMCRTContext, client, DixUseAccess);
+                                     XvMCRTContext, client, DixUseAccess, client->context);
     if (result != Success)
         return result;
 
@@ -365,7 +365,7 @@ ProcXvMCDestroySurface(ClientPtr client)
     REQUEST_SIZE_MATCH(xvmcDestroySurfaceReq);
 
     rc = dixLookupResourceByType(&val, stuff->surface_id, XvMCRTSurface,
-                                 client, DixDestroyAccess);
+                                 client, DixDestroyAccess, client->context);
     if (rc != Success)
         return rc;
 
@@ -391,7 +391,7 @@ ProcXvMCCreateSubpicture(ClientPtr client)
     REQUEST_SIZE_MATCH(xvmcCreateSubpictureReq);
 
     result = dixLookupResourceByType((void **) &pContext, stuff->context_id,
-                                     XvMCRTContext, client, DixUseAccess);
+                                     XvMCRTContext, client, DixUseAccess, client->context);
     if (result != Success)
         return result;
 
@@ -493,7 +493,7 @@ ProcXvMCDestroySubpicture(ClientPtr client)
     REQUEST_SIZE_MATCH(xvmcDestroySubpictureReq);
 
     rc = dixLookupResourceByType(&val, stuff->subpicture_id, XvMCRTSubpicture,
-                                 client, DixDestroyAccess);
+                                 client, DixDestroyAccess, client->context);
     if (rc != Success)
         return rc;
 
@@ -699,7 +699,7 @@ SProcXvMCDispatch(ClientPtr client)
 }
 
 void
-XvMCExtensionInit(void)
+XvMCExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
@@ -707,32 +707,32 @@ XvMCExtensionInit(void)
         return;
 
     if (!(XvMCRTContext = CreateNewResourceType(XvMCDestroyContextRes,
-                                                "XvMCRTContext")))
+                                                "XvMCRTContext", context)))
         return;
 
     if (!(XvMCRTSurface = CreateNewResourceType(XvMCDestroySurfaceRes,
-                                                "XvMCRTSurface")))
+                                                "XvMCRTSurface", context)))
         return;
 
     if (!(XvMCRTSubpicture = CreateNewResourceType(XvMCDestroySubpictureRes,
-                                                   "XvMCRTSubpicture")))
+                                                   "XvMCRTSubpicture", context)))
         return;
 
     extEntry = AddExtension(XvMCName, XvMCNumEvents, XvMCNumErrors,
                             ProcXvMCDispatch, SProcXvMCDispatch,
-                            NULL, StandardMinorOpcode);
+                            NULL, StandardMinorOpcode, context);
 
     if (!extEntry)
         return;
 
-    XvMCReqCode = extEntry->base;
-    XvMCEventBase = extEntry->eventBase;
+    context->XvMCReqCode = extEntry->base;
+    context->XvMCEventBase = extEntry->eventBase;
     SetResourceTypeErrorValue(XvMCRTContext,
-                              extEntry->errorBase + XvMCBadContext);
+                              extEntry->errorBase + XvMCBadContext, context);
     SetResourceTypeErrorValue(XvMCRTSurface,
-                              extEntry->errorBase + XvMCBadSurface);
+                              extEntry->errorBase + XvMCBadSurface, context);
     SetResourceTypeErrorValue(XvMCRTSubpicture,
-                              extEntry->errorBase + XvMCBadSubpicture);
+                              extEntry->errorBase + XvMCBadSubpicture, context);
 }
 
 static Bool

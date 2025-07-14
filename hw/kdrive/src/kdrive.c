@@ -70,23 +70,13 @@ KdDepths kdDepths[] = {
 
 #define KD_DEFAULT_BUTTONS 5
 
-DevPrivateKeyRec kdScreenPrivateKeyRec;
+/* kdScreenPrivateKeyRec moved to XephyrContext */
 static unsigned long kdGeneration;
+static XephyrContext *kdGlobalContext = NULL;
 
-Bool kdEmulateMiddleButton;
-Bool kdRawPointerCoordinates;
-Bool kdDisableZaphod;
-static Bool kdEnabled;
-static int kdSubpixelOrder;
-static char *kdSwitchCmd;
-static DDXPointRec kdOrigin;
-Bool kdHasPointer = FALSE;
-Bool kdHasKbd = FALSE;
-const char *kdGlobalXkbRules = NULL;
-const char *kdGlobalXkbModel = NULL;
-const char *kdGlobalXkbLayout = NULL;
-const char *kdGlobalXkbVariant = NULL;
-const char *kdGlobalXkbOptions = NULL;
+/* kdRawPointerCoordinates, kdHasPointer, kdHasKbd moved to XephyrContext */
+/* kdEnabled, context->kdSubpixelOrder, context->kdSwitchCmd, context->kdOrigin moved to XephyrContext */
+/* kdGlobalXkb variables moved to XephyrContext */
 
 void
 KdDisableScreen(ScreenPtr pScreen)
@@ -106,11 +96,11 @@ KdDisableScreen(ScreenPtr pScreen)
 static void
 KdDoSwitchCmd(const char *reason)
 {
-    if (kdSwitchCmd) {
+    if (kdGlobalContext && kdGlobalContext->kdSwitchCmd) {
         char *command;
         int ret;
 
-        if (asprintf(&command, "%s %s", kdSwitchCmd, reason) == -1)
+        if (asprintf(&command, "%s %s", kdGlobalContext->kdSwitchCmd, reason) == -1)
             return;
 
         /* Ignore the return value from system; I'm not sure
@@ -124,13 +114,13 @@ KdDoSwitchCmd(const char *reason)
 }
 
 static void
-KdSuspend(void)
+KdSuspend(XephyrContext *context)
 {
     KdCardInfo *card;
     KdScreenInfo *screen;
 
-    if (kdEnabled) {
-        for (card = kdCardInfo; card; card = card->next) {
+    if (context->kdEnabled) {
+        for (card = context->kdCardInfo; card; card = card->next) {
             for (screen = card->screenList; screen; screen = screen->next)
                 if (screen->mynum == card->selected && screen->pScreen)
                     KdDisableScreen(screen->pScreen);
@@ -143,8 +133,10 @@ KdSuspend(void)
 static void
 KdDisableScreens(void)
 {
-    KdSuspend();
-    kdEnabled = FALSE;
+    if (kdGlobalContext)
+        KdSuspend(kdGlobalContext);
+    if (kdGlobalContext)
+        kdGlobalContext->kdEnabled = FALSE;
 }
 
 Bool
@@ -170,8 +162,7 @@ ddxGiveUp(enum ExitCode error)
     KdDisableScreens();
 }
 
-static Bool kdDumbDriver;
-static Bool kdSoftCursor;
+/* context->kdDumbDriver, context->kdSoftCursor moved to XephyrContext */
 
 const char *
 KdParseFindNext(const char *cur, const char *delim, char *save, char *last)
@@ -209,16 +200,16 @@ KdSubRotation(Rotation a, Rotation b)
 }
 
 void
-KdParseScreen(KdScreenInfo * screen, const char *arg)
+KdParseScreen(KdScreenInfo * screen, const char *arg, XephyrContext* context)
 {
     char delim;
     char save[1024];
     int i;
     int pixels, mm;
 
-    screen->dumb = kdDumbDriver;
-    screen->softCursor = kdSoftCursor;
-    screen->origin = kdOrigin;
+    screen->dumb = context ? context->kdDumbDriver : FALSE;
+    screen->softCursor = context ? context->kdSoftCursor : FALSE;
+    screen->origin = context ? context->kdOrigin : (DDXPointRec){0, 0};
     screen->randr = RR_Rotate_0;
     screen->x = 0;
     screen->y = 0;
@@ -226,7 +217,7 @@ KdParseScreen(KdScreenInfo * screen, const char *arg)
     screen->height = 0;
     screen->width_mm = 0;
     screen->height_mm = 0;
-    screen->subpixel_order = kdSubpixelOrder;
+    screen->subpixel_order = context ? context->kdSubpixelOrder : SubPixelUnknown;
     screen->rate = 0;
     screen->fb.depth = 0;
     if (!arg)
@@ -263,11 +254,13 @@ KdParseScreen(KdScreenInfo * screen, const char *arg)
             return;
     }
 
-    kdOrigin.x += screen->width;
-    kdOrigin.y = 0;
-    kdDumbDriver = FALSE;
-    kdSoftCursor = FALSE;
-    kdSubpixelOrder = SubPixelUnknown;
+    if (context) {
+        context->kdOrigin.x += screen->width;
+        context->kdOrigin.y = 0;
+        context->kdDumbDriver = FALSE;
+        context->kdSoftCursor = FALSE;
+        context->kdSubpixelOrder = SubPixelUnknown;
+    }
 
     if (delim == '+') {
         arg = KdParseFindNext(arg, "+@xXY", save, &delim);
@@ -328,20 +321,20 @@ KdParseScreen(KdScreenInfo * screen, const char *arg)
 }
 
 static void
-KdParseRgba(char *rgba)
+KdParseRgba(char *rgba, XephyrContext* context)
 {
     if (!strcmp(rgba, "rgb"))
-        kdSubpixelOrder = SubPixelHorizontalRGB;
+        context->kdSubpixelOrder = SubPixelHorizontalRGB;
     else if (!strcmp(rgba, "bgr"))
-        kdSubpixelOrder = SubPixelHorizontalBGR;
+        context->kdSubpixelOrder = SubPixelHorizontalBGR;
     else if (!strcmp(rgba, "vrgb"))
-        kdSubpixelOrder = SubPixelVerticalRGB;
+        context->kdSubpixelOrder = SubPixelVerticalRGB;
     else if (!strcmp(rgba, "vbgr"))
-        kdSubpixelOrder = SubPixelVerticalBGR;
+        context->kdSubpixelOrder = SubPixelVerticalBGR;
     else if (!strcmp(rgba, "none"))
-        kdSubpixelOrder = SubPixelNone;
+        context->kdSubpixelOrder = SubPixelNone;
     else
-        kdSubpixelOrder = SubPixelUnknown;
+        context->kdSubpixelOrder = SubPixelUnknown;
 }
 
 void
@@ -377,14 +370,14 @@ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
 
     if (!strcmp(argv[i], "-screen")) {
         if ((i + 1) < argc) {
-            card = KdCardInfoLast();
+            card = KdCardInfoLast(context);
             if (!card) {
                 InitCard(0);
-                card = KdCardInfoLast();
+                card = KdCardInfoLast(context);
             }
             if (card) {
                 screen = KdScreenInfoAdd(card);
-                KdParseScreen(screen, argv[i + 1]);
+                KdParseScreen(screen, argv[i + 1], context);
             }
             else
                 ErrorF("No matching card found!\n", context);
@@ -394,27 +387,27 @@ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         return 2;
     }
     if (!strcmp(argv[i], "-zaphod")) {
-        kdDisableZaphod = TRUE;
+        context->kdDisableZaphod = TRUE;
         return 1;
     }
     if (!strcmp(argv[i], "-3button")) {
-        kdEmulateMiddleButton = FALSE;
+        context->kdEmulateMiddleButton = FALSE;
         return 1;
     }
     if (!strcmp(argv[i], "-2button")) {
-        kdEmulateMiddleButton = TRUE;
+        context->kdEmulateMiddleButton = TRUE;
         return 1;
     }
     if (!strcmp(argv[i], "-rawcoord")) {
-        kdRawPointerCoordinates = 1;
+        context->kdRawPointerCoordinates = 1;
         return 1;
     }
     if (!strcmp(argv[i], "-dumb")) {
-        kdDumbDriver = TRUE;
+        context->kdDumbDriver = TRUE;
         return 1;
     }
     if (!strcmp(argv[i], "-softCursor")) {
-        kdSoftCursor = TRUE;
+        context->kdSoftCursor = TRUE;
         return 1;
     }
     if (!strcmp(argv[i], "-origin")) {
@@ -423,13 +416,13 @@ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
             char *y = strchr(x, ',');
 
             if (x)
-                kdOrigin.x = atoi(x);
+                context->kdOrigin.x = atoi(x);
             else
-                kdOrigin.x = 0;
+                context->kdOrigin.x = 0;
             if (y)
-                kdOrigin.y = atoi(y + 1);
+                context->kdOrigin.y = atoi(y + 1);
             else
-                kdOrigin.y = 0;
+                context->kdOrigin.y = 0;
         }
         else
             UseMsg(context);
@@ -437,14 +430,14 @@ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
     }
     if (!strcmp(argv[i], "-rgba")) {
         if ((i + 1) < argc)
-            KdParseRgba(argv[i + 1]);
+            KdParseRgba(argv[i + 1], context);
         else
             UseMsg(context);
         return 2;
     }
     if (!strcmp(argv[i], "-switchCmd")) {
         if ((i + 1) < argc)
-            kdSwitchCmd = argv[i + 1];
+            context->kdSwitchCmd = argv[i + 1];
         else
             UseMsg(context);
         return 2;
@@ -454,7 +447,7 @@ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
             UseMsg(context);
             FatalError("Missing argument for option -xkb-rules.\n", context);
         }
-        kdGlobalXkbRules = argv[i + 1];
+        context->kdGlobalXkbRules = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-xkb-model")) {
@@ -462,7 +455,7 @@ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
             UseMsg(context);
             FatalError("Missing argument for option -xkb-model.\n", context);
         }
-        kdGlobalXkbModel = argv[i + 1];
+        context->kdGlobalXkbModel = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-xkb-layout")) {
@@ -470,7 +463,7 @@ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
             UseMsg(context);
             FatalError("Missing argument for option -xkb-layout.\n", context);
         }
-        kdGlobalXkbLayout = argv[i + 1];
+        context->kdGlobalXkbLayout = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-xkb-variant")) {
@@ -478,7 +471,7 @@ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
             UseMsg(context);
             FatalError("Missing argument for option -xkb-variant.\n", context);
         }
-        kdGlobalXkbVariant = argv[i + 1];
+        context->kdGlobalXkbVariant = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-xkb-options")) {
@@ -486,21 +479,21 @@ KdProcessArgument(int argc, char **argv, int i, XephyrContext* context)
             UseMsg(context);
             FatalError("Missing argument for option -xkb-options.\n", context);
         }
-        kdGlobalXkbOptions = argv[i + 1];
+        context->kdGlobalXkbOptions = argv[i + 1];
         return 2;
     }
     if (!strcmp(argv[i], "-mouse") || !strcmp(argv[i], "-pointer")) {
         if (i + 1 >= argc)
             UseMsg(context);
         KdAddConfigPointer(argv[i + 1]);
-        kdHasPointer = TRUE;
+        context->kdHasPointer = TRUE;
         return 2;
     }
     if (!strcmp(argv[i], "-keybd")) {
         if (i + 1 >= argc)
             UseMsg(context);
         KdAddConfigKeyboard(argv[i + 1]);
-        kdHasKbd = TRUE;
+        context->kdHasKbd = TRUE;
         return 2;
     }
 
@@ -515,7 +508,7 @@ KdAllocatePrivates(ScreenPtr pScreen, XephyrContext* context)
     if (kdGeneration != context->serverGeneration)
         kdGeneration = context->serverGeneration;
 
-    if (!dixRegisterPrivateKey(&kdScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
+    if (!dixRegisterPrivateKey(&context->kdScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
     pScreenPriv = calloc(1, sizeof(*pScreenPriv));
@@ -582,8 +575,8 @@ KdCloseScreen(ScreenPtr pScreen)
         /*
          * Clean up OS when last card is closed
          */
-        if (card == kdCardInfo) {
-            kdEnabled = FALSE;
+        if (card == pScreen->context->kdCardInfo) {
+            pScreen->context->kdEnabled = FALSE;
         }
     }
 
@@ -807,7 +800,7 @@ KdScreenInit(ScreenPtr pScreen, int argc, char **argv)
     /*
      * Enable the hardware
      */
-    kdEnabled = TRUE;
+    pScreen->context->kdEnabled = TRUE;
 
     if (screen->mynum == card->selected) {
         pScreenPriv->enabled = TRUE;
@@ -835,7 +828,7 @@ KdInitScreen(ScreenInfo * pScreenInfo,
 }
 
 static Bool
-KdSetPixmapFormats(ScreenInfo * pScreenInfo)
+KdSetPixmapFormats(ScreenInfo * pScreenInfo, XephyrContext *context)
 {
     CARD8 depthToBpp[33];       /* depth -> bpp map */
     KdCardInfo *card;
@@ -853,7 +846,7 @@ KdSetPixmapFormats(ScreenInfo * pScreenInfo)
      * restrictions on equivalent formats for the same
      * depth on different screens
      */
-    for (card = kdCardInfo; card; card = card->next) {
+    for (card = context->kdCardInfo; card; card = card->next) {
         for (screen = card->screenList; screen; screen = screen->next) {
             bpp = screen->fb.bitsPerPixel;
             if (bpp == 24)
@@ -926,18 +919,20 @@ KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* con
 {
     KdCardInfo *card;
     KdScreenInfo *screen;
+    
+    kdGlobalContext = context;
 
-    if (!kdCardInfo) {
+    if (!context->kdCardInfo) {
         InitCard(0);
-        if (!(card = KdCardInfoLast()))
+        if (!(card = KdCardInfoLast(context)))
             FatalError("No matching cards found!\n", context);
         screen = KdScreenInfoAdd(card);
-        KdParseScreen(screen, 0);
+        KdParseScreen(screen, 0, context);
     }
     /*
      * Initialize all of the screens for all of the cards
      */
-    for (card = kdCardInfo; card; card = card->next) {
+    for (card = context->kdCardInfo; card; card = card->next) {
         int ret = 1;
 
         if (card->cfuncs->cardinit)
@@ -952,20 +947,20 @@ KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* con
      * Merge the various pixmap formats together, this can fail
      * when two screens share depth but not bitsPerPixel
      */
-    if (!KdSetPixmapFormats(pScreenInfo))
+    if (!KdSetPixmapFormats(pScreenInfo, context))
         return;
 
     /*
      * Add all of the screens
      */
-    for (card = kdCardInfo; card; card = card->next)
+    for (card = context->kdCardInfo; card; card = card->next)
         for (screen = card->screenList; screen; screen = screen->next)
             KdAddScreen(pScreenInfo, screen, argc, argv, context);
 
     xorgGlxCreateVendor(context);
 
 #if defined(CONFIG_UDEV) || defined(CONFIG_HAL)
-    if (SeatId) /* Enable input hot-plugging */
+    if (context->SeatId) /* Enable input hot-plugging */
         config_pre_init(context);
 #endif
 }

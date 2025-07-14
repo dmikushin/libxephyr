@@ -833,9 +833,9 @@ event_set_state_gesture(DeviceIntPtr kbd, GestureEvent *event)
  * XI1 protocol type.
  */
 Mask
-event_get_filter_from_type(DeviceIntPtr dev, int evtype)
+event_get_filter_from_type(DeviceIntPtr dev, int evtype, XephyrContext* context)
 {
-    return event_filters[dev ? dev->id : 0][evtype];
+    return context->event_filters[dev ? dev->id : 0][evtype];
 }
 
 /**

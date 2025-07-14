@@ -35,10 +35,10 @@ from The Open Group.
 #include "globals.h"
 
 extern _X_EXPORT int LimitClients;
-extern _X_EXPORT volatile char isItTimeToYield;
-extern _X_EXPORT volatile char dispatchException;
+/* extern _X_EXPORT volatile char context->isItTimeToYield; - moved to XephyrContext */
+// extern _X_EXPORT volatile char dispatchException; - moved to XephyrContext
 
-/* bit values for dispatchException */
+/* bit values for context->dispatchException */
 #define DE_RESET     1
 #define DE_TERMINATE 2
 #define DE_PRIORITYCHANGE 4     /* set when a client's priority changes */

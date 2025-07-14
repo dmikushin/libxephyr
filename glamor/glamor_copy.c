@@ -376,7 +376,7 @@ glamor_copy_fbo_fbo_draw(DrawablePtr src,
 
     glamor_make_current(glamor_priv);
 
-    if (gc && !glamor_set_planemask(gc->depth, gc->planemask))
+    if (gc && !glamor_set_planemask(screen->context, gc->depth, gc->planemask))
         goto bail_ctx;
 
     if (!glamor_set_alu(screen, gc ? gc->alu : GXcopy))
@@ -527,7 +527,7 @@ glamor_copy_fbo_fbo_temp(DrawablePtr src,
      */
     glamor_make_current(glamor_priv);
 
-    if (gc && !glamor_set_planemask(gc->depth, gc->planemask))
+    if (gc && !glamor_set_planemask(screen->context, gc->depth, gc->planemask))
         goto bail_ctx;
 
     if (!glamor_set_alu(screen, gc ? gc->alu : GXcopy))

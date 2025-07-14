@@ -130,7 +130,8 @@ extern _X_EXPORT int DestroySubwindows(WindowPtr /*pWin */ ,
 extern _X_EXPORT int ChangeWindowAttributes(WindowPtr /*pWin */ ,
                                             Mask /*vmask */ ,
                                             XID * /*vlist */ ,
-                                            ClientPtr /*client */ );
+                                            ClientPtr /*client */ ,
+                                            struct _XephyrContext* /*context */ );
 
 extern _X_EXPORT int ChangeWindowDeviceCursor(WindowPtr /*pWin */ ,
                                               struct _DeviceIntRec * /*pDev */ ,
@@ -205,9 +206,9 @@ extern _X_EXPORT int SaveScreens(int on, int mode);
 
 extern _X_EXPORT WindowPtr FindWindowWithOptional(WindowPtr /*w */ );
 
-extern _X_EXPORT void CheckWindowOptionalNeed(WindowPtr /*w */ );
+extern _X_EXPORT void CheckWindowOptionalNeed(WindowPtr /*w */ , struct _XephyrContext* /*context*/);
 
-extern _X_EXPORT Bool MakeWindowOptional(WindowPtr /*pWin */ );
+extern _X_EXPORT Bool MakeWindowOptional(WindowPtr /*pWin */ , struct _XephyrContext* /*context*/);
 
 extern _X_EXPORT WindowPtr MoveWindowInStack(WindowPtr /*pWin */ ,
                                              WindowPtr /*pNextSib */ );
@@ -223,7 +224,8 @@ extern _X_EXPORT void ResizeChildrenWinSize(WindowPtr /*pWin */ ,
                                             int /*dh */ );
 
 extern _X_EXPORT void SendShapeNotify(WindowPtr /* pWin */ ,
-                                      int /* which */);
+                                      int /* which */,
+                                      XephyrContext* /* context */);
 
 extern _X_EXPORT RegionPtr CreateBoundingShape(WindowPtr /* pWin */ );
 

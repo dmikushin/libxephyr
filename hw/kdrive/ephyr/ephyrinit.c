@@ -35,8 +35,7 @@ extern Window EphyrPreExistingHostWin;
 /* extern Bool context->EphyrWantGrayScale; */
 /* extern Bool context->EphyrWantResize; */
 /* extern Bool context->EphyrWantNoHostGrab; */
-extern Bool kdHasPointer;
-extern Bool kdHasKbd;
+/* kdHasPointer, kdHasKbd moved to XephyrContext */
 /* extern Bool ephyr_glamor, context->ephyr_glamor_gles2, context->ephyr_glamor_skip_present; */
 
 extern Bool ephyrNoXV;
@@ -71,34 +70,34 @@ InitInput(int argc, char **argv)
     KdKeyboardInfo *ki;
     KdPointerInfo *pi;
 
-    if (!SeatId) {
+    if (!context->SeatId) {
         KdAddKeyboardDriver(&EphyrKeyboardDriver);
         KdAddPointerDriver(&EphyrMouseDriver);
 
-        if (!kdHasKbd) {
-            ki = KdNewKeyboard();
+        if (!context->kdHasKbd) {
+            ki = KdNewKeyboard(context);
             if (!ki)
                 FatalError("Couldn't create Xephyr keyboard\n", context);
             ki->driver = &EphyrKeyboardDriver;
-            KdAddKeyboard(ki);
+            KdAddKeyboard(ki, context);
         }
 
-        if (!kdHasPointer) {
+        if (!context->kdHasPointer) {
             pi = KdNewPointer();
             if (!pi)
-                FatalError("Couldn't create Xephyr pointer\n");
+                FatalError("Couldn't create Xephyr pointer\n", context);
             pi->driver = &EphyrMouseDriver;
-            KdAddPointer(pi);
+            KdAddPointer(pi, context);
         }
     }
 
-    KdInitInput();
+    KdInitInput(context);
 }
 
 void
-CloseInput(void)
+CloseInput(XephyrContext* context)
 {
-    KdCloseInput();
+    KdCloseInput(context);
 }
 
 #if INPUTTHREAD
@@ -149,7 +148,7 @@ processScreenOrOutputArg(const char *screen_size, const char *output, char *pare
     KdCardInfo *card;
 
     InitCard(0);                /*Put each screen on a separate card */
-    card = KdCardInfoLast();
+    card = KdCardInfoLast(context);
 
     if (card) {
         KdScreenInfo *screen;
@@ -168,7 +167,7 @@ processScreenOrOutputArg(const char *screen_size, const char *output, char *pare
 
         use_geometry = (strchr(screen_size, '+') != NULL);
         EPHYR_DBG("screen number:%d\n", screen->mynum);
-        hostx_add_screen(screen, p_id, screen->mynum, use_geometry, output);
+        hostx_add_screen(screen, p_id, screen->mynum, use_geometry, output, context);
     }
     else {
         ErrorF("No matching card found!\n", context);
@@ -366,8 +365,8 @@ OsVendorInit(XephyrContext* context)
     if (hostx_want_host_cursor())
         ephyrFuncs.initCursor = &ephyrCursorInit;
 
-    if (serverGeneration == 1) {
-        if (!KdCardInfoLast()) {
+    if (context->serverGeneration == 1) {
+        if (!KdCardInfoLast(context)) {
             processScreenArg("640x480", NULL, context);
         }
         hostx_init();

@@ -65,7 +65,7 @@ typedef struct GlxClientPrivRec {
 } GlxClientPriv;
 
 /* extern int client->context->GlxErrorBase; */
-extern RESTYPE idResource;
+/* extern RESTYPE idResource; - moved to context */
 
 /* extern ExtensionEntry *context->GlxExtensionEntry; */
 Bool GlxDispatchInit(void);

@@ -166,7 +166,7 @@ XkbSendNewKeyboardNotify(DeviceIntPtr kbd, xkbNewKeyboardNotify * pNKN)
     Time time = GetTimeInMillis();
     CARD16 changed = pNKN->changed;
 
-    pNKN->type = XkbEventCode + XkbEventBase;
+    pNKN->type = XkbEventCode + kbd->context->XkbEventBase;
     pNKN->xkbType = XkbNewKeyboardNotify;
 
     for (i = 1; i < kbd->context->currentMaxClients; i++) {
@@ -215,7 +215,7 @@ XkbSendStateNotify(DeviceIntPtr kbd, xkbStateNotify * pSN)
     xkbi = kbd->key->xkbInfo;
     state = &xkbi->state;
 
-    pSN->type = XkbEventCode + XkbEventBase;
+    pSN->type = XkbEventCode + kbd->context->XkbEventBase;
     pSN->xkbType = XkbStateNotify;
     pSN->deviceID = kbd->id;
     pSN->time = time = GetTimeInMillis();
@@ -273,7 +273,7 @@ XkbSendMapNotify(DeviceIntPtr kbd, xkbMapNotify * pMN)
 
     pMN->minKeyCode = xkbi->desc->min_key_code;
     pMN->maxKeyCode = xkbi->desc->max_key_code;
-    pMN->type = XkbEventCode + XkbEventBase;
+    pMN->type = XkbEventCode + kbd->context->XkbEventBase;
     pMN->xkbType = XkbMapNotify;
     pMN->deviceID = kbd->id;
 
@@ -403,7 +403,7 @@ XkbSendControlsNotify(DeviceIntPtr kbd, xkbControlsNotify * pCN)
             (interest->client->xkbClientFlags & _XkbClientInitialized) &&
             (interest->ctrlsNotifyMask & changedControls)) {
             if (!initialized) {
-                pCN->type = XkbEventCode + XkbEventBase;
+                pCN->type = XkbEventCode + kbd->context->XkbEventBase;
                 pCN->xkbType = XkbControlsNotify;
                 pCN->deviceID = kbd->id;
                 pCN->time = time = GetTimeInMillis();
@@ -452,7 +452,7 @@ XkbSendIndicatorNotify(DeviceIntPtr kbd, int xkbType, xkbIndicatorNotify * pEv)
              ((xkbType == XkbIndicatorMapNotify) &&
               (interest->iMapNotifyMask & changed)))) {
             if (!initialized) {
-                pEv->type = XkbEventCode + XkbEventBase;
+                pEv->type = XkbEventCode + kbd->context->XkbEventBase;
                 pEv->xkbType = xkbType;
                 pEv->deviceID = kbd->id;
                 pEv->time = time = GetTimeInMillis();
@@ -530,7 +530,7 @@ XkbHandleBell(BOOL force,
             (interest->bellNotifyMask)) {
             if (!initialized) {
                 time = GetTimeInMillis();
-                bn.type = XkbEventCode + XkbEventBase;
+                bn.type = XkbEventCode + kbd->context->XkbEventBase;
                 bn.xkbType = XkbBellNotify;
                 bn.deviceID = kbd->id;
                 bn.bellClass = class;
@@ -581,7 +581,7 @@ XkbSendAccessXNotify(DeviceIntPtr kbd, xkbAccessXNotify * pEv)
             (interest->client->xkbClientFlags & _XkbClientInitialized) &&
             (interest->accessXNotifyMask & (1 << pEv->detail))) {
             if (!initialized) {
-                pEv->type = XkbEventCode + XkbEventBase;
+                pEv->type = XkbEventCode + kbd->context->XkbEventBase;
                 pEv->xkbType = XkbAccessXNotify;
                 pEv->deviceID = kbd->id;
                 pEv->time = time = GetTimeInMillis();
@@ -626,7 +626,7 @@ XkbSendNamesNotify(DeviceIntPtr kbd, xkbNamesNotify * pEv)
             (interest->client->xkbClientFlags & _XkbClientInitialized) &&
             (interest->namesNotifyMask & pEv->changed)) {
             if (!initialized) {
-                pEv->type = XkbEventCode + XkbEventBase;
+                pEv->type = XkbEventCode + kbd->context->XkbEventBase;
                 pEv->xkbType = XkbNamesNotify;
                 pEv->deviceID = kbd->id;
                 pEv->time = time = GetTimeInMillis();
@@ -669,7 +669,7 @@ XkbSendCompatMapNotify(DeviceIntPtr kbd, xkbCompatMapNotify * pEv)
             (interest->client->xkbClientFlags & _XkbClientInitialized) &&
             (interest->compatNotifyMask)) {
             if (!initialized) {
-                pEv->type = XkbEventCode + XkbEventBase;
+                pEv->type = XkbEventCode + kbd->context->XkbEventBase;
                 pEv->xkbType = XkbCompatMapNotify;
                 pEv->deviceID = kbd->id;
                 pEv->time = time = GetTimeInMillis();
@@ -719,7 +719,7 @@ XkbSendActionMessage(DeviceIntPtr kbd, xkbActionMessage * pEv)
             (interest->client->xkbClientFlags & _XkbClientInitialized) &&
             (interest->actionMessageMask)) {
             if (!initialized) {
-                pEv->type = XkbEventCode + XkbEventBase;
+                pEv->type = XkbEventCode + kbd->context->XkbEventBase;
                 pEv->xkbType = XkbActionMessage;
                 pEv->deviceID = kbd->id;
                 pEv->sequenceNumber = interest->client->sequence;
@@ -762,7 +762,7 @@ XkbSendExtensionDeviceNotify(DeviceIntPtr dev,
             (interest->client->xkbClientFlags & _XkbClientInitialized) &&
             (interest->extDevNotifyMask & reason)) {
             if (!initialized) {
-                pEv->type = XkbEventCode + XkbEventBase;
+                pEv->type = XkbEventCode + dev->context->XkbEventBase;
                 pEv->xkbType = XkbExtensionDeviceNotify;
                 pEv->deviceID = dev->id;
                 pEv->sequenceNumber = interest->client->sequence;

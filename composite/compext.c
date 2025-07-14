@@ -128,7 +128,7 @@ ProcCompositeQueryVersion(ClientPtr client)
     do {								\
 	int err;							\
 	err = dixLookupResourceByType((void **) &pWindow, wid,	\
-				      RT_WINDOW, client, mode);		\
+				      RT_WINDOW, client, mode, client->context);		\
 	if (err != Success) {						\
 	    client->errorValue = wid;					\
 	    return err;							\
@@ -214,7 +214,7 @@ ProcCompositeCreateRegionFromBorderClip(ClientPtr client)
         return BadAlloc;
     RegionTranslate(pRegion, -pWin->drawable.x, -pWin->drawable.y);
 
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
+    if (!AddResource(stuff->region, client->context->RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -513,9 +513,10 @@ GetCompositeWindowBytes(void *value, XID id, ResourceSizePtr size)
     /* account for redirection */
     if (window->redirectDraw != RedirectDrawNone)
     {
-        SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP);
-        ResourceSizeRec pixmapSize = { 0, 0 };
         ScreenPtr screen = window->drawable.pScreen;
+        XephyrContext* context = screen->context;
+        SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP, context);
+        ResourceSizeRec pixmapSize = { 0, 0 };
         PixmapPtr pixmap = screen->GetWindowPixmap(window);
         pixmapSizeFunc(pixmap, pixmap->drawable.id, &pixmapSize);
         size->pixmapRefSize += pixmapSize.pixmapRefSize;
@@ -550,20 +551,20 @@ CompositeExtensionInit(XephyrContext* context)
     }
 
     context->CompositeClientWindowType = CreateNewResourceType
-        (FreeCompositeClientWindow, "CompositeClientWindow");
+        (FreeCompositeClientWindow, "CompositeClientWindow", context);
     if (!context->CompositeClientWindowType)
         return;
 
-    coreGetWindowBytes = GetResourceTypeSizeFunc(RT_WINDOW);
-    SetResourceTypeSizeFunc(RT_WINDOW, GetCompositeWindowBytes);
+    coreGetWindowBytes = GetResourceTypeSizeFunc(RT_WINDOW, context);
+    SetResourceTypeSizeFunc(RT_WINDOW, GetCompositeWindowBytes, context);
 
     context->CompositeClientSubwindowsType = CreateNewResourceType
-        (FreeCompositeClientSubwindows, "CompositeClientSubwindows");
+        (FreeCompositeClientSubwindows, "CompositeClientSubwindows", context);
     if (!context->CompositeClientSubwindowsType)
         return;
 
     context->CompositeClientOverlayType = CreateNewResourceType
-        (FreeCompositeClientOverlay, "CompositeClientOverlay");
+        (FreeCompositeClientOverlay, "CompositeClientOverlay", context);
     if (!context->CompositeClientOverlayType)
         return;
 
@@ -577,7 +578,7 @@ CompositeExtensionInit(XephyrContext* context)
 
     extEntry = AddExtension(COMPOSITE_NAME, 0, 0,
                             ProcCompositeDispatch, SProcCompositeDispatch,
-                            NULL, StandardMinorOpcode);
+                            NULL, StandardMinorOpcode, context);
     if (!extEntry)
         return;
     CompositeReqCode = (CARD8) extEntry->base;
@@ -602,8 +603,8 @@ PanoramiXCompositeRedirectWindow(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCompositeRedirectWindowReq);
 
-    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, XRT_WINDOW,
-                                      client, DixUnknownAccess))) {
+    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, context->XRT_WINDOW,
+                                      client, DixUnknownAccess, client->context))) {
         client->errorValue = stuff->window;
         return rc;
     }
@@ -629,8 +630,8 @@ PanoramiXCompositeRedirectSubwindows(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCompositeRedirectSubwindowsReq);
 
-    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, XRT_WINDOW,
-                                      client, DixUnknownAccess))) {
+    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, context->XRT_WINDOW,
+                                      client, DixUnknownAccess, client->context))) {
         client->errorValue = stuff->window;
         return rc;
     }
@@ -656,8 +657,8 @@ PanoramiXCompositeUnredirectWindow(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCompositeUnredirectWindowReq);
 
-    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, XRT_WINDOW,
-                                      client, DixUnknownAccess))) {
+    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, context->XRT_WINDOW,
+                                      client, DixUnknownAccess, client->context))) {
         client->errorValue = stuff->window;
         return rc;
     }
@@ -683,8 +684,8 @@ PanoramiXCompositeUnredirectSubwindows(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCompositeUnredirectSubwindowsReq);
 
-    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, XRT_WINDOW,
-                                      client, DixUnknownAccess))) {
+    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, context->XRT_WINDOW,
+                                      client, DixUnknownAccess, client->context))) {
         client->errorValue = stuff->window;
         return rc;
     }
@@ -714,8 +715,8 @@ PanoramiXCompositeNameWindowPixmap(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCompositeNameWindowPixmapReq);
 
-    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, XRT_WINDOW,
-                                      client, DixUnknownAccess))) {
+    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, context->XRT_WINDOW,
+                                      client, DixUnknownAccess, client->context))) {
         client->errorValue = stuff->window;
         return rc;
     }
@@ -725,13 +726,13 @@ PanoramiXCompositeNameWindowPixmap(ClientPtr client)
     if (!(newPix = malloc(sizeof(PanoramiXRes))))
         return BadAlloc;
 
-    newPix->type = XRT_PIXMAP;
+    newPix->type = context->XRT_PIXMAP;
     newPix->u.pix.shared = FALSE;
     panoramix_setup_ids(newPix, client, stuff->pixmap);
 
     FOR_NSCREENS(i) {
         rc = dixLookupResourceByType((void **) &pWin, win->info[i].id,
-                                     RT_WINDOW, client, DixGetAttrAccess);
+                                     RT_WINDOW, client, DixGetAttrAccess, context);
         if (rc != Success) {
             client->errorValue = stuff->window;
             free(newPix);
@@ -761,7 +762,7 @@ PanoramiXCompositeNameWindowPixmap(ClientPtr client)
         ++pPixmap->refcnt;
     }
 
-    if (!AddResource(stuff->pixmap, XRT_PIXMAP, (void *) newPix, client->context))
+    if (!AddResource(stuff->pixmap, context->XRT_PIXMAP, (void *) newPix, client->context))
         return BadAlloc;
 
     return Success;
@@ -783,8 +784,8 @@ PanoramiXCompositeGetOverlayWindow(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCompositeGetOverlayWindowReq);
 
-    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, XRT_WINDOW,
-                                      client, DixUnknownAccess))) {
+    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, context->XRT_WINDOW,
+                                      client, DixUnknownAccess, client->context))) {
         client->errorValue = stuff->window;
         return rc;
     }
@@ -794,13 +795,13 @@ PanoramiXCompositeGetOverlayWindow(ClientPtr client)
         if (!(overlayWin = malloc(sizeof(PanoramiXRes))))
             return BadAlloc;
 
-        overlayWin->type = XRT_WINDOW;
+        overlayWin->type = context->XRT_WINDOW;
         overlayWin->u.win.root = FALSE;
     }
 
     FOR_NSCREENS_BACKWARD(i) {
         rc = dixLookupResourceByType((void **) &pWin, win->info[i].id,
-                                     RT_WINDOW, client, DixGetAttrAccess);
+                                     RT_WINDOW, client, DixGetAttrAccess, context);
         if (rc != Success) {
             client->errorValue = stuff->window;
             free(overlayWin);
@@ -846,7 +847,7 @@ PanoramiXCompositeGetOverlayWindow(ClientPtr client)
             overlayWin->info[i].id = cs->pOverlayWin->drawable.id;
         }
 
-        AddResource(overlayWin->info[0].id, XRT_WINDOW, overlayWin, client->context);
+        AddResource(overlayWin->info[0].id, context->XRT_WINDOW, overlayWin, client->context);
     }
 
     cs = GetCompScreen(client->context->screenInfo.screens[0]);
@@ -880,16 +881,16 @@ PanoramiXCompositeReleaseOverlayWindow(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xCompositeReleaseOverlayWindowReq);
 
-    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, XRT_WINDOW,
-                                      client, DixUnknownAccess))) {
+    if ((rc = dixLookupResourceByType((void **) &win, stuff->window, context->XRT_WINDOW,
+                                      client, DixUnknownAccess, client->context))) {
         client->errorValue = stuff->window;
         return rc;
     }
 
     FOR_NSCREENS_BACKWARD(i) {
         if ((rc = dixLookupResourceByType((void **) &pWin, win->info[i].id,
-                                          XRT_WINDOW, client,
-                                          DixUnknownAccess))) {
+                                          context->XRT_WINDOW, client,
+                                          DixUnknownAccess, client->context))) {
             client->errorValue = stuff->window;
             return rc;
         }

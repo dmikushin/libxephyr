@@ -328,7 +328,7 @@ SyncInitTrigger(ClientPtr client, SyncTrigger * pTrigger, XID syncObject,
         else if (Success != (rc = dixLookupResourceByType((void **) &pSync,
                                                           syncObject, resType,
                                                           client,
-                                                          DixReadAccess))) {
+                                                          DixReadAccess, client->context))) {
             client->errorValue = syncObject;
             return rc;
         }
@@ -1344,8 +1344,8 @@ ProcSyncSetPriority(ClientPtr client)
          *  so that the change in this client's priority is immediately
          *  reflected.
          */
-        isItTimeToYield = TRUE;
-        dispatchException |= DE_PRIORITYCHANGE;
+        client->context->isItTimeToYield = TRUE;
+        client->context->dispatchException |= DE_PRIORITYCHANGE;
     }
     return Success;
 }
@@ -1420,11 +1420,12 @@ ProcSyncSetCounter(ClientPtr client)
     SyncCounter *pCounter;
     int64_t newvalue;
     int rc;
+    XephyrContext* context = client->context;
 
     REQUEST_SIZE_MATCH(xSyncSetCounterReq);
 
     rc = dixLookupResourceByType((void **) &pCounter, stuff->cid, RTCounter,
-                                 client, DixWriteAccess);
+                                 client, DixWriteAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1449,11 +1450,12 @@ ProcSyncChangeCounter(ClientPtr client)
     int64_t newvalue;
     Bool overflow;
     int rc;
+    XephyrContext* context = client->context;
 
     REQUEST_SIZE_MATCH(xSyncChangeCounterReq);
 
     rc = dixLookupResourceByType((void **) &pCounter, stuff->cid, RTCounter,
-                                 client, DixWriteAccess);
+                                 client, DixWriteAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1481,12 +1483,13 @@ ProcSyncDestroyCounter(ClientPtr client)
 {
     REQUEST(xSyncDestroyCounterReq);
     SyncCounter *pCounter;
+    XephyrContext* context = client->context;
     int rc;
 
     REQUEST_SIZE_MATCH(xSyncDestroyCounterReq);
 
     rc = dixLookupResourceByType((void **) &pCounter, stuff->counter,
-                                 RTCounter, client, DixDestroyAccess);
+                                 RTCounter, client, DixDestroyAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1642,13 +1645,14 @@ ProcSyncQueryCounter(ClientPtr client)
 {
     REQUEST(xSyncQueryCounterReq);
     xSyncQueryCounterReply rep;
+    XephyrContext* context = client->context;
     SyncCounter *pCounter;
     int rc;
 
     REQUEST_SIZE_MATCH(xSyncQueryCounterReq);
 
     rc = dixLookupResourceByType((void **) &pCounter, stuff->counter,
-                                 RTCounter, client, DixReadAccess);
+                                 RTCounter, client, DixReadAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1767,6 +1771,7 @@ ProcSyncChangeAlarm(ClientPtr client)
 {
     REQUEST(xSyncChangeAlarmReq);
     SyncAlarm *pAlarm;
+    XephyrContext* context = client->context;
     SyncCounter *pCounter = NULL;
     long vmask;
     int len, status;
@@ -1774,7 +1779,7 @@ ProcSyncChangeAlarm(ClientPtr client)
     REQUEST_AT_LEAST_SIZE(xSyncChangeAlarmReq);
 
     status = dixLookupResourceByType((void **) &pAlarm, stuff->alarm, RTAlarm,
-                                     client, DixWriteAccess);
+                                     client, DixWriteAccess, context);
     if (status != Success)
         return status;
 
@@ -1808,6 +1813,7 @@ ProcSyncQueryAlarm(ClientPtr client)
 {
     REQUEST(xSyncQueryAlarmReq);
     SyncAlarm *pAlarm;
+    XephyrContext* context = client->context;
     xSyncQueryAlarmReply rep;
     SyncTrigger *pTrigger;
     int rc;
@@ -1815,7 +1821,7 @@ ProcSyncQueryAlarm(ClientPtr client)
     REQUEST_SIZE_MATCH(xSyncQueryAlarmReq);
 
     rc = dixLookupResourceByType((void **) &pAlarm, stuff->alarm, RTAlarm,
-                                 client, DixReadAccess);
+                                 client, DixReadAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1866,6 +1872,7 @@ static int
 ProcSyncDestroyAlarm(ClientPtr client)
 {
     SyncAlarm *pAlarm;
+    XephyrContext* context = client->context;
     int rc;
 
     REQUEST(xSyncDestroyAlarmReq);
@@ -1873,7 +1880,7 @@ ProcSyncDestroyAlarm(ClientPtr client)
     REQUEST_SIZE_MATCH(xSyncDestroyAlarmReq);
 
     rc = dixLookupResourceByType((void **) &pAlarm, stuff->alarm, RTAlarm,
-                                 client, DixDestroyAccess);
+                                 client, DixDestroyAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1916,10 +1923,10 @@ FreeFence(void *obj, XID id, XephyrContext* context)
 }
 
 int
-SyncVerifyFence(SyncFence ** ppSyncFence, XID fid, ClientPtr client, Mask mode)
+SyncVerifyFence(SyncFence ** ppSyncFence, XID fid, ClientPtr client, Mask mode, XephyrContext* context)
 {
     int rc = dixLookupResourceByType((void **) ppSyncFence, fid, RTFence,
-                                     client, mode);
+                                     client, mode, context);
 
     if (rc != Success)
         client->errorValue = fid;
@@ -1932,12 +1939,13 @@ ProcSyncTriggerFence(ClientPtr client)
 {
     REQUEST(xSyncTriggerFenceReq);
     SyncFence *pFence;
+    XephyrContext* context = client->context;
     int rc;
 
     REQUEST_SIZE_MATCH(xSyncTriggerFenceReq);
 
     rc = dixLookupResourceByType((void **) &pFence, stuff->fid, RTFence,
-                                 client, DixWriteAccess);
+                                 client, DixWriteAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1951,12 +1959,13 @@ ProcSyncResetFence(ClientPtr client)
 {
     REQUEST(xSyncResetFenceReq);
     SyncFence *pFence;
+    XephyrContext* context = client->context;
     int rc;
 
     REQUEST_SIZE_MATCH(xSyncResetFenceReq);
 
     rc = dixLookupResourceByType((void **) &pFence, stuff->fid, RTFence,
-                                 client, DixWriteAccess);
+                                 client, DixWriteAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1973,12 +1982,13 @@ ProcSyncDestroyFence(ClientPtr client)
 {
     REQUEST(xSyncDestroyFenceReq);
     SyncFence *pFence;
+    XephyrContext* context = client->context;
     int rc;
 
     REQUEST_SIZE_MATCH(xSyncDestroyFenceReq);
 
     rc = dixLookupResourceByType((void **) &pFence, stuff->fid, RTFence,
-                                 client, DixDestroyAccess);
+                                 client, DixDestroyAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1991,13 +2001,14 @@ ProcSyncQueryFence(ClientPtr client)
 {
     REQUEST(xSyncQueryFenceReq);
     xSyncQueryFenceReply rep;
+    XephyrContext* context = client->context;
     SyncFence *pFence;
     int rc;
 
     REQUEST_SIZE_MATCH(xSyncQueryFenceReq);
 
     rc = dixLookupResourceByType((void **) &pFence, stuff->fid,
-                                 RTFence, client, DixReadAccess);
+                                 RTFence, client, DixReadAccess, context);
     if (rc != Success)
         return rc;
 
@@ -2491,14 +2502,14 @@ SyncExtensionInit(XephyrContext* context)
     for (s = 0; s < context->screenInfo.numScreens; s++)
         miSyncSetup(context->screenInfo.screens[s]);
 
-    RTCounter = CreateNewResourceType(FreeCounter, "SyncCounter");
+    RTCounter = CreateNewResourceType(FreeCounter, "SyncCounter", context);
     xorg_list_init(&SysCounterList);
-    RTAlarm = CreateNewResourceType(FreeAlarm, "SyncAlarm");
-    RTAwait = CreateNewResourceType(FreeAwait, "SyncAwait");
-    RTFence = CreateNewResourceType(FreeFence, "SyncFence");
+    RTAlarm = CreateNewResourceType(FreeAlarm, "SyncAlarm", context);
+    RTAwait = CreateNewResourceType(FreeAwait, "SyncAwait", context);
+    RTFence = CreateNewResourceType(FreeFence, "SyncFence", context);
     if (RTAwait)
         RTAwait |= RC_NEVERRETAIN;
-    RTAlarmClient = CreateNewResourceType(FreeAlarmClient, "SyncAlarmClient");
+    RTAlarmClient = CreateNewResourceType(FreeAlarmClient, "SyncAlarmClient", context);
     if (RTAlarmClient)
         RTAlarmClient |= RC_NEVERRETAIN;
 
@@ -2507,7 +2518,7 @@ SyncExtensionInit(XephyrContext* context)
         (extEntry = AddExtension(SYNC_NAME,
                                  XSyncNumberEvents, XSyncNumberErrors,
                                  ProcSyncDispatch, SProcSyncDispatch,
-                                 SyncResetProc, StandardMinorOpcode)) == NULL) {
+                                 SyncResetProc, StandardMinorOpcode, context)) == NULL) {
         /* ErrorF requires context, use fprintf for now */
         fprintf(stderr, "Sync Extension %d.%d failed to Initialise\n",
                 SYNC_MAJOR_VERSION, SYNC_MINOR_VERSION);
@@ -2521,9 +2532,9 @@ SyncExtensionInit(XephyrContext* context)
     EventSwapVector[SyncEventBase + XSyncAlarmNotify] =
         (EventSwapPtr) SAlarmNotifyEvent;
 
-    SetResourceTypeErrorValue(RTCounter, SyncErrorBase + XSyncBadCounter);
-    SetResourceTypeErrorValue(RTAlarm, SyncErrorBase + XSyncBadAlarm);
-    SetResourceTypeErrorValue(RTFence, SyncErrorBase + XSyncBadFence);
+    SetResourceTypeErrorValue(RTCounter, SyncErrorBase + XSyncBadCounter, context);
+    SetResourceTypeErrorValue(RTAlarm, SyncErrorBase + XSyncBadAlarm, context);
+    SetResourceTypeErrorValue(RTFence, SyncErrorBase + XSyncBadFence, context);
 
     /*
      * Although SERVERTIME is implemented by the OS layer, we initialise it

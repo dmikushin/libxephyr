@@ -187,7 +187,7 @@ send_property_event(DeviceIntPtr dev, Atom property, int what)
 {
     int state = (what == XIPropertyDeleted) ? PropertyDelete : PropertyNewValue;
     devicePropertyNotify event = {
-        .type = context->DevicePropertyNotify,
+        .type = dev->context->DevicePropertyNotify,
         .deviceid = dev->id,
         .state = state,
         .atom = property,

@@ -182,9 +182,8 @@ typedef struct _ClientResource {
     XID endFakeID;
 } ClientResourceRec;
 
-RESTYPE lastResourceType;
+RESTYPE context->lastResourceType;
 static RESTYPE lastResourceClass;
-RESTYPE TypeMask;
 
 struct ResourceType {
     DeleteType deleteFunc;
@@ -304,9 +303,9 @@ GetPixmapBytes(void *value, XID id, ResourceSizePtr size)
 static void
 GetWindowBytes(void *value, XID id, ResourceSizePtr size)
 {
-    SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP);
-    ResourceSizeRec pixmapSize = { 0, 0, 0 };
     WindowPtr window = value;
+    SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP, window->drawable.pScreen->context);
+    ResourceSizeRec pixmapSize = { 0, 0, 0 };
 
     /* Currently only pixmap bytes are reported to context->clients. */
     size->resourceSize = 0;
@@ -377,9 +376,9 @@ FindWindowSubRes(void *value, FindAllRes func, void *cdata)
 static void
 GetGcBytes(void *value, XID id, ResourceSizePtr size)
 {
-    SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP);
-    ResourceSizeRec pixmapSize = { 0, 0, 0 };
     GCPtr gc = value;
+    SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP, gc->pScreen->context);
+    ResourceSizeRec pixmapSize = { 0, 0, 0 };
 
     /* Currently only pixmap bytes are reported to context->clients. */
     size->resourceSize = 0;
@@ -499,21 +498,21 @@ static const struct ResourceType predefTypes[] = {
                                               },
 };
 
-CallbackListPtr ResourceStateCallback;
+/* CallbackListPtr ResourceStateCallback; - now in context */
 
 static _X_INLINE void
-CallResourceStateCallback(ResourceState state, ResourceRec * res)
+CallResourceStateCallback(ResourceState state, ResourceRec * res, XephyrContext* context)
 {
-    if (ResourceStateCallback) {
+    if (context->ResourceStateCallback) {
         ResourceStateInfoRec rsi = { state, res->id, res->type, res->value };
-        CallCallbacks(&ResourceStateCallback, &rsi);
+        CallCallbacks(&context->ResourceStateCallback, &rsi);
     }
 }
 
 RESTYPE
-CreateNewResourceType(DeleteType deleteFunc, const char *name)
+CreateNewResourceType(DeleteType deleteFunc, const char *name, XephyrContext* context)
 {
-    RESTYPE next = lastResourceType + 1;
+    RESTYPE next = context->lastResourceType + 1;
     struct ResourceType *types;
 
     if (next & lastResourceClass)
@@ -522,7 +521,7 @@ CreateNewResourceType(DeleteType deleteFunc, const char *name)
     if (!types)
         return 0;
 
-    lastResourceType = next;
+    context->lastResourceType = next;
     resourceTypes = types;
     resourceTypes[next].deleteFunc = deleteFunc;
     resourceTypes[next].sizeFunc = GetDefaultBytes;
@@ -531,7 +530,7 @@ CreateNewResourceType(DeleteType deleteFunc, const char *name)
 
 #if X_REGISTRY_RESOURCE
     /* Called even if name is NULL, to remove any previous entry */
-    RegisterResourceName(next, name);
+    RegisterResourceName(next, name, context);
 #endif
 
     return next;
@@ -548,9 +547,9 @@ CreateNewResourceType(DeleteType deleteFunc, const char *name)
  *                     resource.
  */
 SizeType
-GetResourceTypeSizeFunc(RESTYPE type)
+GetResourceTypeSizeFunc(RESTYPE type, XephyrContext* context)
 {
-    return resourceTypes[type & TypeMask].sizeFunc;
+    return resourceTypes[type & context->TypeMask].sizeFunc;
 }
 
 /**
@@ -565,9 +564,9 @@ GetResourceTypeSizeFunc(RESTYPE type)
  *                     resource.
  */
 void
-SetResourceTypeSizeFunc(RESTYPE type, SizeType sizeFunc)
+SetResourceTypeSizeFunc(RESTYPE type, SizeType sizeFunc, XephyrContext* context)
 {
-    resourceTypes[type & TypeMask].sizeFunc = sizeFunc;
+    resourceTypes[type & context->TypeMask].sizeFunc = sizeFunc;
 }
 
 /**
@@ -583,26 +582,26 @@ SetResourceTypeSizeFunc(RESTYPE type, SizeType sizeFunc)
  *                     resource.
  */
 void
-SetResourceTypeFindSubResFunc(RESTYPE type, FindTypeSubResources findFunc)
+SetResourceTypeFindSubResFunc(RESTYPE type, FindTypeSubResources findFunc, XephyrContext* context)
 {
-    resourceTypes[type & TypeMask].findSubResFunc = findFunc;
+    resourceTypes[type & context->TypeMask].findSubResFunc = findFunc;
 }
 
 void
-SetResourceTypeErrorValue(RESTYPE type, int errorValue)
+SetResourceTypeErrorValue(RESTYPE type, int errorValue, XephyrContext* context)
 {
-    resourceTypes[type & TypeMask].errorValue = errorValue;
+    resourceTypes[type & context->TypeMask].errorValue = errorValue;
 }
 
 RESTYPE
-CreateNewResourceClass(void)
+CreateNewResourceClass(XephyrContext* context)
 {
     RESTYPE next = lastResourceClass >> 1;
 
-    if (next & lastResourceType)
+    if (next & context->lastResourceType)
         return 0;
     lastResourceClass = next;
-    TypeMask = next - 1;
+    context->TypeMask = next - 1;
     return next;
 }
 
@@ -648,9 +647,9 @@ InitClientResources(ClientPtr client)
     int i, j;
 
     if (client == client->context->serverClient) {
-        lastResourceType = RT_LASTPREDEF;
+        context->lastResourceType = RT_LASTPREDEF;
         lastResourceClass = RC_LASTPREDEF;
-        TypeMask = RC_LASTPREDEF - 1;
+        client->context->TypeMask = RC_LASTPREDEF - 1;
         free(resourceTypes);
         resourceTypes = malloc(sizeof(predefTypes));
         if (!resourceTypes)
@@ -827,7 +826,7 @@ AddResource(XID id, RESTYPE type, void *value, XephyrContext* context)
     head = &rrec->resources[HashResourceID(id, clientTable[client].hashsize)];
     res = malloc(sizeof(ResourceRec));
     if (!res) {
-        (*resourceTypes[type & TypeMask].deleteFunc) (value, id, context);
+        (*resourceTypes[type & context->TypeMask].deleteFunc) (value, id, context);
         return FALSE;
     }
     res->next = *head;
@@ -836,7 +835,7 @@ AddResource(XID id, RESTYPE type, void *value, XephyrContext* context)
     res->value = value;
     *head = res;
     rrec->elements++;
-    CallResourceStateCallback(ResourceStateAdding, res);
+    CallResourceStateCallback(ResourceStateAdding, res, context);
     return TRUE;
 }
 
@@ -886,10 +885,10 @@ RebuildTable(int client)
 static void
 doFreeResource(ResourcePtr res, Bool skip, XephyrContext* context)
 {
-    CallResourceStateCallback(ResourceStateFreeing, res);
+    CallResourceStateCallback(ResourceStateFreeing, res, context);
 
     if (!skip)
-        resourceTypes[res->type & TypeMask].deleteFunc(res->value, res->id, context);
+        resourceTypes[res->type & context->TypeMask].deleteFunc(res->value, res->id, context);
 
     free(res);
 }
@@ -1020,9 +1019,10 @@ FindClientResourcesByType(ClientPtr client,
 void FindSubResources(void *resource,
                       RESTYPE    type,
                       FindAllRes func,
-                      void *cdata)
+                      void *cdata,
+                      XephyrContext* context)
 {
-    struct ResourceType rtype = resourceTypes[type & TypeMask];
+    struct ResourceType rtype = resourceTypes[type & context->TypeMask];
     rtype.findSubResFunc(resource, func, cdata);
 }
 
@@ -1202,13 +1202,13 @@ LegalNewID(XID id, ClientPtr client)
 
 int
 dixLookupResourceByType(void **result, XID id, RESTYPE rtype,
-                        ClientPtr client, Mask mode)
+                        ClientPtr client, Mask mode, XephyrContext* context)
 {
     int cid = CLIENT_ID(id);
     ResourcePtr res = NULL;
 
     *result = NULL;
-    if ((rtype & TypeMask) > lastResourceType)
+    if ((rtype & context->TypeMask) > context->lastResourceType)
         return BadImplementation;
 
     if ((cid < LimitClients) && clientTable[cid].buckets) {
@@ -1222,13 +1222,13 @@ dixLookupResourceByType(void **result, XID id, RESTYPE rtype,
         client->errorValue = id;
     }
     if (!res)
-        return resourceTypes[rtype & TypeMask].errorValue;
+        return resourceTypes[rtype & context->TypeMask].errorValue;
 
     if (client) {
         cid = XaceHook(XACE_RESOURCE_ACCESS, client, id, res->type,
                        res->value, RT_NONE, NULL, mode);
         if (cid == BadValue)
-            return resourceTypes[rtype & TypeMask].errorValue;
+            return resourceTypes[rtype & context->TypeMask].errorValue;
         if (cid != Success)
             return cid;
     }

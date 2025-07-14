@@ -161,7 +161,7 @@ ProcXSelectExtensionEvent(ClientPtr client)
                                  &stuff->count) != Success)
         return BadAlloc;
 
-    if ((ret = CreateMaskFromList(client, (XEventClass *) &stuff[1],
+    if ((ret = CreateMaskFromList(client->context, client, (XEventClass *) &stuff[1],
                                   stuff->count, tmp, NULL,
                                   X_SelectExtensionEvent)) != Success)
         return ret;

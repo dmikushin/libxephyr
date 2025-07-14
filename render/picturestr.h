@@ -344,23 +344,27 @@ typedef struct _PictureScreen {
     TriFanProcPtr TriFan;
 } PictureScreenRec, *PictureScreenPtr;
 
-extern _X_EXPORT DevPrivateKeyRec PictureScreenPrivateKeyRec;
-#define PictureScreenPrivateKey (&PictureScreenPrivateKeyRec)
+/* extern _X_EXPORT DevPrivateKeyRec PictureScreenPrivateKeyRec; */
+/* PictureScreenPrivateKey now requires context - use GetPictureScreenPrivateKey(context) */
+#define GetPictureScreenPrivateKey(context) (&(context)->PictureScreenPrivateKeyRec)
+#define PictureScreenPrivateKey(context) GetPictureScreenPrivateKey(context)
 
-extern _X_EXPORT DevPrivateKeyRec PictureWindowPrivateKeyRec;
-#define	PictureWindowPrivateKey (&PictureWindowPrivateKeyRec)
+/* extern _X_EXPORT DevPrivateKeyRec PictureWindowPrivateKeyRec; */  
+/* PictureWindowPrivateKey now requires context - use GetPictureWindowPrivateKey(context) */
+#define GetPictureWindowPrivateKey(context) (&(context)->PictureWindowPrivateKeyRec)
+#define	PictureWindowPrivateKey(context) GetPictureWindowPrivateKey(context)
 
 /* GlyphSetType is now in context */
 
-#define GetPictureScreen(s) ((PictureScreenPtr)dixLookupPrivate(&(s)->devPrivates, PictureScreenPrivateKey))
-#define GetPictureScreenIfSet(s) (dixPrivateKeyRegistered(PictureScreenPrivateKey) ? GetPictureScreen(s) : NULL)
-#define SetPictureScreen(s,p) dixSetPrivate(&(s)->devPrivates, PictureScreenPrivateKey, p)
-#define GetPictureWindow(w) ((PicturePtr)dixLookupPrivate(&(w)->devPrivates, PictureWindowPrivateKey))
-#define SetPictureWindow(w,p) dixSetPrivate(&(w)->devPrivates, PictureWindowPrivateKey, p)
+#define GetPictureScreen(s) ((PictureScreenPtr)dixLookupPrivate(&(s)->devPrivates, PictureScreenPrivateKey((s)->context)))
+#define GetPictureScreenIfSet(s) (dixPrivateKeyRegistered(PictureScreenPrivateKey((s)->context)) ? GetPictureScreen(s) : NULL)
+#define SetPictureScreen(s,p) dixSetPrivate(&(s)->devPrivates, PictureScreenPrivateKey((s)->context), p)
+#define GetPictureWindow(w) ((PicturePtr)dixLookupPrivate(&(w)->devPrivates, PictureWindowPrivateKey((w)->drawable.pScreen->context)))
+#define SetPictureWindow(w,p) dixSetPrivate(&(w)->devPrivates, PictureWindowPrivateKey((w)->drawable.pScreen->context), p)
 
 #define VERIFY_PICTURE(pPicture, pid, client, mode, context) {\
     int tmprc = dixLookupResourceByType((void *)&(pPicture), pid,\
-	                                context->PictureType, client, mode);\
+	                                context->PictureType, client, mode, context);\
     if (tmprc != Success)\
 	return tmprc;\
 }

@@ -364,7 +364,7 @@ extern int lastEvent;
  * time a button is pressed, the filter is modified to also contain the
  * matching ButtonXMotion mask.
  */
-Mask event_filters[MAXDEVICES][MAXEVENTS];
+/* Mask event_filters[MAXDEVICES][MAXEVENTS]; -- moved to context */
 
 static const Mask default_filter[MAXEVENTS] = {
     NoSuchEvent,                /* 0 */
@@ -425,7 +425,7 @@ GetEventFilter(DeviceIntPtr dev, xEvent *event)
     int evtype = 0;
 
     if (event->u.u.type != GenericEvent)
-        return event_get_filter_from_type(dev, event->u.u.type);
+        return event_get_filter_from_type(dev, event->u.u.type, dev->context);
     else if ((evtype = xi2_get_type(event, dev->context)))
         return event_get_filter_from_xi2type(evtype);
     ErrorF("[dix] Unknown event type %d. No filter\n", dev->context, event->u.u.type);
@@ -590,7 +590,7 @@ XineramaSetWindowPntrs(DeviceIntPtr pDev, WindowPtr pWin)
         int rc, i;
 
         rc = dixLookupResourceByType((void **) &win, pWin->drawable.id,
-                                     XRT_WINDOW, pDev->context->serverClient, DixReadAccess);
+                                     context->XRT_WINDOW, pDev->context->serverClient, DixReadAccess, context);
         if (rc != Success)
             return FALSE;
 
@@ -672,7 +672,7 @@ SetMaskForEvent(int deviceid, Mask mask, int event, XephyrContext* context)
 {
     if (deviceid < 0 || deviceid >= MAXDEVICES)
         FatalError("SetMaskForEvent: bogus device id", context);
-    event_filters[deviceid][event] = mask;
+    context->event_filters[deviceid][event] = mask;
 }
 
 void
@@ -2751,7 +2751,7 @@ EventIsDeliverable(DeviceIntPtr dev, int evtype, WindowPtr win)
     }
 
     if ((type = GetXIType(evtype, dev->context)) != 0) {
-        filter = event_get_filter_from_type(dev, type);
+        filter = event_get_filter_from_type(dev, type, dev->context);
 
         /* Check for XI mask */
         if (inputMasks &&
@@ -2766,7 +2766,7 @@ EventIsDeliverable(DeviceIntPtr dev, int evtype, WindowPtr win)
     }
 
     if ((type = GetCoreType(evtype)) != 0) {
-        filter = event_get_filter_from_type(dev, type);
+        filter = event_get_filter_from_type(dev, type, dev->context);
 
         /* Check for core mask */
         if ((win->deliverableEvents & filter) &&
@@ -4554,7 +4554,7 @@ OtherClientGone(void *value, XID id, XephyrContext* context)
                 prev->next = other->next;
             else {
                 if (!(pWin->optional->otherClients = other->next))
-                    CheckWindowOptionalNeed(pWin);
+                    CheckWindowOptionalNeed(pWin, context);
             }
             free(other);
             RecalculateDeliverableEvents(pWin);
@@ -4614,7 +4614,7 @@ EventSelectForWindow(WindowPtr pWin, ClientPtr client, Mask mask)
             }
         }
         check = 0;
-        if (!pWin->optional && !MakeWindowOptional(pWin))
+        if (!pWin->optional && !MakeWindowOptional(pWin, client->context))
             return BadAlloc;
         others = malloc(sizeof(OtherClients));
         if (!others)
@@ -4673,7 +4673,7 @@ EventSuppressForWindow(WindowPtr pWin, ClientPtr client,
         }
     }
     else {
-        if (!pWin->optional && !MakeWindowOptional(pWin)) {
+        if (!pWin->optional && !MakeWindowOptional(pWin, client->context)) {
             if (pWin->dontPropagate)
                 DontPropagateRefCnts[pWin->dontPropagate]++;
             return BadAlloc;
@@ -5111,7 +5111,7 @@ ProcChangeActivePointerGrab(ClientPtr client)
         newCursor = NullCursor;
     else {
         int rc = dixLookupResourceByType((void **) &newCursor, stuff->cursor,
-                                         RT_CURSOR, client, DixUseAccess);
+                                         RT_CURSOR, client, DixUseAccess, client->context);
 
         if (rc != Success) {
             client->errorValue = stuff->cursor;
@@ -5229,7 +5229,7 @@ GrabDevice(ClientPtr client, DeviceIntPtr dev,
         cursor = NullCursor;
     else {
         rc = dixLookupResourceByType((void **) &cursor, curs, RT_CURSOR,
-                                     client, DixUseAccess);
+                                     client, DixUseAccess, client->context);
         if (rc != Success) {
             client->errorValue = curs;
             return rc;
@@ -5456,7 +5456,7 @@ InitEvents(XephyrContext* context)
 
     for (i = 0; i < MAXDEVICES; i++) {
         DeviceIntRec dummy;
-        memcpy(&event_filters[i], default_filter, sizeof(default_filter));
+        memcpy(&context->event_filters[i], default_filter, sizeof(default_filter));
 
         dummy.id = i;
         NoticeTime(&dummy, context->currentTime);
@@ -5765,7 +5765,7 @@ ProcGrabButton(ClientPtr client)
         cursor = NullCursor;
     else {
         rc = dixLookupResourceByType((void **) &cursor, stuff->cursor,
-                                     RT_CURSOR, client, DixUseAccess);
+                                     RT_CURSOR, client, DixUseAccess, client->context);
         if (rc != Success) {
             client->errorValue = stuff->cursor;
             return rc;
@@ -6020,7 +6020,7 @@ ProcRecolorCursor(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xRecolorCursorReq);
     rc = dixLookupResourceByType((void **) &pCursor, stuff->cursor, RT_CURSOR,
-                                 client, DixWriteAccess);
+                                 client, DixWriteAccess, client->context);
     if (rc != Success) {
         client->errorValue = stuff->cursor;
         return rc;

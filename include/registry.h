@@ -32,12 +32,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #ifdef X_REGISTRY_RESOURCE
 /* Functions used by the X-Resource extension */
-extern _X_EXPORT void RegisterResourceName(RESTYPE type, const char *name);
-extern _X_EXPORT const char *LookupResourceName(RESTYPE rtype);
+extern _X_EXPORT void RegisterResourceName(RESTYPE type, const char *name, XephyrContext* context);
+extern _X_EXPORT const char *LookupResourceName(RESTYPE rtype, XephyrContext* context);
 #endif
 
 #ifdef X_REGISTRY_REQUEST
-extern _X_EXPORT void RegisterExtensionNames(ExtensionEntry * ext);
+extern _X_EXPORT void RegisterExtensionNames(ExtensionEntry * ext, XephyrContext* context);
 
 /*
  * Lookup functions.  The returned string must not be modified or freed.
@@ -51,7 +51,7 @@ extern _X_EXPORT const char *LookupErrorName(int error);
 /*
  * Setup and teardown
  */
-extern _X_EXPORT void dixResetRegistry(void);
+extern _X_EXPORT void dixResetRegistry(XephyrContext* context);
 extern _X_EXPORT void dixFreeRegistry(void);
 extern _X_EXPORT void dixCloseRegistry(void);
 

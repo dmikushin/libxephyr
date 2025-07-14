@@ -46,7 +46,7 @@ static DevPrivateKeyRec glvXGLVScreenPrivKey;
 static DevPrivateKeyRec glvXGLVClientPrivKey;
 
 // The resource type used to keep track of the vendor library for XID's.
-RESTYPE idResource;
+// RESTYPE idResource; - moved to XephyrContext
 
 static int
 idResourceDeleteCallback(void *value, XID id, XephyrContext* context)
@@ -111,9 +111,9 @@ GlxMappingInit(XephyrContext* context)
         }
     }
 
-    idResource = CreateNewResourceType(idResourceDeleteCallback,
-                                       "GLXServerIDRes");
-    if (idResource == RT_NONE)
+    context->idResource = CreateNewResourceType(idResourceDeleteCallback,
+                                       "GLXServerIDRes", context);
+    if (context->idResource == RT_NONE)
     {
         GlxMappingReset(context);
         return FALSE;
@@ -213,7 +213,7 @@ GLXReset(ExtensionEntry *extEntry)
     GlxDispatchReset();
     GlxMappingReset(context);
 
-    if ((dispatchException & DE_TERMINATE) == DE_TERMINATE) {
+    if ((context->dispatchException & DE_TERMINATE) == DE_TERMINATE) {
         while (vndInitCallbackList.list != NULL) {
             CallbackPtr next = vndInitCallbackList.list->next;
             free(vndInitCallbackList.list);
@@ -248,7 +248,7 @@ GlxExtensionInit(XephyrContext* context)
 
     extEntry = AddExtension(GLX_EXTENSION_NAME, __GLX_NUMBER_EVENTS,
                             __GLX_NUMBER_ERRORS, GlxDispatchRequest,
-                            GlxDispatchRequest, GLXReset, StandardMinorOpcode);
+                            GlxDispatchRequest, GLXReset, StandardMinorOpcode, context);
     if (!extEntry) {
         return;
     }

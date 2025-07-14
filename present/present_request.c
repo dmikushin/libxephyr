@@ -65,7 +65,7 @@ proc_present_query_version(ClientPtr client)
         if ((fence_id) == None)                                         \
             (fence_ptr) = NULL;                                         \
         else {                                                          \
-            int __rc__ = SyncVerifyFence(&fence_ptr, fence_id, client, access); \
+            int __rc__ = SyncVerifyFence(&fence_ptr, fence_id, client, access, (client)->context); \
             if (__rc__ != Success)                                      \
                 return __rc__;                                          \
         }                                                               \
@@ -98,15 +98,15 @@ proc_present_pixmap(ClientPtr client)
     ret = dixLookupWindow(&window, stuff->window, client, DixWriteAccess);
     if (ret != Success)
         return ret;
-    ret = dixLookupResourceByType((void **) &pixmap, stuff->pixmap, RT_PIXMAP, client, DixReadAccess);
+    ret = dixLookupResourceByType((void **) &pixmap, stuff->pixmap, RT_PIXMAP, client, DixReadAccess, client->context);
     if (ret != Success)
         return ret;
 
     if (window->drawable.depth != pixmap->drawable.depth)
         return BadMatch;
 
-    VERIFY_REGION_OR_NONE(valid, stuff->valid, client, DixReadAccess);
-    VERIFY_REGION_OR_NONE(update, stuff->update, client, DixReadAccess);
+    VERIFY_REGION_OR_NONE(valid, stuff->valid, client, DixReadAccess, client->context);
+    VERIFY_REGION_OR_NONE(update, stuff->update, client, DixReadAccess, client->context);
 
     VERIFY_CRTC_OR_NONE(target_crtc, stuff->target_crtc, client, DixReadAccess);
 

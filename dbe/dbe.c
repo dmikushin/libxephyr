@@ -54,12 +54,12 @@
 /* GLOBALS */
 
 /* These are globals for use by DDX */
-DevPrivateKeyRec dbeScreenPrivKeyRec;
-DevPrivateKeyRec dbeWindowPrivKeyRec;
+/* DevPrivateKeyRec dbeScreenPrivKeyRec; */ /* Now in XephyrContext */
+/* DevPrivateKeyRec context->dbeWindowPrivKeyRec; */ /* Now in XephyrContext */
 
 /* These are globals for use by DDX */
-RESTYPE dbeDrawableResType;
-RESTYPE dbeWindowPrivResType;
+/* RESTYPE dbeDrawableResType; */ /* Now in XephyrContext */
+/* RESTYPE dbeWindowPrivResType; */ /* Now in XephyrContext */
 
 /* Used to generate DBE's BadBuffer error. */
 static int dbeErrorBase;
@@ -255,7 +255,7 @@ ProcDbeAllocateBackBufferName(ClientPtr client)
         }
 
         /* Actually connect the window priv to the window. */
-        dixSetPrivate(&pWin->devPrivates, dbeWindowPrivKey, pDbeWindowPriv);
+        dixSetPrivate(&pWin->devPrivates, &client->context->dbeWindowPrivKeyRec, pDbeWindowPriv);
 
     }                           /* if -- There is no buffer associated with the window. */
 
@@ -321,7 +321,7 @@ ProcDbeAllocateBackBufferName(ClientPtr client)
 
     if (status == Success) {
         pDbeWindowPriv->IDs[add_index] = stuff->buffer;
-        if (!AddResource(stuff->buffer, dbeWindowPrivResType,
+        if (!AddResource(stuff->buffer, client->context->dbeWindowPrivResType,
                          (void *) pDbeWindowPriv, client->context)) {
             pDbeWindowPriv->IDs[add_index] = DBE_FREE_ID_ELEMENT;
 
@@ -349,7 +349,7 @@ ProcDbeAllocateBackBufferName(ClientPtr client)
     return status;
 
  out_free:
-    dixSetPrivate(&pWin->devPrivates, dbeWindowPrivKey, NULL);
+    dixSetPrivate(&pWin->devPrivates, &client->context->dbeWindowPrivKeyRec, NULL);
     free(pDbeWindowPriv);
     return status;
 
@@ -379,18 +379,19 @@ ProcDbeDeallocateBackBufferName(ClientPtr client)
     DbeWindowPrivPtr pDbeWindowPriv;
     int rc, i;
     void *val;
+    XephyrContext* context = client->context;
 
     REQUEST_SIZE_MATCH(xDbeDeallocateBackBufferNameReq);
 
     /* Buffer name must be valid */
     rc = dixLookupResourceByType((void **) &pDbeWindowPriv, stuff->buffer,
-                                 dbeWindowPrivResType, client,
-                                 DixDestroyAccess);
+                                 context->dbeWindowPrivResType, client,
+                                 DixDestroyAccess, context);
     if (rc != Success)
         return rc;
 
-    rc = dixLookupResourceByType(&val, stuff->buffer, dbeDrawableResType,
-                                 client, DixDestroyAccess);
+    rc = dixLookupResourceByType(&val, stuff->buffer, context->dbeDrawableResType,
+                                 client, DixDestroyAccess, context);
     if (rc != Success)
         return rc;
 
@@ -729,12 +730,13 @@ ProcDbeGetBackBufferAttributes(ClientPtr client)
     };
     DbeWindowPrivPtr pDbeWindowPriv;
     int rc;
+    XephyrContext* context = client->context;
 
     REQUEST_SIZE_MATCH(xDbeGetBackBufferAttributesReq);
 
     rc = dixLookupResourceByType((void **) &pDbeWindowPriv, stuff->buffer,
-                                 dbeWindowPrivResType, client,
-                                 DixGetAttrAccess);
+                                 context->dbeWindowPrivResType, client,
+                                 DixGetAttrAccess, context);
     if (rc == Success) {
         rep.attributes = pDbeWindowPriv->pWindow->drawable.id;
     }
@@ -1123,7 +1125,7 @@ DbeSetupBackgroundPainter(WindowPtr pWin, GCPtr pGC)
  *
  * Description:
  *
- *     This is the resource delete function for dbeDrawableResType.
+ *     This is the resource delete function for context->dbeDrawableResType.
  *     It is registered when the drawable resource type is created in
  *     DbeExtensionInit().
  *
@@ -1146,7 +1148,7 @@ DbeDrawableDelete(void *pDrawable, XID id, XephyrContext* context)
  *
  * Description:
  *
- *     This is the resource delete function for dbeWindowPrivResType.
+ *     This is the resource delete function for context->dbeWindowPrivResType.
  *     It is registered when the drawable resource type is created in
  *     DbeExtensionInit().
  *
@@ -1226,7 +1228,7 @@ DbeWindowPrivDelete(void *pDbeWinPriv, XID id, XephyrContext* context)
 
     if (pDbeWindowPriv->nBufferIDs == 0) {
         /* Reset the DBE window priv pointer. */
-        dixSetPrivate(&pDbeWindowPriv->pWindow->devPrivates, dbeWindowPrivKey,
+        dixSetPrivate(&pDbeWindowPriv->pWindow->devPrivates, &context->dbeWindowPrivKeyRec,
                       NULL);
 
         /* We are done with the window priv. */
@@ -1378,21 +1380,21 @@ DbeExtensionInit(XephyrContext* context)
 #endif
 
     /* Create the resource types. */
-    dbeDrawableResType =
-        CreateNewResourceType(DbeDrawableDelete, "dbeDrawable");
-    if (!dbeDrawableResType)
+    context->dbeDrawableResType =
+        CreateNewResourceType(DbeDrawableDelete, "dbeDrawable", context);
+    if (!context->dbeDrawableResType)
         return;
-    dbeDrawableResType |= RC_DRAWABLE;
+    context->dbeDrawableResType |= RC_DRAWABLE;
 
-    dbeWindowPrivResType =
-        CreateNewResourceType(DbeWindowPrivDelete, "dbeWindow");
-    if (!dbeWindowPrivResType)
-        return;
-
-    if (!dixRegisterPrivateKey(&dbeScreenPrivKeyRec, PRIVATE_SCREEN, 0, context))
+    context->dbeWindowPrivResType =
+        CreateNewResourceType(DbeWindowPrivDelete, "dbeWindow", context);
+    if (!context->dbeWindowPrivResType)
         return;
 
-    if (!dixRegisterPrivateKey(&dbeWindowPrivKeyRec, PRIVATE_WINDOW, 0, context))
+    if (!dixRegisterPrivateKey(&context->dbeScreenPrivKeyRec, PRIVATE_SCREEN, 0, context))
+        return;
+
+    if (!dixRegisterPrivateKey(&context->dbeWindowPrivKeyRec, PRIVATE_WINDOW, 0, context))
         return;
 
     for (i = 0; i < context->screenInfo.numScreens; i++) {
@@ -1409,14 +1411,14 @@ DbeExtensionInit(XephyrContext* context)
 
             for (j = 0; j < i; j++) {
                 free(dixLookupPrivate(&context->screenInfo.screens[j]->devPrivates,
-                                      dbeScreenPrivKey));
+                                      &context->dbeScreenPrivKeyRec));
                 dixSetPrivate(&context->screenInfo.screens[j]->devPrivates,
-                              dbeScreenPrivKey, NULL);
+                              &context->dbeScreenPrivKeyRec, NULL);
             }
             return;
         }
 
-        dixSetPrivate(&pScreen->devPrivates, dbeScreenPrivKey, pDbeScreenPriv);
+        dixSetPrivate(&pScreen->devPrivates, &context->dbeScreenPrivKeyRec, pDbeScreenPriv);
 
         {
             /* We don't have DDX support for DBE anymore */
@@ -1458,8 +1460,8 @@ DbeExtensionInit(XephyrContext* context)
 
         for (i = 0; i < context->screenInfo.numScreens; i++) {
             free(dixLookupPrivate(&context->screenInfo.screens[i]->devPrivates,
-                                  dbeScreenPrivKey));
-            dixSetPrivate(&pScreen->devPrivates, dbeScreenPrivKey, NULL);
+                                  &context->dbeScreenPrivKeyRec));
+            dixSetPrivate(&context->screenInfo.screens[i]->devPrivates, &context->dbeScreenPrivKeyRec, NULL);
         }
         return;
     }
@@ -1467,11 +1469,11 @@ DbeExtensionInit(XephyrContext* context)
     /* Now add the extension. */
     extEntry = AddExtension(DBE_PROTOCOL_NAME, DbeNumberEvents,
                             DbeNumberErrors, ProcDbeDispatch, SProcDbeDispatch,
-                            DbeResetProc, StandardMinorOpcode);
+                            DbeResetProc, StandardMinorOpcode, context);
 
     dbeErrorBase = extEntry->errorBase;
-    SetResourceTypeErrorValue(dbeWindowPrivResType,
-                              dbeErrorBase + DbeBadBuffer);
-    SetResourceTypeErrorValue(dbeDrawableResType, dbeErrorBase + DbeBadBuffer);
+    SetResourceTypeErrorValue(context->dbeWindowPrivResType,
+                              dbeErrorBase + DbeBadBuffer, context);
+    SetResourceTypeErrorValue(context->dbeDrawableResType, dbeErrorBase + DbeBadBuffer, context);
 
 }                               /* DbeExtensionInit() */

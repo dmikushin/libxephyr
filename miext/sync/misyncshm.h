@@ -2,6 +2,9 @@
 #ifndef _MISYNCSHM_H_
 #define _MISYNCSHM_H_
 
-/* This is a minimal stub for misyncshm.h to satisfy meson.build requirements */
+#include <screenint.h>
+
+/* Function declarations */
+extern _X_EXPORT Bool miSyncShmScreenInit(ScreenPtr pScreen);
 
 #endif /* _MISYNCSHM_H_ */

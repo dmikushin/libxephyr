@@ -196,7 +196,7 @@ compRedirectWindow(ClientPtr pClient, WindowPtr pWin, int update)
         cw->damageRegistered = FALSE;
         cw->damaged = FALSE;
         cw->pOldPixmap = NullPixmap;
-        dixSetPrivate(&pWin->devPrivates, CompWindowPrivateKey, cw);
+        dixSetPrivate(&pWin->devPrivates, CompWindowPrivateKey(pWin), cw);
     }
     ccw->next = cw->clients;
     cw->clients = ccw;
@@ -293,7 +293,7 @@ compFreeClientWindow(WindowPtr pWin, XID id)
 
         RegionUninit(&cw->borderClip);
 
-        dixSetPrivate(&pWin->devPrivates, CompWindowPrivateKey, NULL);
+        dixSetPrivate(&pWin->devPrivates, CompWindowPrivateKey(pWin), NULL);
         free(cw);
     }
     else if (cw->update == CompositeRedirectAutomatic &&
@@ -375,7 +375,7 @@ compRedirectSubwindows(ClientPtr pClient, WindowPtr pWin, int update)
         }
         csw->update = CompositeRedirectAutomatic;
         csw->clients = 0;
-        dixSetPrivate(&pWin->devPrivates, CompSubwindowsPrivateKey, csw);
+        dixSetPrivate(&pWin->devPrivates, CompSubwindowsPrivateKey(pWin), csw);
     }
     /*
      * Redirect all existing windows
@@ -388,7 +388,7 @@ compRedirectSubwindows(ClientPtr pClient, WindowPtr pWin, int update)
                 (void) compUnredirectWindow(pClient, pChild, update);
             if (!csw->clients) {
                 free(csw);
-                dixSetPrivate(&pWin->devPrivates, CompSubwindowsPrivateKey, 0);
+                dixSetPrivate(&pWin->devPrivates, CompSubwindowsPrivateKey(pWin), 0);
             }
             free(ccw);
             return ret;
@@ -459,7 +459,7 @@ compFreeClientSubwindows(WindowPtr pWin, XID id)
      * Check if all of the per-client records are gone
      */
     if (!csw->clients) {
-        dixSetPrivate(&pWin->devPrivates, CompSubwindowsPrivateKey, NULL);
+        dixSetPrivate(&pWin->devPrivates, CompSubwindowsPrivateKey(pWin), NULL);
         free(csw);
     }
 }

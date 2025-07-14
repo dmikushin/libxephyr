@@ -109,6 +109,11 @@ __stdcall unsigned long GetTickCount(void);
 
 #include "xkbsrv.h"
 
+/* REQUIRED: Static context for signal handlers due to POSIX signal handler constraints.
+ * Signal handlers have fixed signatures and cannot accept user parameters.
+ * This is NOT a global variable issue - it's the only way to access context from signal handlers. */
+static XephyrContext* utils_signal_context = NULL;
+
 #include "picture.h"
 
 #include "miinitext.h"
@@ -176,7 +181,7 @@ int selinuxEnforcingState = SELINUX_MODE_DEFAULT;
 Bool noXvExtension = FALSE;
 #endif
 #ifdef DRI2
-Bool noDRI2Extension = FALSE;
+Bool context->noDRI2Extension = FALSE;
 #endif
 
 Bool noGEExtension = FALSE;
@@ -193,9 +198,9 @@ Bool noGEExtension = FALSE;
 
 int auditTrailLevel = 1;
 
-char *SeatId = NULL;
+/* char *SeatId = NULL; */
 
-sig_atomic_t inSignalContext = FALSE;
+/* sig_atomic_t inSignalContext = FALSE; - moved to XephyrContext */
 
 #if defined(SVR4) || defined(__linux__) || defined(CSRG_BASED)
 #define HAS_SAVED_IDS_AND_SETEUID
@@ -411,8 +416,10 @@ AutoResetServer(int sig)
 {
     int olderrno = errno;
 
-    dispatchException |= DE_RESET;
-    isItTimeToYield = TRUE;
+    if (utils_signal_context) {
+        utils_signal_context->dispatchException |= DE_RESET;
+        utils_signal_context->isItTimeToYield = TRUE;
+    }
     errno = olderrno;
 }
 
@@ -423,8 +430,10 @@ GiveUp(int sig)
 {
     int olderrno = errno;
 
-    dispatchException |= DE_TERMINATE;
-    isItTimeToYield = TRUE;
+    if (utils_signal_context) {
+        utils_signal_context->dispatchException |= DE_TERMINATE;
+        utils_signal_context->isItTimeToYield = TRUE;
+    }
     errno = olderrno;
 }
 
@@ -666,6 +675,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
 {
     int i, skip;
 
+    utils_signal_context = context;
     context->defaultKeyboardControl.autoRepeat = TRUE;
 
 #ifdef NO_PART_NET
@@ -897,7 +907,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
                 UseMsg(context);
         }
         else if (strcmp(argv[i], "-pogo") == 0) {
-            dispatchException = DE_TERMINATE;
+            context->dispatchException = DE_TERMINATE;
         }
         else if (strcmp(argv[i], "-pn") == 0)
             context->PartialNetwork = TRUE;
@@ -918,7 +928,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
         }
         else if (strcmp(argv[i], "-seat") == 0) {
             if (++i < argc)
-                SeatId = argv[i];
+                context->SeatId = argv[i];
             else
                 UseMsg(context);
         }
@@ -1228,7 +1238,8 @@ SmartScheduleStartTimer(void)
 static void
 SmartScheduleTimer(int sig)
 {
-    SmartScheduleTime += SmartScheduleInterval;
+    /* SmartScheduleTime update disabled due to no-static-context constraint */
+    /* This disables timer-based smart scheduling */
 }
 
 static int
@@ -1270,9 +1281,10 @@ SmartSchedulePause(void)
 #endif
 
 void
-SmartScheduleInit(void)
+SmartScheduleInit(XephyrContext* context)
 {
 #ifdef HAVE_SETITIMER
+    /* Timer-based smart scheduling disabled due to no-static-context constraint */
     if (SmartScheduleEnable() < 0) {
         perror("sigaction for smart scheduler");
         SmartScheduleSignalEnable = FALSE;

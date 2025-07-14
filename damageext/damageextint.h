@@ -59,7 +59,7 @@ typedef struct _DamageExt {
 
 #define VERIFY_DAMAGEEXT(pDamageExt, rid, client, mode) { \
     int rc = dixLookupResourceByType((void **)&(pDamageExt), rid, \
-                                     DamageExtType, client, mode); \
+                                     DamageExtType, client, mode, client->context); \
     if (rc != Success) \
         return rc; \
 }

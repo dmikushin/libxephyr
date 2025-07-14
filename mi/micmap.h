@@ -9,9 +9,9 @@
 #define SetInstalledmiColormap(s,c) \
     (dixSetPrivate(&(s)->devPrivates, micmapScrPrivateKey, c))
 
-extern _X_EXPORT DevPrivateKeyRec micmapScrPrivateKeyRec;
+/* extern _X_EXPORT DevPrivateKeyRec context->micmapScrPrivateKeyRec; */
 
-#define micmapScrPrivateKey (&micmapScrPrivateKeyRec)
+#define micmapScrPrivateKey (&context->micmapScrPrivateKeyRec)
 
 typedef Bool (*miInitVisualsProcPtr) (VisualPtr *, DepthPtr *, int *, int *,
                                       int *, VisualID *, unsigned long, int,

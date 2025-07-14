@@ -396,12 +396,13 @@ XephyrError xephyr_server_stop(XephyrServer* server) {
     server->running = false;
     pthread_mutex_unlock(&server->mutex);
     
-    /* Force server shutdown by setting dispatchException */
-    extern volatile char dispatchException;
+    /* Force server shutdown by setting context->dispatchException */
+    // extern volatile char dispatchException; - moved to XephyrContext
     extern void AbortServer(void);
     
     /* Signal server to exit gracefully */
-    dispatchException = 1; /* DE_TERMINATE */
+    if (server->context)
+        server->context->dispatchException = 1; /* DE_TERMINATE */
     
     /* Give it a moment to exit gracefully */
     struct timespec wait_time = {0, 100000000}; /* 100ms */

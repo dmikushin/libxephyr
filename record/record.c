@@ -132,7 +132,7 @@ static int numEnabledRCAPs;
  */
 #define VERIFY_CONTEXT(_pContext, _contextid, _client) { \
     int rc = dixLookupResourceByType((void **)&(_pContext), _contextid, \
-                                     RTContext, _client, DixUseAccess); \
+                                     RTContext, _client, DixUseAccess, _client->context); \
     if (rc != Success) \
 	return rc; \
 }
@@ -2798,7 +2798,7 @@ RecordExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extentry;
 
-    RTContext = CreateNewResourceType(RecordDeleteContext, "RecordContext");
+    RTContext = CreateNewResourceType(RecordDeleteContext, "RecordContext", context);
     if (!RTContext)
         return;
 
@@ -2813,7 +2813,7 @@ RecordExtensionInit(XephyrContext* context)
 
     extentry = AddExtension(RECORD_NAME, RecordNumEvents, RecordNumErrors,
                             ProcRecordDispatch, SProcRecordDispatch,
-                            RecordCloseDown, StandardMinorOpcode);
+                            RecordCloseDown, StandardMinorOpcode, context);
     if (!extentry) {
         DeleteCallback(&context->ClientStateCallback, RecordAClientStateChange, NULL);
         return;
@@ -2821,6 +2821,6 @@ RecordExtensionInit(XephyrContext* context)
     /* Store context in extension private data for CloseDown callback */
     extentry->extPrivate = context;
     SetResourceTypeErrorValue(RTContext,
-                              extentry->errorBase + XRecordBadContext);
+                              extentry->errorBase + XRecordBadContext, context);
 
 }                               /* RecordExtensionInit */

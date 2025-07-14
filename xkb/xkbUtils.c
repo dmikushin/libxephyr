@@ -76,7 +76,7 @@ int
 _XkbLookupAnyDevice(DeviceIntPtr *pDev, int id, ClientPtr client,
                     Mask access_mode, int *xkb_err)
 {
-    int rc = XkbKeyboardErrorCode;
+    int rc = client->context->XkbKeyboardErrorCode;
 
     if (id == XkbUseCoreKbd)
         id = PickKeyboard(client)->id;
@@ -108,7 +108,7 @@ _XkbLookupKeyboard(DeviceIntPtr *pDev, int id, ClientPtr client,
     if (!dev->key || !dev->key->xkbInfo) {
         *pDev = NULL;
         *xkb_err = XkbErr_BadClass;
-        return XkbKeyboardErrorCode;
+        return client->context->XkbKeyboardErrorCode;
     }
     return Success;
 }
@@ -128,7 +128,7 @@ _XkbLookupBellDevice(DeviceIntPtr *pDev, int id, ClientPtr client,
     if (!dev->kbdfeed && !dev->bell) {
         *pDev = NULL;
         *xkb_err = XkbErr_BadClass;
-        return XkbKeyboardErrorCode;
+        return client->context->XkbKeyboardErrorCode;
     }
     return Success;
 }
@@ -151,7 +151,7 @@ _XkbLookupLedDevice(DeviceIntPtr *pDev, int id, ClientPtr client,
     if (!dev->kbdfeed && !dev->leds) {
         *pDev = NULL;
         *xkb_err = XkbErr_BadClass;
-        return XkbKeyboardErrorCode;
+        return client->context->XkbKeyboardErrorCode;
     }
     return Success;
 }
@@ -171,7 +171,7 @@ _XkbLookupButtonDevice(DeviceIntPtr *pDev, int id, ClientPtr client,
     if (!dev->button) {
         *pDev = NULL;
         *xkb_err = XkbErr_BadClass;
-        return XkbKeyboardErrorCode;
+        return client->context->XkbKeyboardErrorCode;
     }
     return Success;
 }
@@ -2002,7 +2002,7 @@ XkbCopyKeymap(XkbDescPtr dst, XkbDescPtr src, XephyrContext* context)
 }
 
 Bool
-XkbDeviceApplyKeymap(DeviceIntPtr dst, XkbDescPtr desc)
+XkbDeviceApplyKeymap(DeviceIntPtr dst, XkbDescPtr desc, XephyrContext* context)
 {
     xkbNewKeyboardNotify nkn;
     Bool ret;
@@ -2017,7 +2017,7 @@ XkbDeviceApplyKeymap(DeviceIntPtr dst, XkbDescPtr desc)
     nkn.oldDeviceID = dst->id;
     nkn.minKeyCode = desc->min_key_code;
     nkn.maxKeyCode = desc->max_key_code;
-    nkn.requestMajor = XkbReqCode;
+    nkn.requestMajor = context->XkbReqCode;
     nkn.requestMinor = X_kbSetMap;      /* Near enough's good enough. */
     nkn.changed = XkbNKN_KeycodesMask;
     if (desc->geom)
@@ -2033,7 +2033,7 @@ XkbDeviceApplyKeymap(DeviceIntPtr dst, XkbDescPtr desc)
 Bool
 XkbCopyDeviceKeymap(DeviceIntPtr dst, DeviceIntPtr src)
 {
-    return XkbDeviceApplyKeymap(dst, src->key->xkbInfo->desc);
+    return XkbDeviceApplyKeymap(dst, src->key->xkbInfo->desc, dst->context);
 }
 
 int

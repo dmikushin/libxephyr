@@ -121,7 +121,7 @@ Equipment Corporation.
 
 extern void Dispatch(XephyrContext* context);
 
-CallbackListPtr RootWindowFinalizeCallback = NULL;
+/* CallbackListPtr RootWindowFinalizeCallback = NULL; - now in context */
 
 
 
@@ -196,7 +196,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         InitAtoms(context);
         InitEvents(context);
         xfont2_init_glyph_caching();
-        dixResetRegistry();
+        dixResetRegistry(context);
         InitFonts(context);
         InitCallbackManager();
         InitOutput(&context->screenInfo, argc, argv, context);
@@ -228,7 +228,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
                 FatalError("failed to create default stipple", context);
             if (!CreateRootWindow(pScreen))
                 FatalError("failed to create root window", context);
-            CallCallbacks(&RootWindowFinalizeCallback, pScreen);
+            CallCallbacks(&context->RootWindowFinalizeCallback, pScreen);
         }
 
         if (SetDefaultFontPath(context->defaultFontPath, context) != Success) {
@@ -357,13 +357,13 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
 
         ClearWorkQueue(context);
 
-        if (dispatchException & DE_TERMINATE) {
+        if (context->dispatchException & DE_TERMINATE) {
             CloseWellKnownConnections();
         }
 
-        OsCleanup((dispatchException & DE_TERMINATE) != 0, context);
+        OsCleanup((context->dispatchException & DE_TERMINATE) != 0, context);
 
-        if (dispatchException & DE_TERMINATE) {
+        if (context->dispatchException & DE_TERMINATE) {
             ddxGiveUp(EXIT_NO_ERROR);
             break;
         }

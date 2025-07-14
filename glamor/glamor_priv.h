@@ -406,7 +406,7 @@ typedef struct glamor_pixmap_private {
     Bool is_cbcr;
 } glamor_pixmap_private;
 
-extern DevPrivateKeyRec glamor_pixmap_private_key;
+/* extern DevPrivateKeyRec glamor_pixmap_private_key; - moved to context */
 
 static inline glamor_pixmap_private *
 glamor_get_pixmap_private(PixmapPtr pixmap)
@@ -414,7 +414,13 @@ glamor_get_pixmap_private(PixmapPtr pixmap)
     if (pixmap == NULL)
         return NULL;
 
-    return dixLookupPrivate(&pixmap->devPrivates, &glamor_pixmap_private_key);
+    /* Get context from pixmap's screen */
+    ScreenPtr screen = pixmap->drawable.pScreen;
+    XephyrContext* context = screen ? screen->context : NULL;
+    if (!context)
+        return NULL;
+
+    return dixLookupPrivate(&pixmap->devPrivates, &context->glamor_pixmap_private_key);
 }
 
 /*
@@ -519,8 +525,8 @@ typedef struct {
     DamagePtr   stipple_damage;
 } glamor_gc_private;
 
-extern DevPrivateKeyRec glamor_gc_private_key;
-extern DevPrivateKeyRec glamor_screen_private_key;
+/* extern DevPrivateKeyRec glamor_gc_private_key; */
+/* extern DevPrivateKeyRec glamor_screen_private_key; - moved to context */
 
 extern glamor_screen_private *
 glamor_get_screen_private(ScreenPtr screen);
@@ -531,7 +537,7 @@ glamor_set_screen_private(ScreenPtr screen, glamor_screen_private *priv);
 static inline glamor_gc_private *
 glamor_get_gc_private(GCPtr gc)
 {
-    return dixLookupPrivate(&gc->devPrivates, &glamor_gc_private_key);
+    return dixLookupPrivate(&gc->devPrivates, &gc->pScreen->context->glamor_gc_private_key);
 }
 
 /**
@@ -616,7 +622,7 @@ void glamor_set_destination_pixmap_fbo(glamor_screen_private *glamor_priv, glamo
 void glamor_set_destination_pixmap_priv_nc(glamor_screen_private *glamor_priv, PixmapPtr pixmap, glamor_pixmap_private *pixmap_priv);
 
 Bool glamor_set_alu(ScreenPtr screen, unsigned char alu);
-Bool glamor_set_planemask(int depth, unsigned long planemask);
+Bool glamor_set_planemask(XephyrContext *context, int depth, unsigned long planemask);
 RegionPtr glamor_bitmap_to_region(PixmapPtr pixmap);
 
 void

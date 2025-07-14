@@ -33,7 +33,7 @@
 #include <gcstruct.h>
 #include <window.h>
 
-RESTYPE RegionResType;
+/* RESTYPE RegionResType; - now in context */
 
 static int
 RegionResFree(void *data, XID id, XephyrContext* context)
@@ -62,9 +62,9 @@ XFixesRegionCopy(RegionPtr pRegion, XephyrContext* context)
 Bool
 XFixesRegionInit(XephyrContext* context)
 {
-    RegionResType = CreateNewResourceType(RegionResFree, "XFixesRegion");
+    context->RegionResType = CreateNewResourceType(RegionResFree, "XFixesRegion", context);
 
-    return RegionResType != 0;
+    return context->RegionResType != 0;
 }
 
 int
@@ -86,7 +86,7 @@ ProcXFixesCreateRegion(ClientPtr client)
     pRegion = RegionFromRects(things, (xRectangle *) (stuff + 1), CT_UNSORTED, client->context);
     if (!pRegion)
         return BadAlloc;
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
+    if (!AddResource(stuff->region, client->context->RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -117,7 +117,7 @@ ProcXFixesCreateRegionFromBitmap(ClientPtr client)
     LEGAL_NEW_RESOURCE(stuff->region, client);
 
     rc = dixLookupResourceByType((void **) &pPixmap, stuff->bitmap, RT_PIXMAP,
-                                 client, DixReadAccess);
+                                 client, DixReadAccess, client->context);
     if (rc != Success) {
         client->errorValue = stuff->bitmap;
         return rc;
@@ -130,7 +130,7 @@ ProcXFixesCreateRegionFromBitmap(ClientPtr client)
     if (!pRegion)
         return BadAlloc;
 
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
+    if (!AddResource(stuff->region, client->context->RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -161,7 +161,7 @@ ProcXFixesCreateRegionFromWindow(ClientPtr client)
     REQUEST_SIZE_MATCH(xXFixesCreateRegionFromWindowReq);
     LEGAL_NEW_RESOURCE(stuff->region, client);
     rc = dixLookupResourceByType((void **) &pWin, stuff->window, RT_WINDOW,
-                                 client, DixGetAttrAccess);
+                                 client, DixGetAttrAccess, client->context);
     if (rc != Success) {
         client->errorValue = stuff->window;
         return rc;
@@ -189,7 +189,7 @@ ProcXFixesCreateRegionFromWindow(ClientPtr client)
         pRegion = XFixesRegionCopy(pRegion, client->context);
     if (!pRegion)
         return BadAlloc;
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
+    if (!AddResource(stuff->region, client->context->RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -219,7 +219,7 @@ ProcXFixesCreateRegionFromGC(ClientPtr client)
     REQUEST_SIZE_MATCH(xXFixesCreateRegionFromGCReq);
     LEGAL_NEW_RESOURCE(stuff->region, client);
 
-    rc = dixLookupGC(&pGC, stuff->gc, client, DixGetAttrAccess);
+    rc = dixLookupGC(&pGC, stuff->gc, client, DixGetAttrAccess, client->context);
     if (rc != Success)
         return rc;
 
@@ -232,7 +232,7 @@ ProcXFixesCreateRegionFromGC(ClientPtr client)
         return BadMatch;
     }
 
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
+    if (!AddResource(stuff->region, client->context->RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -274,7 +274,7 @@ ProcXFixesCreateRegionFromPicture(ClientPtr client)
         return BadMatch;
     }
 
-    if (!AddResource(stuff->region, RegionResType, (void *) pRegion, client->context))
+    if (!AddResource(stuff->region, client->context->RegionResType, (void *) pRegion, client->context))
         return BadAlloc;
 
     return Success;
@@ -299,7 +299,7 @@ ProcXFixesDestroyRegion(ClientPtr client)
     RegionPtr pRegion;
 
     REQUEST_SIZE_MATCH(xXFixesDestroyRegionReq);
-    VERIFY_REGION(pRegion, stuff->region, client, DixWriteAccess);
+    VERIFY_REGION(pRegion, stuff->region, client, DixWriteAccess, client->context);
     FreeResource(stuff->region, RT_NONE, client->context);
     return Success;
 }
@@ -324,7 +324,7 @@ ProcXFixesSetRegion(ClientPtr client)
     REQUEST(xXFixesSetRegionReq);
 
     REQUEST_AT_LEAST_SIZE(xXFixesSetRegionReq);
-    VERIFY_REGION(pRegion, stuff->region, client, DixWriteAccess);
+    VERIFY_REGION(pRegion, stuff->region, client, DixWriteAccess, client->context);
 
     things = (client->req_len << 2) - sizeof(xXFixesCreateRegionReq);
     if (things & 4)
@@ -362,8 +362,8 @@ ProcXFixesCopyRegion(ClientPtr client)
     REQUEST(xXFixesCopyRegionReq);
     REQUEST_SIZE_MATCH(xXFixesCopyRegionReq);
 
-    VERIFY_REGION(pSource, stuff->source, client, DixReadAccess);
-    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess);
+    VERIFY_REGION(pSource, stuff->source, client, DixReadAccess, client->context);
+    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess, client->context);
 
     if (!RegionCopy(pDestination, pSource))
         return BadAlloc;
@@ -391,9 +391,9 @@ ProcXFixesCombineRegion(ClientPtr client)
     REQUEST(xXFixesCombineRegionReq);
 
     REQUEST_SIZE_MATCH(xXFixesCombineRegionReq);
-    VERIFY_REGION(pSource1, stuff->source1, client, DixReadAccess);
-    VERIFY_REGION(pSource2, stuff->source2, client, DixReadAccess);
-    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess);
+    VERIFY_REGION(pSource1, stuff->source1, client, DixReadAccess, client->context);
+    VERIFY_REGION(pSource2, stuff->source2, client, DixReadAccess, client->context);
+    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess, client->context);
 
     switch (stuff->xfixesReqType) {
     case X_XFixesUnionRegion:
@@ -435,8 +435,8 @@ ProcXFixesInvertRegion(ClientPtr client)
     REQUEST(xXFixesInvertRegionReq);
 
     REQUEST_SIZE_MATCH(xXFixesInvertRegionReq);
-    VERIFY_REGION(pSource, stuff->source, client, DixReadAccess);
-    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess);
+    VERIFY_REGION(pSource, stuff->source, client, DixReadAccess, client->context);
+    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess, client->context);
 
     /* Compute bounds, limit to 16 bits */
     bounds.x1 = stuff->x;
@@ -481,7 +481,7 @@ ProcXFixesTranslateRegion(ClientPtr client)
     REQUEST(xXFixesTranslateRegionReq);
 
     REQUEST_SIZE_MATCH(xXFixesTranslateRegionReq);
-    VERIFY_REGION(pRegion, stuff->region, client, DixWriteAccess);
+    VERIFY_REGION(pRegion, stuff->region, client, DixWriteAccess, client->context);
 
     RegionTranslate(pRegion, stuff->dx, stuff->dy);
     return Success;
@@ -508,8 +508,8 @@ ProcXFixesRegionExtents(ClientPtr client)
     REQUEST(xXFixesRegionExtentsReq);
 
     REQUEST_SIZE_MATCH(xXFixesRegionExtentsReq);
-    VERIFY_REGION(pSource, stuff->source, client, DixReadAccess);
-    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess);
+    VERIFY_REGION(pSource, stuff->source, client, DixReadAccess, client->context);
+    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess, client->context);
 
     RegionReset(pDestination, RegionExtents(pSource));
 
@@ -541,7 +541,7 @@ ProcXFixesFetchRegion(ClientPtr client)
     REQUEST(xXFixesFetchRegionReq);
 
     REQUEST_SIZE_MATCH(xXFixesFetchRegionReq);
-    VERIFY_REGION(pRegion, stuff->region, client, DixReadAccess);
+    VERIFY_REGION(pRegion, stuff->region, client, DixReadAccess, client->context);
 
     pExtent = RegionExtents(pRegion);
     pBox = RegionRects(pRegion);
@@ -603,11 +603,11 @@ ProcXFixesSetGCClipRegion(ClientPtr client)
     REQUEST(xXFixesSetGCClipRegionReq);
     REQUEST_SIZE_MATCH(xXFixesSetGCClipRegionReq);
 
-    rc = dixLookupGC(&pGC, stuff->gc, client, DixSetAttrAccess);
+    rc = dixLookupGC(&pGC, stuff->gc, client, DixSetAttrAccess, client->context);
     if (rc != Success)
         return rc;
 
-    VERIFY_REGION_OR_NONE(pRegion, stuff->region, client, DixReadAccess);
+    VERIFY_REGION_OR_NONE(pRegion, stuff->region, client, DixReadAccess, client->context);
 
     if (pRegion) {
         pRegion = XFixesRegionCopy(pRegion, client->context);
@@ -652,12 +652,12 @@ ProcXFixesSetWindowShapeRegion(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXFixesSetWindowShapeRegionReq);
     rc = dixLookupResourceByType((void **) &pWin, stuff->dest, RT_WINDOW,
-                                 client, DixSetAttrAccess);
+                                 client, DixSetAttrAccess, client->context);
     if (rc != Success) {
         client->errorValue = stuff->dest;
         return rc;
     }
-    VERIFY_REGION_OR_NONE(pRegion, stuff->region, client, DixWriteAccess);
+    VERIFY_REGION_OR_NONE(pRegion, stuff->region, client, DixWriteAccess, client->context);
     switch (stuff->destKind) {
     case ShapeBounding:
     case ShapeClip:
@@ -672,7 +672,7 @@ ProcXFixesSetWindowShapeRegion(ClientPtr client)
         if (!pRegion)
             return BadAlloc;
         if (!pWin->optional)
-            MakeWindowOptional(pWin);
+            MakeWindowOptional(pWin, client->context);
         switch (stuff->destKind) {
         default:
         case ShapeBounding:
@@ -710,7 +710,7 @@ ProcXFixesSetWindowShapeRegion(ClientPtr client)
         RegionDestroy(*pDestRegion, pWin->drawable.pScreen->context);
     *pDestRegion = pRegion;
     (*pWin->drawable.pScreen->SetShape) (pWin, stuff->destKind);
-    SendShapeNotify(pWin, stuff->destKind);
+    SendShapeNotify(pWin, stuff->destKind, client->context);
     return Success;
 }
 
@@ -738,7 +738,7 @@ ProcXFixesSetPictureClipRegion(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xXFixesSetPictureClipRegionReq);
     VERIFY_PICTURE(pPicture, stuff->picture, client, DixSetAttrAccess, client->context);
-    VERIFY_REGION_OR_NONE(pRegion, stuff->region, client, DixReadAccess);
+    VERIFY_REGION_OR_NONE(pRegion, stuff->region, client, DixReadAccess, client->context);
 
     if (!pPicture->pDrawable)
         return client->context->RenderErrBase + BadPicture;
@@ -773,8 +773,8 @@ ProcXFixesExpandRegion(ClientPtr client)
     int i;
 
     REQUEST_SIZE_MATCH(xXFixesExpandRegionReq);
-    VERIFY_REGION(pSource, stuff->source, client, DixReadAccess);
-    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess);
+    VERIFY_REGION(pSource, stuff->source, client, DixReadAccess, client->context);
+    VERIFY_REGION(pDestination, stuff->destination, client, DixWriteAccess, client->context);
 
     nBoxes = RegionNumRects(pSource);
     pSrc = RegionRects(pSource);
@@ -830,8 +830,8 @@ PanoramiXFixesSetGCClipRegion(ClientPtr client)
     XephyrContext *context = client->context;
     REQUEST_SIZE_MATCH(xXFixesSetGCClipRegionReq);
 
-    if ((result = dixLookupResourceByType((void **) &gc, stuff->gc, XRT_GC,
-                                          client, DixWriteAccess))) {
+    if ((result = dixLookupResourceByType((void **) &gc, stuff->gc, context->XRT_GC,
+                                          client, DixWriteAccess, context))) {
         client->errorValue = stuff->gc;
         return result;
     }
@@ -859,14 +859,14 @@ PanoramiXFixesSetWindowShapeRegion(ClientPtr client)
     REQUEST_SIZE_MATCH(xXFixesSetWindowShapeRegionReq);
 
     if ((result = dixLookupResourceByType((void **) &win, stuff->dest,
-                                          XRT_WINDOW, client,
-                                          DixWriteAccess))) {
+                                          context->XRT_WINDOW, client,
+                                          DixWriteAccess, context))) {
         client->errorValue = stuff->dest;
         return result;
     }
 
     if (win->u.win.root)
-        VERIFY_REGION_OR_NONE(reg, stuff->region, client, DixReadAccess);
+        VERIFY_REGION_OR_NONE(reg, stuff->region, client, DixReadAccess, client->context);
 
     FOR_NSCREENS_FORWARD(j) {
         ScreenPtr screen = client->context->screenInfo.screens[j];
@@ -900,14 +900,14 @@ PanoramiXFixesSetPictureClipRegion(ClientPtr client)
     REQUEST_SIZE_MATCH(xXFixesSetPictureClipRegionReq);
 
     if ((result = dixLookupResourceByType((void **) &pict, stuff->picture,
-                                          XRT_PICTURE, client,
-                                          DixWriteAccess))) {
+                                          context->XRT_PICTURE, client,
+                                          DixWriteAccess, context))) {
         client->errorValue = stuff->picture;
         return result;
     }
 
     if (pict->u.pict.root)
-        VERIFY_REGION_OR_NONE(reg, stuff->region, client, DixReadAccess);
+        VERIFY_REGION_OR_NONE(reg, stuff->region, client, DixReadAccess, client->context);
 
     FOR_NSCREENS_BACKWARD(j) {
         ScreenPtr screen = client->context->screenInfo.screens[j];

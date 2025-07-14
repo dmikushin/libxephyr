@@ -107,26 +107,81 @@ SOFTWARE.
 
 #include "miinitext.h"
 
+/* Wrapper functions for extensions that don't take XephyrContext* yet */
+static void ShapeExtensionInitWrapper(XephyrContext* context) {
+    ShapeExtensionInit(context);
+}
+
+static void XCMiscExtensionInitWrapper(XephyrContext* context) {
+    XCMiscExtensionInit(context);
+}
+
+static void BigReqExtensionInitWrapper(XephyrContext* context) {
+    BigReqExtensionInit(context);
+}
+
+#ifdef XCSECURITY
+static void SecurityExtensionInitWrapper(XephyrContext* context) {
+    SecurityExtensionInit(context);
+}
+#endif
+
+#ifdef XF86BIGFONT
+static void XFree86BigfontExtensionInitWrapper(XephyrContext* context) {
+    XFree86BigfontExtensionInit();
+}
+#endif
+
+#ifdef XTEST
+static void XTestExtensionInitWrapper(XephyrContext* context) {
+    XTestExtensionInit(context);
+}
+#endif
+
+#ifdef RES
+static void ResExtensionInitWrapper(XephyrContext* context) {
+    ResExtensionInit(context);
+}
+#endif
+
+#ifdef XV
+static void XvMCExtensionInitWrapper(XephyrContext* context) {
+    XvMCExtensionInit(context);
+}
+#endif
+
+#ifdef XSELINUX
+static void SELinuxExtensionInitWrapper(XephyrContext* context) {
+    SELinuxExtensionInit();
+}
+#endif
+
+#ifdef DRI3
+static void dri3_extension_init_wrapper(XephyrContext* context) {
+    dri3_extension_init();
+}
+#endif
+
 /* Global pointer for dynamically set extension disable flags */
 static Bool *noTestExtensionsPtr = NULL;
 
 /* List of built-in (statically linked) extensions */
 static ExtensionModule staticExtensions[] = {
     {GEExtensionInit, "Generic Event Extension", &noGEExtension},
-    {ShapeExtensionInit, "SHAPE", NULL},
+    {ShapeExtensionInitWrapper, "SHAPE", NULL},
 #ifdef MITSHM
     {ShmExtensionInit, "MIT-SHM", &noMITShmExtension},
 #endif
     {XInputExtensionInit, "XInputExtension", NULL},
 #ifdef XTEST
-    {XTestExtensionInit, "XTEST", NULL},
+    {XTestExtensionInitWrapper, "XTEST", NULL},
 #endif
-    {BigReqExtensionInit, "BIG-REQUESTS", NULL},
+    {BigReqExtensionInitWrapper, "BIG-REQUESTS", NULL},
     {SyncExtensionInit, "SYNC", NULL},
     {XkbExtensionInit, "XKEYBOARD", NULL},
-    {XCMiscExtensionInit, "XC-MISC", NULL},
+    {XCMiscExtensionInitWrapper, "XC-MISC", NULL},
 #ifdef XCSECURITY
-    {SecurityExtensionInit, "SECURITY", &noSecurityExtension},
+    {SecurityExtensionInitWrapper, "SECURITY", &noSecurityExtension},
 #endif
 #ifdef PANORAMIX
     {PanoramiXExtensionInit, "XINERAMA", &noPanoramiXExtension},
@@ -134,7 +189,7 @@ static ExtensionModule staticExtensions[] = {
     /* must be before Render to layer DisplayCursor correctly */
     {XFixesExtensionInit, "XFIXES", &noXFixesExtension},
 #ifdef XF86BIGFONT
-    {XFree86BigfontExtensionInit, "XFree86-Bigfont", &noXFree86BigfontExtension},
+    {XFree86BigfontExtensionInitWrapper, "XFree86-Bigfont", &noXFree86BigfontExtension},
 #endif
     {RenderExtensionInit, "RENDER", &noRenderExtension},
 #ifdef RANDR
@@ -162,17 +217,17 @@ static ExtensionModule staticExtensions[] = {
     {present_extension_init, "Present", NULL},
 #endif
 #ifdef DRI3
-    {dri3_extension_init, "DRI3", NULL},
+    {dri3_extension_init_wrapper, "DRI3", NULL},
 #endif
 #ifdef RES
-    {ResExtensionInit, "X-Resource", &noResExtension},
+    {ResExtensionInitWrapper, "X-Resource", &noResExtension},
 #endif
 #ifdef XV
     {XvExtensionInit, "XVideo", &noXvExtension},
-    {XvMCExtensionInit, "XVideo-MotionCompensation", &noXvExtension},
+    {XvMCExtensionInitWrapper, "XVideo-MotionCompensation", &noXvExtension},
 #endif
 #ifdef XSELINUX
-    {SELinuxExtensionInit, "SELinux", &noSELinuxExtension},
+    {SELinuxExtensionInitWrapper, "SELinux", &noSELinuxExtension},
 #endif
 #ifdef GLXEXT
     {GlxExtensionInit, "GLX", &noGlxExtension},
@@ -228,13 +283,13 @@ EnableDisableExtensionError(const char *name, Bool enable, XephyrContext* contex
     for (i = 0; i < ARRAY_SIZE(staticExtensions); i++) {
         ext = &staticExtensions[i];
         if ((strcmp(name, ext->name) == 0) && (ext->disablePtr == NULL)) {
-            ErrorF("[mi] Extension \", context%s\" can not be disabled\n", name);
+            ErrorF("[mi] Extension \"%s\" can not be disabled\n", context, name);
             found = TRUE;
             break;
         }
     }
     if (found == FALSE) {
-        ErrorF("[mi] Extension \", context%s\" is not recognized\n", name);
+        ErrorF("[mi] Extension \"%s\" is not recognized\n", context, name);
         /* Disabling a non-existing extension is a no-op anyway */
         if (enable == FALSE)
             return;

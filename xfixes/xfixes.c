@@ -52,8 +52,8 @@
 #include "extinit.h"
 
 static unsigned char XFixesReqCode;
-int XFixesEventBase;
-int XFixesErrorBase;
+/* int XFixesEventBase; */
+/* int XFixesErrorBase; */
 
 static DevPrivateKeyRec XFixesClientPrivateKeyRec;
 
@@ -241,17 +241,17 @@ XFixesExtensionInit(XephyrContext* context)
         (extEntry = AddExtension(XFIXES_NAME, XFixesNumberEvents,
                                  XFixesNumberErrors,
                                  ProcXFixesDispatch, SProcXFixesDispatch,
-                                 NULL, StandardMinorOpcode)) != 0) {
+                                 NULL, StandardMinorOpcode, context)) != 0) {
         XFixesReqCode = (unsigned char) extEntry->base;
-        XFixesEventBase = extEntry->eventBase;
-        XFixesErrorBase = extEntry->errorBase;
-        EventSwapVector[XFixesEventBase + XFixesSelectionNotify] =
+        context->XFixesEventBase = extEntry->eventBase;
+        context->XFixesErrorBase = extEntry->errorBase;
+        EventSwapVector[context->XFixesEventBase + XFixesSelectionNotify] =
             (EventSwapPtr) SXFixesSelectionNotifyEvent;
-        EventSwapVector[XFixesEventBase + XFixesCursorNotify] =
+        EventSwapVector[context->XFixesEventBase + XFixesCursorNotify] =
             (EventSwapPtr) SXFixesCursorNotifyEvent;
-        SetResourceTypeErrorValue(RegionResType, XFixesErrorBase + BadRegion);
+        SetResourceTypeErrorValue(context->RegionResType, context->XFixesErrorBase + BadRegion, context);
         SetResourceTypeErrorValue(context->PointerBarrierType,
-                                  XFixesErrorBase + BadBarrier);
+                                  context->XFixesErrorBase + BadBarrier, context);
     }
 }
 

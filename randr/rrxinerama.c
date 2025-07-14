@@ -433,5 +433,5 @@ RRXineramaExtensionInit(XephyrContext* context)
 
     (void) AddExtension(PANORAMIX_PROTOCOL_NAME, 0, 0,
                         ProcRRXineramaDispatch,
-                        SProcRRXineramaDispatch, NULL, StandardMinorOpcode);
+                        SProcRRXineramaDispatch, NULL, StandardMinorOpcode, context);
 }

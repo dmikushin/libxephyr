@@ -46,8 +46,10 @@
 #include "panoramiXsrv.h"
 #endif
 
-DevPrivateKeyRec PictureScreenPrivateKeyRec;
-DevPrivateKeyRec PictureWindowPrivateKeyRec;
+/* DevPrivateKeyRec PictureScreenPrivateKeyRec; - now in context */
+/* DevPrivateKeyRec PictureWindowPrivateKeyRec; - now in context */
+
+/* DevPrivateKey functions removed - now using macros with context parameter */
 static int PictureGeneration;
 
 PictFormatPtr
@@ -419,7 +421,7 @@ PictureInitIndexedFormat(ScreenPtr pScreen, PictFormatPtr format)
     if (format->index.vid == pScreen->rootVisual) {
         dixLookupResourceByType((void **) &format->index.pColormap,
                                 pScreen->defColormap, RT_COLORMAP,
-                                pScreen->context->serverClient, DixGetAttrAccess);
+                                pScreen->context->serverClient, DixGetAttrAccess, pScreen->context);
     }
     else {
         VisualPtr pVisual = PictureFindVisual(pScreen, format->index.vid);
@@ -594,7 +596,7 @@ GetPictureBytes(void *value, XID id, ResourceSizePtr size)
     size->pixmapRefSize = 0;
     if (picture->pDrawable && (picture->pDrawable->type == DRAWABLE_PIXMAP))
     {
-        SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP);
+        SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP, picture->pDrawable->pScreen->context);
         ResourceSizeRec pixmapSize = { 0, 0, 0 };
         PixmapPtr pixmap = (PixmapPtr)picture->pDrawable;
         pixmapSizeFunc(pixmap, pixmap->drawable.id, &pixmapSize);
@@ -616,22 +618,22 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
     CARD32 type, a, r, g, b;
 
     if (PictureGeneration != pScreen->context->serverGeneration) {
-        pScreen->context->PictureType = CreateNewResourceType(FreePicture, "PICTURE");
+        pScreen->context->PictureType = CreateNewResourceType(FreePicture, "PICTURE", pScreen->context);
         if (!pScreen->context->PictureType)
             return FALSE;
-        SetResourceTypeSizeFunc(pScreen->context->PictureType, GetPictureBytes);
-        pScreen->context->PictFormatType = CreateNewResourceType(FreePictFormat, "PICTFORMAT");
+        SetResourceTypeSizeFunc(pScreen->context->PictureType, GetPictureBytes, pScreen->context);
+        pScreen->context->PictFormatType = CreateNewResourceType(FreePictFormat, "PICTFORMAT", pScreen->context);
         if (!pScreen->context->PictFormatType)
             return FALSE;
-        pScreen->context->GlyphSetType = CreateNewResourceType(FreeGlyphSet, "GLYPHSET");
+        pScreen->context->GlyphSetType = CreateNewResourceType(FreeGlyphSet, "GLYPHSET", pScreen->context);
         if (!pScreen->context->GlyphSetType)
             return FALSE;
         PictureGeneration = pScreen->context->serverGeneration;
     }
-    if (!dixRegisterPrivateKey(&PictureScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
+    if (!dixRegisterPrivateKey(&pScreen->context->PictureScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&PictureWindowPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
+    if (!dixRegisterPrivateKey(&pScreen->context->PictureWindowPrivateKeyRec, PRIVATE_WINDOW, 0, pScreen->context))
         return FALSE;
 
     if (!formats) {
@@ -1009,14 +1011,14 @@ cpAlphaMap(void **result, XID id, ScreenPtr screen, ClientPtr client, Mask mode)
 #ifdef PANORAMIX
     if (!noPanoramiXExtension) {
         PanoramiXRes *res;
-        int err = dixLookupResourceByType((void **)&res, id, XRT_PICTURE,
-                                          client, mode);
+        int err = dixLookupResourceByType((void **)&res, id, screen->context->XRT_PICTURE,
+                                          client, mode, screen->context);
         if (err != Success)
             return err;
         id = res->info[screen->myNum].id;
     }
 #endif
-    return dixLookupResourceByType(result, id, screen->context->PictureType, client, mode);
+    return dixLookupResourceByType(result, id, screen->context->PictureType, client, mode, screen->context);
 }
 
 static int
@@ -1025,14 +1027,14 @@ cpClipMask(void **result, XID id, ScreenPtr screen, ClientPtr client, Mask mode)
 #ifdef PANORAMIX
     if (!noPanoramiXExtension) {
         PanoramiXRes *res;
-        int err = dixLookupResourceByType((void **)&res, id, XRT_PIXMAP,
-                                          client, mode);
+        int err = dixLookupResourceByType((void **)&res, id, screen->context->XRT_PIXMAP,
+                                          client, mode, screen->context);
         if (err != Success)
             return err;
         id = res->info[screen->myNum].id;
     }
 #endif
-    return dixLookupResourceByType(result, id, RT_PIXMAP, client, mode);
+    return dixLookupResourceByType(result, id, RT_PIXMAP, client, mode, screen->context);
 }
 
 #define NEXT_VAL(_type) (vlist ? (_type) *vlist++ : (_type) ulist++->val)
@@ -1407,7 +1409,7 @@ FreePicture(void *value, XID pid, XephyrContext* context)
                 PicturePtr *pPrev;
 
                 for (pPrev = (PicturePtr *) dixLookupPrivateAddr
-                     (&pWindow->devPrivates, PictureWindowPrivateKey);
+                     (&pWindow->devPrivates, PictureWindowPrivateKey(pWindow->drawable.pScreen->context));
                      *pPrev; pPrev = &(*pPrev)->pNext) {
                     if (*pPrev == pPicture) {
                         *pPrev = pPicture->pNext;

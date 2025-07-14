@@ -111,8 +111,8 @@ static void SShmCompletionEvent(xShmCompletionEvent *from,
 static Bool ShmDestroyPixmap(PixmapPtr pPixmap);
 
 static unsigned char ShmReqCode;
-int ShmCompletionCode;
-RESTYPE ShmSegType;
+/* int ShmCompletionCode; */
+/* RESTYPE ShmSegType; */
 static ShmDescPtr Shmsegs;
 static Bool sharedPixmaps;
 static DevPrivateKeyRec shmScrPrivateKeyRec;
@@ -129,8 +129,8 @@ static ShmFuncs fbFuncs = { fbShmCreatePixmap, NULL };
 #define VERIFY_SHMSEG(shmseg,shmdesc,client) \
 { \
     int tmprc; \
-    tmprc = dixLookupResourceByType((void **)&(shmdesc), shmseg, ShmSegType, \
-                                    client, DixReadAccess); \
+    tmprc = dixLookupResourceByType((void **)&(shmdesc), shmseg, (client)->context->ShmSegType, \
+                                    client, DixReadAccess, (client)->context); \
     if (tmprc != Success) \
 	return tmprc; \
 }
@@ -423,7 +423,7 @@ ProcShmAttach(ClientPtr client)
         shmdesc->next = Shmsegs;
         Shmsegs = shmdesc;
     }
-    if (!AddResource(stuff->shmseg, ShmSegType, (void *) shmdesc, client->context))
+    if (!AddResource(stuff->shmseg, client->context->ShmSegType, (void *) shmdesc, client->context))
         return BadAlloc;
     return Success;
 }
@@ -601,7 +601,7 @@ ProcShmPutImage(ClientPtr client)
 
     if (stuff->sendEvent) {
         xShmCompletionEvent ev = {
-            .type = ShmCompletionCode,
+            .type = client->context->ShmCompletionCode,
             .drawable = stuff->drawable,
             .minorEvent = X_ShmPutImage,
             .majorEvent = ShmReqCode,
@@ -746,16 +746,16 @@ ProcPanoramiXShmPutImage(ClientPtr client)
     REQUEST_SIZE_MATCH(xShmPutImageReq);
 
     result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
-                                      XRC_DRAWABLE, client, DixWriteAccess);
+                                      context->XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
 
     result = dixLookupResourceByType((void **) &gc, stuff->gc,
-                                     XRT_GC, client, DixReadAccess);
+                                     context->XRT_GC, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
-    isRoot = (draw->type == XRT_WINDOW) && draw->u.win.root;
+    isRoot = (draw->type == context->XRT_WINDOW) && draw->u.win.root;
 
     orig_x = stuff->dstX;
     orig_y = stuff->dstY;
@@ -802,11 +802,11 @@ ProcPanoramiXShmGetImage(ClientPtr client)
     }
 
     rc = dixLookupResourceByClass((void **) &draw, stuff->drawable,
-                                  XRC_DRAWABLE, client, DixWriteAccess);
+                                  context->XRC_DRAWABLE, client, DixWriteAccess);
     if (rc != Success)
         return (rc == BadValue) ? BadDrawable : rc;
 
-    if (draw->type == XRT_PIXMAP)
+    if (draw->type == context->XRT_PIXMAP)
         return ProcShmGetImage(client);
 
     rc = dixLookupDrawable(&pDraw, stuff->drawable, client, 0, DixReadAccess);
@@ -822,7 +822,7 @@ ProcPanoramiXShmGetImage(ClientPtr client)
     format = stuff->format;
     planemask = stuff->planeMask;
 
-    isRoot = (draw->type == XRT_WINDOW) && draw->u.win.root;
+    isRoot = (draw->type == context->XRT_WINDOW) && draw->u.win.root;
 
     if (isRoot) {
         if (                    /* check for being onscreen */
@@ -983,7 +983,7 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
     if (!(newPix = malloc(sizeof(PanoramiXRes))))
         return BadAlloc;
 
-    newPix->type = XRT_PIXMAP;
+    newPix->type = context->XRT_PIXMAP;
     newPix->u.pix.shared = TRUE;
     panoramix_setup_ids(newPix, client, stuff->pid);
 
@@ -1030,7 +1030,7 @@ ProcPanoramiXShmCreatePixmap(ClientPtr client)
         free(newPix);
     }
     else
-        AddResource(stuff->pid, XRT_PIXMAP, newPix, client->context);
+        AddResource(stuff->pid, context->XRT_PIXMAP, newPix, client->context);
 
     return result;
 }
@@ -1204,7 +1204,7 @@ ProcShmAttachFd(ClientPtr client)
     shmdesc->next = Shmsegs;
     Shmsegs = shmdesc;
 
-    if (!AddResource(stuff->shmseg, ShmSegType, (void *) shmdesc, client->context))
+    if (!AddResource(stuff->shmseg, client->context->ShmSegType, (void *) shmdesc, client->context))
         return BadAlloc;
     return Success;
 }
@@ -1321,7 +1321,7 @@ ProcShmCreateSegment(ClientPtr client)
     shmdesc->next = Shmsegs;
     Shmsegs = shmdesc;
 
-    if (!AddResource(stuff->shmseg, ShmSegType, (void *) shmdesc, client->context)) {
+    if (!AddResource(stuff->shmseg, client->context->ShmSegType, (void *) shmdesc, client->context)) {
         close(fd);
         return BadAlloc;
     }
@@ -1569,15 +1569,15 @@ ShmExtensionInit(XephyrContext* context)
                 context->screenInfo.screens[i]->DestroyPixmap = ShmDestroyPixmap;
             }
     }
-    ShmSegType = CreateNewResourceType(ShmDetachSegment, "ShmSeg");
-    if (ShmSegType &&
+    context->ShmSegType = CreateNewResourceType(ShmDetachSegment, "ShmSeg", context);
+    if (context->ShmSegType &&
         (extEntry = AddExtension(SHMNAME, ShmNumberEvents, ShmNumberErrors,
                                  ProcShmDispatch, SProcShmDispatch,
-                                 ShmResetProc, StandardMinorOpcode))) {
+                                 ShmResetProc, StandardMinorOpcode, context))) {
         ShmReqCode = (unsigned char) extEntry->base;
-        ShmCompletionCode = extEntry->eventBase;
+        context->ShmCompletionCode = extEntry->eventBase;
         context->BadShmSegCode = extEntry->errorBase;
-        SetResourceTypeErrorValue(ShmSegType, context->BadShmSegCode);
-        EventSwapVector[ShmCompletionCode] = (EventSwapPtr) SShmCompletionEvent;
+        SetResourceTypeErrorValue(context->ShmSegType, context->BadShmSegCode, context);
+        EventSwapVector[context->ShmCompletionCode] = (EventSwapPtr) SShmCompletionEvent;
     }
 }

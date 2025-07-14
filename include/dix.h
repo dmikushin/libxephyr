@@ -109,7 +109,7 @@ typedef struct _XephyrContext XephyrContext;
         int tmprc = dixLookupDrawable(&(pDraw), drawID, client, M_ANY, mode); \
         if (tmprc != Success)                                           \
             return tmprc;                                               \
-        tmprc = dixLookupGC(&(pGC), stuff->gc, client, DixUseAccess);   \
+        tmprc = dixLookupGC(&(pGC), stuff->gc, client, DixUseAccess, client->context);   \
         if (tmprc != Success)                                           \
             return tmprc;                                               \
         if ((pGC->depth != pDraw->depth) || (pGC->pScreen != pDraw->pScreen)) \
@@ -212,11 +212,13 @@ extern _X_EXPORT int dixLookupDrawable(DrawablePtr *result,
                                        Mask type_mask, Mask access_mode);
 
 extern _X_EXPORT int dixLookupGC(GCPtr *result,
-                                 XID id, ClientPtr client, Mask access_mode);
+                                 XID id, ClientPtr client, Mask access_mode,
+                                 XephyrContext* context);
 
 extern _X_EXPORT int dixLookupFontable(FontPtr *result,
                                        XID id,
-                                       ClientPtr client, Mask access_mode);
+                                       ClientPtr client, Mask access_mode,
+                                       XephyrContext* context);
 
 extern _X_EXPORT int dixLookupClient(ClientPtr *result,
                                      XID id,
@@ -237,10 +239,10 @@ extern _X_EXPORT void BlockHandler(void *timeout, XephyrContext* context);
 extern _X_EXPORT void WakeupHandler(int result, XephyrContext* context);
 
 void
-EnableLimitedSchedulingLatency(void);
+EnableLimitedSchedulingLatency(XephyrContext* context);
 
 void
-DisableLimitedSchedulingLatency(void);
+DisableLimitedSchedulingLatency(XephyrContext* context);
 
 typedef void (*ServerBlockHandlerProcPtr) (void *blockData,
                                            void *timeout);
@@ -619,7 +621,7 @@ typedef struct {
     DeviceIntPtr device;
 } DeviceEventInfoRec;
 
-extern _X_EXPORT CallbackListPtr RootWindowFinalizeCallback;
+/* extern _X_EXPORT CallbackListPtr RootWindowFinalizeCallback; */
 
 extern int
 XItoCoreType(int xi_type, XephyrContext *context);
@@ -652,6 +654,6 @@ CorePointerProc(DeviceIntPtr dev, int what);
 extern _X_HIDDEN int
 CoreKeyboardProc(DeviceIntPtr dev, int what);
 
-extern _X_EXPORT void *lastGLContext;
+/* extern _X_EXPORT void *context->lastGLContext; */
 
 #endif                          /* DIX_H */

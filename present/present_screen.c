@@ -222,7 +222,7 @@ present_extension_init(XephyrContext* context)
 
     extension = AddExtension(PRESENT_NAME, PresentNumberEvents, PresentNumberErrors,
                              proc_present_dispatch, sproc_present_dispatch,
-                             NULL, StandardMinorOpcode);
+                             NULL, StandardMinorOpcode, context);
     if (!extension)
         goto bail;
 

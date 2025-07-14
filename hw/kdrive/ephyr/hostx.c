@@ -92,9 +92,9 @@ static EphyrHostXVars HostX;
 
 static int HostXWantDamageDebug = 0;
 
-char *ephyrResName = NULL;
-int ephyrResNameFromCmd = 0;
-char *ephyrTitle = NULL;
+// char *ephyrResName = NULL; - moved to XephyrContext
+// int ephyrResNameFromCmd = 0; - moved to XephyrContext
+// char *ephyrTitle = NULL; - moved to XephyrContext
 
 Bool
 hostx_has_extension(xcb_extension_t *extension)
@@ -130,7 +130,7 @@ hostx_want_screen_geometry(KdScreenInfo *screen, int *width, int *height, int *x
 }
 
 void
-hostx_add_screen(KdScreenInfo *screen, unsigned long win_id, int screen_num, Bool use_geometry, const char *output)
+hostx_add_screen(KdScreenInfo *screen, unsigned long win_id, int screen_num, Bool use_geometry, const char *output, XephyrContext* context)
 {
     EphyrScrPriv *scrpriv = screen->driver;
     int index = HostX.n_screens;
@@ -153,31 +153,31 @@ hostx_set_display_name(char *name)
 }
 
 void
-hostx_set_screen_number(KdScreenInfo *screen, int number)
+hostx_set_screen_number(KdScreenInfo *screen, int number, XephyrContext* context)
 {
     EphyrScrPriv *scrpriv = screen->driver;
 
     if (scrpriv) {
         scrpriv->mynum = number;
-        hostx_set_win_title(screen, "");
+        hostx_set_win_title(screen, "", context);
     }
 }
 
 void
-hostx_set_win_title(KdScreenInfo *screen, const char *extra_text)
+hostx_set_win_title(KdScreenInfo *screen, const char *extra_text, XephyrContext* context)
 {
     EphyrScrPriv *scrpriv = screen->driver;
 
     if (!scrpriv)
         return;
 
-    if (ephyrTitle) {
+    if (context->ephyrTitle) {
         xcb_icccm_set_wm_name(HostX.conn,
                               scrpriv->win,
                               XCB_ATOM_STRING,
                               8,
-                              strlen(ephyrTitle),
-                              ephyrTitle);
+                              strlen(context->ephyrTitle),
+                              context->ephyrTitle);
     } else {
 #define BUF_LEN 256
         char buf[BUF_LEN + 1];
@@ -399,16 +399,16 @@ hostx_handle_signal(int signum)
 }
 
 void
-hostx_use_resname(char *name, int fromcmd)
+hostx_use_resname(char *name, int fromcmd, XephyrContext* context)
 {
-    ephyrResName = name;
-    ephyrResNameFromCmd = fromcmd;
+    context->ephyrResName = name;
+    context->ephyrResNameFromCmd = fromcmd;
 }
 
 void
-hostx_set_title(char *title)
+hostx_set_title(char *title, XephyrContext* context)
 {
-    ephyrTitle = title;
+    context->ephyrTitle = title;
 }
 
 #ifdef __SUNPRO_C
@@ -636,7 +636,7 @@ hostx_init(XephyrContext* context)
                               attrs);
 
             hostx_set_win_title(screen,
-                                "(ctrl+shift grabs mouse and keyboard)");
+                                "(ctrl+shift grabs mouse and keyboard)", context);
 
             if (HostX.use_fullscreen) {
                 scrpriv->win_width  = xscreen->width_in_pixels;
@@ -657,15 +657,15 @@ hostx_init(XephyrContext* context)
 
 
             tmpstr = getenv("RESOURCE_NAME");
-            if (tmpstr && (!ephyrResNameFromCmd))
-                ephyrResName = tmpstr;
-            if (!ephyrResName)
-                ephyrResName = "Xephyr";
-            class_len = strlen(ephyrResName) + 1 + strlen("Xephyr") + 1;
+            if (tmpstr && (!context->ephyrResNameFromCmd))
+                context->ephyrResName = tmpstr;
+            if (!context->ephyrResName)
+                context->ephyrResName = "Xephyr";
+            class_len = strlen(context->ephyrResName) + 1 + strlen("Xephyr") + 1;
             class_hint = malloc(class_len);
             if (class_hint) {
-                strcpy(class_hint, ephyrResName);
-                strcpy(class_hint + strlen(ephyrResName) + 1, "Xephyr");
+                strcpy(class_hint, context->ephyrResName);
+                strcpy(class_hint + strlen(context->ephyrResName) + 1, "Xephyr");
                 xcb_change_property(HostX.conn,
                                     XCB_PROP_MODE_REPLACE,
                                     scrpriv->win,

@@ -63,7 +63,7 @@ struct _DeviceIntRec;
 typedef struct _Cursor *CursorPtr;
 typedef struct _CursorMetric *CursorMetricPtr;
 
-extern _X_EXPORT DevScreenPrivateKeyRec cursorScreenDevPriv;
+/* // extern _X_EXPORT DevScreenPrivateKeyRec cursorScreenDevPriv; */
 
 #define CursorScreenKey (&cursorScreenDevPriv)
 

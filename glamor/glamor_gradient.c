@@ -169,7 +169,7 @@ _glamor_create_getcolor_fs_source(ScreenPtr screen, int stops_count,
         "}\n";
 
     if (use_array) {
-        XNFasprintf(&gradient_fs,
+        XNFasprintf(&gradient_fs, screen->context,
                     gradient_fs_getcolor, stops_count, stops_count);
         return gradient_fs;
     }
@@ -335,7 +335,7 @@ _glamor_create_radial_gradient_program(ScreenPtr screen, int stops_count,
         _glamor_create_getcolor_fs_source(screen, stops_count,
                                           (stops_count > 0));
 
-    XNFasprintf(&gradient_fs,
+    XNFasprintf(&gradient_fs, screen->context,
                 gradient_radial_fs_template,
                 PIXMAN_REPEAT_NONE, PIXMAN_REPEAT_NORMAL,
                 PIXMAN_REPEAT_REFLECT,
@@ -517,7 +517,7 @@ _glamor_create_linear_gradient_program(ScreenPtr screen, int stops_count,
     fs_getcolor_source =
         _glamor_create_getcolor_fs_source(screen, stops_count, stops_count > 0);
 
-    XNFasprintf(&gradient_fs,
+    XNFasprintf(&gradient_fs, screen->context,
                 gradient_fs_template,
                 PIXMAN_REPEAT_NORMAL, PIXMAN_REPEAT_REFLECT,
                 fs_getcolor_source);

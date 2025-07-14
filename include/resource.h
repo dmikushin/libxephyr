@@ -115,7 +115,7 @@ extern _X_EXPORT unsigned int ResourceClientBits(void);
 extern _X_EXPORT ClientPtr rClient(void* obj, XephyrContext* context);
 
 /* Resource state callback */
-extern _X_EXPORT CallbackListPtr ResourceStateCallback;
+/* extern _X_EXPORT CallbackListPtr ResourceStateCallback; */
 
 typedef enum { ResourceStateAdding,
     ResourceStateFreeing
@@ -164,25 +164,26 @@ typedef void (*SizeType)(void *value,
                          ResourceSizePtr size);
 
 extern _X_EXPORT RESTYPE CreateNewResourceType(DeleteType deleteFunc,
-                                               const char *name);
+                                               const char *name,
+                                               XephyrContext* context);
 
 typedef void (*FindTypeSubResources)(void *value,
                                      FindAllRes func,
                                      void *cdata);
 
 extern _X_EXPORT SizeType GetResourceTypeSizeFunc(
-    RESTYPE /*type*/);
+    RESTYPE /*type*/, XephyrContext* context);
 
 extern _X_EXPORT void SetResourceTypeFindSubResFunc(
-    RESTYPE /*type*/, FindTypeSubResources /*findFunc*/);
+    RESTYPE /*type*/, FindTypeSubResources /*findFunc*/, XephyrContext* context);
 
 extern _X_EXPORT void SetResourceTypeSizeFunc(
-    RESTYPE /*type*/, SizeType /*sizeFunc*/);
+    RESTYPE /*type*/, SizeType /*sizeFunc*/, XephyrContext* context);
 
 extern _X_EXPORT void SetResourceTypeErrorValue(
-    RESTYPE /*type*/, int /*errorValue*/);
+    RESTYPE /*type*/, int /*errorValue*/, XephyrContext* context);
 
-extern _X_EXPORT RESTYPE CreateNewResourceClass(void);
+extern _X_EXPORT RESTYPE CreateNewResourceClass(XephyrContext* context);
 
 extern _X_EXPORT Bool InitClientResources(ClientPtr /*client */ );
 
@@ -229,7 +230,8 @@ extern _X_EXPORT void FindAllClientResources(ClientPtr client,
 extern _X_EXPORT void FindSubResources(void *resource,
                                        RESTYPE type,
                                        FindAllRes func,
-                                       void *cdata);
+                                       void *cdata,
+                                       XephyrContext* context);
 
 extern _X_EXPORT void FreeClientNeverRetainResources(ClientPtr /*client */ );
 
@@ -250,7 +252,8 @@ extern _X_EXPORT int dixLookupResourceByType(void **result,
                                              XID id,
                                              RESTYPE rtype,
                                              ClientPtr client,
-                                             Mask access_mode);
+                                             Mask access_mode,
+                                             XephyrContext* context);
 
 extern _X_EXPORT int dixLookupResourceByClass(void **result,
                                               XID id,
@@ -267,8 +270,8 @@ extern _X_EXPORT unsigned int GetXIDList(ClientPtr /*client */ ,
                                          unsigned int /*count */ ,
                                          XID * /*pids */ );
 
-extern _X_EXPORT RESTYPE lastResourceType;
-extern _X_EXPORT RESTYPE TypeMask;
+/* extern _X_EXPORT RESTYPE context->lastResourceType; */
+/* extern _X_EXPORT RESTYPE context->TypeMask; */
 
 /** @brief A hashing function to be used for hashing resource IDs
 

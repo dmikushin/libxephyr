@@ -323,7 +323,7 @@ DeletePassiveGrab(void *value, XID id, XephyrContext* context)
             if (prev)
                 prev->next = g->next;
             else if (!(pGrab->window->optional->passiveGrabs = g->next))
-                CheckWindowOptionalNeed(pGrab->window);
+                CheckWindowOptionalNeed(pGrab->window, context);
             break;
         }
         prev = g;
@@ -551,7 +551,7 @@ AddPassiveGrabToList(ClientPtr client, GrabPtr pGrab, XephyrContext* context)
         }
     }
 
-    if (!pGrab->window->optional && !MakeWindowOptional(pGrab->window)) {
+    if (!pGrab->window->optional && !MakeWindowOptional(pGrab->window, context)) {
         FreeGrab(pGrab, context);
         return BadAlloc;
     }
@@ -651,7 +651,7 @@ DeletePassiveGrabFromList(GrabPtr pMinuendGrab)
                                             pMinuendGrab->modifiersDetail.
                                             exact))
                      || (!pNewGrab->window->optional &&
-                         !MakeWindowOptional(pNewGrab->window))) {
+                         !MakeWindowOptional(pNewGrab->window, pNewGrab->device->context))) {
                 FreeGrab(pNewGrab, pNewGrab->device->context);
                 ok = FALSE;
             }

@@ -174,7 +174,7 @@ __glXDisp_UseXFont(__GLXclientState * cl, GLbyte * pc)
      ** containing a font.
      */
 
-    error = dixLookupFontable(&pFont, req->font, client, DixReadAccess);
+    error = dixLookupFontable(&pFont, req->font, client, DixReadAccess, client->context);
     if (error != Success)
         return error;
 

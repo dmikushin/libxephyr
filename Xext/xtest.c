@@ -115,6 +115,7 @@ ProcXTestCompareCursor(ClientPtr client)
     CursorPtr pCursor;
     int rc;
     DeviceIntPtr ptr = PickPointer(client);
+    XephyrContext* context = client->context;
 
     REQUEST_SIZE_MATCH(xXTestCompareCursorReq);
     rc = dixLookupWindow(&pWin, stuff->window, client, DixGetAttrAccess);
@@ -130,7 +131,7 @@ ProcXTestCompareCursor(ClientPtr client)
         pCursor = GetSpriteCursor(ptr);
     else {
         rc = dixLookupResourceByType((void **) &pCursor, stuff->cursor,
-                                     RT_CURSOR, client, DixReadAccess);
+                                     RT_CURSOR, client, DixReadAccess, context);
         if (rc != Success) {
             client->errorValue = stuff->cursor;
             return rc;
@@ -686,11 +687,11 @@ XTestExtensionTearDown(ExtensionEntry * e)
 }
 
 void
-XTestExtensionInit(void)
+XTestExtensionInit(XephyrContext* context)
 {
     AddExtension(XTestExtensionName, 0, 0,
                  ProcXTestDispatch, SProcXTestDispatch,
-                 XTestExtensionTearDown, StandardMinorOpcode);
+                 XTestExtensionTearDown, StandardMinorOpcode, context);
 
     xtest_evlist = InitEventList(GetMaximumEventsNum());
 }

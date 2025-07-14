@@ -269,7 +269,7 @@ dixChangeWindowProperty(ClientPtr pClient, WindowPtr pWin, Atom property,
     rc = dixLookupProperty(&pProp, pWin, property, pClient, access_mode);
 
     if (rc == BadMatch) {       /* just add to list */
-        if (!pWin->optional && !MakeWindowOptional(pWin))
+        if (!pWin->optional && !MakeWindowOptional(pWin, pClient->context))
             return BadAlloc;
         pProp = dixAllocateObjectWithPrivates(PropertyRec, PRIVATE_PROPERTY);
         if (!pProp)
@@ -379,7 +379,7 @@ DeleteProperty(ClientPtr client, WindowPtr pWin, Atom propName)
         if (pWin->optional->userProps == pProp) {
             /* Takes care of head */
             if (!(pWin->optional->userProps = pProp->next))
-                CheckWindowOptionalNeed(pWin);
+                CheckWindowOptionalNeed(pWin, client->context);
         }
         else {
             /* Need to traverse to find the previous element */
@@ -549,7 +549,7 @@ ProcGetProperty(ClientPtr client)
         if (pWin->optional->userProps == pProp) {
             /* Takes care of head */
             if (!(pWin->optional->userProps = pProp->next))
-                CheckWindowOptionalNeed(pWin);
+                CheckWindowOptionalNeed(pWin, client->context);
         }
         else {
             /* Need to traverse to find the previous element */

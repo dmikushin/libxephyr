@@ -171,7 +171,7 @@ KdUninstallColormap(ColormapPtr pCmap, XephyrContext* context)
 
     /* install default */
     dixLookupResourceByType((void **) &defMap, defMapID, RT_COLORMAP,
-                            context->serverClient, DixInstallAccess);
+                            context->serverClient, DixInstallAccess, context);
     if (defMap)
         (*pCmap->pScreen->InstallColormap) (defMap, context);
     else {

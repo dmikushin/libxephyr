@@ -103,7 +103,7 @@ copy_box(__GLXdrawable * drawable,
 {
     BoxRec box;
     RegionRec region;
-    __GLXcontext *cx = lastGLContext;
+    __GLXcontext *cx = context->lastGLContext;
 
     box.x1 = x;
     box.y1 = y;
@@ -112,8 +112,8 @@ copy_box(__GLXdrawable * drawable,
     RegionInit(&region, &box, 0);
 
     DRI2CopyRegion(drawable->pDraw, &region, dst, src);
-    if (cx != lastGLContext) {
-        lastGLContext = cx;
+    if (cx != context->lastGLContext) {
+        context->lastGLContext = cx;
         cx->makeCurrent(cx);
     }
 }
@@ -203,7 +203,7 @@ __glXDRIdrawableSwapBuffers(ClientPtr client, __GLXdrawable * drawable)
     __GLXDRIdrawable *priv = (__GLXDRIdrawable *) drawable;
     __GLXDRIscreen *screen = priv->screen;
     CARD64 unused;
-    __GLXcontext *cx = lastGLContext;
+    __GLXcontext *cx = context->lastGLContext;
     int status;
 
     if (screen->flush) {
@@ -213,8 +213,8 @@ __glXDRIdrawableSwapBuffers(ClientPtr client, __GLXdrawable * drawable)
 
     status = DRI2SwapBuffers(client, drawable->pDraw, 0, 0, 0, &unused,
                              __glXdriSwapEvent, drawable);
-    if (cx != lastGLContext) {
-        lastGLContext = cx;
+    if (cx != context->lastGLContext) {
+        context->lastGLContext = cx;
         cx->makeCurrent(cx);
     }
 
@@ -224,14 +224,14 @@ __glXDRIdrawableSwapBuffers(ClientPtr client, __GLXdrawable * drawable)
 static int
 __glXDRIdrawableSwapInterval(__GLXdrawable * drawable, int interval)
 {
-    __GLXcontext *cx = lastGLContext;
+    __GLXcontext *cx = context->lastGLContext;
 
     if (interval <= 0)          /* || interval > BIGNUM? */
         return GLX_BAD_VALUE;
 
     DRI2SwapInterval(drawable->pDraw, interval);
-    if (cx != lastGLContext) {
-        lastGLContext = cx;
+    if (cx != context->lastGLContext) {
+        context->lastGLContext = cx;
         cx->makeCurrent(cx);
     }
 
@@ -286,12 +286,12 @@ static Bool
 __glXDRIcontextWait(__GLXcontext * baseContext,
                     __GLXclientState * cl, int *error)
 {
-    __GLXcontext *cx = lastGLContext;
+    __GLXcontext *cx = context->lastGLContext;
     Bool ret;
 
     ret = DRI2WaitSwap(cl->client, baseContext->drawPriv->pDraw);
-    if (cx != lastGLContext) {
-        lastGLContext = cx;
+    if (cx != context->lastGLContext) {
+        context->lastGLContext = cx;
         cx->makeCurrent(cx);
     }
 
@@ -596,7 +596,7 @@ __glXDRIscreenCreateDrawable(ClientPtr client,
     __GLXDRIscreen *driScreen = (__GLXDRIscreen *) screen;
     __GLXDRIconfig *config = (__GLXDRIconfig *) glxConfig;
     __GLXDRIdrawable *private;
-    __GLXcontext *cx = lastGLContext;
+    __GLXcontext *cx = context->lastGLContext;
     Bool ret;
 
     private = calloc(1, sizeof *private);
@@ -619,8 +619,8 @@ __glXDRIscreenCreateDrawable(ClientPtr client,
     ret = DRI2CreateDrawable2(client, pDraw, drawId,
                               __glXDRIinvalidateBuffers, private,
                               &private->dri2_id);
-    if (cx != lastGLContext) {
-        lastGLContext = cx;
+    if (cx != context->lastGLContext) {
+        context->lastGLContext = cx;
         cx->makeCurrent(cx);
     }
 
@@ -646,12 +646,12 @@ dri2GetBuffers(__DRIdrawable * driDrawable,
     DRI2BufferPtr *buffers;
     int i;
     int j;
-    __GLXcontext *cx = lastGLContext;
+    __GLXcontext *cx = context->lastGLContext;
 
     buffers = DRI2GetBuffers(private->base.pDraw,
                              width, height, attachments, count, out_count);
-    if (cx != lastGLContext) {
-        lastGLContext = cx;
+    if (cx != context->lastGLContext) {
+        context->lastGLContext = cx;
         cx->makeCurrent(cx);
 
         /* If DRI2GetBuffers() changed the GL context, it may also have
@@ -659,7 +659,7 @@ dri2GetBuffers(__DRIdrawable * driDrawable,
          */
         buffers = DRI2GetBuffers(private->base.pDraw,
                                  width, height, attachments, count, out_count);
-        assert(lastGLContext == cx);
+        assert(context->lastGLContext == cx);
     }
 
     if (*out_count > MAX_DRAWABLE_BUFFERS) {
@@ -703,13 +703,13 @@ dri2GetBuffersWithFormat(__DRIdrawable * driDrawable,
     DRI2BufferPtr *buffers;
     int i;
     int j = 0;
-    __GLXcontext *cx = lastGLContext;
+    __GLXcontext *cx = context->lastGLContext;
 
     buffers = DRI2GetBuffersWithFormat(private->base.pDraw,
                                        width, height, attachments, count,
                                        out_count);
-    if (cx != lastGLContext) {
-        lastGLContext = cx;
+    if (cx != context->lastGLContext) {
+        context->lastGLContext = cx;
         cx->makeCurrent(cx);
 
         /* If DRI2GetBuffersWithFormat() changed the GL context, it may also have
@@ -718,7 +718,7 @@ dri2GetBuffersWithFormat(__DRIdrawable * driDrawable,
         buffers = DRI2GetBuffersWithFormat(private->base.pDraw,
                                            width, height, attachments, count,
                                            out_count);
-        assert(lastGLContext == cx);
+        assert(context->lastGLContext == cx);
     }
 
     if (*out_count > MAX_DRAWABLE_BUFFERS) {

@@ -123,7 +123,7 @@ ProcXSetDeviceMode(ClientPtr client)
         case BadAlloc:
             break;
         default:
-            rep.status = context->BadMode;
+            rep.status = client->context->BadMode;
         }
         return rep.status;
     }

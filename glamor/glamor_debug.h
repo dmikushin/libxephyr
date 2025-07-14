@@ -29,6 +29,9 @@
 #ifndef __GLAMOR_DEBUG_H__
 #define __GLAMOR_DEBUG_H__
 
+#include "dix/context.h"
+#include "pixmap.h"
+
 #define GLAMOR_DEBUG_NONE                     0
 #define GLAMOR_DEBUG_UNIMPL                   0
 #define GLAMOR_DEBUG_FALLBACK                 1
@@ -39,38 +42,49 @@ extern void
 AbortServer(void)
     _X_NORETURN;
 
-#define GLAMOR_PANIC(_format_, ...)			\
+#define GLAMOR_PANIC(_context_, _format_, ...)		\
   do {							\
     LogMessageVerb(X_NONE, 0, "Glamor Fatal Error"	\
 		   " at %32s line %d: " _format_ "\n",	\
-		   NULL, __FUNCTION__, __LINE__,		\
+		   _context_, __FUNCTION__, __LINE__,		\
 		   ##__VA_ARGS__ );			\
     exit(1);                                            \
   } while(0)
 
 #define __debug_output_message(_format_, _prefix_, _context_, ...) \
   LogMessageVerb(X_NONE, 0,				\
-		 "%32s:\t" _format_ ,		\
+		 "%s: %32s:\t" _format_ ,		\
 		 _context_,				\
-		 /*_prefix_,*/				\
+		 _prefix_,				\
 		 __FUNCTION__,				\
 		 ##__VA_ARGS__)
 
 #define glamor_debug_output(_level_, _format_, _context_, ...)	\
   do {							\
-    if (context->glamor_debug_level >= _level_)			\
+    if ((_context_)->glamor_debug_level >= _level_)			\
       __debug_output_message(_format_,			\
 			     "Glamor debug",		\
 			     _context_,			\
 			     ##__VA_ARGS__);		\
   } while(0)
 
-#define glamor_fallback(_format_, _context_, ...)			\
+#define glamor_fallback(_format_, _drawable_, ...)			\
   do {							\
-    if (_context_->glamor_debug_level >= GLAMOR_DEBUG_FALLBACK)	\
+    DrawablePtr _draw = (DrawablePtr)(_drawable_);		\
+    XephyrContext *_ctx = _draw->pScreen->context;		\
+    if (_ctx->glamor_debug_level >= GLAMOR_DEBUG_FALLBACK)	\
       __debug_output_message(_format_,			\
 			     "Glamor fallback",		\
-			     _context_,			\
+			     _ctx,			\
+			     ##__VA_ARGS__);} while(0)
+
+#define glamor_fallback_simple(_format_, _context_, ...)		\
+  do {							\
+    XephyrContext *_ctx = (_context_);		\
+    if (_ctx->glamor_debug_level >= GLAMOR_DEBUG_FALLBACK)	\
+      __debug_output_message(_format_,			\
+			     "Glamor fallback",		\
+			     _ctx,			\
 			     ##__VA_ARGS__);} while(0)
 
 #define DEBUGF(str, ...)  do {} while(0)

@@ -70,4 +70,4 @@ extern int SProcPanoramiXDispatch(ClientPtr client);
 /* extern int context->connBlockScreenStart; */
 extern xConnSetupPrefix connSetupPrefix;
 
-extern int (*SavedProcVector[256]) (ClientPtr client);
+/* extern int (*SavedProcVector[256]) (ClientPtr client); */

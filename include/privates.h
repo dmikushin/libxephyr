@@ -354,7 +354,7 @@ extern _X_EXPORT void
  * structure definition.
  */
 extern _X_EXPORT int
- dixLookupPrivateOffset(RESTYPE type);
+ dixLookupPrivateOffset(RESTYPE type, XephyrContext* context);
 
 /*
  * Convenience macro for adding an offset to an object pointer

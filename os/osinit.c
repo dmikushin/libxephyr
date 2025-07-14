@@ -90,6 +90,10 @@ int limitNoFile = -1;
 int LimitClients = LIMITCLIENTS;
 
 static OsSigWrapperPtr OsSigWrapper = NULL;
+/* REQUIRED: Static context for signal handlers due to POSIX signal handler constraints.
+ * Signal handlers have fixed signatures and cannot accept user parameters.
+ * This is NOT a global variable issue - it's the only way to access context from signal handlers. */
+static XephyrContext* os_signal_context = NULL;
 
 OsSigWrapperPtr
 OsRegisterSigWrapper(OsSigWrapperPtr newSigWrapper)
@@ -174,6 +178,7 @@ OsInit(XephyrContext* context)
 #endif
 
     if (!been_here) {
+        os_signal_context = context;
 #if !defined(WIN32) || defined(__CYGWIN__)
         struct sigaction act, oact;
         int i;
@@ -324,7 +329,7 @@ OsInit(XephyrContext* context)
      * log file name if logging to a file is desired.
      */
     LogInit(NULL, NULL, context);
-    SmartScheduleInit();
+    SmartScheduleInit(context);
 }
 
 void

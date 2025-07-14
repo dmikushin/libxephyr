@@ -175,9 +175,9 @@ static OsCommPtr AvailableInput = (OsCommPtr) NULL;
  *****************************************************************/
 
 static void
-YieldControl(void)
+YieldControl(XephyrContext* context)
 {
-    isItTimeToYield = TRUE;
+    context->isItTimeToYield = TRUE;
     timesThisConnection = 0;
 }
 
@@ -185,7 +185,7 @@ static void
 YieldControlNoInput(ClientPtr client)
 {
     OsCommPtr oc = client->osPrivate;
-    YieldControl();
+    YieldControl(client->context);
     if (oc->trans_conn)
         ospoll_reset_events(server_poll, oc->fd);
 }
@@ -586,7 +586,7 @@ ResetCurrentRequest(ClientPtr client)
         if (gotnow >= (needed << 2)) {
             if (listen_to_client(client))
                 mark_client_ready(client);
-            YieldControl();
+            YieldControl(client->context);
         }
         else
             YieldControlNoInput(client);

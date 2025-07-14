@@ -214,11 +214,11 @@ typedef struct {
     DevPrivateKeyRec gcPrivateKeyRec;
 } ExaScreenPrivRec, *ExaScreenPrivPtr;
 
-extern DevPrivateKeyRec exaScreenPrivateKeyRec;
+// extern DevPrivateKeyRec exaScreenPrivateKeyRec;
 
-#define exaScreenPrivateKey (&exaScreenPrivateKeyRec)
+#define exaScreenPrivateKey(s) (&((s)->context->exaScreenPrivateKeyRec))
 
-#define ExaGetScreenPriv(s) ((ExaScreenPrivPtr)dixGetPrivate(&(s)->devPrivates, exaScreenPrivateKey))
+#define ExaGetScreenPriv(s) ((ExaScreenPrivPtr)dixGetPrivate(&(s)->devPrivates, exaScreenPrivateKey(s)))
 #define ExaScreenPriv(s)	ExaScreenPrivPtr    pExaScr = ExaGetScreenPriv(s)
 
 #define ExaGetGCPriv(gc) ((ExaGCPrivPtr)dixGetPrivateAddr(&(gc)->devPrivates, &ExaGetScreenPriv(gc->pScreen)->gcPrivateKeyRec))

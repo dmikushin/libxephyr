@@ -144,7 +144,7 @@ validGlxContext(ClientPtr client, XID id, int access_mode,
     }
 
     *err = dixLookupResourceByType((void **) context, id,
-                                   client->context->__glXContextRes, client, access_mode);
+                                   client->context->__glXContextRes, client, access_mode, client->context);
     if (*err != Success || (*context)->idExists == GL_FALSE) {
         client->errorValue = id;
         if (*err == BadValue || *err == Success)
@@ -162,7 +162,7 @@ validGlxDrawable(ClientPtr client, XID id, int type, int access_mode,
     int rc;
 
     rc = dixLookupResourceByType((void **) drawable, id,
-                                 client->context->__glXDrawableRes, client, access_mode);
+                                 client->context->__glXDrawableRes, client, access_mode, client->context);
     if (rc != Success && rc != BadValue) {
         *err = rc;
         client->errorValue = id;
@@ -198,7 +198,7 @@ validGlxDrawable(ClientPtr client, XID id, int type, int access_mode,
 void
 __glXContextDestroy(__GLXcontext * context)
 {
-    lastGLContext = NULL;
+    context->lastGLContext = NULL;
 }
 
 static void
@@ -489,7 +489,7 @@ __glXGetDrawable(__GLXcontext * glxc, GLXDrawable drawId, ClientPtr client,
     int rc;
 
     rc = dixLookupResourceByType((void **)&pGlxDraw, drawId,
-                                 client->context->__glXDrawableRes, client, DixWriteAccess);
+                                 client->context->__glXDrawableRes, client, DixWriteAccess, client->context);
     if (rc == Success &&
         /* If pGlxDraw->drawId == drawId, drawId is a valid GLX drawable.
          * Otherwise, if pGlxDraw->type == GLX_DRAWABLE_WINDOW, drawId is
@@ -644,7 +644,7 @@ xorgGlxMakeCurrent(ClientPtr client, GLXContextTag tag, XID drawId, XID readId,
         if (!(*prevglxc->loseCurrent) (prevglxc))
             return __glXError(GLXBadContext, client->context);
 
-        lastGLContext = NULL;
+        context->lastGLContext = NULL;
         if (!prevglxc->isDirect) {
             prevglxc->drawPriv = NULL;
             prevglxc->readPriv = NULL;
@@ -656,9 +656,9 @@ xorgGlxMakeCurrent(ClientPtr client, GLXContextTag tag, XID drawId, XID readId,
         glxc->readPriv = readPriv;
 
         /* make the context current */
-        lastGLContext = glxc;
+        context->lastGLContext = glxc;
         if (!(*glxc->makeCurrent) (glxc)) {
-            lastGLContext = NULL;
+            context->lastGLContext = NULL;
             glxc->drawPriv = NULL;
             glxc->readPriv = NULL;
             return __glXError(GLXBadContext, client->context);
@@ -2543,7 +2543,7 @@ __glXpresentCompleteNotify(WindowPtr window, CARD8 present_kind, CARD8 present_m
         return;
 
     rc = dixLookupResourceByType((void **) &drawable, window->drawable.id,
-                                 window->drawable.pScreen->context->__glXDrawableRes, window->drawable.pScreen->context->serverClient, DixGetAttrAccess);
+                                 window->drawable.pScreen->context->__glXDrawableRes, window->drawable.pScreen->context->serverClient, DixGetAttrAccess, window->drawable.pScreen->context);
 
     if (rc != Success)
         return;

@@ -63,7 +63,7 @@ typedef struct _KdCardInfo {
     struct _KdCardInfo *next;
 } KdCardInfo;
 
-extern KdCardInfo *kdCardInfo;
+/* KdCardInfo now in XephyrContext */
 
 /*
  * Configuration information per X screen
@@ -278,7 +278,7 @@ struct _KdKeyboardInfo {
 
 void KdAddKeyboardDriver(KdKeyboardDriver * driver);
 void KdRemoveKeyboardDriver(KdKeyboardDriver * driver);
-KdKeyboardInfo *KdNewKeyboard(void);
+KdKeyboardInfo *KdNewKeyboard(XephyrContext* context);
 void KdFreeKeyboard(KdKeyboardInfo * ki);
 int KdAddConfigKeyboard(char *pointer);
 int KdAddKeyboard(KdKeyboardInfo * ki, XephyrContext* context);
@@ -288,17 +288,17 @@ typedef struct _KdPointerMatrix {
     int matrix[2][3];
 } KdPointerMatrix;
 
-extern DevPrivateKeyRec kdScreenPrivateKeyRec;
+/* kdScreenPrivateKeyRec moved to XephyrContext - access through screen->context */
 
-#define kdScreenPrivateKey (&kdScreenPrivateKeyRec)
+/* Note: This macro requires that screen->context is properly initialized */
+#define kdScreenPrivateKey(pScreen) (&((pScreen)->context->kdScreenPrivateKeyRec))
 
-extern Bool kdEmulateMiddleButton;
-extern Bool kdDisableZaphod;
+/* kdEmulateMiddleButton and kdDisableZaphod now in XephyrContext */
 
 #define KdGetScreenPriv(pScreen) ((KdPrivScreenPtr) \
-    dixLookupPrivate(&(pScreen)->devPrivates, kdScreenPrivateKey))
+    dixLookupPrivate(&(pScreen)->devPrivates, kdScreenPrivateKey(pScreen)))
 #define KdSetScreenPriv(pScreen,v) \
-    dixSetPrivate(&(pScreen)->devPrivates, kdScreenPrivateKey, v)
+    dixSetPrivate(&(pScreen)->devPrivates, kdScreenPrivateKey(pScreen), v)
 #define KdScreenPriv(pScreen) KdPrivScreenPtr pScreenPriv = KdGetScreenPriv(pScreen)
 
 /* kcmap.c */
@@ -340,7 +340,7 @@ Rotation KdAddRotation(Rotation a, Rotation b);
 Rotation KdSubRotation(Rotation a, Rotation b);
 
 void
- KdParseScreen(KdScreenInfo * screen, const char *arg);
+ KdParseScreen(KdScreenInfo * screen, const char *arg, XephyrContext* context);
 
 const char *
 KdParseFindNext(const char *cur, const char *delim, char *save, char *last);
@@ -367,17 +367,17 @@ void
  KdBacktrace(int signum);
 
 /* kinfo.c */
-KdCardInfo *KdCardInfoAdd(KdCardFuncs * funcs, void *closure);
+KdCardInfo *KdCardInfoAdd(KdCardFuncs * funcs, void *closure, XephyrContext *context);
 
-KdCardInfo *KdCardInfoLast(void);
+KdCardInfo *KdCardInfoLast(XephyrContext *context);
 
 void
- KdCardInfoDispose(KdCardInfo * ci);
+ KdCardInfoDispose(KdCardInfo * ci, XephyrContext *context);
 
 KdScreenInfo *KdScreenInfoAdd(KdCardInfo * ci);
 
 void
- KdScreenInfoDispose(KdScreenInfo * si);
+ KdScreenInfoDispose(KdScreenInfo * si, XephyrContext *context);
 
 /* kinput.c */
 void

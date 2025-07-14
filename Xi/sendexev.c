@@ -159,7 +159,7 @@ ProcXSendExtensionEvent(ClientPtr client)
     }
 
     list = (XEventClass *) (first + stuff->num_events);
-    if ((ret = CreateMaskFromList(client, list, stuff->count, tmp, dev,
+    if ((ret = CreateMaskFromList(client->context, client, list, stuff->count, tmp, dev,
                                   X_SendExtensionEvent)) != Success)
         return ret;
 

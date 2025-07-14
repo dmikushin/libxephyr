@@ -396,7 +396,7 @@ ephyr_glamor_get_visual(XephyrContext* context)
         GLX_DOUBLEBUFFER, 1,
         None
     };
-    int event_base = 0, error_base = 0, nelements;
+    int error_base = 0, event_base = 0, nelements;
     GLXFBConfig *fbconfigs;
 
     if (!glXQueryExtension (dpy, &error_base, &event_base))

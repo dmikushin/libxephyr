@@ -643,10 +643,10 @@ XdmcpCloseDisplay(int sock)
         return;
     state = XDM_INIT_STATE;
     if (OneSession)
-        dispatchException |= DE_TERMINATE;
+        context->dispatchException |= DE_TERMINATE;
     else
-        dispatchException |= DE_RESET;
-    isItTimeToYield = TRUE;
+        context->dispatchException |= DE_RESET;
+    context->context->isItTimeToYield = TRUE;
 }
 
 static void
@@ -801,8 +801,8 @@ XdmcpDeadSession(const char *reason)
 {
     ErrorF("XDM: %s, declaring session dead\n", context, NULL, reason);
     state = XDM_INIT_STATE;
-    isItTimeToYield = TRUE;
-    dispatchException |= (OneSession ? DE_TERMINATE : DE_RESET);
+    context->context->isItTimeToYield = TRUE;
+    context->dispatchException |= (OneSession ? DE_TERMINATE : DE_RESET);
     TimerCancel(xdmcp_timer);
     timeOutRtx = 0;
     send_packet();
@@ -823,7 +823,7 @@ timeout(void)
     else if (timeOutRtx >= XDM_RTX_LIMIT) {
         /* Quit if "-once" specified, otherwise reset and try again. */
         if (OneSession) {
-            dispatchException |= DE_TERMINATE;
+            context->dispatchException |= DE_TERMINATE;
             ErrorF("XDM: too many retransmissions\n", context);
         }
         else {

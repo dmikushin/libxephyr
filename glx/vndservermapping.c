@@ -46,7 +46,7 @@ static GlxServerVendor *LookupXIDMapResource(XID id)
     void *ptr = NULL;
     int rv;
 
-    rv = dixLookupResourceByType(&ptr, id, idResource, NULL, DixReadAccess);
+    rv = dixLookupResourceByType(&ptr, id, requestClient ? requestClient->context->idResource : 0, NULL, DixReadAccess, requestClient ? requestClient->context : NULL);
     if (rv == Success) {
         return (GlxServerVendor *) ptr;
     } else {
@@ -81,12 +81,12 @@ Bool GlxAddXIDMap(XID id, GlxServerVendor *vendor, XephyrContext* context)
     if (LookupXIDMapResource(id) != NULL) {
         return FALSE;
     }
-    return AddResource(id, idResource, vendor, context);
+    return AddResource(id, context->idResource, vendor, context);
 }
 
 void GlxRemoveXIDMap(XID id, XephyrContext* context)
 {
-    FreeResourceByType(id, idResource, FALSE, context);
+    FreeResourceByType(id, context->idResource, FALSE, context);
 }
 
 GlxContextTagInfo *GlxAllocContextTag(ClientPtr client, GlxServerVendor *vendor)

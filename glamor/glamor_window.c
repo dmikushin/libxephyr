@@ -46,7 +46,7 @@ glamor_fixup_window_pixmap(DrawablePtr pDrawable, PixmapPtr *ppPixmap)
     return;
 
  fail:
-    GLAMOR_PANIC(" We can't fall back to fbFixupWindowPixmap, as the fb24_32ReformatTile"
+    GLAMOR_PANIC(pPixmap->drawable.pScreen->context, " We can't fall back to fbFixupWindowPixmap, as the fb24_32ReformatTile"
          " is broken for glamor. \n");
 }
 

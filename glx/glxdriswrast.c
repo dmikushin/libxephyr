@@ -301,7 +301,7 @@ swrastPutImage(__DRIdrawable * draw, int op,
     __GLXDRIdrawable *drawable = loaderPrivate;
     DrawablePtr pDraw = drawable->base.pDraw;
     GCPtr gc;
-    __GLXcontext *cx = lastGLContext;
+    __GLXcontext *cx = context->lastGLContext;
 
     if ((gc = GetScratchGC(pDraw->depth, pDraw->pScreen))) {
         ValidateGC(pDraw, gc);
@@ -310,8 +310,8 @@ swrastPutImage(__DRIdrawable * draw, int op,
         FreeScratchGC(gc);
     }
 
-    if (cx != lastGLContext) {
-        lastGLContext = cx;
+    if (cx != context->lastGLContext) {
+        context->lastGLContext = cx;
         cx->makeCurrent(cx);
     }
 }
@@ -323,12 +323,12 @@ swrastGetImage(__DRIdrawable * draw,
     __GLXDRIdrawable *drawable = loaderPrivate;
     DrawablePtr pDraw = drawable->base.pDraw;
     ScreenPtr pScreen = pDraw->pScreen;
-    __GLXcontext *cx = lastGLContext;
+    __GLXcontext *cx = context->lastGLContext;
 
     pScreen->SourceValidate(pDraw, x, y, w, h, IncludeInferiors);
     pScreen->GetImage(pDraw, x, y, w, h, ZPixmap, ~0L, data);
-    if (cx != lastGLContext) {
-        lastGLContext = cx;
+    if (cx != context->lastGLContext) {
+        context->lastGLContext = cx;
         cx->makeCurrent(cx);
     }
 }

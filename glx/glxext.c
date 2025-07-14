@@ -115,7 +115,7 @@ DrawableGone(__GLXdrawable * glxPriv, XID xid)
             glFlush();
             /* just force a re-bind the next time through */
             (*c->loseCurrent) (c);
-            lastGLContext = NULL;
+            context->lastGLContext = NULL;
         }
         if (c->drawPriv == glxPriv)
             c->drawPriv = NULL;
@@ -177,8 +177,8 @@ __glXFreeContext(__GLXcontext * cx)
     free(cx->feedbackBuf);
     free(cx->selectBuf);
     free(cx->largeCmdBuf);
-    if (cx == lastGLContext) {
-        lastGLContext = NULL;
+    if (cx == context->lastGLContext) {
+        context->lastGLContext = NULL;
     }
 
     /* We can get here through both regular dispatching from
@@ -310,7 +310,7 @@ GetGLXDrawableBytes(void *value, XID id, ResourceSizePtr size)
     size->refCnt = 1;
 
     if (draw->type == GLX_DRAWABLE_PIXMAP) {
-        SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP);
+        SizeType pixmapSizeFunc = GetResourceTypeSizeFunc(RT_PIXMAP, draw->pDraw->pScreen->context);
         ResourceSizeRec pixmapSize = { 0, };
         pixmapSizeFunc((PixmapPtr)draw->pDraw, draw->pDraw->id, &pixmapSize);
         size->pixmapRefSize += pixmapSize.pixmapRefSize;
@@ -324,7 +324,7 @@ xorgGlxCloseExtension(const ExtensionEntry *extEntry)
         glxServer.destroyVendor(glvnd_vendor);
         glvnd_vendor = NULL;
     }
-    lastGLContext = NULL;
+    context->lastGLContext = NULL;
 }
 
 static int
@@ -477,10 +477,10 @@ xorgGlxServerPreInit(const ExtensionEntry *extEntry, XephyrContext* context)
         if (!checkScreenVisuals(context))
             return FALSE;
 
-        context->__glXContextRes = CreateNewResourceType((DeleteType) ContextGone,
-                                                "GLXContext");
+        context->__glXContextRes = CreateNewResourceType((DeleteType) __glXContextDestroy,
+                                                "GLXContext", context);
         context->__glXDrawableRes = CreateNewResourceType((DeleteType) DrawableGone,
-                                                 "GLXDrawable");
+                                                 "GLXDrawable", context);
         if (!context->__glXContextRes || !context->__glXDrawableRes)
             return FALSE;
 
@@ -493,7 +493,7 @@ xorgGlxServerPreInit(const ExtensionEntry *extEntry, XephyrContext* context)
         context->GlxErrorBase = extEntry->errorBase;
         context->__glXEventBase = extEntry->eventBase;
 
-        SetResourceTypeSizeFunc(context->__glXDrawableRes, GetGLXDrawableBytes);
+        SetResourceTypeSizeFunc(context->__glXDrawableRes, GetGLXDrawableBytes, context);
 #if PRESENT
         __glXregisterPresentCompleteNotify();
 #endif
@@ -623,7 +623,7 @@ __glXForceCurrent(__GLXclientState * cl, GLXContextTag tag, int *error)
     if (cx->wait && (*cx->wait) (cx, cl, error))
         return NULL;
 
-    if (cx == lastGLContext) {
+    if (cx == context->lastGLContext) {
         /* No need to re-bind */
         return cx;
     }
@@ -636,10 +636,10 @@ __glXForceCurrent(__GLXclientState * cl, GLXContextTag tag, int *error)
          * refcount's
          */
         (*cx->loseCurrent) (cx);
-        lastGLContext = cx;
+        context->lastGLContext = cx;
         if (!(*cx->makeCurrent) (cx)) {
             /* Bind failed, and set the error code.  Bummer */
-            lastGLContext = NULL;
+            context->lastGLContext = NULL;
             cl->client->errorValue = cx->id;
             *error = __glXError(GLXBadContextState, cl->client->context);
             return 0;

@@ -38,7 +38,7 @@
 #include "exa_priv.h"
 #include "exa.h"
 
-DevPrivateKeyRec exaScreenPrivateKeyRec;
+// DevPrivateKeyRec exaScreenPrivateKeyRec;
 
 #ifdef MITSHM
 static ShmFuncs exaShmFuncs = { NULL, NULL };
@@ -878,9 +878,9 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
 
     ps = GetPictureScreenIfSet(pScreen);
 
-    if (!dixRegisterPrivateKey(&exaScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context)) {
+    if (!dixRegisterPrivateKey(exaScreenPrivateKey(pScreen), PRIVATE_SCREEN, 0, pScreen->context)) {
         LogMessage(X_WARNING, "EXA(%d): Failed to register screen private\n",
-                   pScreen->context, pScreen->myNum);
+                   pScreen->myNum);
         return FALSE;
     }
 
@@ -893,7 +893,7 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
 
     pExaScr->info = pScreenInfo;
 
-    dixSetPrivate(&pScreen->devPrivates, exaScreenPrivateKey, pExaScr);
+    dixSetPrivate(&pScreen->devPrivates, exaScreenPrivateKey(pScreen), pExaScr);
 
     pExaScr->migration = ExaMigrationAlways;
 

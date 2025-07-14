@@ -135,7 +135,7 @@ ProcXUngrabDeviceButton(ClientPtr client)
     temporaryGrab->resource = client->clientAsMask;
     temporaryGrab->device = dev;
     temporaryGrab->window = pWin;
-    temporaryGrab->type = context->DeviceButtonPress;
+    temporaryGrab->type = client->context->DeviceButtonPress;
     temporaryGrab->grabtype = XI;
     temporaryGrab->modifierDevice = mdev;
     temporaryGrab->modifiersDetail.exact = stuff->modifiers;

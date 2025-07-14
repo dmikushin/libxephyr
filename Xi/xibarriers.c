@@ -820,7 +820,7 @@ XIDestroyPointerBarrier(ClientPtr client,
     void *barrier;
 
     err = dixLookupResourceByType((void **) &barrier, stuff->barrier,
-                                  client->context->PointerBarrierType, client, DixDestroyAccess);
+                                  client->context->PointerBarrierType, client, DixDestroyAccess, client->context);
     if (err != Success) {
         client->errorValue = stuff->barrier;
         return err;
@@ -890,7 +890,7 @@ ProcXIBarrierReleasePointer(ClientPtr client)
         }
 
         err = dixLookupResourceByType((void **) &b, barrier_id,
-                                      client->context->PointerBarrierType, client, DixReadAccess);
+                                      client->context->PointerBarrierType, client, DixReadAccess, client->context);
         if (err != Success) {
             client->errorValue = barrier_id;
             return err;
@@ -931,7 +931,7 @@ XIBarrierInit(XephyrContext* context)
     }
 
     context->PointerBarrierType = CreateNewResourceType(BarrierFreeBarrier,
-                                               "XIPointerBarrier");
+                                               "XIPointerBarrier", context);
 
     return context->PointerBarrierType;
 }

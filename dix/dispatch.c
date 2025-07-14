@@ -160,15 +160,15 @@ static int nextFreeClientID;    /* always MIN free client ID */
 
 static int nClients;            /* number of authorized xephyr_context->clients */
 
-OsTimerPtr dispatchExceptionTimer;
+// OsTimerPtr dispatchExceptionTimer; - moved to XephyrContext
 
-/* dispatchException & isItTimeToYield must be declared volatile since they
+/* context->dispatchException & context->isItTimeToYield must be declared volatile since they
  * are modified by signal handlers - otherwise optimizer may assume it doesn't
  * need to actually check value in memory when used and may miss changes from
  * signal handlers.
  */
-volatile char dispatchException = 0;
-volatile char isItTimeToYield;
+// volatile char dispatchException = 0; - moved to XephyrContext
+// volatile char context->isItTimeToYield; - moved to XephyrContext
 
 #define SAME_SCREENS(a, b) (\
     (a.pScreen == b.pScreen))
@@ -242,8 +242,8 @@ Bool SmartScheduleSignalEnable = TRUE;
 long SmartScheduleSlice = SMART_SCHEDULE_DEFAULT_INTERVAL;
 long SmartScheduleInterval = SMART_SCHEDULE_DEFAULT_INTERVAL;
 long SmartScheduleMaxSlice = SMART_SCHEDULE_MAX_SLICE;
-long SmartScheduleTime;
-int SmartScheduleLatencyLimited = 0;
+/* long SmartScheduleTime; */
+/* int SmartScheduleLatencyLimited = 0; */
 static ClientPtr SmartLastClient;
 static int SmartLastIndex[SMART_MAX_PRIORITY - SMART_MIN_PRIORITY + 1];
 
@@ -321,11 +321,11 @@ mark_client_ungrab(void)
 }
 
 static ClientPtr
-SmartScheduleClient(void)
+SmartScheduleClient(XephyrContext* context)
 {
     ClientPtr pClient, best = NULL;
     int bestRobin, robin;
-    long now = SmartScheduleTime;
+    long now = context->SmartScheduleTime;
     long idle;
     int nready = 0;
 
@@ -379,7 +379,7 @@ SmartScheduleClient(void)
     /*
      * Adjust slice
      */
-    if (nready == 1 && SmartScheduleLatencyLimited == 0) {
+    if (nready == 1 && context->SmartScheduleLatencyLimited == 0) {
         /*
          * If it's been a long time since another client
          * has run, bump the slice up to get maximal
@@ -401,7 +401,7 @@ DispatchExceptionCallback(OsTimerPtr timer, CARD32 time, void *arg)
 {
     /* TODO: Timer callbacks cannot have context parameter */
     /* Need to pass context through arg parameter or redesign */
-    /* dispatchException |= dispatchExceptionAtReset; */
+    /* context->dispatchException |= dispatchExceptionAtReset; */
 
     /* Don't re-arm the timer */
     return 0;
@@ -451,20 +451,20 @@ ShouldDisconnectRemainingClients(XephyrContext* context)
 }
 
 void
-EnableLimitedSchedulingLatency(void)
+EnableLimitedSchedulingLatency(XephyrContext* context)
 {
-    ++SmartScheduleLatencyLimited;
+    ++context->SmartScheduleLatencyLimited;
     SmartScheduleSlice = SmartScheduleInterval;
 }
 
 void
-DisableLimitedSchedulingLatency(void)
+DisableLimitedSchedulingLatency(XephyrContext* context)
 {
-    --SmartScheduleLatencyLimited;
+    --context->SmartScheduleLatencyLimited;
 
     /* protect against bugs */
-    if (SmartScheduleLatencyLimited < 0)
-        SmartScheduleLatencyLimited = 0;
+    if (context->SmartScheduleLatencyLimited < 0)
+        context->SmartScheduleLatencyLimited = 0;
 }
 
 void
@@ -480,7 +480,7 @@ Dispatch(XephyrContext* context)
     SmartScheduleSlice = SmartScheduleInterval;
     init_client_ready();
 
-    while (!dispatchException) {
+    while (!context->dispatchException) {
         if (InputCheckPending(context)) {
             ProcessInputEvents(context);
             FlushIfCriticalOutputPending();
@@ -494,18 +494,18 @@ Dispatch(XephyrContext* context)
 	*  each round
 	*****************/
 
-        if (!dispatchException && clients_are_ready()) {
-            client = SmartScheduleClient();
+        if (!context->dispatchException && clients_are_ready()) {
+            client = SmartScheduleClient(context);
 
-            isItTimeToYield = FALSE;
+            context->isItTimeToYield = FALSE;
 
-            start_tick = SmartScheduleTime;
-            while (!isItTimeToYield) {
+            start_tick = context->SmartScheduleTime;
+            while (!context->isItTimeToYield) {
                 if (InputCheckPending(context))
                     ProcessInputEvents(context);
 
                 FlushIfCriticalOutputPending();
-                if ((SmartScheduleTime - start_tick) >= SmartScheduleSlice)
+                if ((context->SmartScheduleTime - start_tick) >= SmartScheduleSlice)
                 {
                     /* Penalize xephyr_context->clients which consume ticks */
                     if (client->smart_priority > SMART_MIN_PRIORITY)
@@ -550,7 +550,7 @@ Dispatch(XephyrContext* context)
                     }
                 }
                 if (!SmartScheduleSignalEnable)
-                    SmartScheduleTime = GetTimeInMillis();
+                    context->SmartScheduleTime = GetTimeInMillis();
 
 #ifdef XSERVER_DTRACE
                 if (XSERVER_REQUEST_DONE_ENABLED())
@@ -572,16 +572,16 @@ Dispatch(XephyrContext* context)
             }
             FlushAllOutput();
             if (client == SmartLastClient)
-                client->smart_stop_tick = SmartScheduleTime;
+                client->smart_stop_tick = context->SmartScheduleTime;
         }
-        dispatchException &= ~DE_PRIORITYCHANGE;
+        context->dispatchException &= ~DE_PRIORITYCHANGE;
     }
 #if defined(DDXBEFORERESET)
     ddxBeforeReset();
 #endif
     KillAllClients(client->context);
-    dispatchException &= ~DE_RESET;
-    SmartScheduleLatencyLimited = 0;
+    context->dispatchException &= ~DE_RESET;
+    context->SmartScheduleLatencyLimited = 0;
     ResetOsBuffers();
 }
 
@@ -790,7 +790,7 @@ ProcChangeWindowAttributes(ClientPtr client)
     if (len != Ones(stuff->valueMask))
         return BadLength;
     return ChangeWindowAttributes(pWin,
-                                  stuff->valueMask, (XID *) &stuff[1], client);
+                                  stuff->valueMask, (XID *) &stuff[1], client, client->context);
 }
 
 int
@@ -1323,7 +1323,7 @@ ProcCloseFont(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
     rc = dixLookupResourceByType((void **) &pFont, stuff->id, RT_FONT,
-                                 client, DixDestroyAccess);
+                                 client, DixDestroyAccess, client->context);
     if (rc == Success) {
         FreeResource(stuff->id, RT_NONE, client->context);
         return Success;
@@ -1344,7 +1344,7 @@ ProcQueryFont(ClientPtr client)
     REQUEST(xResourceReq);
     REQUEST_SIZE_MATCH(xResourceReq);
 
-    rc = dixLookupFontable(&pFont, stuff->id, client, DixGetAttrAccess);
+    rc = dixLookupFontable(&pFont, stuff->id, client, DixGetAttrAccess, client->context);
     if (rc != Success)
         return rc;
 
@@ -1392,7 +1392,7 @@ ProcQueryTextExtents(ClientPtr client)
     REQUEST(xQueryTextExtentsReq);
     REQUEST_AT_LEAST_SIZE(xQueryTextExtentsReq);
 
-    rc = dixLookupFontable(&pFont, stuff->fid, client, DixGetAttrAccess);
+    rc = dixLookupFontable(&pFont, stuff->fid, client, DixGetAttrAccess, client->context);
     if (rc != Success)
         return rc;
 
@@ -1534,7 +1534,7 @@ ProcFreePixmap(ClientPtr client)
     REQUEST_SIZE_MATCH(xResourceReq);
 
     rc = dixLookupResourceByType((void **) &pMap, stuff->id, RT_PIXMAP,
-                                 client, DixDestroyAccess);
+                                 client, DixDestroyAccess, client->context);
     if (rc == Success) {
         FreeResource(stuff->id, RT_NONE, client->context);
         return Success;
@@ -1585,7 +1585,7 @@ ProcChangeGC(ClientPtr client)
     REQUEST(xChangeGCReq);
     REQUEST_AT_LEAST_SIZE(xChangeGCReq);
 
-    result = dixLookupGC(&pGC, stuff->gc, client, DixSetAttrAccess);
+    result = dixLookupGC(&pGC, stuff->gc, client, DixSetAttrAccess, client->context);
     if (result != Success)
         return result;
 
@@ -1606,10 +1606,10 @@ ProcCopyGC(ClientPtr client)
     REQUEST(xCopyGCReq);
     REQUEST_SIZE_MATCH(xCopyGCReq);
 
-    result = dixLookupGC(&pGC, stuff->srcGC, client, DixGetAttrAccess);
+    result = dixLookupGC(&pGC, stuff->srcGC, client, DixGetAttrAccess, client->context);
     if (result != Success)
         return result;
-    result = dixLookupGC(&dstGC, stuff->dstGC, client, DixSetAttrAccess);
+    result = dixLookupGC(&dstGC, stuff->dstGC, client, DixSetAttrAccess, client->context);
     if (result != Success)
         return result;
     if ((dstGC->pScreen != pGC->pScreen) || (dstGC->depth != pGC->depth))
@@ -1635,7 +1635,7 @@ ProcSetDashes(ClientPtr client)
         return BadValue;
     }
 
-    result = dixLookupGC(&pGC, stuff->gc, client, DixSetAttrAccess);
+    result = dixLookupGC(&pGC, stuff->gc, client, DixSetAttrAccess, client->context);
     if (result != Success)
         return result;
 
@@ -1660,7 +1660,7 @@ ProcSetClipRectangles(ClientPtr client)
         client->errorValue = stuff->ordering;
         return BadValue;
     }
-    result = dixLookupGC(&pGC, stuff->gc, client, DixSetAttrAccess);
+    result = dixLookupGC(&pGC, stuff->gc, client, DixSetAttrAccess, client->context);
     if (result != Success)
         return result;
 
@@ -1681,7 +1681,7 @@ ProcFreeGC(ClientPtr client)
     REQUEST(xResourceReq);
     REQUEST_SIZE_MATCH(xResourceReq);
 
-    rc = dixLookupGC(&pGC, stuff->id, client, DixDestroyAccess);
+    rc = dixLookupGC(&pGC, stuff->id, client, DixDestroyAccess, client->context);
     if (rc != Success)
         return rc;
 
@@ -2469,7 +2469,7 @@ ProcFreeColormap(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
     rc = dixLookupResourceByType((void **) &pmap, stuff->id, RT_COLORMAP,
-                                 client, DixDestroyAccess);
+                                 client, DixDestroyAccess, client->context);
     if (rc == Success) {
         /* Freeing a default colormap is a no-op */
         if (!(pmap->flags & IsDefault))
@@ -2496,7 +2496,7 @@ ProcCopyColormapAndFree(ClientPtr client)
     LEGAL_NEW_RESOURCE(mid, client);
     rc = dixLookupResourceByType((void **) &pSrcMap, stuff->srcCmap,
                                  RT_COLORMAP, client,
-                                 DixReadAccess | DixRemoveAccess);
+                                 DixReadAccess | DixRemoveAccess, client->context);
     if (rc == Success)
         return CopyColormapAndFree(mid, pSrcMap, client->index, client->context);
     client->errorValue = stuff->srcCmap;
@@ -2513,7 +2513,7 @@ ProcInstallColormap(ClientPtr client)
     REQUEST_SIZE_MATCH(xResourceReq);
 
     rc = dixLookupResourceByType((void **) &pcmp, stuff->id, RT_COLORMAP,
-                                 client, DixInstallAccess);
+                                 client, DixInstallAccess, client->context);
     if (rc != Success)
         goto out;
 
@@ -2542,7 +2542,7 @@ ProcUninstallColormap(ClientPtr client)
     REQUEST_SIZE_MATCH(xResourceReq);
 
     rc = dixLookupResourceByType((void **) &pcmp, stuff->id, RT_COLORMAP,
-                                 client, DixUninstallAccess);
+                                 client, DixUninstallAccess, client->context);
     if (rc != Success)
         goto out;
 
@@ -2610,7 +2610,7 @@ ProcAllocColor(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xAllocColorReq);
     rc = dixLookupResourceByType((void **) &pmap, stuff->cmap, RT_COLORMAP,
-                                 client, DixAddAccess);
+                                 client, DixAddAccess, client->context);
     if (rc == Success) {
         xAllocColorReply acr = {
             .type = X_Reply,
@@ -2647,7 +2647,7 @@ ProcAllocNamedColor(ClientPtr client)
 
     REQUEST_FIXED_SIZE(xAllocNamedColorReq, stuff->nbytes);
     rc = dixLookupResourceByType((void **) &pcmp, stuff->cmap, RT_COLORMAP,
-                                 client, DixAddAccess);
+                                 client, DixAddAccess, client->context);
     if (rc == Success) {
         xAllocNamedColorReply ancr = {
             .type = X_Reply,
@@ -2692,7 +2692,7 @@ ProcAllocColorCells(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xAllocColorCellsReq);
     rc = dixLookupResourceByType((void **) &pcmp, stuff->cmap, RT_COLORMAP,
-                                 client, DixAddAccess);
+                                 client, DixAddAccess, client->context);
     if (rc == Success) {
         int npixels, nmasks;
         long length;
@@ -2753,7 +2753,7 @@ ProcAllocColorPlanes(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xAllocColorPlanesReq);
     rc = dixLookupResourceByType((void **) &pcmp, stuff->cmap, RT_COLORMAP,
-                                 client, DixAddAccess);
+                                 client, DixAddAccess, client->context);
     if (rc == Success) {
         xAllocColorPlanesReply acpr;
         int npixels;
@@ -2815,7 +2815,7 @@ ProcFreeColors(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xFreeColorsReq);
     rc = dixLookupResourceByType((void **) &pcmp, stuff->cmap, RT_COLORMAP,
-                                 client, DixRemoveAccess);
+                                 client, DixRemoveAccess, client->context);
     if (rc == Success) {
         int count;
 
@@ -2841,7 +2841,7 @@ ProcStoreColors(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xStoreColorsReq);
     rc = dixLookupResourceByType((void **) &pcmp, stuff->cmap, RT_COLORMAP,
-                                 client, DixWriteAccess);
+                                 client, DixWriteAccess, client->context);
     if (rc == Success) {
         int count;
 
@@ -2867,7 +2867,7 @@ ProcStoreNamedColor(ClientPtr client)
 
     REQUEST_FIXED_SIZE(xStoreNamedColorReq, stuff->nbytes);
     rc = dixLookupResourceByType((void **) &pcmp, stuff->cmap, RT_COLORMAP,
-                                 client, DixWriteAccess);
+                                 client, DixWriteAccess, client->context);
     if (rc == Success) {
         xColorItem def;
 
@@ -2895,7 +2895,7 @@ ProcQueryColors(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xQueryColorsReq);
     rc = dixLookupResourceByType((void **) &pcmp, stuff->cmap, RT_COLORMAP,
-                                 client, DixReadAccess);
+                                 client, DixReadAccess, client->context);
     if (rc == Success) {
         int count;
         xrgb *prgbs;
@@ -2942,7 +2942,7 @@ ProcLookupColor(ClientPtr client)
 
     REQUEST_FIXED_SIZE(xLookupColorReq, stuff->nbytes);
     rc = dixLookupResourceByType((void **) &pcmp, stuff->cmap, RT_COLORMAP,
-                                 client, DixReadAccess);
+                                 client, DixReadAccess, client->context);
     if (rc == Success) {
         CARD16 exactRed, exactGreen, exactBlue;
 
@@ -2993,7 +2993,7 @@ ProcCreateCursor(ClientPtr client)
     LEGAL_NEW_RESOURCE(stuff->cid, client);
 
     rc = dixLookupResourceByType((void **) &src, stuff->source, RT_PIXMAP,
-                                 client, DixReadAccess);
+                                 client, DixReadAccess, client->context);
     if (rc != Success) {
         client->errorValue = stuff->source;
         return rc;
@@ -3005,7 +3005,7 @@ ProcCreateCursor(ClientPtr client)
     /* Find and validate cursor mask pixmap, if one is provided */
     if (stuff->mask != None) {
         rc = dixLookupResourceByType((void **) &msk, stuff->mask, RT_PIXMAP,
-                                     client, DixReadAccess);
+                                     client, DixReadAccess, client->context);
         if (rc != Success) {
             client->errorValue = stuff->mask;
             return rc;
@@ -3106,7 +3106,7 @@ ProcFreeCursor(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xResourceReq);
     rc = dixLookupResourceByType((void **) &pCursor, stuff->id, RT_CURSOR,
-                                 client, DixDestroyAccess);
+                                 client, DixDestroyAccess, client->context);
     if (rc == Success) {
         FreeResource(stuff->id, RT_NONE, client->context);
         return Success;
@@ -3353,7 +3353,7 @@ ProcKillClient(ClientPtr client)
             /* force yield and return Success, so that Dispatch()
              * doesn't try to touch client
              */
-            isItTimeToYield = TRUE;
+            client->context->isItTimeToYield = TRUE;
         }
         return Success;
     }
@@ -3588,8 +3588,8 @@ InitClient(ClientPtr client, int i, void *ospriv)
     client->requestVector = InitialVector;
     client->osPrivate = ospriv;
     QueryMinMaxKeyCodes(&client->minKC, &client->maxKC, client->context);
-    client->smart_start_tick = SmartScheduleTime;
-    client->smart_stop_tick = SmartScheduleTime;
+    client->smart_start_tick = client->context->SmartScheduleTime;
+    client->smart_stop_tick = client->context->SmartScheduleTime;
     client->clientIds = NULL;
 }
 
@@ -4000,7 +4000,7 @@ AddScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
 
     update_desktop_dimensions(context);
 
-    dixRegisterScreenPrivateKey(&cursorScreenDevPriv, pScreen, PRIVATE_CURSOR,
+    dixRegisterScreenPrivateKey(&context->cursorScreenDevPriv, pScreen, PRIVATE_CURSOR,
                                 0);
 
     return i;
@@ -4057,7 +4057,7 @@ AddGPUScreen(Bool (*pfnInit) (ScreenPtr /*pScreen */ ,
      * register the Screen PRIVATE_CURSOR key unconditionally.
      */
     if (!dixPrivatesCreated(PRIVATE_CURSOR))
-        dixRegisterScreenPrivateKey(&cursorScreenDevPriv, pScreen,
+        dixRegisterScreenPrivateKey(&context->cursorScreenDevPriv, pScreen,
                                     PRIVATE_CURSOR, 0);
 
     return i;

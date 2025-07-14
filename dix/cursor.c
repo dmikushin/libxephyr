@@ -70,7 +70,7 @@ typedef struct _GlyphShare {
 
 static GlyphSharePtr sharedGlyphs = (GlyphSharePtr) NULL;
 
-DevScreenPrivateKeyRec cursorScreenDevPriv;
+// DevScreenPrivateKeyRec cursorScreenDevPriv;
 
 static CARD32 cursorSerial;
 
@@ -342,13 +342,13 @@ AllocGlyphCursor(Font source, unsigned sourceChar, Font mask, unsigned maskChar,
     GlyphSharePtr pShare;
 
     rc = dixLookupResourceByType((void **) &sourcefont, source, RT_FONT,
-                                 client, DixUseAccess);
+                                 client, DixUseAccess, client->context);
     if (rc != Success) {
         client->errorValue = source;
         return rc;
     }
     rc = dixLookupResourceByType((void **) &maskfont, mask, RT_FONT, client,
-                                 DixUseAccess);
+                                 DixUseAccess, client->context);
     if (rc != Success && mask != None) {
         client->errorValue = mask;
         return rc;
@@ -512,7 +512,7 @@ CreateRootCursor(char *unused1, unsigned int unused2, XephyrContext* context)
         return NullCursor;
 
     err = dixLookupResourceByType((void **) &cursorfont, fontID, RT_FONT,
-                                  context->serverClient, DixReadAccess);
+                                  context->serverClient, DixReadAccess, context);
     if (err != Success)
         return NullCursor;
     if (AllocGlyphCursor(fontID, 0, fontID, 1, 0, 0, 0, ~0, ~0, ~0,

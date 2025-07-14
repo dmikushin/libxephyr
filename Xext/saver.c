@@ -458,7 +458,7 @@ UninstallSaverColormap(ScreenPtr pScreen, XephyrContext* context)
     if (pPriv && pPriv->installedMap != None) {
         rc = dixLookupResourceByType((void **) &pCmap, pPriv->installedMap,
                                      RT_COLORMAP, context->serverClient,
-                                     DixUninstallAccess);
+                                     DixUninstallAccess, context);
         if (rc == Success)
             (*pCmap->pScreen->UninstallColormap) (pCmap, context);
         pPriv->installedMap = None;
@@ -524,7 +524,7 @@ CreateSaverWindow(ScreenPtr pScreen, XephyrContext* context)
     if (pAttr->pCursor) {
         CursorPtr cursor;
         if (!pWin->optional)
-            if (!MakeWindowOptional(pWin)) {
+            if (!MakeWindowOptional(pWin, context)) {
                 FreeResource(pWin->drawable.id, RT_NONE, context);
                 return FALSE;
             }
@@ -533,7 +533,7 @@ CreateSaverWindow(ScreenPtr pScreen, XephyrContext* context)
             FreeCursor(pWin->optional->cursor, (Cursor) 0, context);
         pWin->optional->cursor = cursor;
         pWin->cursorIsNone = FALSE;
-        CheckWindowOptionalNeed(pWin);
+        CheckWindowOptionalNeed(pWin, context);
         mask |= CWCursor;
     }
     if (mask)
@@ -541,7 +541,7 @@ CreateSaverWindow(ScreenPtr pScreen, XephyrContext* context)
 
     if (pAttr->colormap != None)
         (void) ChangeWindowAttributes(pWin, CWColormap, &pAttr->colormap,
-                                      context->serverClient);
+                                      context->serverClient, context);
 
     MapWindow(pWin, context->serverClient);
 
@@ -554,7 +554,7 @@ CreateSaverWindow(ScreenPtr pScreen, XephyrContext* context)
         return TRUE;
 
     result = dixLookupResourceByType((void **) &pCmap, wantMap, RT_COLORMAP,
-                                     context->serverClient, DixInstallAccess);
+                                     context->serverClient, DixInstallAccess, context);
     if (result != Success)
         return TRUE;
 
@@ -742,6 +742,7 @@ ScreenSaverSetAttributes(ClientPtr client)
     ScreenSaverScreenPrivatePtr pPriv = 0;
     ScreenSaverAttrPtr pAttr = 0;
     int ret, len, class, bw, depth;
+    XephyrContext* context = client->context;
     unsigned long visual;
     int idepth, ivisual;
     Bool fOK;
@@ -906,7 +907,7 @@ ScreenSaverSetAttributes(ClientPtr client)
             else {
                 ret =
                     dixLookupResourceByType((void **) &pPixmap, pixID,
-                                            RT_PIXMAP, client, DixReadAccess);
+                                            RT_PIXMAP, client, DixReadAccess, context);
                 if (ret == Success) {
                     if ((pPixmap->drawable.depth != depth) ||
                         (pPixmap->drawable.pScreen != pScreen)) {
@@ -938,7 +939,7 @@ ScreenSaverSetAttributes(ClientPtr client)
             else {
                 ret =
                     dixLookupResourceByType((void **) &pPixmap, pixID,
-                                            RT_PIXMAP, client, DixReadAccess);
+                                            RT_PIXMAP, client, DixReadAccess, context);
                 if (ret == Success) {
                     if ((pPixmap->drawable.depth != depth) ||
                         (pPixmap->drawable.pScreen != pScreen)) {
@@ -1022,7 +1023,7 @@ ScreenSaverSetAttributes(ClientPtr client)
         case CWColormap:
             cmap = (Colormap) * pVlist;
             ret = dixLookupResourceByType((void **) &pCmap, cmap, RT_COLORMAP,
-                                          client, DixUseAccess);
+                                          client, DixUseAccess, context);
             if (ret != Success) {
                 client->errorValue = cmap;
                 goto PatchUp;
@@ -1041,7 +1042,7 @@ ScreenSaverSetAttributes(ClientPtr client)
             }
             else {
                 ret = dixLookupResourceByType((void **) &pCursor, cursorID,
-                                              RT_CURSOR, client, DixUseAccess);
+                                              RT_CURSOR, client, DixUseAccess, context);
                 if (ret != Success) {
                     client->errorValue = cursorID;
                     goto PatchUp;
@@ -1116,7 +1117,7 @@ ProcScreenSaverSetAttributes(ClientPtr client)
         REQUEST_AT_LEAST_SIZE(xScreenSaverSetAttributesReq);
 
         status = dixLookupResourceByClass((void **) &draw, stuff->drawable,
-                                          XRC_DRAWABLE, client, DixWriteAccess);
+                                          context->XRC_DRAWABLE, client, DixWriteAccess);
         if (status != Success)
             return (status == BadValue) ? BadDrawable : status;
 
@@ -1131,8 +1132,8 @@ ProcScreenSaverSetAttributes(ClientPtr client)
             tmp = *((CARD32 *) &stuff[1] + pback_offset);
             if ((tmp != None) && (tmp != ParentRelative)) {
                 status = dixLookupResourceByType((void **) &backPix, tmp,
-                                                 XRT_PIXMAP, client,
-                                                 DixReadAccess);
+                                                 context->XRT_PIXMAP, client,
+                                                 DixReadAccess, context);
                 if (status != Success)
                     return status;
             }
@@ -1143,8 +1144,8 @@ ProcScreenSaverSetAttributes(ClientPtr client)
             tmp = *((CARD32 *) &stuff[1] + pbord_offset);
             if (tmp != CopyFromParent) {
                 status = dixLookupResourceByType((void **) &bordPix, tmp,
-                                                 XRT_PIXMAP, client,
-                                                 DixReadAccess);
+                                                 context->XRT_PIXMAP, client,
+                                                 DixReadAccess, context);
                 if (status != Success)
                     return status;
             }
@@ -1155,8 +1156,8 @@ ProcScreenSaverSetAttributes(ClientPtr client)
             tmp = *((CARD32 *) &stuff[1] + cmap_offset);
             if (tmp != CopyFromParent) {
                 status = dixLookupResourceByType((void **) &cmap, tmp,
-                                                 XRT_COLORMAP, client,
-                                                 DixReadAccess);
+                                                 context->XRT_COLORMAP, client,
+                                                 DixReadAccess, context);
                 if (status != Success)
                     return status;
             }
@@ -1199,7 +1200,7 @@ ProcScreenSaverUnsetAttributes(ClientPtr client)
         REQUEST_SIZE_MATCH(xScreenSaverUnsetAttributesReq);
 
         rc = dixLookupResourceByClass((void **) &draw, stuff->drawable,
-                                      XRC_DRAWABLE, client, DixWriteAccess);
+                                      context->XRC_DRAWABLE, client, DixWriteAccess);
         if (rc != Success)
             return (rc == BadValue) ? BadDrawable : rc;
 
@@ -1394,9 +1395,9 @@ ScreenSaverExtensionInit(XephyrContext* context)
     if (!dixRegisterPrivateKey(&ScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return;
 
-    AttrType = CreateNewResourceType(ScreenSaverFreeAttr, "SaverAttr");
-    SaverEventType = CreateNewResourceType(ScreenSaverFreeEvents, "SaverEvent");
-    SuspendType = CreateNewResourceType(ScreenSaverFreeSuspend, "SaverSuspend");
+    AttrType = CreateNewResourceType(ScreenSaverFreeAttr, "SaverAttr", context);
+    SaverEventType = CreateNewResourceType(ScreenSaverFreeEvents, "SaverEvent", context);
+    SuspendType = CreateNewResourceType(ScreenSaverFreeSuspend, "SaverSuspend", context);
 
     for (i = 0; i < context->screenInfo.numScreens; i++) {
         pScreen = context->screenInfo.screens[i];
@@ -1406,7 +1407,7 @@ ScreenSaverExtensionInit(XephyrContext* context)
         (extEntry = AddExtension(ScreenSaverName, ScreenSaverNumberEvents, 0,
                                  ProcScreenSaverDispatch,
                                  SProcScreenSaverDispatch, NULL,
-                                 StandardMinorOpcode))) {
+                                 StandardMinorOpcode, context))) {
         ScreenSaverEventBase = extEntry->eventBase;
         EventSwapVector[ScreenSaverEventBase] =
             (EventSwapPtr) SScreenSaverNotifyEvent;

@@ -171,11 +171,11 @@ miDbeAllocBackBufferName(WindowPtr pWin, XID bufId, int swapAction)
 
         /* Security creation/labeling check. */
         rc = XaceHook(XACE_RESOURCE_ACCESS, pScreen->context->serverClient, bufId,
-                      dbeDrawableResType, pDbeWindowPriv->pBackBuffer,
+                      pScreen->context->dbeDrawableResType, pDbeWindowPriv->pBackBuffer,
                       RT_WINDOW, pWin, DixCreateAccess);
 
         /* Make the back pixmap a DBE drawable resource. */
-        if (rc != Success || !AddResource(bufId, dbeDrawableResType,
+        if (rc != Success || !AddResource(bufId, pScreen->context->dbeDrawableResType,
                                           pDbeWindowPriv->pBackBuffer, pScreen->context)) {
             /* free the buffer and the drawable resource */
             FreeResource(bufId, RT_NONE, pWin->drawable.pScreen->context);
@@ -202,7 +202,7 @@ miDbeAllocBackBufferName(WindowPtr pWin, XID bufId, int swapAction)
          */
 
         /* Associate the new ID with an existing pixmap. */
-        if (!AddResource(bufId, dbeDrawableResType,
+        if (!AddResource(bufId, pScreen->context->dbeDrawableResType,
                          (void *) pDbeWindowPriv->pBackBuffer, pScreen->context)) {
             return BadAlloc;
         }
@@ -228,9 +228,10 @@ static void
 miDbeAliasBuffers(DbeWindowPrivPtr pDbeWindowPriv)
 {
     int i;
+    ScreenPtr pScreen = pDbeWindowPriv->pWindow->drawable.pScreen;
 
     for (i = 0; i < pDbeWindowPriv->nBufferIDs; i++) {
-        ChangeResourceValue(pDbeWindowPriv->IDs[i], dbeDrawableResType,
+        ChangeResourceValue(pDbeWindowPriv->IDs[i], pScreen->context->dbeDrawableResType,
                             (void *) pDbeWindowPriv->pBackBuffer);
     }
 
@@ -372,7 +373,7 @@ miDbeSwapBuffers(ClientPtr client, int *pNumWindows, DbeSwapInfoPtr swapInfo)
  *
  * Description:
  *
- *     This is the MI function for deleting the dbeWindowPrivResType resource.
+ *     This is the MI function for deleting the context->dbeWindowPrivResType resource.
  *     This function is invoked indirectly by calling FreeResource() to free
  *     the resources associated with a DBE buffer ID.  There are 5 ways that
  *     miDbeWinPrivDelete() can be called by FreeResource().  They are:
@@ -392,7 +393,7 @@ miDbeSwapBuffers(ClientPtr client, int *pNumWindows, DbeSwapInfoPtr swapInfo)
  *       the server resets.
  *
  *     When FreeResource() is called for a DBE buffer ID, the delete function
- *     for the only other type of DBE resource, dbeDrawableResType, is also
+ *     for the only other type of DBE resource, context->dbeDrawableResType, is also
  *     invoked.  This delete function (DbeDrawableDelete) is a NOOP to make
  *     resource deletion easier.  It is not guaranteed which delete function is
  *     called first.  Hence, we will let miDbeWinPrivDelete() free all DBE

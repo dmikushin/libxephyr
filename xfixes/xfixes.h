@@ -29,23 +29,23 @@
 
 #include "resource.h"
 
-extern RESTYPE RegionResType;
-extern int XFixesErrorBase;
+/* extern RESTYPE RegionResType; */
+/* extern int context->XFixesErrorBase; */
 
-#define VERIFY_REGION(pRegion, rid, client, mode)			\
+#define VERIFY_REGION(pRegion, rid, client, mode, context)			\
     do {								\
 	int err;							\
 	err = dixLookupResourceByType((void **) &pRegion, rid,	\
-				      RegionResType, client, mode);	\
+				      context->RegionResType, client, mode, context);	\
 	if (err != Success) {						\
 	    client->errorValue = rid;					\
 	    return err;							\
 	}								\
     } while (0)
 
-#define VERIFY_REGION_OR_NONE(pRegion, rid, client, mode) { \
+#define VERIFY_REGION_OR_NONE(pRegion, rid, client, mode, context) { \
     pRegion = 0; \
-    if (rid) VERIFY_REGION(pRegion, rid, client, mode); \
+    if (rid) VERIFY_REGION(pRegion, rid, client, mode, context); \
 }
 
 extern RegionPtr

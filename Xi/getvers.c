@@ -63,7 +63,7 @@ SOFTWARE.
 
 #include "getvers.h"
 
-XExtensionVersion XIVersion;
+/* XExtensionVersion XIVersion; */
 
 /***********************************************************************
  *
@@ -104,8 +104,8 @@ ProcXGetExtensionVersion(ClientPtr client)
         .RepType = X_GetExtensionVersion,
         .sequenceNumber = client->sequence,
         .length = 0,
-        .major_version = XIVersion.major_version,
-        .minor_version = XIVersion.minor_version,
+        .major_version = client->context->XIVersion.major_version,
+        .minor_version = client->context->XIVersion.minor_version,
         .present = TRUE
     };
 

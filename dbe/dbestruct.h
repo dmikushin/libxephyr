@@ -54,7 +54,7 @@ typedef struct {
 /* DEFINES */
 
 #define DBE_SCREEN_PRIV(pScreen) ((DbeScreenPrivPtr) \
-    dixLookupPrivate(&(pScreen)->devPrivates, dbeScreenPrivKey))
+    dixLookupPrivate(&(pScreen)->devPrivates, &((pScreen)->context->dbeScreenPrivKeyRec)))
 
 #define DBE_SCREEN_PRIV_FROM_DRAWABLE(pDrawable) \
     DBE_SCREEN_PRIV((pDrawable)->pScreen)
@@ -72,7 +72,7 @@ typedef struct {
     DBE_SCREEN_PRIV((pGC)->pScreen)
 
 #define DBE_WINDOW_PRIV(pWin) ((DbeWindowPrivPtr) \
-    dixLookupPrivate(&(pWin)->devPrivates, dbeWindowPrivKey))
+    dixLookupPrivate(&(pWin)->devPrivates, &((pWin)->drawable.pScreen->context->dbeWindowPrivKeyRec)))
 
 /* Initial size of the buffer ID array in the window priv. */
 #define DBE_INIT_MAX_IDS	2

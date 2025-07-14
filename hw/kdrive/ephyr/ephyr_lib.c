@@ -32,8 +32,7 @@
 #include "glx_extinit.h"
 
 extern Window EphyrPreExistingHostWin;
-extern Bool kdHasPointer;
-extern Bool kdHasKbd;
+/* kdHasPointer, kdHasKbd moved to XephyrContext */
 
 void processScreenOrOutputArg(const char *screen_size, const char *output, char *parent_id, XephyrContext* context);
 void processOutputArg(const char *output, char *parent_id, XephyrContext* context);
@@ -43,7 +42,9 @@ void
 InitCard(char *name)
 {
     EPHYR_DBG("mark");
-    KdCardInfoAdd(&ephyrFuncs, 0);
+    extern XephyrContext *kdGlobalContext;
+    if (kdGlobalContext)
+        KdCardInfoAdd(&ephyrFuncs, 0, kdGlobalContext);
 }
 
 void
@@ -62,8 +63,8 @@ InitInput(int argc, char **argv, XephyrContext* context)
         KdAddKeyboardDriver(&EphyrKeyboardDriver);
         KdAddPointerDriver(&EphyrMouseDriver);
 
-        if (!kdHasKbd) {
-            ki = KdNewKeyboard();
+        if (!context->kdHasKbd) {
+            ki = KdNewKeyboard(context);
             if (!ki)
                 FatalError("Couldn't create Xephyr keyboard\n", context);
             ki->driver = &EphyrKeyboardDriver;
@@ -71,7 +72,7 @@ InitInput(int argc, char **argv, XephyrContext* context)
             KdAddKeyboard(ki, context);
         }
 
-        if (!kdHasPointer) {
+        if (!context->kdHasPointer) {
             pi = KdNewPointer();
             if (!pi)
                 FatalError("Couldn't create Xephyr pointer\n", context);
@@ -140,7 +141,7 @@ processScreenOrOutputArg(const char *screen_size, const char *output, char *pare
     KdCardInfo *card;
 
     InitCard(0);                /*Put each screen on a separate card */
-    card = KdCardInfoLast();
+    card = KdCardInfoLast(context);
 
     if (card) {
         KdScreenInfo *screen;
@@ -148,7 +149,7 @@ processScreenOrOutputArg(const char *screen_size, const char *output, char *pare
         Bool use_geometry;
 
         screen = KdScreenInfoAdd(card);
-        KdParseScreen(screen, screen_size);
+        KdParseScreen(screen, screen_size, context);
         screen->driver = calloc(1, sizeof(EphyrScrPriv));
         if (!screen->driver)
             FatalError("Couldn't alloc screen private\n", context);
@@ -159,7 +160,7 @@ processScreenOrOutputArg(const char *screen_size, const char *output, char *pare
 
         use_geometry = (strchr(screen_size, '+') != NULL);
         EPHYR_DBG("screen number:%d\n", screen->mynum);
-        hostx_add_screen(screen, p_id, screen->mynum, use_geometry, output);
+        hostx_add_screen(screen, p_id, screen->mynum, use_geometry, output, context);
     }
     else {
         ErrorF("No matching card found!\n", context);
@@ -294,7 +295,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
     }
     else if (!strcmp(argv[i], "-name")) {
         if (i + 1 < argc && argv[i + 1][0] != '-') {
-            hostx_use_resname(argv[i + 1], 1);
+            hostx_use_resname(argv[i + 1], 1, context);
             return 2;
         }
         else {
@@ -304,7 +305,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
     }
     else if (!strcmp(argv[i], "-title")) {
         if (i + 1 < argc && argv[i + 1][0] != '-') {
-            hostx_set_title(argv[i + 1]);
+            hostx_set_title(argv[i + 1], context);
             return 2;
         }
         else {
@@ -358,7 +359,7 @@ OsVendorInit(XephyrContext* context)
         ephyrFuncs.initCursor = &ephyrCursorInit;
 
     if (context->serverGeneration == 1) {
-        if (!KdCardInfoLast()) {
+        if (!KdCardInfoLast(context)) {
             processScreenArg("640x480", NULL, context);
         }
         hostx_init(context);

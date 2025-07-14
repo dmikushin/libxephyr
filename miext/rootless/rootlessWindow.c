@@ -303,7 +303,7 @@ RootlessChangeWindowAttributes(WindowPtr pWin, unsigned long vmask)
         if (pWin->backgroundState == ParentRelative) {
             XID pixel = 0;
 
-            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, context->serverClient);
+            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, context->serverClient, context);
         }
     }
 
@@ -459,7 +459,7 @@ RootlessRealizeWindow(WindowPtr pWin)
         if (pWin->backgroundState == ParentRelative) {
             XID pixel = 0;
 
-            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, context->serverClient);
+            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, context->serverClient, context);
         }
     }
 
@@ -1648,7 +1648,7 @@ RootlessSetPixmapOfAncestors(WindowPtr pWin)
             // disallow ParentRelative background state on top level
             XID pixel = 0;
 
-            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, context->serverClient);
+            ChangeWindowAttributes(pWin, CWBackPixel, &pixel, context->serverClient, context);
             RL_DEBUG_MSG("Cleared ParentRelative on 0x%x.\n", pWin);
             break;
         }

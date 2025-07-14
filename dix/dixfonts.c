@@ -142,7 +142,7 @@ SetDefaultFont(const char *defaultfontname, XephyrContext* context)
     if (err != Success)
         return FALSE;
     err = dixLookupResourceByType((void **) &pf, fid, RT_FONT, context->serverClient,
-                                  DixReadAccess);
+                                  DixReadAccess, context);
     if (err != Success)
         return FALSE;
     context->defaultFont = pf;
@@ -1093,7 +1093,7 @@ static ChangeGCVal clearGC[] = { {.ptr = NullPixmap} };
 #define clearGCmask (GCClipMask)
 
 static int
-doPolyText(ClientPtr client, PTclosurePtr c)
+doPolyText(ClientPtr client, PTclosurePtr c, XephyrContext *context)
 {
     FontPtr pFont = c->pGC->font, oldpFont;
     int err = Success, lgerr;   /* err is in X error, not font error, space */
@@ -1152,7 +1152,7 @@ doPolyText(ClientPtr client, PTclosurePtr c)
                 |((Font) *(c->pElt + 3)) << 8
                 | ((Font) *(c->pElt + 2)) << 16 | ((Font) *(c->pElt + 1)) << 24;
             err = dixLookupResourceByType((void **) &pFont, fid, RT_FONT,
-                                          client, DixUseAccess);
+                                          client, DixUseAccess, context);
             if (err != Success) {
                 /* restore pFont for step 4 (described below) */
                 pFont = oldpFont;
@@ -1366,7 +1366,7 @@ PolyText(ClientPtr client, DrawablePtr pDraw, GC * pGC, unsigned char *pElt,
     local_closure.did = did;
     local_closure.err = Success;
 
-    (void) doPolyText(client, &local_closure);
+    (void) doPolyText(client, &local_closure, client->context);
     return Success;
 }
 
@@ -1897,7 +1897,7 @@ find_old_font(XID id)
 
     /* xfont2 callback - no context available, use safe defaults */
     XephyrContext* ctx = NULL;
-    dixLookupResourceByType(&pFont, id, RT_NONE, ctx ? ctx->serverClient : NULL, DixReadAccess);
+    dixLookupResourceByType(&pFont, id, RT_NONE, ctx ? ctx->serverClient : NULL, DixReadAccess, NULL);
     return (FontPtr) pFont;
 }
 

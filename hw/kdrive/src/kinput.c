@@ -81,13 +81,9 @@ static KdPointerMatrix kdPointerMatrix = {
      {0, 1, 0}}
 };
 
-extern Bool kdRawPointerCoordinates;
+/* kdRawPointerCoordinates moved to XephyrContext */
 
-extern const char *kdGlobalXkbRules;
-extern const char *kdGlobalXkbModel;
-extern const char *kdGlobalXkbLayout;
-extern const char *kdGlobalXkbVariant;
-extern const char *kdGlobalXkbOptions;
+/* kdGlobalXkb variables now in XephyrContext */
 
 #ifdef FNONBLOCK
 #define NOBLOCK FNONBLOCK
@@ -673,7 +669,7 @@ KdRemoveKeyboardDriver(KdKeyboardDriver * driver)
 }
 
 KdKeyboardInfo *
-KdNewKeyboard(void)
+KdNewKeyboard(XephyrContext* context)
 {
     KdKeyboardInfo *ki = calloc(sizeof(KdKeyboardInfo), 1);
 
@@ -689,12 +685,13 @@ KdNewKeyboard(void)
     ki->options = NULL;
     ki->name = strdup("Generic Keyboard");
     ki->path = NULL;
-    ki->xkbRules = strdup(kdGlobalXkbRules ? kdGlobalXkbRules : XKB_DFLT_RULES_FILE);
-    ki->xkbModel = strdup(kdGlobalXkbModel ? kdGlobalXkbModel : XKB_DFLT_KB_MODEL);
-    ki->xkbLayout = strdup(kdGlobalXkbLayout ? kdGlobalXkbLayout : XKB_DFLT_KB_LAYOUT);
-    ki->xkbVariant = strdup(kdGlobalXkbVariant ? kdGlobalXkbVariant : XKB_DFLT_KB_VARIANT);
-    ki->xkbOptions = strdup(kdGlobalXkbOptions ? kdGlobalXkbOptions : XKB_DFLT_KB_OPTIONS);
-    ki->context = NULL;  // Initialize context field
+    /* Use context parameter instead of kdGlobalContext */
+    ki->xkbRules = strdup(context && context->kdGlobalXkbRules ? context->kdGlobalXkbRules : XKB_DFLT_RULES_FILE);
+    ki->xkbModel = strdup(context && context->kdGlobalXkbModel ? context->kdGlobalXkbModel : XKB_DFLT_KB_MODEL);
+    ki->xkbLayout = strdup(context && context->kdGlobalXkbLayout ? context->kdGlobalXkbLayout : XKB_DFLT_KB_LAYOUT);
+    ki->xkbVariant = strdup(context && context->kdGlobalXkbVariant ? context->kdGlobalXkbVariant : XKB_DFLT_KB_VARIANT);
+    ki->xkbOptions = strdup(context && context->kdGlobalXkbOptions ? context->kdGlobalXkbOptions : XKB_DFLT_KB_OPTIONS);
+    ki->context = context;  // Store context reference
 
     return ki;
 }
@@ -935,7 +932,7 @@ KdParseKeyboard(const char *arg, XephyrContext* context)
     InputOption *options = NULL;
     KdKeyboardInfo *ki = NULL;
 
-    ki = KdNewKeyboard();
+    ki = KdNewKeyboard(context);
     if (!ki)
         return NULL;
 
@@ -1046,8 +1043,8 @@ KdParsePointer(const char *arg, XephyrContext* context)
     pi = KdNewPointer();
     if (!pi)
         return NULL;
-    pi->emulateMiddleButton = kdEmulateMiddleButton;
-    pi->transformCoordinates = !kdRawPointerCoordinates;
+    pi->emulateMiddleButton = context->kdEmulateMiddleButton;
+    pi->transformCoordinates = !context->kdRawPointerCoordinates;
     pi->protocol = NULL;
     pi->nButtons = 5;           /* XXX should not be hardcoded */
     pi->inputClass = KD_MOUSE;
@@ -1141,7 +1138,7 @@ KdInitInput(XephyrContext* context)
     mieqInit(context);
 
 #if defined(CONFIG_UDEV) || defined(CONFIG_HAL)
-    if (SeatId) /* Enable input hot-plugging */
+    if (context->SeatId) /* Enable input hot-plugging */
         config_init(context);
 #endif
 }
@@ -1150,7 +1147,7 @@ void
 KdCloseInput(XephyrContext* context)
 {
 #if defined(CONFIG_UDEV) || defined(CONFIG_HAL)
-    if (SeatId) /* Input hot-plugging is enabled */
+    if (context->SeatId) /* Input hot-plugging is enabled */
         config_fini(context);
 #endif
 
@@ -1794,7 +1791,7 @@ KdCursorOffScreen(ScreenPtr *ppScreen, int *x, int *y)
     int n_best_x, n_best_y;
     CARD32 ms;
 
-    if (kdDisableZaphod || pScreen->context->screenInfo.numScreens <= 1)
+    if (pScreen->context->kdDisableZaphod || pScreen->context->screenInfo.numScreens <= 1)
         return FALSE;
 
     if (0 <= *x && *x < pScreen->width && 0 <= *y && *y < pScreen->height)
@@ -1946,7 +1943,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
                 }
             }
             else if (strcmp(value, "keyboard") == 0) {
-                ki = KdNewKeyboard();
+                ki = KdNewKeyboard(context);
                 if (!ki) {
                     input_option_free_list(&optionsdup);
                     return BadAlloc;
@@ -1960,7 +1957,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
 #ifdef CONFIG_HAL
         else if (strcmp(key, "_source") == 0 &&
                  strcmp(value, "server/hal") == 0) {
-            if (SeatId) {
+            if (context->SeatId) {
                 /* Input hot-plugging is enabled */
                 if (attrs->flags & ATTR_POINTER) {
                     pi = KdNewPointer();
@@ -1970,7 +1967,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
                     }
                 }
                 else if (attrs->flags & ATTR_KEYBOARD) {
-                    ki = KdNewKeyboard();
+                    ki = KdNewKeyboard(context);
                     if (!ki) {
                         input_option_free_list(&optionsdup);
                         return BadAlloc;
@@ -1987,7 +1984,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
 #ifdef CONFIG_UDEV
         else if (strcmp(key, "_source") == 0 &&
                  strcmp(value, "server/udev") == 0) {
-            if (SeatId) {
+            if (context->SeatId) {
                 /* Input hot-plugging is enabled */
                 if (attrs->flags & ATTR_POINTER) {
                     pi = KdNewPointer();
@@ -1997,7 +1994,7 @@ NewInputDeviceRequest(InputOption *options, InputAttributes * attrs,
                     }
                 }
                 else if (attrs->flags & ATTR_KEYBOARD) {
-                    ki = KdNewKeyboard();
+                    ki = KdNewKeyboard(context);
                     if (!ki) {
                         input_option_free_list(&optionsdup);
                         return BadAlloc;

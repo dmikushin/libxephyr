@@ -25,6 +25,7 @@
 #include "resource.h"
 #include <X11/extensions/render.h>
 #include <X11/extensions/xfixeswire.h>
+#include <X11/extensions/XI.h>
 #ifdef CONFIG_UDEV
 #include <libudev.h>
 #endif
@@ -112,14 +113,14 @@ typedef struct _XephyrContext {
     CallbackListPtr ClientStateCallback;
     int connBlockScreenStart;
     xConnSetupPrefix connSetupPrefix;
-    int dispatchException;
+    volatile char dispatchException;
     OsTimerPtr dispatchExceptionTimer;
     Bool isItTimeToYield;
     fd_set output_pending_clients;
     PaddingInfo PixmapWidthPaddingInfo[33];
     CallbackListPtr ServerGrabCallback;
     Bool SmartScheduleLatencyLimited;
-    CARD32 SmartScheduleTime;
+    long SmartScheduleTime;
     int terminateDelay;
     void* fontPatternCache;
     CallbackListPtr RootWindowFinalizeCallback;
@@ -128,7 +129,7 @@ typedef struct _XephyrContext {
     CallbackListPtr DeviceEventCallback;
     Mask DontPropagateMasks[MAXDEVICES];
     CallbackListPtr EventCallback;
-    InternalEvent *event_filters[128];
+    Mask event_filters[MAXDEVICES][MAXEVENTS];
     Bool syncEvents;
     InternalEvent *InputEventList;
     CallbackListPtr PropertyStateCallback;
@@ -202,7 +203,7 @@ typedef struct _XephyrContext {
     Bool ephyrNoDRI;
     Bool ephyrNoXV; 
     char* ephyrResName;
-    char* ephyrResNameFromCmd;
+    int ephyrResNameFromCmd;
     char* ephyrTitle;
     void* cursorScreenDevPriv;
     Bool EphyrWantGrayScale;
@@ -233,6 +234,8 @@ typedef struct _XephyrContext {
     int DevicePropertyNotify;
     RESTYPE RT_INPUTCLIENT;
     DevPrivateKeyRec XIClientPrivateKeyRec;
+    XExtensionVersion XIVersion;
+    CARD8 event_base[7];  // numInputClasses = 7, indexed by KeyClass, ButtonClass, etc.
     
     // GLX module variables
     ExtensionEntry* GlxExtensionEntry;
@@ -240,6 +243,7 @@ typedef struct _XephyrContext {
     RESTYPE __glXContextRes;
     RESTYPE __glXDrawableRes;
     int __glXEventBase;
+    RESTYPE idResource;
     
     // Glamor module variables
     Atom glamorBrightness;
@@ -249,6 +253,9 @@ typedef struct _XephyrContext {
     Atom glamorHue;
     Atom glamorSaturation;
     int glamor_debug_level;
+    DevPrivateKeyRec glamor_gc_private_key;
+    DevPrivateKeyRec glamor_pixmap_private_key;
+    DevPrivateKeyRec glamor_screen_private_key;
     
     // Ephyr Glamor variables
     Bool ephyr_glamor;
@@ -257,6 +264,8 @@ typedef struct _XephyrContext {
     
     // XFixes module variables
     Bool CursorVisible;
+    int XFixesErrorBase;
+    int XFixesEventBase;
     
     // Picture/Render module variables
     RESTYPE PictFormatType;
@@ -288,7 +297,7 @@ typedef struct _XephyrContext {
     RESTYPE ShmSegType;
     
     // Saved procedure vector
-    void* SavedProcVector;
+    int (*SavedProcVector[256]) (ClientPtr client);
     
     // Additional global variables  
     int present_request;
@@ -312,6 +321,68 @@ typedef struct _XephyrContext {
     DeviceIntPtr xtestkeyboard;
     DeviceIntPtr xtestpointer;
     
+    // Panoramix resource types
+    RESTYPE XRC_DRAWABLE;
+    RESTYPE XRT_COLORMAP;
+    RESTYPE XRT_GC;
+    RESTYPE XRT_PICTURE;
+    RESTYPE XRT_PIXMAP;
+    RESTYPE XRT_WINDOW;
+    CallbackListPtr XaceHooks[15]; /* XACE_NUM_HOOKS = 15 */
+    int XkbEventBase;
+    int XkbKeyboardErrorCode;
+    int XkbReqCode;
+    
+    // Xv extension variables
+    int XvErrorBase;
+    int XvEventBase;
+    unsigned long XvExtensionGeneration;
+    unsigned long XvScreenGeneration;
+    unsigned long XvResourceGeneration;
+    int XvReqCode;
+    
+    // XvMC extension variables
+    int XvMCEventBase;
+    int XvMCReqCode;
+    void* XvMCScreenInitProc;  /* Actually: int (*)(ScreenPtr, int, XvMCAdaptorPtr) */
+    
+    // Xv resource types
+    RESTYPE XvRTPort;
+    RESTYPE XvRTEncoding;
+    RESTYPE XvRTGrab;
+    RESTYPE XvRTVideoNotify;
+    RESTYPE XvRTVideoNotifyList;
+    RESTYPE XvRTPortNotify;
+    unsigned long XvXRTPort;
+    
+    // DBE resource types
+    RESTYPE dbeDrawableResType;
+    DevPrivateKeyRec dbeScreenPrivKeyRec;
+    DevPrivateKeyRec dbeWindowPrivKeyRec;
+    RESTYPE dbeWindowPrivResType;
+    
+    // EXA private keys
+    DevPrivateKeyRec exaScreenPrivateKeyRec;
+    
+    // KDrive (kdrive) module variables
+    struct _KdCardInfo* kdCardInfo;
+    Bool kdDisableZaphod;
+    Bool kdEmulateMiddleButton;
+    char* kdGlobalXkbLayout;
+    char* kdGlobalXkbModel;
+    char* kdGlobalXkbOptions;
+    char* kdGlobalXkbRules;
+    char* kdGlobalXkbVariant;
+    Bool kdHasKbd;
+    Bool kdHasPointer;
+    Bool kdRawPointerCoordinates;
+    DevPrivateKeyRec kdScreenPrivateKeyRec;
+    Bool kdEnabled;
+    int kdSubpixelOrder;
+    char* kdSwitchCmd;
+    DDXPointRec kdOrigin;
+    Bool kdDumbDriver;
+    Bool kdSoftCursor;
     
 } XephyrContext;
 

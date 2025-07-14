@@ -88,6 +88,9 @@ typedef struct {
 
         @see AddSubResourceSizeSpec */
     xXResResourceSizeValue    *sizeValue;
+    
+    /* Context for accessing global state */
+    XephyrContext *context;
 } ConstructResourceBytesCtx;
 
 /** @brief Allocate and add a sequence of bytes at the end of a fragment list.
@@ -173,6 +176,7 @@ InitConstructResourceBytesCtx(ConstructResourceBytesCtx *ctx,
     ctx->status = Success;
     ctx->numSpecs = numSpecs;
     ctx->specs = specs;
+    ctx->context = sendClient->context;
     ctx->visitedResources = ht_create(sizeof(XID), 0,
                                       ht_resourceid_hash, ht_resourceid_compare,
                                       NULL);
@@ -267,20 +271,27 @@ ProcXResQueryClients(ClientPtr client)
     return Success;
 }
 
+typedef struct {
+    int *counts;
+    XephyrContext *context;
+} ResFindAllResData;
+
 static void
 ResFindAllRes(void *value, XID id, RESTYPE type, void *cdata)
 {
-    int *counts = (int *) cdata;
+    ResFindAllResData *data = (ResFindAllResData *) cdata;
+    int *counts = data->counts;
+    XephyrContext *context = data->context;
 
-    counts[(type & TypeMask) - 1]++;
+    counts[(type & context->TypeMask) - 1]++;
 }
 
 static CARD32
-resourceTypeAtom(int i)
+resourceTypeAtom(int i, XephyrContext* context)
 {
     CARD32 ret;
 
-    const char *name = LookupResourceName(i);
+    const char *name = LookupResourceName(i, context);
     if (strcmp(name, XREGISTRY_UNKNOWN))
         ret = MakeAtom(name, strlen(name), TRUE);
     else {
@@ -310,13 +321,14 @@ ProcXResQueryClientResources(ClientPtr client)
         return BadValue;
     }
 
-    counts = calloc(lastResourceType + 1, sizeof(int));
+    counts = calloc(context->lastResourceType + 1, sizeof(int));
 
-    FindAllClientResources(client->context->clients[clientID], ResFindAllRes, counts, client->context);
+    ResFindAllResData resData = { counts, client->context };
+    FindAllClientResources(client->context->clients[clientID], ResFindAllRes, &resData, client->context);
 
     num_types = 0;
 
-    for (i = 0; i <= lastResourceType; i++) {
+    for (i = 0; i <= context->lastResourceType; i++) {
         if (counts[i])
             num_types++;
     }
@@ -338,11 +350,11 @@ ProcXResQueryClientResources(ClientPtr client)
     if (num_types) {
         xXResType scratch;
 
-        for (i = 0; i < lastResourceType; i++) {
+        for (i = 0; i < context->lastResourceType; i++) {
             if (!counts[i])
                 continue;
 
-            scratch.resource_type = resourceTypeAtom(i + 1);
+            scratch.resource_type = resourceTypeAtom(i + 1, client->context);
             scratch.count = counts[i];
 
             if (client->swapped) {
@@ -358,15 +370,20 @@ ProcXResQueryClientResources(ClientPtr client)
     return Success;
 }
 
+typedef struct {
+    unsigned long *bytes;
+    XephyrContext *context;
+} ResFindResourcePixmapsData;
+
 static void
 ResFindResourcePixmaps(void *value, XID id, RESTYPE type, void *cdata)
 {
-    SizeType sizeFunc = GetResourceTypeSizeFunc(type);
+    ResFindResourcePixmapsData *data = (ResFindResourcePixmapsData *)cdata;
+    SizeType sizeFunc = GetResourceTypeSizeFunc(type, data->context);
     ResourceSizeRec size = { 0, 0, 0 };
-    unsigned long *bytes = cdata;
 
     sizeFunc(value, id, &size);
-    *bytes += size.pixmapRefSize;
+    *(data->bytes) += size.pixmapRefSize;
 }
 
 static int
@@ -388,8 +405,13 @@ ProcXResQueryClientPixmapBytes(ClientPtr client)
 
     bytes = 0;
 
+    ResFindResourcePixmapsData data = {
+        .bytes = &bytes,
+        .context = client->context
+    };
+
     FindAllClientResources(client->context->clients[clientID], ResFindResourcePixmaps,
-                           (void *) (&bytes), client->context);
+                           (void *) (&data), client->context);
 
     rep = (xXResQueryClientPixmapBytesReply) {
         .type = X_Reply,
@@ -697,12 +719,12 @@ AddSubResourceSizeSpec(void *value,
             if (!ok) {
                 ctx->status = BadAlloc;
             } else {
-                SizeType sizeFunc = GetResourceTypeSizeFunc(type);
+                SizeType sizeFunc = GetResourceTypeSizeFunc(type, ctx->context);
                 ResourceSizeRec size = { 0, 0, 0 };
                 sizeFunc(value, id, &size);
 
                 crossRef->spec.resource = id;
-                crossRef->spec.type = resourceTypeAtom(type);
+                crossRef->spec.type = resourceTypeAtom(type, ctx->sendClient->context);
                 crossRef->bytes = size.resourceSize;
                 crossRef->refCount = size.refCnt;
                 crossRef->useCount = 1;
@@ -769,13 +791,13 @@ AddResourceSizeValue(void *ptr, XID id, RESTYPE type, void *cdata)
         if (!ok) {
             ctx->status = BadAlloc;
         } else {
-            SizeType sizeFunc = GetResourceTypeSizeFunc(type);
+            SizeType sizeFunc = GetResourceTypeSizeFunc(type, ctx->context);
             ResourceSizeRec size = { 0, 0, 0 };
 
             sizeFunc(ptr, id, &size);
 
             value->size.spec.resource = id;
-            value->size.spec.type = resourceTypeAtom(type);
+            value->size.spec.type = resourceTypeAtom(type, ctx->sendClient->context);
             value->size.bytes = size.resourceSize;
             value->size.refCount = size.refCnt;
             value->size.useCount = 1;
@@ -783,7 +805,7 @@ AddResourceSizeValue(void *ptr, XID id, RESTYPE type, void *cdata)
 
             ctx->sizeValue = value;
             ctx->visitedSubResources = ht;
-            FindSubResources(ptr, type, AddSubResourceSizeSpec, ctx);
+            FindSubResources(ptr, type, AddSubResourceSizeSpec, ctx, ctx->context);
             ctx->visitedSubResources = NULL;
             ctx->sizeValue = NULL;
 
@@ -1101,9 +1123,9 @@ SProcResDispatch (ClientPtr client)
 }
 
 void
-ResExtensionInit(void)
+ResExtensionInit(XephyrContext* context)
 {
     (void) AddExtension(XRES_NAME, 0, 0,
                         ProcResDispatch, SProcResDispatch,
-                        NULL, StandardMinorOpcode);
+                        NULL, StandardMinorOpcode, context);
 }

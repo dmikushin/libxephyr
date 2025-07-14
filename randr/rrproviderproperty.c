@@ -25,14 +25,20 @@
 #include "propertyst.h"
 #include "swaprep.h"
 
+typedef struct {
+    xRRProviderPropertyNotifyEvent *event;
+    XephyrContext *context;
+} DeliverPropertyEventData;
+
 static int
 DeliverPropertyEvent(WindowPtr pWin, void *value)
 {
-    xRRProviderPropertyNotifyEvent *event = value;
+    DeliverPropertyEventData *data = value;
+    xRRProviderPropertyNotifyEvent *event = data->event;
     RREventPtr *pHead, pRREvent;
 
     dixLookupResourceByType((void **) &pHead, pWin->drawable.id,
-                            pWin->drawable.pScreen->context->RREventType, pWin->drawable.pScreen->context->serverClient, DixReadAccess);
+                            pWin->drawable.pScreen->context->RREventType, pWin->drawable.pScreen->context->serverClient, DixReadAccess, data->context);
     if (!pHead)
         return WT_WALKCHILDREN;
 
@@ -50,8 +56,12 @@ DeliverPropertyEvent(WindowPtr pWin, void *value)
 static void
 RRDeliverPropertyEvent(ScreenPtr pScreen, xEvent *event)
 {
-    if (!(dispatchException & (DE_RESET | DE_TERMINATE)))
-        WalkTree(pScreen, DeliverPropertyEvent, event);
+    if (!(pScreen->context->dispatchException & (DE_RESET | DE_TERMINATE))) {
+        DeliverPropertyEventData data;
+        data.event = (xRRProviderPropertyNotifyEvent *)event;
+        data.context = pScreen->context;
+        WalkTree(pScreen, DeliverPropertyEvent, &data);
+    }
 }
 
 static void

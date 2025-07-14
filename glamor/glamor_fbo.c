@@ -87,7 +87,7 @@ glamor_pixmap_ensure_fb(glamor_screen_private *glamor_priv,
             break;
         }
 
-        glamor_fallback("glamor: Failed to create fbo, %s\n", str);
+        glamor_fallback_simple("glamor: Failed to create fbo, %s\n", glamor_priv->screen->context, str);
         err = -1;
     }
 

@@ -30,7 +30,7 @@
 #include "misync.h"
 #include "misyncstr.h"
 
-DevPrivateKeyRec miSyncScreenPrivateKey;
+DevPrivateKeyRec context->miSyncScreenPrivateKey;
 
 /* Default implementations of the sync screen functions */
 void
@@ -172,8 +172,8 @@ miSyncSetup(ScreenPtr pScreen)
         &miSyncScreenDestroyFence
     };
 
-    if (!dixPrivateKeyRegistered(&miSyncScreenPrivateKey)) {
-        if (!dixRegisterPrivateKey(&miSyncScreenPrivateKey, PRIVATE_SCREEN,
+    if (!dixPrivateKeyRegistered(&context->miSyncScreenPrivateKey)) {
+        if (!dixRegisterPrivateKey(&context->miSyncScreenPrivateKey, PRIVATE_SCREEN,
                                    sizeof(SyncScreenPrivRec), pScreen->context))
             return FALSE;
     }

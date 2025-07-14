@@ -234,7 +234,7 @@ XIGetDevice(xEvent *xE, XephyrContext* context)
 
         rc = dixLookupDevice(&pDev, id, context->serverClient, DixUnknownAccess);
         if (rc != Success)
-            ErrorF("[dix] XIGetDevice failed on XACE restrictions (%d)\n", context, NULL, rc);
+            ErrorF("[dix] XIGetDevice failed on XACE restrictions (%d)\n", context, rc);
     }
     return pDev;
 }
@@ -275,7 +275,7 @@ CopyKeyClass(DeviceIntPtr device, DeviceIntPtr master)
 
     mk->sourceid = device->id;
 
-    if (!XkbDeviceApplyKeymap(master, device->key->xkbInfo->desc))
+    if (!XkbDeviceApplyKeymap(master, device->key->xkbInfo->desc, device->context))
         FatalError("Couldn't pivot keymap from device to core!\n", device->context);
 }
 
@@ -285,7 +285,7 @@ CopyKeyClass(DeviceIntPtr device, DeviceIntPtr master)
  * linked lists, the full list is duplicated.
  */
 static void
-DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
+DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to, XephyrContext* context)
 {
     ClassesPtr classes;
 
@@ -303,7 +303,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*i)) {
                 *i = calloc(1, sizeof(IntegerFeedbackClassRec));
                 if (!(*i)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context);
                     return;
                 }
             }
@@ -333,7 +333,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*s)) {
                 *s = calloc(1, sizeof(StringFeedbackClassRec));
                 if (!(*s)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context);
                     return;
                 }
             }
@@ -363,7 +363,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*b)) {
                 *b = calloc(1, sizeof(BellFeedbackClassRec));
                 if (!(*b)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context);
                     return;
                 }
             }
@@ -394,7 +394,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*l)) {
                 *l = calloc(1, sizeof(LedFeedbackClassRec));
                 if (!(*l)) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context);
                     return;
                 }
             }
@@ -415,7 +415,7 @@ DeepCopyFeedbackClasses(DeviceIntPtr from, DeviceIntPtr to)
 }
 
 static void
-DeepCopyKeyboardClasses(DeviceIntPtr from, DeviceIntPtr to)
+DeepCopyKeyboardClasses(DeviceIntPtr from, DeviceIntPtr to, XephyrContext* context)
 {
     ClassesPtr classes;
 
@@ -439,7 +439,7 @@ DeepCopyKeyboardClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*k)) {
                 *k = calloc(1, sizeof(KbdFeedbackClassRec));
                 if (!*k) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context);
                     return;
                 }
             }
@@ -537,7 +537,7 @@ DeepCopyKeyboardClasses(DeviceIntPtr from, DeviceIntPtr to)
 /* FIXME: this should really be shared with the InitValuatorAxisClassRec and
  * similar */
 static void
-DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
+DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to, XephyrContext* context)
 {
     ClassesPtr classes;
 
@@ -556,7 +556,7 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
             if (!(*p)) {
                 *p = calloc(1, sizeof(PtrFeedbackClassRec));
                 if (!*p) {
-                    ErrorF("[Xi] Cannot alloc memory for class copy.", from->context);
+                    ErrorF("[Xi] Cannot alloc memory for class copy.", context);
                     return;
                 }
             }
@@ -723,17 +723,17 @@ DeepCopyPointerClasses(DeviceIntPtr from, DeviceIntPtr to)
  */
 void
 DeepCopyDeviceClasses(DeviceIntPtr from, DeviceIntPtr to,
-                      DeviceChangedEvent *dce)
+                      DeviceChangedEvent *dce, XephyrContext* context)
 {
     input_lock();
 
     /* generic feedback classes, not tied to pointer and/or keyboard */
-    DeepCopyFeedbackClasses(from, to);
+    DeepCopyFeedbackClasses(from, to, context);
 
     if ((dce->flags & DEVCHANGE_KEYBOARD_EVENT))
-        DeepCopyKeyboardClasses(from, to);
+        DeepCopyKeyboardClasses(from, to, context);
     if ((dce->flags & DEVCHANGE_POINTER_EVENT))
-        DeepCopyPointerClasses(from, to);
+        DeepCopyPointerClasses(from, to, context);
 
     input_unlock();
 }
@@ -788,7 +788,7 @@ ChangeMasterDeviceClasses(DeviceIntPtr device, DeviceChangedEvent *dce, XephyrCo
     device->public.devicePrivate = slave->public.devicePrivate;
 
     /* FIXME: the classes may have changed since we generated the event. */
-    DeepCopyDeviceClasses(slave, device, dce);
+    DeepCopyDeviceClasses(slave, device, dce, context);
     dce->deviceid = device->id;
     XISendDeviceChangedEvent(device, dce, context);
 }
@@ -806,7 +806,7 @@ ChangeMasterDeviceClasses(DeviceIntPtr device, DeviceChangedEvent *dce, XephyrCo
  */
 static void
 UpdateDeviceMotionMask(DeviceIntPtr device, unsigned short state,
-                       Mask motion_mask)
+                       Mask motion_mask, XephyrContext* context)
 {
     Mask mask;
 
@@ -953,7 +953,7 @@ UpdateDeviceState(DeviceIntPtr device, DeviceEvent *event, XephyrContext* contex
 
         IncreaseButtonCount(device, key, &b->buttonsDown, &b->motionMask,
                             &b->state);
-        UpdateDeviceMotionMask(device, b->state, b->motionMask);
+        UpdateDeviceMotionMask(device, b->state, b->motionMask, context);
     }
     else if (event->type == ET_ButtonRelease) {
         if (!b)
@@ -986,7 +986,7 @@ UpdateDeviceState(DeviceIntPtr device, DeviceEvent *event, XephyrContext* contex
 
         DecreaseButtonCount(device, key, &b->buttonsDown, &b->motionMask,
                             &b->state);
-        UpdateDeviceMotionMask(device, b->state, b->motionMask);
+        UpdateDeviceMotionMask(device, b->state, b->motionMask, context);
     }
     else if (event->type == ET_ProximityIn)
         device->proximity->in_proximity = TRUE;
@@ -1005,7 +1005,7 @@ UpdateDeviceState(DeviceIntPtr device, DeviceEvent *event, XephyrContext* contex
 
         IncreaseButtonCount(device, key, &t->buttonsDown, &t->motionMask,
                             &t->state);
-        UpdateDeviceMotionMask(device, t->state, DeviceButtonMotionMask);
+        UpdateDeviceMotionMask(device, t->state, DeviceButtonMotionMask, context);
     }
     else if (event->type == ET_TouchEnd) {
         BUG_RETURN_VAL(!b || !v, context, DONT_PROCESS);
@@ -1019,7 +1019,7 @@ UpdateDeviceState(DeviceIntPtr device, DeviceEvent *event, XephyrContext* contex
 
         DecreaseButtonCount(device, key, &t->buttonsDown, &t->motionMask,
                             &t->state);
-        UpdateDeviceMotionMask(device, t->state, DeviceButtonMotionMask);
+        UpdateDeviceMotionMask(device, t->state, DeviceButtonMotionMask, context);
     }
 
     return DEFAULT;
@@ -1370,7 +1370,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
     else {
         rc = dixLookupResourceByType((void **) win, listener->listener,
                                      listener->resource_type,
-                                     context->serverClient, DixSendAccess);
+                                     context->serverClient, DixSendAccess, context);
         if (rc != Success)
             return FALSE;
 
@@ -1395,7 +1395,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
         }
         else if (listener->level == XI) {
             int xi_type = GetXIType(TouchGetPointerEventType(ev), context);
-            Mask xi_filter = event_get_filter_from_type(dev, xi_type);
+            Mask xi_filter = event_get_filter_from_type(dev, xi_type, context);
 
             nt_list_for_each_entry(iclients,
                                    wOtherInputMasks(*win)->inputClients, next)
@@ -1407,7 +1407,7 @@ RetrieveTouchDeliveryData(DeviceIntPtr dev, TouchPointInfoPtr ti,
         }
         else {
             int coretype = GetCoreType(TouchGetPointerEventType(ev));
-            Mask core_filter = event_get_filter_from_type(dev, coretype);
+            Mask core_filter = event_get_filter_from_type(dev, coretype, context);
             OtherClients *oclients;
 
             /* all others */
@@ -1870,7 +1870,7 @@ ProcessDeviceEvent(InternalEvent *ev, DeviceIntPtr device, XephyrContext* contex
     }
 
     /* send KeyPress and KeyRelease events to XACE plugins */
-    if (XaceHookIsSet(XACE_KEY_AVAIL) &&
+    if (XaceHookIsSet(XACE_KEY_AVAIL, context) &&
             (event->type == ET_KeyPress || event->type == ET_KeyRelease)) {
         xEvent *core;
         int count;
@@ -2278,7 +2278,7 @@ RetrieveGestureDeliveryData(DeviceIntPtr dev, InternalEvent *ev, GestureListener
     }
     else {
         rc = dixLookupResourceByType((void **) win, listener->listener, listener->resource_type,
-                                     context->serverClient, DixSendAccess);
+                                     context->serverClient, DixSendAccess, context);
         if (rc != Success)
             return FALSE;
 
@@ -2500,7 +2500,7 @@ GrabButton(ClientPtr client, DeviceIntPtr dev, DeviceIntPtr modifier_device,
         cursor = NullCursor;
     else {
         rc = dixLookupResourceByType((void **) &cursor, param->cursor,
-                                     RT_CURSOR, client, DixUseAccess);
+                                     RT_CURSOR, client, DixUseAccess, context);
         if (rc != Success) {
             client->errorValue = param->cursor;
             return rc;
@@ -2599,7 +2599,7 @@ GrabWindow(ClientPtr client, DeviceIntPtr dev, int type,
         cursor = NullCursor;
     else {
         rc = dixLookupResourceByType((void **) &cursor, param->cursor,
-                                     RT_CURSOR, client, DixUseAccess);
+                                     RT_CURSOR, client, DixUseAccess, context);
         if (rc != Success) {
             client->errorValue = param->cursor;
             return rc;
@@ -2727,7 +2727,7 @@ AddExtensionClient(WindowPtr pWin, ClientPtr client, Mask mask, int mskidx, Xeph
 {
     InputClientsPtr others;
 
-    if (!pWin->optional && !MakeWindowOptional(pWin))
+    if (!pWin->optional && !MakeWindowOptional(pWin, context))
         return BadAlloc;
     others = AllocInputClient();
     if (!others)
@@ -2843,7 +2843,7 @@ InputClientGone(WindowPtr pWin, XID id, XephyrContext* context)
                     mask->inputClients = other->next;
                     FreeInputMask(&mask);
                     pWin->optional->inputMasks = (OtherInputMasks *) NULL;
-                    CheckWindowOptionalNeed(pWin);
+                    CheckWindowOptionalNeed(pWin, context);
                     FreeInputClient(&other);
                 }
                 else {

@@ -126,7 +126,7 @@ SetReqFds(ClientPtr client, int req_fds) {
 /*
  * Scheduling interface
  */
-extern long SmartScheduleTime;
+/* extern long SmartScheduleTime; */
 extern long SmartScheduleInterval;
 extern long SmartScheduleSlice;
 extern long SmartScheduleMaxSlice;
@@ -180,7 +180,7 @@ static inline Bool any_output_pending(void) {
 #define SMART_MAX_PRIORITY  (20)
 #define SMART_MIN_PRIORITY  (-20)
 
-extern void SmartScheduleInit(void);
+extern void SmartScheduleInit(XephyrContext* context);
 
 /* This prototype is used pervasively in Xext, dix */
 #define DISPATCH_PROC(func) int func(ClientPtr /* client */)

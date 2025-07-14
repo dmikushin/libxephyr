@@ -74,11 +74,11 @@ glamor_create_mask_picture(ScreenPtr screen,
  * glamor_trapezoids will generate trapezoid mask accumulating in
  * system memory.
  */
-void
-glamor_trapezoids(CARD8 op,
-                  PicturePtr src, PicturePtr dst,
-                  PictFormatPtr mask_format, INT16 x_src, INT16 y_src,
-                  int ntrap, xTrapezoid *traps)
+static void
+glamor_trapezoids_with_context(CARD8 op,
+                               PicturePtr src, PicturePtr dst,
+                               PictFormatPtr mask_format, INT16 x_src, INT16 y_src,
+                               int ntrap, xTrapezoid *traps, XephyrContext *context)
 {
     ScreenPtr screen = dst->pDrawable->pScreen;
     BoxRec bounds;
@@ -98,8 +98,8 @@ glamor_trapezoids(CARD8 op,
         else
             mask_format = PictureMatchFormat(screen, 8, PICT_a8);
         for (; ntrap; ntrap--, traps++)
-            glamor_trapezoids(op, src, dst, mask_format, x_src,
-                              y_src, 1, traps);
+            glamor_trapezoids_with_context(op, src, dst, mask_format, x_src,
+                                           y_src, 1, traps, context);
         return;
     }
 
@@ -153,4 +153,16 @@ glamor_trapezoids(CARD8 op,
         pixman_image_unref(image);
 
     FreePicture(picture, 0, screen->context);
+}
+
+/* Wrapper function that matches the Trapezoids function pointer signature */
+void
+glamor_trapezoids(CARD8 op,
+                  PicturePtr src, PicturePtr dst,
+                  PictFormatPtr mask_format, INT16 x_src, INT16 y_src,
+                  int ntrap, xTrapezoid *traps)
+{
+    ScreenPtr screen = dst->pDrawable->pScreen;
+    glamor_trapezoids_with_context(op, src, dst, mask_format, x_src, y_src,
+                                   ntrap, traps, screen->context);
 }

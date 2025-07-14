@@ -110,13 +110,13 @@ glamor_set_destination_pixmap(PixmapPtr pixmap)
 }
 
 Bool
-glamor_set_planemask(int depth, unsigned long planemask)
+glamor_set_planemask(XephyrContext *context, int depth, unsigned long planemask)
 {
     if (glamor_pm_is_solid(depth, planemask)) {
         return GL_TRUE;
     }
 
-    glamor_fallback("unsupported planemask %lx\n", planemask);
+    glamor_fallback_simple("unsupported planemask %lx\n", context, planemask);
     return GL_FALSE;
 }
 
@@ -184,7 +184,7 @@ glamor_set_alu(ScreenPtr screen, unsigned char alu)
         glLogicOp(GL_SET);
         break;
     default:
-        glamor_fallback("unsupported alu %x\n", alu);
+        glamor_fallback_simple("unsupported alu %x\n", screen->context, alu);
         return FALSE;
     }
 

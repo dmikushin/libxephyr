@@ -147,9 +147,9 @@ extern _X_EXPORT void miSetZeroLineBias(ScreenPtr /* pScreen */ ,
 #define IsXDecreasingOctant(_octant)	((_octant) & XDECREASING)
 #define IsYDecreasingOctant(_octant)	((_octant) & YDECREASING)
 
-extern _X_EXPORT DevPrivateKeyRec miZeroLineScreenKeyRec;
+/* extern _X_EXPORT DevPrivateKeyRec context->miZeroLineScreenKeyRec; */
 
-#define miZeroLineScreenKey (&miZeroLineScreenKeyRec)
+#define miZeroLineScreenKey (&context->miZeroLineScreenKeyRec)
 
 extern _X_EXPORT int miZeroClipLine(int /*xmin */ ,
                                     int /*ymin */ ,

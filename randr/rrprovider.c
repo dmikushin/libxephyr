@@ -36,7 +36,7 @@
 void
 RRProviderInitErrorValue(XephyrContext* context)
 {
-    SetResourceTypeErrorValue(context->RRProviderType, context->RRErrorBase + BadRRProvider);
+    SetResourceTypeErrorValue(context->RRProviderType, context->RRErrorBase + BadRRProvider, context);
 }
 
 #define ADD_PROVIDER(_pScreen) do {                                 \
@@ -452,7 +452,7 @@ RRProviderDestroyResource (void *value, XID pid, XephyrContext* context)
 Bool
 RRProviderInit(XephyrContext* context)
 {
-    context->RRProviderType = CreateNewResourceType(RRProviderDestroyResource, "Provider");
+    context->RRProviderType = CreateNewResourceType(RRProviderDestroyResource, "Provider", context);
     if (!context->RRProviderType)
         return FALSE;
 
@@ -463,7 +463,7 @@ extern _X_EXPORT Bool
 RRProviderLookup(XID id, RRProviderPtr *provider_p, XephyrContext* context)
 {
     int rc = dixLookupResourceByType((void **)provider_p, id,
-                                   context->RRProviderType, NullClient, DixReadAccess);
+                                   context->RRProviderType, NullClient, DixReadAccess, context);
     if (rc == Success)
         return TRUE;
     return FALSE;

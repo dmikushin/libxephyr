@@ -776,7 +776,7 @@ TouchAddRegularListener(DeviceIntPtr dev, TouchPointInfoPtr ti,
 
     if (mask & EVENT_XI1_MASK) {
         int xitype = GetXIType(TouchGetPointerEventType(ev), dev->context);
-        Mask xi_filter = event_get_filter_from_type(dev, xitype);
+        Mask xi_filter = event_get_filter_from_type(dev, xitype, dev->context);
 
         nt_list_for_each_entry(iclients, inputMasks->inputClients, next) {
             if (!(iclients->mask[dev->id] & xi_filter))
@@ -793,7 +793,7 @@ TouchAddRegularListener(DeviceIntPtr dev, TouchPointInfoPtr ti,
 
     if (mask & EVENT_CORE_MASK) {
         int coretype = GetCoreType(TouchGetPointerEventType(ev));
-        Mask core_filter = event_get_filter_from_type(dev, coretype);
+        Mask core_filter = event_get_filter_from_type(dev, coretype, dev->context);
         OtherClients *oclients;
 
         /* window owner */

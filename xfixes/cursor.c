@@ -73,7 +73,7 @@ static void deleteCursorHideCountsForScreen(ScreenPtr pScreen);
     do {								\
 	int err;							\
 	err = dixLookupResourceByType((void **) &pCursor, cursor,	\
-				      RT_CURSOR, client, access);	\
+				      RT_CURSOR, client, access, client->context);	\
 	if (err != Success) {						\
 	    client->errorValue = cursor;				\
 	    return err;							\
@@ -175,7 +175,7 @@ CursorDisplayCursor(DeviceIntPtr pDev, ScreenPtr pScreen, CursorPtr pCursor)
         for (e = cursorEvents; e; e = e->next) {
             if ((e->eventMask & XFixesDisplayCursorNotifyMask)) {
                 xXFixesCursorNotifyEvent ev = {
-                    .type = XFixesEventBase + XFixesCursorNotify,
+                    .type = pScreen->context->XFixesEventBase + XFixesCursorNotify,
                     .subtype = XFixesDisplayCursorNotify,
                     .window = e->pWindow->drawable.id,
                     .cursorSerial = pCursor ? pCursor->serialNumber : 0,
@@ -243,7 +243,7 @@ XFixesSelectCursorInput(ClientPtr pClient, WindowPtr pWindow, CARD32 eventMask)
          */
         rc = dixLookupResourceByType(&val, pWindow->drawable.id,
                                      CursorWindowType, pClient->context->serverClient,
-                                     DixGetAttrAccess);
+                                     DixGetAttrAccess, pClient->context);
         if (rc != Success)
             if (!AddResource(pWindow->drawable.id, CursorWindowType,
                              (void *) pWindow, pClient->context)) {
@@ -857,7 +857,7 @@ ProcXFixesHideCursor(ClientPtr client)
     REQUEST_SIZE_MATCH(xXFixesHideCursorReq);
 
     ret = dixLookupResourceByType((void **) &pWin, stuff->window, RT_WINDOW,
-                                  client, DixGetAttrAccess);
+                                  client, DixGetAttrAccess, client->context);
     if (ret != Success) {
         client->errorValue = stuff->window;
         return ret;
@@ -921,7 +921,7 @@ ProcXFixesShowCursor(ClientPtr client)
     REQUEST_SIZE_MATCH(xXFixesShowCursorReq);
 
     rc = dixLookupResourceByType((void **) &pWin, stuff->window, RT_WINDOW,
-                                 client, DixGetAttrAccess);
+                                 client, DixGetAttrAccess, client->context);
     if (rc != Success) {
         client->errorValue = stuff->window;
         return rc;
@@ -1094,11 +1094,11 @@ XFixesCursorInit(XephyrContext* context)
         SetCursorScreen(pScreen, cs);
     }
     CursorClientType = CreateNewResourceType(CursorFreeClient,
-                                             "XFixesCursorClient");
+                                             "XFixesCursorClient", context);
     CursorHideCountType = CreateNewResourceType(CursorFreeHideCount,
-                                                "XFixesCursorHideCount");
+                                                "XFixesCursorHideCount", context);
     CursorWindowType = CreateNewResourceType(CursorFreeWindow,
-                                             "XFixesCursorWindow");
+                                             "XFixesCursorWindow", context);
 
     return CursorClientType && CursorHideCountType && CursorWindowType;
 }

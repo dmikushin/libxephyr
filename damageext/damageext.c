@@ -332,8 +332,8 @@ DamageExtSubtractWindowClip(DamageExtPtr pDamageExt)
     if (!win->parent)
         return &context->PanoramiXScreenRegion;
 
-    dixLookupResourceByType((void **)&res, win->drawable.id, XRT_WINDOW,
-                            pDamageExt->pClient->context->serverClient, DixReadAccess);
+    dixLookupResourceByType((void **)&res, win->drawable.id, context->XRT_WINDOW,
+                            pDamageExt->pClient->context->serverClient, DixReadAccess, context);
     if (!res)
         return NULL;
 
@@ -412,8 +412,8 @@ ProcDamageSubtract(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xDamageSubtractReq);
     VERIFY_DAMAGEEXT(pDamageExt, stuff->damage, client, DixWriteAccess);
-    VERIFY_REGION_OR_NONE(pRepair, stuff->repair, client, DixWriteAccess);
-    VERIFY_REGION_OR_NONE(pParts, stuff->parts, client, DixWriteAccess);
+    VERIFY_REGION_OR_NONE(pRepair, stuff->repair, client, DixWriteAccess, client->context);
+    VERIFY_REGION_OR_NONE(pParts, stuff->parts, client, DixWriteAccess, client->context);
 
     if (pDamageExt->level != DamageReportRawRegion) {
         DamagePtr pDamage = pDamageExt->pDamage;
@@ -444,7 +444,7 @@ ProcDamageAdd(ClientPtr client)
     int rc;
 
     REQUEST_SIZE_MATCH(xDamageAddReq);
-    VERIFY_REGION(pRegion, stuff->region, client, DixWriteAccess);
+    VERIFY_REGION(pRegion, stuff->region, client, DixWriteAccess, client->context);
     rc = dixLookupDrawable(&pDrawable, stuff->drawable, client, 0,
                            DixWriteAccess);
     if (rc != Success)
@@ -649,7 +649,7 @@ PanoramiXDamageCreate(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xDamageCreateReq);
     LEGAL_NEW_RESOURCE(stuff->damage, client);
-    rc = dixLookupResourceByClass((void **)&draw, stuff->drawable, XRC_DRAWABLE,
+    rc = dixLookupResourceByClass((void **)&draw, stuff->drawable, context->XRC_DRAWABLE,
                                   client, DixGetAttrAccess | DixReadAccess);
     if (rc != Success)
         return rc;
@@ -661,7 +661,7 @@ PanoramiXDamageCreate(ClientPtr client)
         return BadAlloc;
 
     damage->ext = doDamageCreate(client, &rc);
-    if (rc == Success && draw->type == XRT_WINDOW) {
+    if (rc == Success && draw->type == context->XRT_WINDOW) {
         FOR_NSCREENS_FORWARD(i) {
             DrawablePtr pDrawable;
             DamagePtr pDamage = DamageCreate(PanoramiXDamageReport,
@@ -711,7 +711,7 @@ PanoramiXDamageDelete(void *res, XID id, XephyrContext* context)
 void
 PanoramiXDamageInit(XephyrContext* context)
 {
-    XRT_DAMAGE = CreateNewResourceType(PanoramiXDamageDelete, "XineramaDamage");
+    XRT_DAMAGE = CreateNewResourceType(PanoramiXDamageDelete, "XineramaDamage", context);
     if (!XRT_DAMAGE)
         FatalError("Couldn't Xineramify Damage extension\n", context);
 
@@ -736,7 +736,7 @@ DamageExtensionInit(XephyrContext* context)
     for (s = 0; s < context->screenInfo.numScreens; s++)
         DamageSetup(context->screenInfo.screens[s]);
 
-    DamageExtType = CreateNewResourceType(FreeDamageExt, "DamageExt");
+    DamageExtType = CreateNewResourceType(FreeDamageExt, "DamageExt", context);
     if (!DamageExtType)
         return;
 
@@ -747,17 +747,17 @@ DamageExtensionInit(XephyrContext* context)
     if ((extEntry = AddExtension(DAMAGE_NAME, XDamageNumberEvents,
                                  XDamageNumberErrors,
                                  ProcDamageDispatch, SProcDamageDispatch,
-                                 NULL, StandardMinorOpcode)) != 0) {
+                                 NULL, StandardMinorOpcode, context)) != 0) {
         DamageReqCode = (unsigned char) extEntry->base;
         DamageEventBase = extEntry->eventBase;
         EventSwapVector[DamageEventBase + XDamageNotify] =
             (EventSwapPtr) SDamageNotifyEvent;
         SetResourceTypeErrorValue(DamageExtType,
-                                  extEntry->errorBase + BadDamage);
+                                  extEntry->errorBase + BadDamage, context);
 #ifdef PANORAMIX
         if (XRT_DAMAGE)
             SetResourceTypeErrorValue(XRT_DAMAGE,
-                                      extEntry->errorBase + BadDamage);
+                                      extEntry->errorBase + BadDamage, context);
 #endif
     }
 }

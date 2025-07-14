@@ -52,8 +52,6 @@ SOFTWARE.
 #ifdef PANORAMIX
 #include "panoramiX.h"
 #include "panoramiXsrv.h"
-
-unsigned long XvXRTPort;
 #endif
 
 static int
@@ -882,6 +880,7 @@ ProcXvShmPutImage(ClientPtr client)
     GCPtr pGC;
     int status, size_needed, i;
     CARD16 width, height;
+    XephyrContext* context = client->context;
 
     REQUEST(xvShmPutImageReq);
     REQUEST_SIZE_MATCH(xvShmPutImageReq);
@@ -911,7 +910,7 @@ ProcXvShmPutImage(ClientPtr client)
         return BadMatch;
 
     status = dixLookupResourceByType((void **) &shmdesc, stuff->shmseg,
-                                     ShmSegType, client->context->serverClient, DixReadAccess);
+                                     client->context->ShmSegType, client->context->serverClient, DixReadAccess, context);
     if (status != Success)
         return status;
 
@@ -934,10 +933,10 @@ ProcXvShmPutImage(ClientPtr client)
 
     if ((status == Success) && stuff->send_event) {
         xShmCompletionEvent ev = {
-            .type = ShmCompletionCode,
+            .type = client->context->ShmCompletionCode,
             .drawable = stuff->drawable,
             .minorEvent = xv_ShmPutImage,
-            .majorEvent = XvReqCode,
+            .majorEvent = client->context->XvReqCode,
             .shmseg = stuff->shmseg,
             .offset = stuff->offset
         };
@@ -1446,12 +1445,12 @@ XineramaXvStopVideo(ClientPtr client)
     REQUEST_SIZE_MATCH(xvStopVideoReq);
 
     result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
-                                      XRC_DRAWABLE, client, DixWriteAccess);
+                                      context->XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
 
     result = dixLookupResourceByType((void **) &port, stuff->port,
-                                     XvXRTPort, client, DixReadAccess);
+                                     context->XvXRTPort, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
@@ -1477,7 +1476,7 @@ XineramaXvSetPortAttribute(ClientPtr client)
     REQUEST_SIZE_MATCH(xvSetPortAttributeReq);
 
     result = dixLookupResourceByType((void **) &port, stuff->port,
-                                     XvXRTPort, client, DixReadAccess);
+                                     context->XvXRTPort, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
@@ -1506,21 +1505,21 @@ XineramaXvShmPutImage(ClientPtr client)
     send_event = stuff->send_event;
 
     result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
-                                      XRC_DRAWABLE, client, DixWriteAccess);
+                                      context->XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
 
     result = dixLookupResourceByType((void **) &gc, stuff->gc,
-                                     XRT_GC, client, DixReadAccess);
+                                     context->XRT_GC, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
     result = dixLookupResourceByType((void **) &port, stuff->port,
-                                     XvXRTPort, client, DixReadAccess);
+                                     context->XvXRTPort, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
-    isRoot = (draw->type == XRT_WINDOW) && draw->u.win.root;
+    isRoot = (draw->type == context->XRT_WINDOW) && draw->u.win.root;
 
     x = stuff->drw_x;
     y = stuff->drw_y;
@@ -1559,21 +1558,21 @@ XineramaXvPutImage(ClientPtr client)
     REQUEST_AT_LEAST_SIZE(xvPutImageReq);
 
     result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
-                                      XRC_DRAWABLE, client, DixWriteAccess);
+                                      context->XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
 
     result = dixLookupResourceByType((void **) &gc, stuff->gc,
-                                     XRT_GC, client, DixReadAccess);
+                                     context->XRT_GC, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
     result = dixLookupResourceByType((void **) &port, stuff->port,
-                                     XvXRTPort, client, DixReadAccess);
+                                     context->XvXRTPort, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
-    isRoot = (draw->type == XRT_WINDOW) && draw->u.win.root;
+    isRoot = (draw->type == context->XRT_WINDOW) && draw->u.win.root;
 
     x = stuff->drw_x;
     y = stuff->drw_y;
@@ -1608,21 +1607,21 @@ XineramaXvPutVideo(ClientPtr client)
     REQUEST_AT_LEAST_SIZE(xvPutVideoReq);
 
     result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
-                                      XRC_DRAWABLE, client, DixWriteAccess);
+                                      context->XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
 
     result = dixLookupResourceByType((void **) &gc, stuff->gc,
-                                     XRT_GC, client, DixReadAccess);
+                                     context->XRT_GC, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
     result = dixLookupResourceByType((void **) &port, stuff->port,
-                                     XvXRTPort, client, DixReadAccess);
+                                     context->XvXRTPort, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
-    isRoot = (draw->type == XRT_WINDOW) && draw->u.win.root;
+    isRoot = (draw->type == context->XRT_WINDOW) && draw->u.win.root;
 
     x = stuff->drw_x;
     y = stuff->drw_y;
@@ -1657,21 +1656,21 @@ XineramaXvPutStill(ClientPtr client)
     REQUEST_AT_LEAST_SIZE(xvPutImageReq);
 
     result = dixLookupResourceByClass((void **) &draw, stuff->drawable,
-                                      XRC_DRAWABLE, client, DixWriteAccess);
+                                      context->XRC_DRAWABLE, client, DixWriteAccess);
     if (result != Success)
         return (result == BadValue) ? BadDrawable : result;
 
     result = dixLookupResourceByType((void **) &gc, stuff->gc,
-                                     XRT_GC, client, DixReadAccess);
+                                     context->XRT_GC, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
     result = dixLookupResourceByType((void **) &port, stuff->port,
-                                     XvXRTPort, client, DixReadAccess);
+                                     context->XvXRTPort, client, DixReadAccess, context);
     if (result != Success)
         return result;
 
-    isRoot = (draw->type == XRT_WINDOW) && draw->u.win.root;
+    isRoot = (draw->type == context->XRT_WINDOW) && draw->u.win.root;
 
     x = stuff->drw_x;
     y = stuff->drw_y;
@@ -1759,11 +1758,11 @@ XineramifyXv(XephyrContext* context)
     XvAdaptorPtr MatchingAdaptors[MAXSCREENS];
     int i, j, k;
 
-    XvXRTPort = CreateNewResourceType(XineramaDeleteResource, "XvXRTPort");
+    context->XvXRTPort = CreateNewResourceType(XineramaDeleteResource, "context->XvXRTPort", context);
 
-    if (!xvsp0 || !XvXRTPort)
+    if (!xvsp0 || !context->XvXRTPort)
         return;
-    SetResourceTypeErrorValue(XvXRTPort, _XvBadPort);
+    SetResourceTypeErrorValue(context->XvXRTPort, XvBadPort + context->XvErrorBase, context);
 
     for (i = 0; i < xvsp0->nAdaptors; i++) {
         Bool isOverlay;
@@ -1791,7 +1790,7 @@ XineramifyXv(XephyrContext* context)
                 else
                     port->info[k].id = 0;
             }
-            AddResource(port->info[0].id, XvXRTPort, port, context);
+            AddResource(port->info[0].id, context->XvXRTPort, port, context);
         }
     }
 

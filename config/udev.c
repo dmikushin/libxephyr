@@ -82,10 +82,10 @@ check_seat(struct udev_device *udev_device, XephyrContext* context)
     if (!dev_seat)
         dev_seat = "seat0";
 
-    if (context->SeatId && strcmp(dev_seat, context->SeatId))
+    if (context->context->SeatId && strcmp(dev_seat, context->context->SeatId))
         return FALSE;
 
-    if (!context->SeatId && strcmp(dev_seat, "seat0"))
+    if (!context->context->SeatId && strcmp(dev_seat, "seat0"))
         return FALSE;
 
     return TRUE;
@@ -406,7 +406,7 @@ config_udev_pre_init(XephyrContext* context)
 
 #ifdef HAVE_UDEV_MONITOR_FILTER_ADD_MATCH_TAG
     if (ServerIsNotSeat0())
-        udev_monitor_filter_add_match_tag(context->udev_monitor, context->SeatId);
+        udev_monitor_filter_add_match_tag(context->udev_monitor, context->context->SeatId);
 #endif
     if (udev_monitor_enable_receiving(context->udev_monitor)) {
         ErrorF("config/udev: failed to bind the udev monitor\n", context);
@@ -435,7 +435,7 @@ config_udev_init(XephyrContext* context)
 
 #ifdef HAVE_UDEV_ENUMERATE_ADD_MATCH_TAG
     if (ServerIsNotSeat0())
-        udev_enumerate_add_match_tag(enumerate, context->SeatId);
+        udev_enumerate_add_match_tag(enumerate, context->context->SeatId);
 #endif
 
     udev_enumerate_scan_devices(enumerate);
@@ -577,7 +577,7 @@ config_udev_odev_probe(config_odev_probe_proc_ptr probe_callback, XephyrContext*
     udev_enumerate_add_match_sysname(enumerate, "card[0-9]*");
 #ifdef HAVE_UDEV_ENUMERATE_ADD_MATCH_TAG
     if (ServerIsNotSeat0())
-        udev_enumerate_add_match_tag(enumerate, context->SeatId);
+        udev_enumerate_add_match_tag(enumerate, context->context->SeatId);
 #endif
     udev_enumerate_scan_devices(enumerate);
     devices = udev_enumerate_get_list_entry(enumerate);

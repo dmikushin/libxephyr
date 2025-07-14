@@ -83,11 +83,11 @@ static DepthPtr PanoramiXDepths;
 static int PanoramiXNumVisuals;
 static VisualPtr PanoramiXVisuals;
 
-RESTYPE XRC_DRAWABLE;
-RESTYPE XRT_WINDOW;
-RESTYPE XRT_PIXMAP;
-RESTYPE XRT_GC;
-RESTYPE XRT_COLORMAP;
+/* REMOVED: RESTYPE XRC_DRAWABLE; - moved to XephyrContext */
+/* RESTYPE XRT_WINDOW; - moved to XephyrContext */
+/* RESTYPE XRT_PIXMAP; - moved to XephyrContext */
+/* REMOVED: RESTYPE XRT_GC; - moved to XephyrContext */
+/* REMOVED: RESTYPE XRT_COLORMAP; - moved to XephyrContext */
 
 static Bool VisualsEqual(VisualPtr, ScreenPtr, VisualPtr);
 XineramaVisualsEqualProcPtr XineramaVisualsEqualPtr = &VisualsEqual;
@@ -107,8 +107,8 @@ static void PanoramiXResetProc(ExtensionEntry *);
 
 #include "panoramiXh.h"
 
-int (*SavedProcVector[256]) (ClientPtr client) = {
-NULL,};
+/* int (*SavedProcVector[256]) (ClientPtr client) = {
+NULL,}; */
 
 static DevPrivateKeyRec PanoramiXGCKeyRec;
 
@@ -347,7 +347,7 @@ PanoramiXFindIDByScrnum(RESTYPE type, XID id, int screen, XephyrContext* context
     void *val;
 
     if (!screen) {
-        dixLookupResourceByType(&val, id, type, context->serverClient, DixReadAccess);
+        dixLookupResourceByType(&val, id, type, context->serverClient, DixReadAccess, context);
         return val;
     }
 
@@ -468,7 +468,7 @@ PanoramiXExtensionInit(XephyrContext* context)
         extEntry = AddExtension(PANORAMIX_PROTOCOL_NAME, 0, 0,
                                 ProcPanoramiXDispatch,
                                 SProcPanoramiXDispatch, PanoramiXResetProc,
-                                StandardMinorOpcode);
+                                StandardMinorOpcode, context);
         if (!extEntry)
             break;
 
@@ -494,27 +494,27 @@ PanoramiXExtensionInit(XephyrContext* context)
             pScreen->CloseScreen = XineramaCloseScreen;
         }
 
-        XRC_DRAWABLE = CreateNewResourceClass();
-        XRT_WINDOW = CreateNewResourceType(XineramaDeleteResource,
-                                           "XineramaWindow");
-        if (XRT_WINDOW)
-            XRT_WINDOW |= XRC_DRAWABLE;
-        XRT_PIXMAP = CreateNewResourceType(XineramaDeleteResource,
-                                           "XineramaPixmap");
-        if (XRT_PIXMAP)
-            XRT_PIXMAP |= XRC_DRAWABLE;
-        XRT_GC = CreateNewResourceType(XineramaDeleteResource, "XineramaGC");
-        XRT_COLORMAP = CreateNewResourceType(XineramaDeleteResource,
-                                             "XineramaColormap");
+        context->XRC_DRAWABLE = CreateNewResourceClass(context);
+        context->XRT_WINDOW = CreateNewResourceType(XineramaDeleteResource,
+                                           "XineramaWindow", context);
+        if (context->XRT_WINDOW)
+            context->XRT_WINDOW |= context->XRC_DRAWABLE;
+        context->XRT_PIXMAP = CreateNewResourceType(XineramaDeleteResource,
+                                           "XineramaPixmap", context);
+        if (context->XRT_PIXMAP)
+            context->XRT_PIXMAP |= context->XRC_DRAWABLE;
+        context->XRT_GC = CreateNewResourceType(XineramaDeleteResource, "XineramaGC", context);
+        context->XRT_COLORMAP = CreateNewResourceType(XineramaDeleteResource,
+                                             "XineramaColormap", context);
 
-        if (XRT_WINDOW && XRT_PIXMAP && XRT_GC && XRT_COLORMAP) {
+        if (context->XRT_WINDOW && context->XRT_PIXMAP && context->XRT_GC && context->XRT_COLORMAP) {
             panoramiXGeneration = context->serverGeneration;
             success = TRUE;
         }
-        SetResourceTypeErrorValue(XRT_WINDOW, BadWindow);
-        SetResourceTypeErrorValue(XRT_PIXMAP, BadPixmap);
-        SetResourceTypeErrorValue(XRT_GC, BadGC);
-        SetResourceTypeErrorValue(XRT_COLORMAP, BadColor);
+        SetResourceTypeErrorValue(context->XRT_WINDOW, BadWindow, context);
+        SetResourceTypeErrorValue(context->XRT_PIXMAP, BadPixmap, context);
+        SetResourceTypeErrorValue(context->XRT_GC, BadGC, context);
+        SetResourceTypeErrorValue(context->XRT_COLORMAP, BadColor, context);
     }
 
     if (!success) {
@@ -530,7 +530,7 @@ PanoramiXExtensionInit(XephyrContext* context)
      */
 
     for (i = 256; i--;)
-        SavedProcVector[i] = ProcVector[i];
+        context->SavedProcVector[i] = ProcVector[i];
 
     ProcVector[X_CreateWindow] = PanoramiXCreateWindow;
     ProcVector[X_ChangeWindowAttributes] = PanoramiXChangeWindowAttributes;
@@ -824,11 +824,11 @@ PanoramiXConsolidate(XephyrContext* context)
         PanoramiXMaybeAddVisual(pVisual++, context);
 
     root = malloc(sizeof(PanoramiXRes));
-    root->type = XRT_WINDOW;
+    root->type = context->XRT_WINDOW;
     defmap = malloc(sizeof(PanoramiXRes));
-    defmap->type = XRT_COLORMAP;
+    defmap->type = context->XRT_COLORMAP;
     saver = malloc(sizeof(PanoramiXRes));
-    saver->type = XRT_WINDOW;
+    saver->type = context->XRT_WINDOW;
 
     FOR_NSCREENS(i) {
         ScreenPtr scr = context->screenInfo.screens[i];
@@ -842,9 +842,9 @@ PanoramiXConsolidate(XephyrContext* context)
         defmap->info[i].id = scr->defColormap;
     }
 
-    AddResource(root->info[0].id, XRT_WINDOW, root, context);
-    AddResource(saver->info[0].id, XRT_WINDOW, saver, context);
-    AddResource(defmap->info[0].id, XRT_COLORMAP, defmap, context);
+    AddResource(root->info[0].id, context->XRT_WINDOW, root, context);
+    AddResource(saver->info[0].id, context->XRT_WINDOW, saver, context);
+    AddResource(defmap->info[0].id, context->XRT_COLORMAP, defmap, context);
 }
 
 VisualID
@@ -898,7 +898,7 @@ PanoramiXResetProc(ExtensionEntry * extEntry)
 #endif
     context->screenInfo.numScreens = context->PanoramiXNumScreens;
     for (i = 256; i--;)
-        ProcVector[i] = SavedProcVector[i];
+        ProcVector[i] = context->SavedProcVector[i];
 }
 
 int

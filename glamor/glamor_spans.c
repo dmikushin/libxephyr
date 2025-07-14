@@ -25,7 +25,7 @@
 #include "glamor_transform.h"
 #include "glamor_transfer.h"
 
-glamor_program  fill_spans_progs[4];
+/* Removed unused global variable: glamor_program  fill_spans_progs[4]; */
 
 static const glamor_facet glamor_facet_fillspans_130 = {
     .name = "fill_spans",
@@ -215,7 +215,7 @@ glamor_get_spans_gl(DrawablePtr drawable, int wmax,
             char *l;
 
             l = d;
-            d += PixmapBytePad(w, drawable->depth, context);
+            d += PixmapBytePad(w, drawable->depth, screen->context);
 
             /* clip */
             if (x1 < box->x1) {
@@ -348,7 +348,7 @@ glamor_set_spans_gl(DrawablePtr drawable, GCPtr gc, char *src,
                                 f->format, f->type,
                                 l);
             }
-            s += PixmapBytePad(w, drawable->depth, context);
+            s += PixmapBytePad(w, drawable->depth, screen->context);
         }
     }
 

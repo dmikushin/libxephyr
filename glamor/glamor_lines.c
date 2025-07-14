@@ -154,7 +154,7 @@ static void
 glamor_poly_lines_bail(DrawablePtr drawable, GCPtr gc,
                        int mode, int n, DDXPointPtr points)
 {
-    glamor_fallback("to %p (%c)\n", drawable,
+    glamor_fallback("to %p (%c)\n", drawable, drawable,
                     glamor_get_drawable_location(drawable));
 
     miPolylines(drawable, gc, mode, n, points);

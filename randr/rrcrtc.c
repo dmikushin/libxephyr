@@ -1122,7 +1122,7 @@ RRCrtcTransformSet(RRCrtcPtr crtc,
 Bool
 RRCrtcInit(XephyrContext* context)
 {
-    context->RRCrtcType = CreateNewResourceType(RRCrtcDestroyResource, "CRTC");
+    context->RRCrtcType = CreateNewResourceType(RRCrtcDestroyResource, "CRTC", context);
     if (!context->RRCrtcType)
         return FALSE;
 
@@ -1135,7 +1135,7 @@ RRCrtcInit(XephyrContext* context)
 void
 RRCrtcInitErrorValue(XephyrContext* context)
 {
-    SetResourceTypeErrorValue(context->RRCrtcType, context->RRErrorBase + BadRRCrtc);
+    SetResourceTypeErrorValue(context->RRCrtcType, context->RRErrorBase + BadRRCrtc, context);
 }
 
 int
@@ -1317,7 +1317,7 @@ ProcRRSetCrtcConfig(ClientPtr client)
     outputIds = (RROutput *) (stuff + 1);
     for (i = 0; i < numOutputs; i++) {
         ret = dixLookupResourceByType((void **) (outputs + i), outputIds[i],
-                                     client->context->RROutputType, client, DixSetAttrAccess);
+                                     client->context->RROutputType, client, DixSetAttrAccess, client->context);
         if (ret != Success) {
             free(outputs);
             return ret;

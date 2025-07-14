@@ -683,8 +683,11 @@ SProcSELinuxDispatch(ClientPtr client)
 static void
 SELinuxResetProc(ExtensionEntry * extEntry)
 {
-    SELinuxFlaskReset();
-    SELinuxLabelReset();
+    XephyrContext* context = (XephyrContext*)extEntry->extPrivate;
+    if (context) {
+        SELinuxFlaskReset(context);
+        SELinuxLabelReset();
+    }
 }
 
 void
@@ -711,5 +714,5 @@ SELinuxExtensionInit(void)
     /* Add extension to server */
     AddExtension(SELINUX_EXTENSION_NAME, SELinuxNumberEvents,
                  SELinuxNumberErrors, ProcSELinuxDispatch,
-                 SProcSELinuxDispatch, SELinuxResetProc, StandardMinorOpcode);
+                 SProcSELinuxDispatch, SELinuxResetProc, StandardMinorOpcode, context);
 }

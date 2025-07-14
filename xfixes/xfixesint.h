@@ -60,7 +60,7 @@
 #include "selection.h"
 #include "xfixes.h"
 
-extern int XFixesEventBase;
+/* extern int context->XFixesEventBase; */
 
 typedef struct _XFixesClient {
     CARD32 major_version;

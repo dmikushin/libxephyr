@@ -460,7 +460,7 @@ ChangeGCXIDs(ClientPtr client, GC * pGC, BITS32 mask, CARD32 *pC32)
         }
         rc = dixLookupResourceByType(&vals[offset].ptr, vals[offset].val,
                                      xidfields[i].type, client,
-                                     xidfields[i].access_mode);
+                                     xidfields[i].access_mode, client->context);
         if (rc != Success) {
             client->errorValue = vals[offset].val;
             return rc;

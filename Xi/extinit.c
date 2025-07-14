@@ -173,7 +173,7 @@ static struct dev_type {
     {0, XI_FOOTMOUSE}
 };
 
-CARD8 event_base[numInputClasses];
+/* CARD8 event_base[numInputClasses]; - moved to context */
 // EventInfo moved to context->EventInfo
 
 static DeviceIntRec xi_all_devices;
@@ -349,7 +349,7 @@ static int BadEvent = 1;
  *
  */
 
-extern XExtensionVersion XIVersion;
+/* extern XExtensionVersion XIVersion; */
 
 /*****************************************************************
  *
@@ -1084,12 +1084,12 @@ FixExtensionEvents(ExtensionEntry * extEntry, XephyrContext* context)
     context->DevicePropertyNotify = context->DevicePresenceNotify + 1;
     s_DevicePropertyNotify = context->DevicePropertyNotify;
 
-    event_base[KeyClass] = context->DeviceKeyPress;
-    event_base[ButtonClass] = context->DeviceButtonPress;
-    event_base[ValuatorClass] = context->DeviceMotionNotify;
-    event_base[ProximityClass] = context->ProximityIn;
-    event_base[FocusClass] = context->DeviceFocusIn;
-    event_base[OtherClass] = context->DeviceStateNotify;
+    context->event_base[KeyClass] = context->DeviceKeyPress;
+    context->event_base[ButtonClass] = context->DeviceButtonPress;
+    context->event_base[ValuatorClass] = context->DeviceMotionNotify;
+    context->event_base[ProximityClass] = context->ProximityIn;
+    context->event_base[FocusClass] = context->DeviceFocusIn;
+    context->event_base[OtherClass] = context->DeviceStateNotify;
 
     context->BadDevice += extEntry->errorBase;
     BadEvent += extEntry->errorBase;
@@ -1282,43 +1282,43 @@ SEventIDispatch(xEvent *from, xEvent *to)
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == context->DeviceButtonPress) {
+    else if (type == s_DeviceButtonPress) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == context->DeviceButtonRelease) {
+    else if (type == s_DeviceButtonRelease) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == context->DeviceMotionNotify) {
+    else if (type == s_DeviceMotionNotify) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == context->DeviceFocusIn)
+    else if (type == s_DeviceFocusIn)
         DO_SWAP(SEventFocus, deviceFocus);
-    else if (type == context->DeviceFocusOut)
+    else if (type == s_DeviceFocusOut)
         DO_SWAP(SEventFocus, deviceFocus);
-    else if (type == context->ProximityIn) {
+    else if (type == s_ProximityIn) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == context->ProximityOut) {
+    else if (type == s_ProximityOut) {
         SKeyButtonPtrEvent(from, to);
         to->u.keyButtonPointer.pad1 = from->u.keyButtonPointer.pad1;
     }
-    else if (type == context->DeviceStateNotify)
+    else if (type == s_DeviceStateNotify)
         DO_SWAP(SDeviceStateNotifyEvent, deviceStateNotify);
-    else if (type == context->DeviceKeyStateNotify)
+    else if (type == s_DeviceKeyStateNotify)
         DO_SWAP(SDeviceKeyStateNotifyEvent, deviceKeyStateNotify);
-    else if (type == context->DeviceButtonStateNotify)
+    else if (type == s_DeviceButtonStateNotify)
         DO_SWAP(SDeviceButtonStateNotifyEvent, deviceButtonStateNotify);
-    else if (type == context->DeviceMappingNotify)
+    else if (type == s_DeviceMappingNotify)
         DO_SWAP(SDeviceMappingNotifyEvent, deviceMappingNotify);
-    /* else if (type == ChangeDeviceNotify) TODO: need context
-        DO_SWAP(SChangeDeviceNotifyEvent, changeDeviceNotify); */
-    else if (type == context->DevicePresenceNotify)
+    else if (type == s_ChangeDeviceNotify)
+        DO_SWAP(SChangeDeviceNotifyEvent, changeDeviceNotify);
+    else if (type == s_DevicePresenceNotify)
         DO_SWAP(SDevicePresenceNotifyEvent, devicePresenceNotify);
-    else if (type == context->DevicePropertyNotify)
+    else if (type == s_DevicePropertyNotify)
         DO_SWAP(SDevicePropertyNotifyEvent, devicePropertyNotify);
     else {
         fprintf(stderr, "XInputExtension: Impossible event!\n");
@@ -1356,14 +1356,14 @@ XInputExtensionInit(XephyrContext* context)
         FatalError("Could not initialize barriers.\n", context);
 
     extEntry = AddExtension(INAME, IEVENTS, IERRORS, ProcIDispatch,
-                            SProcIDispatch, IResetProc, StandardMinorOpcode);
+                            SProcIDispatch, IResetProc, StandardMinorOpcode, context);
     if (extEntry) {
         context->IReqCode = extEntry->base;
         context->IEventBase = extEntry->eventBase;
-        XIVersion = thisversion;
+        context->XIVersion = thisversion;
         MakeDeviceTypeAtoms();
         context->RT_INPUTCLIENT = CreateNewResourceType((DeleteType) InputClientGone,
-                                               "INPUTCLIENT");
+                                               "INPUTCLIENT", context);
         if (!context->RT_INPUTCLIENT)
             FatalError("Failed to add resource type for XI.\n", context);
         FixExtensionEvents(extEntry, context);

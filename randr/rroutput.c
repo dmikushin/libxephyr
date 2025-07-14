@@ -428,7 +428,7 @@ RROutputDestroyResource(void *value, XID pid, XephyrContext* context)
 Bool
 RROutputInit(XephyrContext* context)
 {
-    context->RROutputType = CreateNewResourceType(RROutputDestroyResource, "OUTPUT");
+    context->RROutputType = CreateNewResourceType(RROutputDestroyResource, "OUTPUT", context);
     if (!context->RROutputType)
         return FALSE;
 
@@ -441,7 +441,7 @@ RROutputInit(XephyrContext* context)
 void
 RROutputInitErrorValue(XephyrContext* context)
 {
-    SetResourceTypeErrorValue(context->RROutputType, context->RRErrorBase + BadRROutput);
+    SetResourceTypeErrorValue(context->RROutputType, context->RRErrorBase + BadRROutput, context);
 }
 
 #define OutputInfoExtra	(SIZEOF(xRRGetOutputInfoReply) - 32)
