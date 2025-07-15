@@ -427,7 +427,7 @@ SetPictureFilter(PicturePtr pPicture, char *name, int len,
                  xFixed * params, int nparams, XephyrContext* context);
 
 extern _X_EXPORT Bool
- PictureFinishInit(void);
+ PictureFinishInit(XephyrContext* context);
 
 extern _X_EXPORT PicturePtr
 CreatePicture(Picture pid,

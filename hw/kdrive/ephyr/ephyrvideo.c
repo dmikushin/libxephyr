@@ -61,11 +61,11 @@ struct _EphyrPortPriv {
 };
 typedef struct _EphyrPortPriv EphyrPortPriv;
 
-static Bool ephyrLocalAtomToHost(int a_local_atom, int *a_host_atom);
+static Bool ephyrLocalAtomToHost(int a_local_atom, int *a_host_atom, XephyrContext* context);
 
-static EphyrXVPriv *ephyrXVPrivNew(void);
+static EphyrXVPriv *ephyrXVPrivNew(XephyrContext* context);
 static void ephyrXVPrivDelete(EphyrXVPriv * a_this);
-static Bool ephyrXVPrivQueryHostAdaptors(EphyrXVPriv * a_this);
+static Bool ephyrXVPrivQueryHostAdaptors(EphyrXVPriv * a_this, XephyrContext* context);
 static Bool ephyrXVPrivSetAdaptorsHooks(EphyrXVPriv * a_this);
 static Bool ephyrXVPrivRegisterAdaptors(EphyrXVPriv * a_this,
                                         ScreenPtr a_screen, XephyrContext* context);
@@ -78,7 +78,8 @@ static Bool ephyrXVPrivIsAttrValueValid(XvAttributePtr a_attrs,
 static Bool ephyrXVPrivGetImageBufSize(int a_port_id,
                                        int a_image_id,
                                        unsigned short a_width,
-                                       unsigned short a_height, int *a_size);
+                                       unsigned short a_height, int *a_size,
+                                       XephyrContext* context);
 
 static Bool ephyrXVPrivSaveImageToPortPriv(EphyrPortPriv * a_port_priv,
                                            const unsigned char *a_image,
@@ -177,9 +178,9 @@ adaptor_has_flags(const xcb_xv_adaptor_info_t *adaptor, uint32_t flags)
 }
 
 static Bool
-ephyrLocalAtomToHost(int a_local_atom, int *a_host_atom)
+ephyrLocalAtomToHost(int a_local_atom, int *a_host_atom, XephyrContext* context)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(context);
     xcb_intern_atom_cookie_t cookie;
     xcb_intern_atom_reply_t *reply;
     const char *atom_name = NULL;
@@ -227,13 +228,13 @@ ephyrInitVideo(ScreenPtr pScreen)
         return FALSE;
     }
 
-    if (!hostx_has_extension(&xcb_xv_id)) {
+    if (!hostx_has_extension(&xcb_xv_id, pScreen->context)) {
         EPHYR_LOG_ERROR("Host has no XVideo extension\n");
         return FALSE;
     }
 
     if (!xv_priv) {
-        xv_priv = ephyrXVPrivNew();
+        xv_priv = ephyrXVPrivNew(pScreen->context);
     }
     if (!xv_priv) {
         EPHYR_LOG_ERROR("failed to create xv_priv\n");
@@ -251,7 +252,7 @@ ephyrInitVideo(ScreenPtr pScreen)
 }
 
 static EphyrXVPriv *
-ephyrXVPrivNew(void)
+ephyrXVPrivNew(XephyrContext* context)
 {
     EphyrXVPriv *xv_priv = NULL;
 
@@ -263,7 +264,7 @@ ephyrXVPrivNew(void)
         goto error;
     }
 
-    if (!ephyrXVPrivQueryHostAdaptors(xv_priv)) {
+    if (!ephyrXVPrivQueryHostAdaptors(xv_priv, NULL)) {
         EPHYR_LOG_ERROR("failed to query the host x for xv properties\n");
         goto error;
     }
@@ -302,9 +303,10 @@ ephyrXVPrivDelete(EphyrXVPriv * a_this)
 
 static Bool
 translate_video_encodings(KdVideoAdaptorPtr adaptor,
-                          xcb_xv_adaptor_info_t *host_adaptor)
+                          xcb_xv_adaptor_info_t *host_adaptor,
+                          XephyrContext* context)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(context);
     int i;
     xcb_xv_query_encodings_cookie_t cookie;
     xcb_xv_query_encodings_reply_t *reply;
@@ -345,9 +347,10 @@ translate_video_encodings(KdVideoAdaptorPtr adaptor,
 
 static Bool
 translate_xv_attributes(KdVideoAdaptorPtr adaptor,
-                        xcb_xv_adaptor_info_t *host_adaptor)
+                        xcb_xv_adaptor_info_t *host_adaptor,
+                        XephyrContext* context)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(context);
     int i = 0;
     xcb_xv_attribute_info_iterator_t it;
     xcb_xv_query_port_attributes_cookie_t cookie =
@@ -389,9 +392,10 @@ translate_xv_attributes(KdVideoAdaptorPtr adaptor,
 
 static Bool
 translate_xv_image_formats(KdVideoAdaptorPtr adaptor,
-                           xcb_xv_adaptor_info_t *host_adaptor)
+                           xcb_xv_adaptor_info_t *host_adaptor,
+                           XephyrContext* context)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(context);
     int i = 0;
     xcb_xv_list_image_formats_cookie_t cookie =
         xcb_xv_list_image_formats(conn, host_adaptor->base_id);
@@ -442,10 +446,10 @@ translate_xv_image_formats(KdVideoAdaptorPtr adaptor,
 }
 
 static Bool
-ephyrXVPrivQueryHostAdaptors(EphyrXVPriv * a_this)
+ephyrXVPrivQueryHostAdaptors(EphyrXVPriv * a_this, XephyrContext* context)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
-    xcb_screen_t *xscreen = xcb_aux_get_screen(conn, hostx_get_screen());
+    xcb_connection_t *conn = hostx_get_xcbconn(context);
+    xcb_screen_t *xscreen = xcb_aux_get_screen(conn, hostx_get_screen(context));
     int base_port_id = 0, i = 0, port_priv_offset = 0;
     Bool is_ok = FALSE;
     xcb_generic_error_t *e = NULL;
@@ -514,7 +518,7 @@ ephyrXVPrivQueryHostAdaptors(EphyrXVPriv * a_this)
             s_base_port_id = base_port_id;
 
         if (!translate_video_encodings(&a_this->adaptors[i],
-                                       cur_host_adaptor)) {
+                                       cur_host_adaptor, context)) {
             EPHYR_LOG_ERROR("failed to get encodings for port port id %d,"
                             " adaptors %d\n", base_port_id, i);
             continue;
@@ -547,7 +551,7 @@ ephyrXVPrivQueryHostAdaptors(EphyrXVPriv * a_this)
             a_this->adaptors[i].pPortPrivates[j].ptr = port_priv;
         }
 
-        if (!translate_xv_attributes(&a_this->adaptors[i], cur_host_adaptor)) {
+        if (!translate_xv_attributes(&a_this->adaptors[i], cur_host_adaptor, context)) {
         {
             EPHYR_LOG_ERROR("failed to get port attribute "
                             "for adaptor %d\n", i);
@@ -555,7 +559,7 @@ ephyrXVPrivQueryHostAdaptors(EphyrXVPriv * a_this)
         }
         }
 
-        if (!translate_xv_image_formats(&a_this->adaptors[i], cur_host_adaptor)) {
+        if (!translate_xv_image_formats(&a_this->adaptors[i], cur_host_adaptor, context)) {
             EPHYR_LOG_ERROR("failed to get image formats "
                             "for adaptor %d\n", i);
             continue;
@@ -673,9 +677,10 @@ static Bool
 ephyrXVPrivGetImageBufSize(int a_port_id,
                            int a_image_id,
                            unsigned short a_width,
-                           unsigned short a_height, int *a_size)
+                           unsigned short a_height, int *a_size,
+                           XephyrContext* context)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(context);
     xcb_xv_query_image_attributes_cookie_t cookie;
     xcb_xv_query_image_attributes_reply_t *reply;
     Bool is_ok = FALSE;
@@ -732,7 +737,7 @@ ephyrXVPrivSaveImageToPortPriv(EphyrPortPriv * a_port_priv,
 static void
 ephyrStopVideo(KdScreenInfo * a_info, void *a_port_priv, Bool a_exit)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_info->pScreen->context);
     EphyrPortPriv *port_priv = a_port_priv;
     EphyrScrPriv *scrpriv = a_info->driver;
 
@@ -747,7 +752,7 @@ static int
 ephyrSetPortAttribute(KdScreenInfo * a_info,
                       Atom a_attr_name, int a_attr_value, void *a_port_priv)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_info->pScreen->context);
     int res = Success, host_atom = 0;
     EphyrPortPriv *port_priv = a_port_priv;
     Bool is_attr_valid = FALSE;
@@ -762,7 +767,7 @@ ephyrSetPortAttribute(KdScreenInfo * a_info,
               port_priv->port_number,
               (int) a_attr_name, NameForAtom(a_attr_name), a_attr_value);
 
-    if (!ephyrLocalAtomToHost(a_attr_name, &host_atom)) {
+    if (!ephyrLocalAtomToHost(a_attr_name, &host_atom, a_info->pScreen->context)) {
         EPHYR_LOG_ERROR("failed to convert local atom to host atom\n");
         res = BadMatch;
         goto out;
@@ -802,7 +807,7 @@ static int
 ephyrGetPortAttribute(KdScreenInfo * a_screen_info,
                       Atom a_attr_name, int *a_attr_value, void *a_port_priv)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_screen_info->pScreen->context);
     int res = Success, host_atom = 0;
     EphyrPortPriv *port_priv = a_port_priv;
     xcb_generic_error_t *e;
@@ -816,7 +821,7 @@ ephyrGetPortAttribute(KdScreenInfo * a_screen_info,
               port_priv->port_number,
               (int) a_attr_name, NameForAtom(a_attr_name));
 
-    if (!ephyrLocalAtomToHost(a_attr_name, &host_atom)) {
+    if (!ephyrLocalAtomToHost(a_attr_name, &host_atom, a_screen_info->pScreen->context)) {
         EPHYR_LOG_ERROR("failed to convert local atom to host atom\n");
         res = BadMatch;
         goto out;
@@ -850,7 +855,7 @@ ephyrQueryBestSize(KdScreenInfo * a_info,
                    unsigned int *a_prefered_w,
                    unsigned int *a_prefered_h, void *a_port_priv)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_info->pScreen->context);
     EphyrPortPriv *port_priv = a_port_priv;
     xcb_xv_query_best_size_cookie_t cookie =
         xcb_xv_query_best_size(conn,
@@ -895,7 +900,7 @@ ephyrHostXVPutImage(KdScreenInfo * a_info,
                     BoxPtr a_clip_rects, int a_clip_rect_nums)
 {
     EphyrScrPriv *scrpriv = a_info->driver;
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_info->pScreen->context);
     xcb_gcontext_t gc;
     Bool is_ok = TRUE;
     xcb_rectangle_t *rects = NULL;
@@ -1005,7 +1010,8 @@ ephyrPutImage(KdScreenInfo * a_info,
      * later, in ReputImage.
      */
     if (!ephyrXVPrivGetImageBufSize(port_priv->port_number,
-                                    a_id, a_width, a_height, &image_size)) {
+                                    a_id, a_width, a_height, &image_size,
+                                    a_info->pScreen->context)) {
         EPHYR_LOG_ERROR("failed to get image size\n");
         /*this is a minor error so we won't get bail out abruptly */
         is_ok = FALSE;
@@ -1096,7 +1102,7 @@ ephyrPutVideo(KdScreenInfo * a_info,
               RegionPtr a_clipping_region, void *a_port_priv)
 {
     EphyrScrPriv *scrpriv = a_info->driver;
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_info->pScreen->context);
     xcb_gcontext_t gc;
     EphyrPortPriv *port_priv = a_port_priv;
 
@@ -1127,7 +1133,7 @@ ephyrGetVideo(KdScreenInfo * a_info,
               RegionPtr a_clipping_region, void *a_port_priv)
 {
     EphyrScrPriv *scrpriv = a_info->driver;
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_info->pScreen->context);
     xcb_gcontext_t gc;
     EphyrPortPriv *port_priv = a_port_priv;
 
@@ -1159,7 +1165,7 @@ ephyrPutStill(KdScreenInfo * a_info,
               RegionPtr a_clipping_region, void *a_port_priv)
 {
     EphyrScrPriv *scrpriv = a_info->driver;
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_info->pScreen->context);
     xcb_gcontext_t gc;
     EphyrPortPriv *port_priv = a_port_priv;
 
@@ -1190,7 +1196,7 @@ ephyrGetStill(KdScreenInfo * a_info,
               RegionPtr a_clipping_region, void *a_port_priv)
 {
     EphyrScrPriv *scrpriv = a_info->driver;
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_info->pScreen->context);
     xcb_gcontext_t gc;
     EphyrPortPriv *port_priv = a_port_priv;
 
@@ -1217,7 +1223,7 @@ ephyrQueryImageAttributes(KdScreenInfo * a_info,
                           unsigned short *a_w,
                           unsigned short *a_h, int *a_pitches, int *a_offsets)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(a_info->pScreen->context);
     xcb_xv_query_image_attributes_cookie_t cookie;
     xcb_xv_query_image_attributes_reply_t *reply;
     int image_size = 0;

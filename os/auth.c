@@ -122,7 +122,7 @@ LoadAuthorization(XephyrContext* context)
         return 0;
 
     errno = 0;
-    f = Fopen(authorization_file, "r");
+    f = Fopen(authorization_file, "r", context);
     if (!f) {
         LogMessageVerb(X_ERROR, 0,
                        "Failed to open authorization file \"%s\": %s\n", context,
@@ -203,11 +203,11 @@ CheckAuthorization(unsigned int name_length,
          */
 
         if (loadauth > 0) {
-            DisableLocalAccess(); /* got at least one */
+            DisableLocalAccess(client->context); /* got at least one */
             loaded = TRUE;
         }
         else if (loadauth == 0 || !loaded)
-            EnableLocalAccess();
+            EnableLocalAccess(client->context);
     }
     if (name_length) {
         for (i = 0; i < NUM_AUTHORIZATION; i++) {

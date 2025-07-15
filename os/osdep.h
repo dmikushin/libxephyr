@@ -130,7 +130,7 @@ extern int FlushClient(ClientPtr /*who */ ,
                        int      /*extraCount */
     );
 
-extern void FreeOsBuffers(OsCommPtr     /*oc */
+extern void FreeOsBuffers(OsCommPtr     /*oc */, XephyrContext* /* context */
     );
 
 void
@@ -183,7 +183,7 @@ extern int SecureRPCReset(AuthRstCArgs);
 #ifdef XDMCP
 /* in xdmcp.c */
 extern void XdmcpUseMsg(void);
-extern int XdmcpOptions(int argc, char **argv, int i);
+extern int XdmcpOptions(int argc, char **argv, int i, XephyrContext* context);
 extern void XdmcpRegisterConnection(int type, const char *address, int addrlen);
 extern void XdmcpRegisterAuthorizations(void);
 extern void XdmcpRegisterAuthorization(const char *name, int namelen);

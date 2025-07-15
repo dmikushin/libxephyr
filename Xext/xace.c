@@ -39,7 +39,7 @@ int
 XaceHookDispatch(ClientPtr client, int major)
 {
     /* Call the extension dispatch hook */
-    ExtensionEntry *ext = GetExtensionEntry(major);
+    ExtensionEntry *ext = GetExtensionEntry(major, client->context);
     XaceExtAccessRec erec = { client, ext, DixUseAccess, Success };
     if (ext)
         CallCallbacks(&client->context->XaceHooks[XACE_EXT_DISPATCH], &erec);

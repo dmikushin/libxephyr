@@ -95,8 +95,8 @@ AddExtension(const char * /*name */ ,
     );
 
 extern _X_EXPORT ExtensionEntry *
-CheckExtension(const char *extname);
+CheckExtension(const char *extname, XephyrContext *context);
 extern _X_EXPORT ExtensionEntry *
-GetExtensionEntry(int major);
+GetExtensionEntry(int major, XephyrContext *context);
 
 #endif                          /* EXTENSIONSTRUCT_H */

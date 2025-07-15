@@ -94,22 +94,22 @@ static Bool KdXVCloseScreen(ScreenPtr);
 /* misc */
 static Bool KdXVInitAdaptors(ScreenPtr, KdVideoAdaptorPtr, int, XephyrContext*);
 
-static DevPrivateKeyRec KdXVWindowKeyRec;
+// static DevPrivateKeyRec KdXVWindowKeyRec;
 
-#define KdXVWindowKey (&KdXVWindowKeyRec)
-static DevPrivateKey KdXvScreenKey;
-static DevPrivateKeyRec KdXVScreenPrivateKey;
+#define KdXVWindowKey(pWin) (&(pWin)->drawable.pScreen->context->KdXVWindowKeyRec)
+// static DevPrivateKey KdXvScreenKey;
+// static DevPrivateKeyRec KdXVScreenPrivateKey;
 static unsigned long KdXVGeneration = 0;
-static unsigned long PortResource = 0;
+// REMOVED: static unsigned long context->PortResource = 0; - moved to XephyrContext
 
 #define GET_XV_SCREEN(pScreen) ((XvScreenPtr) \
-    dixLookupPrivate(&(pScreen)->devPrivates, KdXvScreenKey))
+    dixLookupPrivate(&(pScreen)->devPrivates, (pScreen)->context->KdXvScreenKey))
 
 #define GET_KDXV_SCREEN(pScreen) \
-    ((KdXVScreenPtr)(dixGetPrivate(&pScreen->devPrivates, &KdXVScreenPrivateKey)))
+    ((KdXVScreenPtr)(dixGetPrivate(&pScreen->devPrivates, &pScreen->context->KdXVScreenPrivateKey)))
 
 #define GET_KDXV_WINDOW(pWin) ((KdXVWindowPtr) \
-    dixLookupPrivate(&(pWin)->devPrivates, KdXVWindowKey))
+    dixLookupPrivate(&(pWin)->devPrivates, KdXVWindowKey(pWin)))
 
 Bool
 KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr adaptors, int num, XephyrContext* context)
@@ -124,19 +124,19 @@ KdXVScreenInit(ScreenPtr pScreen, KdVideoAdaptorPtr adaptors, int num, XephyrCon
     if (context->noXvExtension)
         return FALSE;
 
-    if (!dixRegisterPrivateKey(&KdXVWindowKeyRec, PRIVATE_WINDOW, 0, context))
+    if (!dixRegisterPrivateKey(&context->KdXVWindowKeyRec, PRIVATE_WINDOW, 0, context))
         return FALSE;
-    if (!dixRegisterPrivateKey(&KdXVScreenPrivateKey, PRIVATE_SCREEN, 0, context))
+    if (!dixRegisterPrivateKey(&context->KdXVScreenPrivateKey, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
     if (Success != XvScreenInit(pScreen, context))
         return FALSE;
 
-    KdXvScreenKey = XvGetScreenKey();
-    PortResource = XvGetRTPort(context);
+    context->KdXvScreenKey = XvGetScreenKey();
+    context->PortResource = XvGetRTPort(context);
 
     ScreenPriv = malloc(sizeof(KdXVScreenRec));
-    dixSetPrivate(&pScreen->devPrivates, &KdXVScreenPrivateKey, ScreenPriv);
+    dixSetPrivate(&pScreen->devPrivates, &context->KdXVScreenPrivateKey, ScreenPriv);
 
     if (!ScreenPriv)
         return FALSE;
@@ -372,7 +372,7 @@ KdXVInitAdaptors(ScreenPtr pScreen, KdVideoAdaptorPtr infoPtr, int number, Xephy
             if (!(portPriv = calloc(1, sizeof(XvPortRecPrivate))))
                 continue;
 
-            if (!AddResource(pp->id, PortResource, pp, context)) {
+            if (!AddResource(pp->id, context->PortResource, pp, context)) {
                 free(portPriv);
                 continue;
             }
@@ -728,7 +728,7 @@ KdXVEnlistPortInWindow(WindowPtr pWin, XvPortRecPrivatePtr portPriv)
             return BadAlloc;
         winPriv->PortRec = portPriv;
         winPriv->next = PrivRoot;
-        dixSetPrivate(&pWin->devPrivates, KdXVWindowKey, winPriv);
+        dixSetPrivate(&pWin->devPrivates, KdXVWindowKey(pWin), winPriv);
     }
     return Success;
 }
@@ -745,7 +745,7 @@ KdXVRemovePortFromWindow(WindowPtr pWin, XvPortRecPrivatePtr portPriv)
             if (prevPriv)
                 prevPriv->next = winPriv->next;
             else
-                dixSetPrivate(&pWin->devPrivates, KdXVWindowKey, winPriv->next);
+                dixSetPrivate(&pWin->devPrivates, KdXVWindowKey(pWin), winPriv->next);
             free(winPriv);
             break;
         }
@@ -780,7 +780,7 @@ KdXVDestroyWindow(WindowPtr pWin)
         free(tmp);
     }
 
-    dixSetPrivate(&pWin->devPrivates, KdXVWindowKey, NULL);
+    dixSetPrivate(&pWin->devPrivates, KdXVWindowKey(pWin), NULL);
 
     pScreen->DestroyWindow = ScreenPriv->DestroyWindow;
     ret = (*pScreen->DestroyWindow) (pWin);
@@ -837,7 +837,7 @@ KdXVWindowExposures(WindowPtr pWin, RegionPtr reg1)
                 pPriv->pDraw = NULL;
 
                 if (!pPrev)
-                    dixSetPrivate(&pWin->devPrivates, KdXVWindowKey,
+                    dixSetPrivate(&pWin->devPrivates, KdXVWindowKey(pWin),
                                   WinPriv->next);
                 else
                     pPrev->next = WinPriv->next;
@@ -886,7 +886,7 @@ KdXVClipNotify(WindowPtr pWin, int dx, int dy)
                 pPriv->pDraw = NULL;
 
                 if (!pPrev)
-                    dixSetPrivate(&pWin->devPrivates, KdXVWindowKey,
+                    dixSetPrivate(&pWin->devPrivates, KdXVWindowKey(pWin),
                                   WinPriv->next);
                 else
                     pPrev->next = WinPriv->next;

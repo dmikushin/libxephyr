@@ -28,7 +28,7 @@
 #include "xfixesint.h"
 #include "xace.h"
 
-static RESTYPE SelectionClientType, SelectionWindowType;
+// REMOVED: static RESTYPE context->SelectionClientType, context->SelectionWindowType; - moved to XephyrContext
 static Bool SelectionCallbackRegistered = FALSE;
 
 /*
@@ -170,16 +170,16 @@ XFixesSelectSelectionInput(ClientPtr pClient,
          * catch window destroy
          */
         rc = dixLookupResourceByType(&val, pWindow->drawable.id,
-                                     SelectionWindowType, pClient->context->serverClient,
+                                     pClient->context->SelectionWindowType, pClient->context->serverClient,
                                      DixGetAttrAccess, pClient->context);
         if (rc != Success)
-            if (!AddResource(pWindow->drawable.id, SelectionWindowType,
+            if (!AddResource(pWindow->drawable.id, pClient->context->SelectionWindowType,
                              (void *) pWindow, pClient->context)) {
                 free(e);
                 return BadAlloc;
             }
 
-        if (!AddResource(e->clientResource, SelectionClientType, (void *) e, pClient->context))
+        if (!AddResource(e->clientResource, pClient->context->SelectionClientType, (void *) e, pClient->context))
             return BadAlloc;
 
         *prev = e;
@@ -272,9 +272,9 @@ SelectionFreeWindow(void *data, XID id, XephyrContext* context)
 Bool
 XFixesSelectionInit(XephyrContext* context)
 {
-    SelectionClientType = CreateNewResourceType(SelectionFreeClient,
+    context->SelectionClientType = CreateNewResourceType(SelectionFreeClient,
                                                 "XFixesSelectionClient", context);
-    SelectionWindowType = CreateNewResourceType(SelectionFreeWindow,
+    context->SelectionWindowType = CreateNewResourceType(SelectionFreeWindow,
                                                 "XFixesSelectionWindow", context);
-    return SelectionClientType && SelectionWindowType;
+    return context->SelectionClientType && context->SelectionWindowType;
 }

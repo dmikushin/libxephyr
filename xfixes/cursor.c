@@ -59,13 +59,13 @@
 #include "list.h"
 #include "xibarriers.h"
 
-static RESTYPE CursorClientType;
-static RESTYPE CursorHideCountType;
-static RESTYPE CursorWindowType;
+//static RESTYPE CursorClientType;
+//static RESTYPE CursorHideCountType;
+//static RESTYPE CursorWindowType;
 
-static DevPrivateKeyRec CursorScreenPrivateKeyRec;
+// static DevPrivateKeyRec CursorScreenPrivateKeyRec;
 
-#define CursorScreenPrivateKey (&CursorScreenPrivateKeyRec)
+#define CursorScreenPrivateKey(pScreen) (&(pScreen)->context->CursorScreenPrivateKeyRec)
 
 static void deleteCursorHideCountsForScreen(ScreenPtr pScreen);
 
@@ -122,9 +122,9 @@ typedef struct _CursorScreen {
     CursorHideCountPtr pCursorHideCounts;
 } CursorScreenRec, *CursorScreenPtr;
 
-#define GetCursorScreen(s) ((CursorScreenPtr)dixLookupPrivate(&(s)->devPrivates, CursorScreenPrivateKey))
+#define GetCursorScreen(s) ((CursorScreenPtr)dixLookupPrivate(&(s)->devPrivates, CursorScreenPrivateKey(s)))
 #define GetCursorScreenIfSet(s) GetCursorScreen(s)
-#define SetCursorScreen(s,p) dixSetPrivate(&(s)->devPrivates, CursorScreenPrivateKey, p)
+#define SetCursorScreen(s,p) dixSetPrivate(&(s)->devPrivates, CursorScreenPrivateKey(s), p)
 #define Wrap(as,s,elt,func)	(((as)->elt = (s)->elt), (s)->elt = func)
 #define Unwrap(as,s,elt,backup)	(((backup) = (s)->elt), (s)->elt = (as)->elt)
 
@@ -242,16 +242,16 @@ XFixesSelectCursorInput(ClientPtr pClient, WindowPtr pWindow, CARD32 eventMask)
          * catch window destroy
          */
         rc = dixLookupResourceByType(&val, pWindow->drawable.id,
-                                     CursorWindowType, pClient->context->serverClient,
+                                     pClient->context->CursorWindowType, pClient->context->serverClient,
                                      DixGetAttrAccess, pClient->context);
         if (rc != Success)
-            if (!AddResource(pWindow->drawable.id, CursorWindowType,
+            if (!AddResource(pWindow->drawable.id, pClient->context->CursorWindowType,
                              (void *) pWindow, pClient->context)) {
                 free(e);
                 return BadAlloc;
             }
 
-        if (!AddResource(e->clientResource, CursorClientType, (void *) e, pClient->context))
+        if (!AddResource(e->clientResource, pClient->context->CursorClientType, (void *) e, pClient->context))
             return BadAlloc;
 
         *prev = e;
@@ -793,7 +793,7 @@ createCursorHideCount(ClientPtr pClient, ScreenPtr pScreen)
      * Create a resource for this element so it can be deleted
      * when the client goes away.
      */
-    if (!AddResource(pChc->resource, CursorHideCountType, (void *) pChc, pClient->context))
+    if (!AddResource(pChc->resource, pClient->context->CursorHideCountType, (void *) pChc, pClient->context))
         return BadAlloc;
 
     return Success;
@@ -1078,7 +1078,7 @@ XFixesCursorInit(XephyrContext* context)
     else
         context->CursorVisible = FALSE;
 
-    if (!dixRegisterPrivateKey(&CursorScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
+    if (!dixRegisterPrivateKey(&context->CursorScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
     for (i = 0; i < context->screenInfo.numScreens; i++) {
@@ -1093,12 +1093,12 @@ XFixesCursorInit(XephyrContext* context)
         cs->pCursorHideCounts = NULL;
         SetCursorScreen(pScreen, cs);
     }
-    CursorClientType = CreateNewResourceType(CursorFreeClient,
+    context->CursorClientType = CreateNewResourceType(CursorFreeClient,
                                              "XFixesCursorClient", context);
-    CursorHideCountType = CreateNewResourceType(CursorFreeHideCount,
+    context->CursorHideCountType = CreateNewResourceType(CursorFreeHideCount,
                                                 "XFixesCursorHideCount", context);
-    CursorWindowType = CreateNewResourceType(CursorFreeWindow,
+    context->CursorWindowType = CreateNewResourceType(CursorFreeWindow,
                                              "XFixesCursorWindow", context);
 
-    return CursorClientType && CursorHideCountType && CursorWindowType;
+    return context->CursorClientType && context->CursorHideCountType && context->CursorWindowType;
 }

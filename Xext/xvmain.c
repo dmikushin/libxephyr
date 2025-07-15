@@ -162,7 +162,7 @@ XvExtensionInit(XephyrContext* context)
             return;
         }
 #ifdef PANORAMIX
-        XineramaRegisterConnectionBlockCallback(XineramifyXv);
+        XineramaRegisterConnectionBlockCallback(XineramifyXv, context);
 #endif
         context->XvScreenGeneration = context->serverGeneration;
     }
@@ -255,7 +255,7 @@ XvScreenInit(ScreenPtr pScreen, XephyrContext* context)
             return BadAlloc;
         }
 #ifdef PANORAMIX
-        XineramaRegisterConnectionBlockCallback(XineramifyXv);
+        XineramaRegisterConnectionBlockCallback(XineramifyXv, context);
 #endif
         context->XvScreenGeneration = context->serverGeneration;
     }

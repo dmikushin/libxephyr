@@ -162,7 +162,7 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata, XephyrContext* cont
     }
 
 #ifndef WIN32
-    out = Popen(buf, "w");
+    out = Popen(buf, "w", context);
 #else
     out = fopen(tmpname, "w");
 #endif
@@ -172,7 +172,7 @@ RunXkbComp(xkbcomp_buffer_callback callback, void *userdata, XephyrContext* cont
         (*callback)(out, userdata);
 
 #ifndef WIN32
-        if (Pclose(out) == 0)
+        if (Pclose(out, context) == 0)
 #else
         if (fclose(out) == 0 && System(buf) >= 0)
 #endif

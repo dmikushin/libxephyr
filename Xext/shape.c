@@ -73,7 +73,8 @@ static void SShapeNotifyEvent(xShapeNotifyEvent * /* from */ ,
 #endif
 
 static int ShapeEventBase = 0;
-static RESTYPE ClientType, ShapeEventType;      /* resource types for event masks */
+//static RESTYPE ClientType, ShapeEventType;      /* resource types for event masks */
+static RESTYPE ShapeEventType;      /* resource types for event masks */
 
 /*
  * each window has a list of context->clients requesting
@@ -727,7 +728,7 @@ ShapeFreeEvents(void *data, XID id, XephyrContext* context)
     pHead = (ShapeEventPtr *) data;
     for (pCur = *pHead; pCur; pCur = pNext) {
         pNext = pCur->next;
-        FreeResource(pCur->clientResource, ClientType, context);
+        FreeResource(pCur->clientResource, context->ClientType, context);
         free((void *) pCur);
     }
     free((void *) pHead);
@@ -777,7 +778,7 @@ ProcShapeSelectInput(ClientPtr client)
          */
         clientResource = FakeClientID(client->index, client->context);
         pNewShapeEvent->clientResource = clientResource;
-        if (!AddResource(clientResource, ClientType, (void *) pNewShapeEvent, client->context))
+        if (!AddResource(clientResource, client->context->ClientType, (void *) pNewShapeEvent, client->context))
             return BadAlloc;
         /*
          * create a resource to contain a void *to the list
@@ -809,7 +810,7 @@ ProcShapeSelectInput(ClientPtr client)
                 pNewShapeEvent = pShapeEvent;
             }
             if (pShapeEvent) {
-                FreeResource(pShapeEvent->clientResource, ClientType, client->context);
+                FreeResource(pShapeEvent->clientResource, client->context->ClientType, client->context);
                 if (pNewShapeEvent)
                     pNewShapeEvent->next = pShapeEvent->next;
                 else
@@ -1236,9 +1237,9 @@ ShapeExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extEntry;
 
-    ClientType = CreateNewResourceType(ShapeFreeClient, "ShapeClient", context);
+    context->ClientType = CreateNewResourceType(ShapeFreeClient, "ShapeClient", context);
     ShapeEventType = CreateNewResourceType(ShapeFreeEvents, "ShapeEvent", context);
-    if (ClientType && ShapeEventType &&
+    if (context->ClientType && ShapeEventType &&
         (extEntry = AddExtension(SHAPENAME, ShapeNumberEvents, 0,
                                  ProcShapeDispatch, SProcShapeDispatch,
                                  NULL, StandardMinorOpcode, context))) {

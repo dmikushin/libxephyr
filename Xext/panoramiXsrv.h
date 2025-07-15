@@ -18,7 +18,7 @@ extern _X_EXPORT void PanoramiXConsolidate(XephyrContext* context);
 extern _X_EXPORT Bool PanoramiXCreateConnectionBlock(XephyrContext* context);
 extern _X_EXPORT PanoramiXRes *PanoramiXFindIDByScrnum(RESTYPE, XID, int, XephyrContext*);
 extern _X_EXPORT Bool
-XineramaRegisterConnectionBlockCallback(void (*func) (XephyrContext*));
+XineramaRegisterConnectionBlockCallback(void (*func) (XephyrContext*), XephyrContext* context);
 extern _X_EXPORT int XineramaDeleteResource(void *, XID, XephyrContext*);
 
 extern _X_EXPORT void XineramaReinitData(XephyrContext* context);

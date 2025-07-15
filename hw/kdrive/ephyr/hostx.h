@@ -71,27 +71,27 @@ typedef struct {
 } EphyrRect;
 
 int
-hostx_want_screen_geometry(KdScreenInfo *screen, int *width, int *height, int *x, int *y);
+hostx_want_screen_geometry(KdScreenInfo *screen, int *width, int *height, int *x, int *y, XephyrContext* context);
 
 int
- hostx_want_host_cursor(void);
+ hostx_want_host_cursor(XephyrContext* context);
 
 void
- hostx_use_sw_cursor(void);
+ hostx_use_sw_cursor(XephyrContext* context);
 
 xcb_cursor_t
- hostx_get_empty_cursor(void);
+ hostx_get_empty_cursor(XephyrContext* context);
 
 void
  hostx_get_output_geometry(const char *output,
                            int *x, int *y,
-                           int *width, int *height);
+                           int *width, int *height, XephyrContext* context);
 
 void
- hostx_use_fullscreen(void);
+ hostx_use_fullscreen(XephyrContext* context);
 
 int
- hostx_want_fullscreen(void);
+ hostx_want_fullscreen(XephyrContext* context);
 
 int
 hostx_want_preexisting_window(KdScreenInfo *screen);
@@ -106,7 +106,7 @@ void
  hostx_set_title(char *name, XephyrContext* context);
 
 void
- hostx_handle_signal(int signum);
+ hostx_handle_signal(int signum, XephyrContext* context);
 
 int
  hostx_init(XephyrContext* context);
@@ -115,7 +115,7 @@ void
 hostx_add_screen(KdScreenInfo *screen, unsigned long win_id, int screen_num, Bool use_geometry, const char *output, XephyrContext* context);
 
 void
- hostx_set_display_name(char *name);
+ hostx_set_display_name(char *name, XephyrContext* context);
 
 void
 hostx_set_screen_number(KdScreenInfo *screen, int number, XephyrContext* context);
@@ -124,21 +124,21 @@ void
 hostx_set_win_title(KdScreenInfo *screen, const char *extra_text, XephyrContext* context);
 
 int
- hostx_get_depth(void);
+ hostx_get_depth(XephyrContext* context);
 
 int
-hostx_get_server_depth(KdScreenInfo *screen);
+hostx_get_server_depth(KdScreenInfo *screen, XephyrContext* context);
 
 int
-hostx_get_bpp(KdScreenInfo *screen);
+hostx_get_bpp(KdScreenInfo *screen, XephyrContext* context);
 
 void
 hostx_get_visual_masks(KdScreenInfo *screen,
-                       CARD32 *rmsk, CARD32 *gmsk, CARD32 *bmsk);
+                       CARD32 *rmsk, CARD32 *gmsk, CARD32 *bmsk, XephyrContext* context);
 void
 
 hostx_set_cmap_entry(ScreenPtr pScreen, unsigned char idx,
-                     unsigned char r, unsigned char g, unsigned char b);
+                     unsigned char r, unsigned char g, unsigned char b, XephyrContext* context);
 
 void *hostx_screen_init(KdScreenInfo *screen,
                         int x, int y,
@@ -150,45 +150,45 @@ hostx_paint_rect(KdScreenInfo *screen,
                  int sx, int sy, int dx, int dy, int width, int height, XephyrContext* context);
 
 Bool
-hostx_load_keymap(KeySymsPtr keySyms, CARD8 *modmap, XkbControlsPtr controls);
+hostx_load_keymap(KeySymsPtr keySyms, CARD8 *modmap, XkbControlsPtr controls, XephyrContext* context);
 
 void
-hostx_size_set_from_configure(Bool);
+hostx_size_set_from_configure(Bool, XephyrContext* context);
 
 xcb_connection_t *
-hostx_get_xcbconn(void);
+hostx_get_xcbconn(XephyrContext* context);
 
 xcb_generic_event_t *
-hostx_get_event(Bool queued_only);
+hostx_get_event(Bool queued_only, XephyrContext* context);
 
 Bool
-hostx_has_queued_event(void);
+hostx_has_queued_event(XephyrContext* context);
 
 int
-hostx_get_screen(void);
+hostx_get_screen(XephyrContext* context);
 
 int
- hostx_get_window(int a_screen_number);
+ hostx_get_window(int a_screen_number, XephyrContext* context);
 
 int
- hostx_get_window_attributes(int a_window, EphyrHostWindowAttributes * a_attr);
+ hostx_get_window_attributes(int a_window, EphyrHostWindowAttributes * a_attr, XephyrContext* context);
 
 int
- hostx_get_visuals_info(EphyrHostVisualInfo ** a_visuals, int *a_num_entries);
+ hostx_get_visuals_info(EphyrHostVisualInfo ** a_visuals, int *a_num_entries, XephyrContext* context);
 
 int hostx_create_window(int a_screen_number,
                         EphyrBox * a_geometry,
-                        int a_visual_id, int *a_host_win /*out parameter */ );
+                        int a_visual_id, int *a_host_win /*out parameter */, XephyrContext* context);
 
-int hostx_destroy_window(int a_win);
+int hostx_destroy_window(int a_win, XephyrContext* context);
 
-int hostx_set_window_geometry(int a_win, EphyrBox * a_geo);
+int hostx_set_window_geometry(int a_win, EphyrBox * a_geo, XephyrContext* context);
 
 int hostx_set_window_bounding_rectangles(int a_window,
-                                         EphyrRect * a_rects, int a_num_rects);
+                                         EphyrRect * a_rects, int a_num_rects, XephyrContext* context);
 
-int hostx_has_extension(xcb_extension_t *extension);
+int hostx_has_extension(xcb_extension_t *extension, XephyrContext* context);
 
-int hostx_get_fd(void);
+int hostx_get_fd(XephyrContext* context);
 
 #endif /*_XLIBS_STUFF_H_*/

@@ -41,17 +41,17 @@ typedef struct {
 } PanoramiXDamageRes;
 
 static RESTYPE XRT_DAMAGE;
-static int (*PanoramiXSaveDamageCreate) (ClientPtr);
+// REMOVED: static int (*context->PanoramiXSaveDamageCreate) (ClientPtr); - moved to XephyrContext
 
 #endif
 
-static unsigned char DamageReqCode;
-static int DamageEventBase;
-static RESTYPE DamageExtType;
+//static unsigned char DamageReqCode;
+//static int DamageEventBase;
+//static RESTYPE DamageExtType;
 
-static DevPrivateKeyRec DamageClientPrivateKeyRec;
+// static DevPrivateKeyRec DamageClientPrivateKeyRec;
 
-#define DamageClientPrivateKey (&DamageClientPrivateKeyRec)
+#define DamageClientPrivateKey(client) (&(client)->context->DamageClientPrivateKeyRec)
 
 static void
 DamageNoteCritical(ClientPtr pClient)
@@ -100,7 +100,7 @@ DamageExtNotify(DamageExtPtr pDamageExt, BoxPtr pBoxes, int nBoxes)
 
     UpdateCurrentTimeIf(pClient->context);
     ev = (xDamageNotifyEvent) {
-        .type = DamageEventBase + XDamageNotify,
+        .type = pClient->context->DamageEventBase + XDamageNotify,
         .level = pDamageExt->level,
         .drawable = pDamageExt->drawable,
         .damage = pDamageExt->id,
@@ -246,7 +246,7 @@ DamageExtCreate(DrawablePtr pDrawable, DamageReportLevel level,
         return NULL;
     }
 
-    if (!AddResource(id, DamageExtType, (void *) pDamageExt, client->context))
+    if (!AddResource(id, client->context->DamageExtType, (void *) pDamageExt, client->context))
         return NULL;
 
     DamageExtRegister(pDrawable, pDamageExt->pDamage,
@@ -649,7 +649,7 @@ PanoramiXDamageCreate(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xDamageCreateReq);
     LEGAL_NEW_RESOURCE(stuff->damage, client);
-    rc = dixLookupResourceByClass((void **)&draw, stuff->drawable, context->XRC_DRAWABLE,
+    rc = dixLookupResourceByClass((void **)&draw, stuff->drawable, client->context->XRC_DRAWABLE,
                                   client, DixGetAttrAccess | DixReadAccess);
     if (rc != Success)
         return rc;
@@ -661,7 +661,7 @@ PanoramiXDamageCreate(ClientPtr client)
         return BadAlloc;
 
     damage->ext = doDamageCreate(client, &rc);
-    if (rc == Success && draw->type == context->XRT_WINDOW) {
+    if (rc == Success && draw->type == client->context->XRT_WINDOW) {
         FOR_NSCREENS_FORWARD(i) {
             DrawablePtr pDrawable;
             DamagePtr pDamage = DamageCreate(PanoramiXDamageReport,
@@ -715,14 +715,14 @@ PanoramiXDamageInit(XephyrContext* context)
     if (!XRT_DAMAGE)
         FatalError("Couldn't Xineramify Damage extension\n", context);
 
-    PanoramiXSaveDamageCreate = ProcDamageVector[X_DamageCreate];
+    context->PanoramiXSaveDamageCreate = ProcDamageVector[X_DamageCreate];
     ProcDamageVector[X_DamageCreate] = PanoramiXDamageCreate;
 }
 
 void
-PanoramiXDamageReset(void)
+PanoramiXDamageReset(XephyrContext* context)
 {
-    ProcDamageVector[X_DamageCreate] = PanoramiXSaveDamageCreate;
+    ProcDamageVector[X_DamageCreate] = context->PanoramiXSaveDamageCreate;
 }
 
 #endif /* PANORAMIX */
@@ -736,23 +736,23 @@ DamageExtensionInit(XephyrContext* context)
     for (s = 0; s < context->screenInfo.numScreens; s++)
         DamageSetup(context->screenInfo.screens[s]);
 
-    DamageExtType = CreateNewResourceType(FreeDamageExt, "DamageExt", context);
-    if (!DamageExtType)
+    context->DamageExtType = CreateNewResourceType(FreeDamageExt, "DamageExt", context);
+    if (!context->DamageExtType)
         return;
 
     if (!dixRegisterPrivateKey
-        (&DamageClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(DamageClientRec), context))
+        (&context->DamageClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(DamageClientRec), context))
         return;
 
     if ((extEntry = AddExtension(DAMAGE_NAME, XDamageNumberEvents,
                                  XDamageNumberErrors,
                                  ProcDamageDispatch, SProcDamageDispatch,
                                  NULL, StandardMinorOpcode, context)) != 0) {
-        DamageReqCode = (unsigned char) extEntry->base;
-        DamageEventBase = extEntry->eventBase;
-        EventSwapVector[DamageEventBase + XDamageNotify] =
+        context->DamageReqCode = (unsigned char) extEntry->base;
+        context->DamageEventBase = extEntry->eventBase;
+        EventSwapVector[context->DamageEventBase + XDamageNotify] =
             (EventSwapPtr) SDamageNotifyEvent;
-        SetResourceTypeErrorValue(DamageExtType,
+        SetResourceTypeErrorValue(context->DamageExtType,
                                   extEntry->errorBase + BadDamage, context);
 #ifdef PANORAMIX
         if (XRT_DAMAGE)

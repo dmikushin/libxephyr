@@ -99,7 +99,7 @@ ephyrScreenInitialize(KdScreenInfo *screen, XephyrContext* context)
     int width = 640, height = 480;
     CARD32 redMask, greenMask, blueMask;
 
-    if (hostx_want_screen_geometry(screen, &width, &height, &x, &y)
+    if (hostx_want_screen_geometry(screen, &width, &height, &x, &y, context)
         || !screen->width || !screen->height) {
         screen->width = width;
         screen->height = height;
@@ -110,8 +110,8 @@ ephyrScreenInitialize(KdScreenInfo *screen, XephyrContext* context)
     if (context->EphyrWantGrayScale)
         screen->fb.depth = 8;
 
-    if (screen->fb.depth && screen->fb.depth != hostx_get_depth()) {
-        if (screen->fb.depth < hostx_get_depth()
+    if (screen->fb.depth && screen->fb.depth != hostx_get_depth(context)) {
+        if (screen->fb.depth < hostx_get_depth(context)
             && (screen->fb.depth == 24 || screen->fb.depth == 16
                 || screen->fb.depth == 8)) {
             scrpriv->server_depth = screen->fb.depth;
@@ -121,7 +121,7 @@ ephyrScreenInitialize(KdScreenInfo *screen, XephyrContext* context)
                  screen->pScreen ? screen->pScreen->context : NULL);
     }
 
-    screen->fb.depth = hostx_get_server_depth(screen);
+    screen->fb.depth = hostx_get_server_depth(screen, context);
     screen->rate = 72;
 
     if (screen->fb.depth <= 8) {
@@ -164,7 +164,7 @@ ephyrScreenInitialize(KdScreenInfo *screen, XephyrContext* context)
             return FALSE;
         }
 
-        hostx_get_visual_masks(screen, &redMask, &greenMask, &blueMask);
+        hostx_get_visual_masks(screen, &redMask, &greenMask, &blueMask, context);
 
         screen->fb.redMask = (Pixel) redMask;
         screen->fb.greenMask = (Pixel) greenMask;
@@ -364,7 +364,7 @@ ephyrScreenBlockHandler(ScreenPtr pScreen, void *timeout)
     if (scrpriv->pDamage)
         ephyrInternalDamageRedisplay(pScreen);
 
-    if (hostx_has_queued_event()) {
+    if (hostx_has_queued_event(pScreen->context)) {
         if (!QueueWorkProc(ephyrEventWorkProc, NULL, NULL, pScreen->context))
             FatalError("cannot queue event processing in ephyr block handler", pScreen->context);
         AdjustWaitForDelay(timeout, 0);
@@ -438,7 +438,7 @@ ephyrRandRGetInfo(ScreenPtr pScreen, Rotation * rotations)
     *rotations = RR_Rotate_All | RR_Reflect_All;
 
     if (!hostx_want_preexisting_window(screen)
-        && !hostx_want_fullscreen()) {  /* only if no -parent switch */
+        && !hostx_want_fullscreen(pScreen->context)) {  /* only if no -parent switch */
         while (sizes[n].width != 0 && sizes[n].height != 0) {
             RRRegisterSize(pScreen,
                            sizes[n].width,
@@ -628,9 +628,9 @@ ephyrResizeScreen (ScreenPtr           pScreen,
     size.width = newwidth;
     size.height = newheight;
 
-    hostx_size_set_from_configure(TRUE);
+    hostx_size_set_from_configure(TRUE, pScreen->context);
     ret = ephyrRandRSetConfig (pScreen, screen->randr, 0, &size);
-    hostx_size_set_from_configure(FALSE);
+    hostx_size_set_from_configure(FALSE, pScreen->context);
     if (ret) {
         RROutputPtr output;
 
@@ -1011,7 +1011,7 @@ ephyrProcessKeyPress(XephyrContext* context, xcb_generic_event_t *xev)
 static void
 ephyrProcessKeyRelease(XephyrContext* context, xcb_generic_event_t *xev)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(context);
     xcb_key_release_event_t *key = (xcb_key_release_event_t *)xev;
     static xcb_key_symbols_t *keysyms;
     static int grabbed_screen = -1;
@@ -1113,11 +1113,11 @@ ephyrProcessConfigureNotify(XephyrContext* context, xcb_generic_event_t *xev)
 static void
 ephyrXcbProcessEvents(XephyrContext* context, Bool queued_only)
 {
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(context);
     xcb_generic_event_t *expose = NULL, *configure = NULL;
 
     while (TRUE) {
-        xcb_generic_event_t *xev = hostx_get_event(queued_only);
+        xcb_generic_event_t *xev = hostx_get_event(queued_only, context);
 
         if (!xev) {
             /* If our XCB connection has died (for example, our window was
@@ -1242,7 +1242,7 @@ ephyrPutColors(ScreenPtr pScreen, int n, xColorItem * pdefs)
 
         hostx_set_cmap_entry(pScreen, p,
                              pdefs->red >> 8,
-                             pdefs->green >> 8, pdefs->blue >> 8);
+                             pdefs->green >> 8, pdefs->blue >> 8, pScreen->context);
         pdefs++;
     }
     if (scrpriv->pDamage) {
@@ -1289,7 +1289,7 @@ static Status
 MouseEnable(KdPointerInfo * pi)
 {
     ((EphyrPointerPrivate *) pi->driverPrivate)->enabled = TRUE;
-    SetNotifyFd(hostx_get_fd(), ephyrXcbNotify, X_NOTIFY_READ, NULL, pi->context);
+    SetNotifyFd(hostx_get_fd(pi->context), ephyrXcbNotify, X_NOTIFY_READ, NULL, pi->context);
     return Success;
 }
 
@@ -1297,7 +1297,7 @@ static void
 MouseDisable(KdPointerInfo * pi)
 {
     ((EphyrPointerPrivate *) pi->driverPrivate)->enabled = FALSE;
-    RemoveNotifyFd(hostx_get_fd(), pi->context);
+    RemoveNotifyFd(hostx_get_fd(pi->context), pi->context);
     return;
 }
 
@@ -1332,7 +1332,7 @@ EphyrKeyboardInit(KdKeyboardInfo * ki, XephyrContext* context)
     ki->driverPrivate = (EphyrKbdPrivate *)
         calloc(sizeof(EphyrKbdPrivate), 1);
 
-    if (hostx_load_keymap(&keySyms, modmap, &controls)) {
+    if (hostx_load_keymap(&keySyms, modmap, &controls, context)) {
         XkbApplyMappingChange(ki->dixdev, &keySyms,
                               keySyms.minKeyCode,
                               keySyms.maxKeyCode - keySyms.minKeyCode + 1,

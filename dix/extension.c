@@ -67,7 +67,7 @@ static ExtensionEntry **extensions = (ExtensionEntry **) NULL;
 
 int lastEvent = EXTENSION_EVENT_BASE;
 static int lastError = FirstExtensionError;
-static unsigned int NumExtensions = 0;
+/* static unsigned int context->NumExtensions = 0; */
 
 ExtensionEntry *
 AddExtension(const char *name, int NumEvents, int NumErrors,
@@ -102,7 +102,7 @@ AddExtension(const char *name, int NumEvents, int NumErrors,
         free(ext);
         return ((ExtensionEntry *) NULL);
     }
-    i = NumExtensions;
+    i = context->NumExtensions;
     newexts = reallocarray(extensions, i + 1, sizeof(ExtensionEntry *));
     if (!newexts) {
         free((void *) ext->name);
@@ -110,7 +110,7 @@ AddExtension(const char *name, int NumEvents, int NumErrors,
         free(ext);
         return ((ExtensionEntry *) NULL);
     }
-    NumExtensions++;
+    context->NumExtensions++;
     extensions = newexts;
     extensions[i] = ext;
     ext->index = i;
@@ -145,16 +145,16 @@ AddExtension(const char *name, int NumEvents, int NumErrors,
 }
 
 static int
-FindExtension(const char *extname, int len)
+FindExtension(const char *extname, int len, XephyrContext *context)
 {
     int i;
 
-    for (i = 0; i < NumExtensions; i++) {
+    for (i = 0; i < context->NumExtensions; i++) {
         if ((strlen(extensions[i]->name) == len) &&
             !strncmp(extname, extensions[i]->name, len))
             break;
     }
-    return ((i == NumExtensions) ? -1 : i);
+    return ((i == context->NumExtensions) ? -1 : i);
 }
 
 /*
@@ -162,11 +162,11 @@ FindExtension(const char *extname, int len)
  * extension name.  Maybe this could just return a Bool instead?
  */
 ExtensionEntry *
-CheckExtension(const char *extname)
+CheckExtension(const char *extname, XephyrContext *context)
 {
     int n;
 
-    n = FindExtension(extname, strlen(extname));
+    n = FindExtension(extname, strlen(extname), context);
     if (n != -1)
         return extensions[n];
     else
@@ -177,12 +177,12 @@ CheckExtension(const char *extname)
  * Added as part of Xace.
  */
 ExtensionEntry *
-GetExtensionEntry(int major)
+GetExtensionEntry(int major, XephyrContext *context)
 {
     if (major < EXTENSION_BASE)
         return NULL;
     major -= EXTENSION_BASE;
-    if (major >= NumExtensions)
+    if (major >= context->NumExtensions)
         return NULL;
     return extensions[major];
 }
@@ -194,14 +194,14 @@ StandardMinorOpcode(ClientPtr client)
 }
 
 void
-CloseDownExtensions(void)
+CloseDownExtensions(XephyrContext *context)
 {
     int i;
 
-    for (i = NumExtensions - 1; i >= 0; i--) {
+    for (i = context->NumExtensions - 1; i >= 0; i--) {
         if (extensions[i]->CloseDown)
             extensions[i]->CloseDown(extensions[i]);
-        NumExtensions = i;
+        context->NumExtensions = i;
         free((void *) extensions[i]->name);
         dixFreePrivates(extensions[i]->devPrivates, PRIVATE_EXTENSION);
         free(extensions[i]);
@@ -239,10 +239,10 @@ ProcQueryExtension(ClientPtr client)
         .major_opcode = 0
     };
 
-    if (!NumExtensions)
+    if (!client->context->NumExtensions)
         reply.present = xFalse;
     else {
-        i = FindExtension((char *) &stuff[1], stuff->nbytes);
+        i = FindExtension((char *) &stuff[1], stuff->nbytes, client->context);
         if (i < 0 || !ExtensionAvailable(client, extensions[i]))
             reply.present = xFalse;
         else {
@@ -273,10 +273,10 @@ ProcListExtensions(ClientPtr client)
     };
     buffer = NULL;
 
-    if (NumExtensions) {
+    if (client->context->NumExtensions) {
         int i;
 
-        for (i = 0; i < NumExtensions; i++) {
+        for (i = 0; i < client->context->NumExtensions; i++) {
             /* call callbacks to find out whether to show extension */
             if (!ExtensionAvailable(client, extensions[i]))
                 continue;
@@ -288,7 +288,7 @@ ProcListExtensions(ClientPtr client)
         buffer = bufptr = malloc(total_length);
         if (!buffer)
             return BadAlloc;
-        for (i = 0; i < NumExtensions; i++) {
+        for (i = 0; i < client->context->NumExtensions; i++) {
             int len;
 
             if (!ExtensionAvailable(client, extensions[i]))

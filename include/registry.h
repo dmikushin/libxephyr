@@ -42,7 +42,7 @@ extern _X_EXPORT void RegisterExtensionNames(ExtensionEntry * ext, XephyrContext
 /*
  * Lookup functions.  The returned string must not be modified or freed.
  */
-extern _X_EXPORT const char *LookupMajorName(int major);
+extern _X_EXPORT const char *LookupMajorName(int major, XephyrContext* context);
 extern _X_EXPORT const char *LookupRequestName(int major, int minor);
 extern _X_EXPORT const char *LookupEventName(int event);
 extern _X_EXPORT const char *LookupErrorName(int error);

@@ -244,18 +244,18 @@ XdmcpDefaultListen(void)
 }
 
 int
-XdmcpOptions(int argc, char **argv, int i)
+XdmcpOptions(int argc, char **argv, int i, XephyrContext* context)
 {
     if (strcmp(argv[i], "-query") == 0) {
         get_manager_by_name(argc, argv, i++);
         XDM_INIT_STATE = XDM_QUERY;
-        AccessUsingXdmcp();
+        AccessUsingXdmcp(context);
         XdmcpDefaultListen();
         return i + 1;
     }
     if (strcmp(argv[i], "-broadcast") == 0) {
         XDM_INIT_STATE = XDM_BROADCAST;
-        AccessUsingXdmcp();
+        AccessUsingXdmcp(context);
         XdmcpDefaultListen();
         return i + 1;
     }
@@ -263,7 +263,7 @@ XdmcpOptions(int argc, char **argv, int i)
     if (strcmp(argv[i], "-multicast") == 0) {
         i = get_mcast_options(argc, argv, ++i);
         XDM_INIT_STATE = XDM_MULTICAST;
-        AccessUsingXdmcp();
+        AccessUsingXdmcp(context);
         XdmcpDefaultListen();
         return i + 1;
     }
@@ -271,7 +271,7 @@ XdmcpOptions(int argc, char **argv, int i)
     if (strcmp(argv[i], "-indirect") == 0) {
         get_manager_by_name(argc, argv, i++);
         XDM_INIT_STATE = XDM_INDIRECT;
-        AccessUsingXdmcp();
+        AccessUsingXdmcp(context);
         XdmcpDefaultListen();
         return i + 1;
     }
@@ -605,7 +605,7 @@ XdmcpInit(XephyrContext* context)
         XdmcpRegisterAuthorizations();
         XdmcpRegisterDisplayClass(defaultDisplayClass,
                                   strlen(defaultDisplayClass));
-        AccessUsingXdmcp();
+        AccessUsingXdmcp(context);
         DisplayNumber = (CARD16) atoi(context->display);
         xdmcp_start(context);
     }

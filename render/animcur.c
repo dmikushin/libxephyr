@@ -75,11 +75,11 @@ static CursorBits animCursorBits = {
     empty, empty, 2, 1, 1, 0, 0, 1
 };
 
-static DevPrivateKeyRec AnimCurScreenPrivateKeyRec;
+// static DevPrivateKeyRec AnimCurScreenPrivateKeyRec;
 
 #define IsAnimCur(c)	    ((c) && ((c)->bits == &animCursorBits))
 #define GetAnimCur(c)	    ((AnimCurPtr) ((((char *)(c) + CURSOR_REC_SIZE))))
-#define GetAnimCurScreen(s) ((AnimCurScreenPtr)dixLookupPrivate(&(s)->devPrivates, &AnimCurScreenPrivateKeyRec))
+#define GetAnimCurScreen(s) ((AnimCurScreenPtr)dixLookupPrivate(&(s)->devPrivates, &(s)->context->AnimCurScreenPrivateKeyRec))
 
 #define Wrap(as,s,elt,func) (((as)->elt = (s)->elt), (s)->elt = func)
 #define Unwrap(as,s,elt)    ((s)->elt = (as)->elt)
@@ -123,7 +123,7 @@ AnimCurCursorLimits(DeviceIntPtr pDev,
 }
 
 /*
- * The cursor animation timer has expired, go context->display any relevant cursor changes
+ * The cursor animation timer has expired, go display any relevant cursor changes
  * and compute a new timeout value
  */
 
@@ -280,7 +280,7 @@ AnimCurInit(ScreenPtr pScreen)
 {
     AnimCurScreenPtr as;
 
-    if (!dixRegisterPrivateKey(&AnimCurScreenPrivateKeyRec, PRIVATE_SCREEN,
+    if (!dixRegisterPrivateKey(&pScreen->context->AnimCurScreenPrivateKeyRec, PRIVATE_SCREEN,
                                sizeof(AnimCurScreenRec), pScreen->context))
         return FALSE;
 

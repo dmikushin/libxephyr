@@ -16,6 +16,7 @@
 #include "regionstr.h"
 #include "selection.h"
 #include "os.h"
+#include "../os/osdep.h"
 #include <sys/select.h>
 #include "opaque.h"
 #include <X11/Xproto.h>
@@ -27,6 +28,38 @@
 #include <X11/extensions/render.h>
 #include <X11/extensions/xfixeswire.h>
 #include <X11/extensions/XI.h>
+#include <xcb/xcb.h>
+#include <xcb/render.h>
+
+/* Forward declarations for Phase 3 types */
+struct _XtransConnInfo;
+typedef struct _XtransConnInfo *XtransConnInfo;
+
+/* EphyrHostXVars structure from hw/kdrive/ephyr/hostx.c */
+struct EphyrHostXVars {
+    char *server_dpy_name;
+    xcb_connection_t *conn;
+    int screen;
+    xcb_visualtype_t *visual;
+    Window winroot;
+    xcb_gcontext_t  gc;
+    xcb_render_pictformat_t argb_format;
+    xcb_cursor_t empty_cursor;
+    xcb_generic_event_t *saved_event;
+    int depth;
+    Bool use_sw_cursor;
+    Bool use_fullscreen;
+    Bool have_shm;
+    Bool have_shm_fd_passing;
+
+    int n_screens;
+    void **screens;  /* KdScreenInfo ** */
+
+    long damage_debug_msec;
+    Bool size_set_from_configure;
+};
+typedef struct EphyrHostXVars EphyrHostXVars;
+
 #ifdef CONFIG_UDEV
 #include <libudev.h>
 #endif
@@ -372,6 +405,19 @@ typedef struct _XephyrContext {
     // EXA private keys
     DevPrivateKeyRec exaScreenPrivateKeyRec;
     
+    // Additional static DevPrivateKey variables
+    DevPrivateKeyRec AnimCurScreenPrivateKeyRec;
+    DevPrivateKeyRec BarrierScreenPrivateKeyRec;
+    DevPrivateKeyRec ClientDisconnectPrivateKeyRec;
+    DevPrivateKeyRec CompositeClientPrivateKeyRec;
+    DevPrivateKeyRec CursorScreenPrivateKeyRec;
+    DevPrivateKeyRec DamageClientPrivateKeyRec;
+    DevPrivateKeyRec KdXVScreenPrivateKey;
+    DevPrivateKeyRec KdXVWindowKeyRec;
+    DevPrivateKey KdXvScreenKey;
+    DevPrivateKeyRec PanoramiXGCKeyRec;
+    DevPrivateKeyRec PanoramiXScreenKeyRec;
+    
     // KDrive (kdrive) module variables
     struct _KdCardInfo* kdCardInfo;
     Bool kdDisableZaphod;
@@ -391,6 +437,66 @@ typedef struct _XephyrContext {
     DDXPointRec kdOrigin;
     Bool kdDumbDriver;
     Bool kdSoftCursor;
+    
+    // Callback and event static variables (Phase 2)
+    void* ConnectionCallbackList;  // XineramaConnectionCallbackList*
+    void* ExtensionModuleList;     // ExtensionModule*
+    OsSigWrapperPtr OsSigWrapper;
+    RESTYPE AttrType;              // Screen saver attributes
+    RESTYPE SelectionClientType;   // XFixes selection client type
+    RESTYPE SelectionWindowType;   // XFixes selection window type
+    RESTYPE ClientType;            // Shape extension client type
+    RESTYPE ShapeEventType;        // Shape extension event type
+    CARD8 CompositeReqCode;        // Composite extension request code
+    RESTYPE CursorClientType;      // XFixes cursor client type
+    RESTYPE CursorHideCountType;   // XFixes cursor hide count type
+    RESTYPE CursorWindowType;      // XFixes cursor window type
+    int DamageEventBase;           // Damage extension event base
+    RESTYPE DamageExtType;         // Damage extension type
+    unsigned char DamageReqCode;   // Damage extension request code
+    
+    // Phase 3 static globals from various modules
+    WindowPtr FocusWindows[MAXDEVICES];  // dix/enterleave.c
+    EphyrHostXVars HostX;                // hw/kdrive/ephyr/hostx.c
+    int HostXWantDamageDebug;           // hw/kdrive/ephyr/hostx.c
+    XtransConnInfo *ListenTransConns;   // os/connection.c
+    int ListenTransCount;               // os/connection.c
+    int *ListenTransFds;                // os/connection.c
+    enum {                              // os/access.c
+        LOCAL_ACCESS_SCOPE_HOST = 0,
+        LOCAL_ACCESS_SCOPE_USER,
+    } LocalAccessScope;
+    int LocalHostEnabled;               // os/access.c
+    int LocalHostRequested;             // os/access.c
+    unsigned int NumExtensions;         // dix/extension.c
+    pid_t ParentProcess;                // os/connection.c
+    int PictureGeneration;              // render/picture.c
+    
+    // Phase 4 static globals - OS and extension variables
+    OsCommPtr AvailableInput;           // os/io.c
+    Bool BlockHandlerRegistered;        // Xext/sleepuntil.c  
+    int BlockedSignalCount;             // os/utils.c
+    Bool CriticalOutputPending;         // os/io.c
+    int DontPropagateRefCnts[8];        // dix/events.c (DNPMCOUNT=8)
+    ConnectionInputPtr FreeInputs;      // os/io.c
+    ConnectionOutputPtr FreeOutputs;    // os/io.c
+    unsigned long KdXVGeneration;       // hw/kdrive/src/kxv.c
+    char LockFile[PATH_MAX];            // os/utils.c
+    int64_t Now;                        // Xext/sync.c
+    DepthPtr PanoramiXDepths;           // Xext/panoramiX.c
+    int PanoramiXNumDepths;             // Xext/panoramiX.c
+    int PanoramiXNumVisuals;            // Xext/panoramiX.c
+    int (*PanoramiXSaveDamageCreate) (ClientPtr);  // damageext/damageext.c
+    VisualPtr PanoramiXVisuals;         // Xext/panoramiX.c
+    WindowPtr PointerWindows[MAXDEVICES];  // dix/enterleave.c
+    RESTYPE PortResource;               // Xext/xvmain.c
+    sigset_t PreviousSignalMask;        // os/utils.c
+    RESTYPE RTAlarm;                    // Xext/sync.c
+    RESTYPE RTAlarmClient;              // Xext/sync.c
+    RESTYPE RTAwait;                    // Xext/sync.c
+    RESTYPE RTCounter;                  // Xext/sync.c
+    RESTYPE RTFence;                    // Xext/sync.c
+    RESTYPE RTContext;                  // dix/dispatch.c
     
 } XephyrContext;
 

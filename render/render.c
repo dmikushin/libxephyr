@@ -230,7 +230,7 @@ RenderExtensionInit(XephyrContext* context)
 
     if (!context->PictureType)
         return;
-    if (!PictureFinishInit())
+    if (!PictureFinishInit(context))
         return;
     if (!dixRegisterPrivateKey
         (&RenderClientPrivateKeyRec, PRIVATE_CLIENT, sizeof(RenderClientRec), context))

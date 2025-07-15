@@ -72,7 +72,6 @@ KdDepths kdDepths[] = {
 
 /* kdScreenPrivateKeyRec moved to XephyrContext */
 static unsigned long kdGeneration;
-static XephyrContext *kdGlobalContext = NULL;
 
 /* kdRawPointerCoordinates, kdHasPointer, kdHasKbd moved to XephyrContext */
 /* kdEnabled, context->kdSubpixelOrder, context->kdSwitchCmd, context->kdOrigin moved to XephyrContext */
@@ -94,13 +93,13 @@ KdDisableScreen(ScreenPtr pScreen)
 }
 
 static void
-KdDoSwitchCmd(const char *reason)
+KdDoSwitchCmd(const char *reason, XephyrContext *context)
 {
-    if (kdGlobalContext && kdGlobalContext->kdSwitchCmd) {
+    if (context && context->kdSwitchCmd) {
         char *command;
         int ret;
 
-        if (asprintf(&command, "%s %s", kdGlobalContext->kdSwitchCmd, reason) == -1)
+        if (asprintf(&command, "%s %s", context->kdSwitchCmd, reason) == -1)
             return;
 
         /* Ignore the return value from system; I'm not sure
@@ -126,17 +125,17 @@ KdSuspend(XephyrContext *context)
                     KdDisableScreen(screen->pScreen);
         }
         KdDisableInput();
-        KdDoSwitchCmd("suspend");
+        KdDoSwitchCmd("suspend", context);
     }
 }
 
 static void
-KdDisableScreens(void)
+KdDisableScreens(XephyrContext *context)
 {
-    if (kdGlobalContext)
-        KdSuspend(kdGlobalContext);
-    if (kdGlobalContext)
-        kdGlobalContext->kdEnabled = FALSE;
+    if (context)
+        KdSuspend(context);
+    if (context)
+        context->kdEnabled = FALSE;
 }
 
 Bool
@@ -157,9 +156,9 @@ KdEnableScreen(ScreenPtr pScreen)
 }
 
 void
-ddxGiveUp(enum ExitCode error)
+ddxGiveUp(enum ExitCode error, XephyrContext *context)
 {
-    KdDisableScreens();
+    KdDisableScreens(context);
 }
 
 /* context->kdDumbDriver, context->kdSoftCursor moved to XephyrContext */
@@ -920,7 +919,6 @@ KdInitOutput(ScreenInfo * pScreenInfo, int argc, char **argv, XephyrContext* con
     KdCardInfo *card;
     KdScreenInfo *screen;
     
-    kdGlobalContext = context;
 
     if (!context->kdCardInfo) {
         InitCard(0);

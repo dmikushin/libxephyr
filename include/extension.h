@@ -95,7 +95,7 @@ extern _X_EXPORT void EnableDisableExtensionError(const char *name,
 
 extern _X_EXPORT void InitExtensions(int argc, char **argv, XephyrContext* context);
 
-extern _X_EXPORT void CloseDownExtensions(void);
+extern _X_EXPORT void CloseDownExtensions(XephyrContext* context);
 
 extern _X_EXPORT void LoadExtensionList(const ExtensionModule ext[],
                                         int listSize, Bool external, XephyrContext* context);

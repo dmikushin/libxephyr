@@ -51,7 +51,7 @@ static void
 ephyrRealizeCoreCursor(EphyrScrPriv *scr, CursorPtr cursor)
 {
     ephyrCursorPtr hw = ephyrGetCursor(cursor);
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(scr->screen->pScreen->context);
     xcb_pixmap_t source, mask;
     xcb_image_t *image;
     xcb_gcontext_t gc;
@@ -102,11 +102,11 @@ ephyrRealizeCoreCursor(EphyrScrPriv *scr, CursorPtr cursor)
 }
 
 static xcb_render_pictformat_t
-get_argb_format(void)
+get_argb_format(EphyrScrPriv *scr)
 {
     static xcb_render_pictformat_t format;
     if (format == None) {
-        xcb_connection_t *conn = hostx_get_xcbconn();
+        xcb_connection_t *conn = hostx_get_xcbconn(scr->screen->pScreen->context);
         xcb_render_query_pict_formats_cookie_t cookie;
         xcb_render_query_pict_formats_reply_t *formats;
 
@@ -128,7 +128,7 @@ static void
 ephyrRealizeARGBCursor(EphyrScrPriv *scr, CursorPtr cursor)
 {
     ephyrCursorPtr hw = ephyrGetCursor(cursor);
-    xcb_connection_t *conn = hostx_get_xcbconn();
+    xcb_connection_t *conn = hostx_get_xcbconn(scr->screen->pScreen->context);
     xcb_gcontext_t gc;
     xcb_pixmap_t source;
     xcb_render_picture_t picture;
@@ -149,7 +149,7 @@ ephyrRealizeARGBCursor(EphyrScrPriv *scr, CursorPtr cursor)
     xcb_image_destroy(image);
 
     picture = xcb_generate_id(conn);
-    xcb_render_create_picture(conn, picture, source, get_argb_format(),
+    xcb_render_create_picture(conn, picture, source, get_argb_format(scr),
                               0, NULL);
     xcb_free_pixmap(conn, source);
 
@@ -161,12 +161,12 @@ ephyrRealizeARGBCursor(EphyrScrPriv *scr, CursorPtr cursor)
 }
 
 static Bool
-can_argb_cursor(void)
+can_argb_cursor(ScreenPtr screen)
 {
     static const xcb_render_query_version_reply_t *v;
 
     if (!v)
-        v = xcb_render_util_query_version(hostx_get_xcbconn());
+        v = xcb_render_util_query_version(hostx_get_xcbconn(screen->context));
 
     return v->major_version == 0 && v->minor_version >= 5;
 }
@@ -178,7 +178,7 @@ ephyrRealizeCursor(DeviceIntPtr dev, ScreenPtr screen, CursorPtr cursor)
     KdScreenInfo *kscr = pScreenPriv->screen;
     EphyrScrPriv *scr = kscr->driver;
 
-    if (cursor->bits->argb && can_argb_cursor())
+    if (cursor->bits->argb && can_argb_cursor(screen))
         ephyrRealizeARGBCursor(scr, cursor);
     else
     {
@@ -193,7 +193,7 @@ ephyrUnrealizeCursor(DeviceIntPtr dev, ScreenPtr screen, CursorPtr cursor)
     ephyrCursorPtr hw = ephyrGetCursor(cursor);
 
     if (hw->cursor) {
-        xcb_free_cursor(hostx_get_xcbconn(), hw->cursor);
+        xcb_free_cursor(hostx_get_xcbconn(screen->context), hw->cursor);
         hw->cursor = None;
     }
 
@@ -212,11 +212,11 @@ ephyrSetCursor(DeviceIntPtr dev, ScreenPtr screen, CursorPtr cursor, int x,
     if (cursor)
         attr = ephyrGetCursor(cursor)->cursor;
     else
-        attr = hostx_get_empty_cursor();
+        attr = hostx_get_empty_cursor(screen->context);
 
-    xcb_change_window_attributes(hostx_get_xcbconn(), scr->win,
+    xcb_change_window_attributes(hostx_get_xcbconn(screen->context), scr->win,
                                  XCB_CW_CURSOR, &attr);
-    xcb_flush(hostx_get_xcbconn());
+    xcb_flush(hostx_get_xcbconn(screen->context));
 }
 
 static void

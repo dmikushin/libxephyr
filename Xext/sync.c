@@ -84,11 +84,11 @@ PERFORMANCE OF THIS SOFTWARE.
  */
 static int SyncEventBase;
 static int SyncErrorBase;
-static RESTYPE RTCounter = 0;
-static RESTYPE RTAwait;
-static RESTYPE RTAlarm;
-static RESTYPE RTAlarmClient;
-static RESTYPE RTFence;
+// static RESTYPE context->RTCounter = 0; // Moved to XephyrContext
+// REMOVED: static RESTYPE context->RTAwait; - moved to XephyrContext
+// REMOVED: static RESTYPE context->RTAlarm; - moved to XephyrContext
+// REMOVED: static RESTYPE context->RTAlarmClient; - moved to XephyrContext
+// static RESTYPE context->RTFence; // Moved to XephyrContext
 static struct xorg_list SysCounterList;
 static int SyncNumInvalidCounterWarnings = 0;
 
@@ -784,7 +784,7 @@ SyncEventSelectForAlarm(SyncAlarm * pAlarm, ClientPtr client, Bool wantevents)
     pAlarm->pEventClients = pClients;
     pClients->client = client;
 
-    if (!AddResource(pClients->delete_id, RTAlarmClient, pAlarm, client->context))
+    if (!AddResource(pClients->delete_id, client->context->RTAlarmClient, pAlarm, client->context))
         return BadAlloc;
 
     return Success;
@@ -875,7 +875,7 @@ SyncChangeAlarmAttributes(ClientPtr client, SyncAlarm * pAlarm, Mask mask,
     }
 
     /* postpone this until now, when we're sure nothing else can go wrong */
-    if ((status = SyncInitTrigger(client, &pAlarm->trigger, counter, RTCounter,
+    if ((status = SyncInitTrigger(client, &pAlarm->trigger, counter, client->context->RTCounter,
                                   origmask & XSyncCAAllTrigger)) != Success)
         return status;
 
@@ -893,12 +893,12 @@ SyncCreate(ClientPtr client, XID id, unsigned char type)
     switch (type) {
     case SYNC_COUNTER:
         pSync = malloc(sizeof(SyncCounter));
-        resType = RTCounter;
+        resType = client->context->RTCounter;
         break;
     case SYNC_FENCE:
         pSync = (SyncObject *) dixAllocateObjectWithPrivates(SyncFence,
                                                              PRIVATE_SYNC_FENCE);
-        resType = RTFence;
+        resType = client->context->RTFence;
         break;
     default:
         return NULL;
@@ -1424,7 +1424,7 @@ ProcSyncSetCounter(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xSyncSetCounterReq);
 
-    rc = dixLookupResourceByType((void **) &pCounter, stuff->cid, RTCounter,
+    rc = dixLookupResourceByType((void **) &pCounter, stuff->cid, context->RTCounter,
                                  client, DixWriteAccess, context);
     if (rc != Success)
         return rc;
@@ -1454,7 +1454,7 @@ ProcSyncChangeCounter(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xSyncChangeCounterReq);
 
-    rc = dixLookupResourceByType((void **) &pCounter, stuff->cid, RTCounter,
+    rc = dixLookupResourceByType((void **) &pCounter, stuff->cid, context->RTCounter,
                                  client, DixWriteAccess, context);
     if (rc != Success)
         return rc;
@@ -1489,7 +1489,7 @@ ProcSyncDestroyCounter(ClientPtr client)
     REQUEST_SIZE_MATCH(xSyncDestroyCounterReq);
 
     rc = dixLookupResourceByType((void **) &pCounter, stuff->counter,
-                                 RTCounter, client, DixDestroyAccess, context);
+                                 context->RTCounter, client, DixDestroyAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1519,7 +1519,7 @@ SyncAwaitPrologue(ClientPtr client, int items)
     pAwaitUnion->header.client = client;
     pAwaitUnion->header.num_waitconditions = 0;
 
-    if (!AddResource(pAwaitUnion->header.delete_id, RTAwait, pAwaitUnion, client->context))
+    if (!AddResource(pAwaitUnion->header.delete_id, client->context->RTAwait, pAwaitUnion, client->context))
         return NULL;
 
     return pAwaitUnion;
@@ -1612,7 +1612,7 @@ ProcSyncAwait(ClientPtr client)
         pAwait->trigger.test_type = pProtocolWaitConds->test_type;
 
         status = SyncInitTrigger(client, &pAwait->trigger,
-                                 pProtocolWaitConds->counter, RTCounter,
+                                 pProtocolWaitConds->counter, client->context->RTCounter,
                                  XSyncCAAllTrigger);
         if (status != Success) {
             /*  this should take care of removing any triggers created by
@@ -1652,7 +1652,7 @@ ProcSyncQueryCounter(ClientPtr client)
     REQUEST_SIZE_MATCH(xSyncQueryCounterReq);
 
     rc = dixLookupResourceByType((void **) &pCounter, stuff->counter,
-                                 RTCounter, client, DixReadAccess, context);
+                                 context->RTCounter, client, DixReadAccess, context);
     if (rc != Success)
         return rc;
 
@@ -1715,7 +1715,7 @@ ProcSyncCreateAlarm(ClientPtr client)
     pTrigger->test_type = XSyncPositiveComparison;
     pTrigger->TriggerFired = SyncAlarmTriggerFired;
     pTrigger->CounterDestroyed = SyncAlarmCounterDestroyed;
-    status = SyncInitTrigger(client, pTrigger, None, RTCounter,
+    status = SyncInitTrigger(client, pTrigger, None, client->context->RTCounter,
                              XSyncCAAllTrigger);
     if (status != Success) {
         free(pAlarm);
@@ -1735,7 +1735,7 @@ ProcSyncCreateAlarm(ClientPtr client)
         return status;
     }
 
-    if (!AddResource(stuff->id, RTAlarm, pAlarm, client->context))
+    if (!AddResource(stuff->id, client->context->RTAlarm, pAlarm, client->context))
         return BadAlloc;
 
     /*  see if alarm already triggered.  NULL counter will not trigger
@@ -1778,7 +1778,7 @@ ProcSyncChangeAlarm(ClientPtr client)
 
     REQUEST_AT_LEAST_SIZE(xSyncChangeAlarmReq);
 
-    status = dixLookupResourceByType((void **) &pAlarm, stuff->alarm, RTAlarm,
+    status = dixLookupResourceByType((void **) &pAlarm, stuff->alarm, context->RTAlarm,
                                      client, DixWriteAccess, context);
     if (status != Success)
         return status;
@@ -1820,7 +1820,7 @@ ProcSyncQueryAlarm(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xSyncQueryAlarmReq);
 
-    rc = dixLookupResourceByType((void **) &pAlarm, stuff->alarm, RTAlarm,
+    rc = dixLookupResourceByType((void **) &pAlarm, stuff->alarm, context->RTAlarm,
                                  client, DixReadAccess, context);
     if (rc != Success)
         return rc;
@@ -1879,7 +1879,7 @@ ProcSyncDestroyAlarm(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xSyncDestroyAlarmReq);
 
-    rc = dixLookupResourceByType((void **) &pAlarm, stuff->alarm, RTAlarm,
+    rc = dixLookupResourceByType((void **) &pAlarm, stuff->alarm, context->RTAlarm,
                                  client, DixDestroyAccess, context);
     if (rc != Success)
         return rc;
@@ -1925,7 +1925,7 @@ FreeFence(void *obj, XID id, XephyrContext* context)
 int
 SyncVerifyFence(SyncFence ** ppSyncFence, XID fid, ClientPtr client, Mask mode, XephyrContext* context)
 {
-    int rc = dixLookupResourceByType((void **) ppSyncFence, fid, RTFence,
+    int rc = dixLookupResourceByType((void **) ppSyncFence, fid, context->RTFence,
                                      client, mode, context);
 
     if (rc != Success)
@@ -1944,7 +1944,7 @@ ProcSyncTriggerFence(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xSyncTriggerFenceReq);
 
-    rc = dixLookupResourceByType((void **) &pFence, stuff->fid, RTFence,
+    rc = dixLookupResourceByType((void **) &pFence, stuff->fid, context->RTFence,
                                  client, DixWriteAccess, context);
     if (rc != Success)
         return rc;
@@ -1964,7 +1964,7 @@ ProcSyncResetFence(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xSyncResetFenceReq);
 
-    rc = dixLookupResourceByType((void **) &pFence, stuff->fid, RTFence,
+    rc = dixLookupResourceByType((void **) &pFence, stuff->fid, context->RTFence,
                                  client, DixWriteAccess, context);
     if (rc != Success)
         return rc;
@@ -1987,7 +1987,7 @@ ProcSyncDestroyFence(ClientPtr client)
 
     REQUEST_SIZE_MATCH(xSyncDestroyFenceReq);
 
-    rc = dixLookupResourceByType((void **) &pFence, stuff->fid, RTFence,
+    rc = dixLookupResourceByType((void **) &pFence, stuff->fid, context->RTFence,
                                  client, DixDestroyAccess, context);
     if (rc != Success)
         return rc;
@@ -2008,7 +2008,7 @@ ProcSyncQueryFence(ClientPtr client)
     REQUEST_SIZE_MATCH(xSyncQueryFenceReq);
 
     rc = dixLookupResourceByType((void **) &pFence, stuff->fid,
-                                 RTFence, client, DixReadAccess, context);
+                                 context->RTFence, client, DixReadAccess, context);
     if (rc != Success)
         return rc;
 
@@ -2085,7 +2085,7 @@ ProcSyncAwaitFence(ClientPtr client)
         pAwait->trigger.test_type = 0;
 
         status = SyncInitTrigger(client, &pAwait->trigger,
-                                 *pProtocolFences, RTFence, XSyncCAAllTrigger);
+                                 *pProtocolFences, client->context->RTFence, XSyncCAAllTrigger);
         if (status != Success) {
             /*  this should take care of removing any triggers created by
              *  this request that have already been registered on sync objects
@@ -2487,7 +2487,7 @@ SAlarmNotifyEvent(xSyncAlarmNotifyEvent * from, xSyncAlarmNotifyEvent * to)
 static void
 SyncResetProc(ExtensionEntry * extEntry)
 {
-    RTCounter = 0;
+    /* RTCounter is a resource type and doesn't need reset */
 }
 
 /*
@@ -2502,19 +2502,19 @@ SyncExtensionInit(XephyrContext* context)
     for (s = 0; s < context->screenInfo.numScreens; s++)
         miSyncSetup(context->screenInfo.screens[s]);
 
-    RTCounter = CreateNewResourceType(FreeCounter, "SyncCounter", context);
+    context->RTCounter = CreateNewResourceType(FreeCounter, "SyncCounter", context);
     xorg_list_init(&SysCounterList);
-    RTAlarm = CreateNewResourceType(FreeAlarm, "SyncAlarm", context);
-    RTAwait = CreateNewResourceType(FreeAwait, "SyncAwait", context);
-    RTFence = CreateNewResourceType(FreeFence, "SyncFence", context);
-    if (RTAwait)
-        RTAwait |= RC_NEVERRETAIN;
-    RTAlarmClient = CreateNewResourceType(FreeAlarmClient, "SyncAlarmClient", context);
-    if (RTAlarmClient)
-        RTAlarmClient |= RC_NEVERRETAIN;
+    context->RTAlarm = CreateNewResourceType(FreeAlarm, "SyncAlarm", context);
+    context->RTAwait = CreateNewResourceType(FreeAwait, "SyncAwait", context);
+    context->RTFence = CreateNewResourceType(FreeFence, "SyncFence", context);
+    if (context->RTAwait)
+        context->RTAwait |= RC_NEVERRETAIN;
+    context->RTAlarmClient = CreateNewResourceType(FreeAlarmClient, "SyncAlarmClient", context);
+    if (context->RTAlarmClient)
+        context->RTAlarmClient |= RC_NEVERRETAIN;
 
-    if (RTCounter == 0 || RTAwait == 0 || RTAlarm == 0 ||
-        RTAlarmClient == 0 ||
+    if (context->RTCounter == 0 || context->RTAwait == 0 || context->RTAlarm == 0 ||
+        context->RTAlarmClient == 0 ||
         (extEntry = AddExtension(SYNC_NAME,
                                  XSyncNumberEvents, XSyncNumberErrors,
                                  ProcSyncDispatch, SProcSyncDispatch,
@@ -2532,9 +2532,9 @@ SyncExtensionInit(XephyrContext* context)
     EventSwapVector[SyncEventBase + XSyncAlarmNotify] =
         (EventSwapPtr) SAlarmNotifyEvent;
 
-    SetResourceTypeErrorValue(RTCounter, SyncErrorBase + XSyncBadCounter, context);
-    SetResourceTypeErrorValue(RTAlarm, SyncErrorBase + XSyncBadAlarm, context);
-    SetResourceTypeErrorValue(RTFence, SyncErrorBase + XSyncBadFence, context);
+    SetResourceTypeErrorValue(context->RTCounter, SyncErrorBase + XSyncBadCounter, context);
+    SetResourceTypeErrorValue(context->RTAlarm, SyncErrorBase + XSyncBadAlarm, context);
+    SetResourceTypeErrorValue(context->RTFence, SyncErrorBase + XSyncBadFence, context);
 
     /*
      * Although SERVERTIME is implemented by the OS layer, we initialise it

@@ -59,7 +59,7 @@ and Jim Haggerty of Metheus.
 
 #include "protocol-versions.h"
 
-static RESTYPE RTContext;       /* internal resource type for Record contexts */
+// REMOVED: static RESTYPE context->RTContext; - moved to XephyrContext       /* internal resource type for Record contexts */
 
 /* How many bytes of protocol data to buffer in a context. Don't set to less
  * than 32.
@@ -132,7 +132,7 @@ static int numEnabledRCAPs;
  */
 #define VERIFY_CONTEXT(_pContext, _contextid, _client) { \
     int rc = dixLookupResourceByType((void **)&(_pContext), _contextid, \
-                                     RTContext, _client, DixUseAccess, _client->context); \
+                                     _client->context->RTContext, _client, DixUseAccess, _client->context); \
     if (rc != Success) \
 	return rc; \
 }
@@ -1875,7 +1875,7 @@ ProcRecordCreateContext(ClientPtr client)
     if (err != Success)
         goto bailout;
 
-    if (AddResource(pContext->id, RTContext, pContext, client->context)) {
+    if (AddResource(pContext->id, client->context->RTContext, pContext, client->context)) {
         ppAllContexts[numContexts++] = pContext;
         return Success;
     }
@@ -2798,8 +2798,8 @@ RecordExtensionInit(XephyrContext* context)
 {
     ExtensionEntry *extentry;
 
-    RTContext = CreateNewResourceType(RecordDeleteContext, "RecordContext", context);
-    if (!RTContext)
+    context->RTContext = CreateNewResourceType(RecordDeleteContext, "RecordContext", context);
+    if (!context->RTContext)
         return;
 
     if (!dixRegisterPrivateKey(RecordClientPrivateKey, PRIVATE_CLIENT, 0, context))
@@ -2820,7 +2820,7 @@ RecordExtensionInit(XephyrContext* context)
     }
     /* Store context in extension private data for CloseDown callback */
     extentry->extPrivate = context;
-    SetResourceTypeErrorValue(RTContext,
+    SetResourceTypeErrorValue(context->RTContext,
                               extentry->errorBase + XRecordBadContext, context);
 
 }                               /* RecordExtensionInit */

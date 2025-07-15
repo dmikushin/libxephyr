@@ -80,8 +80,8 @@ extern VisualPtr glxMatchVisual(ScreenPtr pScreen,
 
 static int PanoramiXNumDepths;
 static DepthPtr PanoramiXDepths;
-static int PanoramiXNumVisuals;
-static VisualPtr PanoramiXVisuals;
+// REMOVED: static int context->PanoramiXNumVisuals; - moved to XephyrContext
+// REMOVED: static VisualPtr context->PanoramiXVisuals; - moved to XephyrContext
 
 /* REMOVED: RESTYPE XRC_DRAWABLE; - moved to XephyrContext */
 /* RESTYPE XRT_WINDOW; - moved to XephyrContext */
@@ -110,12 +110,12 @@ static void PanoramiXResetProc(ExtensionEntry *);
 /* int (*SavedProcVector[256]) (ClientPtr client) = {
 NULL,}; */
 
-static DevPrivateKeyRec PanoramiXGCKeyRec;
+// static DevPrivateKeyRec PanoramiXGCKeyRec;
 
-#define PanoramiXGCKey (&PanoramiXGCKeyRec)
-static DevPrivateKeyRec PanoramiXScreenKeyRec;
+#define PanoramiXGCKey(pGC) (&(pGC)->pScreen->context->PanoramiXGCKeyRec)
+// static DevPrivateKeyRec PanoramiXScreenKeyRec;
 
-#define PanoramiXScreenKey (&PanoramiXScreenKeyRec)
+#define PanoramiXScreenKey(pScreen) (&(pScreen)->context->PanoramiXScreenKeyRec)
 
 typedef struct {
     DDXPointRec clipOrg;
@@ -143,7 +143,7 @@ static const GCFuncs XineramaGCFuncs = {
 
 #define Xinerama_GC_FUNC_PROLOGUE(pGC)\
     PanoramiXGCPtr  pGCPriv = (PanoramiXGCPtr) \
-	dixLookupPrivate(&(pGC)->devPrivates, PanoramiXGCKey); \
+	dixLookupPrivate(&(pGC)->devPrivates, PanoramiXGCKey(pGC)); \
     (pGC)->funcs = pGCPriv->wrapFuncs;
 
 #define Xinerama_GC_FUNC_EPILOGUE(pGC)\
@@ -154,7 +154,7 @@ static Bool
 XineramaCloseScreen(ScreenPtr pScreen)
 {
     PanoramiXScreenPtr pScreenPriv = (PanoramiXScreenPtr)
-        dixLookupPrivate(&pScreen->devPrivates, PanoramiXScreenKey);
+        dixLookupPrivate(&pScreen->devPrivates, PanoramiXScreenKey(pScreen));
 
     pScreen->CloseScreen = pScreenPriv->CloseScreen;
     pScreen->CreateGC = pScreenPriv->CreateGC;
@@ -172,13 +172,13 @@ XineramaCreateGC(GCPtr pGC)
 {
     ScreenPtr pScreen = pGC->pScreen;
     PanoramiXScreenPtr pScreenPriv = (PanoramiXScreenPtr)
-        dixLookupPrivate(&pScreen->devPrivates, PanoramiXScreenKey);
+        dixLookupPrivate(&pScreen->devPrivates, PanoramiXScreenKey(pScreen));
     Bool ret;
 
     pScreen->CreateGC = pScreenPriv->CreateGC;
     if ((ret = (*pScreen->CreateGC) (pGC))) {
         PanoramiXGCPtr pGCPriv = (PanoramiXGCPtr)
-            dixLookupPrivate(&pGC->devPrivates, PanoramiXGCKey);
+            dixLookupPrivate(&pGC->devPrivates, PanoramiXGCKey(pGC));
 
         pGCPriv->wrapFuncs = pGC->funcs;
         pGC->funcs = &XineramaGCFuncs;
@@ -278,7 +278,7 @@ static void
 XineramaCopyGC(GCPtr pGCSrc, unsigned long mask, GCPtr pGCDst)
 {
     PanoramiXGCPtr pSrcPriv = (PanoramiXGCPtr)
-        dixLookupPrivate(&pGCSrc->devPrivates, PanoramiXGCKey);
+        dixLookupPrivate(&pGCSrc->devPrivates, PanoramiXGCKey(pGCSrc));
 
     Xinerama_GC_FUNC_PROLOGUE(pGCDst);
 
@@ -363,19 +363,19 @@ typedef struct _connect_callback_list {
     struct _connect_callback_list *next;
 } XineramaConnectionCallbackList;
 
-static XineramaConnectionCallbackList *ConnectionCallbackList = NULL;
+// REMOVED: static XineramaConnectionCallbackList *ConnectionCallbackList = NULL; - moved to XephyrContext
 
 Bool
-XineramaRegisterConnectionBlockCallback(void (*func) (XephyrContext*))
+XineramaRegisterConnectionBlockCallback(void (*func) (XephyrContext*), XephyrContext* context)
 {
     XineramaConnectionCallbackList *newlist;
 
     if (!(newlist = malloc(sizeof(XineramaConnectionCallbackList))))
         return FALSE;
 
-    newlist->next = ConnectionCallbackList;
+    newlist->next = context->ConnectionCallbackList;
     newlist->func = func;
-    ConnectionCallbackList = newlist;
+    context->ConnectionCallbackList = newlist;
 
     return TRUE;
 }
@@ -447,13 +447,13 @@ PanoramiXExtensionInit(XephyrContext* context)
     if (noPanoramiXExtension)
         return;
 
-    if (!dixRegisterPrivateKey(&PanoramiXScreenKeyRec, PRIVATE_SCREEN, 0, context)) {
+    if (!dixRegisterPrivateKey(&context->PanoramiXScreenKeyRec, PRIVATE_SCREEN, 0, context)) {
         noPanoramiXExtension = TRUE;
         return;
     }
 
     if (!dixRegisterPrivateKey
-        (&PanoramiXGCKeyRec, PRIVATE_GC, sizeof(PanoramiXGCRec), context)) {
+        (&context->PanoramiXGCKeyRec, PRIVATE_GC, sizeof(PanoramiXGCRec), context)) {
         noPanoramiXExtension = TRUE;
         return;
     }
@@ -480,7 +480,7 @@ PanoramiXExtensionInit(XephyrContext* context)
         FOR_NSCREENS(i) {
             pScreen = context->screenInfo.screens[i];
             pScreenPriv = malloc(sizeof(PanoramiXScreenRec));
-            dixSetPrivate(&pScreen->devPrivates, PanoramiXScreenKey,
+            dixSetPrivate(&pScreen->devPrivates, PanoramiXScreenKey(pScreen),
                           pScreenPriv);
             if (!pScreenPriv) {
                 noPanoramiXExtension = TRUE;
@@ -658,7 +658,7 @@ PanoramiXCreateConnectionBlock(XephyrContext* context)
         for (j = 0; j < depth->nVisuals; j++, visual++) {
             visual->visualID = PanoramiXDepths[i].vids[j];
 
-            for (pVisual = PanoramiXVisuals;
+            for (pVisual = context->PanoramiXVisuals;
                  pVisual->vid != visual->visualID; pVisual++);
 
             visual->class = pVisual->class;
@@ -693,12 +693,12 @@ PanoramiXCreateConnectionBlock(XephyrContext* context)
     root->mmWidth *= width_mult;
     root->mmHeight *= height_mult;
 
-    while (ConnectionCallbackList) {
+    while (context->ConnectionCallbackList) {
         void *tmp;
 
-        tmp = (void *) ConnectionCallbackList;
-        (*ConnectionCallbackList->func) (context);
-        ConnectionCallbackList = ConnectionCallbackList->next;
+        tmp = (void *) context->ConnectionCallbackList;
+        (*((XineramaConnectionCallbackList*)context->ConnectionCallbackList)->func) (context);
+        context->ConnectionCallbackList = ((XineramaConnectionCallbackList*)context->ConnectionCallbackList)->next;
         free(tmp);
     }
 
@@ -786,12 +786,12 @@ PanoramiXMaybeAddVisual(VisualPtr pVisual, XephyrContext* context)
     }
 
     /* found a matching visual on all screens, add it to the subset list */
-    j = PanoramiXNumVisuals;
-    PanoramiXNumVisuals++;
-    PanoramiXVisuals = reallocarray(PanoramiXVisuals,
-                                    PanoramiXNumVisuals, sizeof(VisualRec));
+    j = context->PanoramiXNumVisuals;
+    context->PanoramiXNumVisuals++;
+    context->PanoramiXVisuals = reallocarray(context->PanoramiXVisuals,
+                                    context->PanoramiXNumVisuals, sizeof(VisualRec));
 
-    memcpy(&PanoramiXVisuals[j], pVisual, sizeof(VisualRec));
+    memcpy(&context->PanoramiXVisuals[j], pVisual, sizeof(VisualRec));
 
     for (k = 0; k < PanoramiXNumDepths; k++) {
         if (PanoramiXDepths[k].depth == pVisual->nplanes) {
@@ -815,7 +815,7 @@ PanoramiXConsolidate(XephyrContext* context)
     VisualPtr pVisual = pScreen->visuals;
 
     PanoramiXNumDepths = 0;
-    PanoramiXNumVisuals = 0;
+    context->PanoramiXNumVisuals = 0;
 
     for (i = 0; i < pScreen->numDepths; i++)
         PanoramiXMaybeAddDepth(pDepth++, context);
@@ -854,9 +854,9 @@ PanoramiXTranslateVisualID(int screen, VisualID orig, XephyrContext* context)
     VisualPtr pVisual = NULL;
     int i;
 
-    for (i = 0; i < PanoramiXNumVisuals; i++) {
-        if (orig == PanoramiXVisuals[i].vid) {
-            pVisual = &PanoramiXVisuals[i];
+    for (i = 0; i < context->PanoramiXNumVisuals; i++) {
+        if (orig == context->PanoramiXVisuals[i].vid) {
+            pVisual = &context->PanoramiXVisuals[i];
             break;
         }
     }
@@ -892,7 +892,7 @@ PanoramiXResetProc(ExtensionEntry * extEntry)
 
     PanoramiXRenderReset(context);
     PanoramiXFixesReset(context);
-    PanoramiXDamageReset();
+    PanoramiXDamageReset(context);
 #ifdef COMPOSITE
     PanoramiXCompositeReset(context);
 #endif

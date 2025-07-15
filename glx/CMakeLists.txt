@@ -96,7 +96,8 @@ if(BUILD_GLX)
         ${XINERAMAPROTO_CFLAGS}
         ${PIXMAN_CFLAGS}
         ${XKBFILE_CFLAGS}
-        ${XFONT2_CFLAGS}
+        # Include path for our custom libXfont2
+    -I${CMAKE_SOURCE_DIR}/ThirdParty/libxfont/include
         ${GLPROTO_CFLAGS}
         ${GL_CFLAGS}
     )
@@ -159,7 +160,8 @@ if(BUILD_GLX)
         ${XINERAMAPROTO_CFLAGS}
         ${PIXMAN_CFLAGS}
         ${XKBFILE_CFLAGS}
-        ${XFONT2_CFLAGS}
+        # Include path for our custom libXfont2
+    -I${CMAKE_SOURCE_DIR}/ThirdParty/libxfont/include
         ${GLPROTO_CFLAGS}
         ${GL_CFLAGS}
     )

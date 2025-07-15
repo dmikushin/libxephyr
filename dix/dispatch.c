@@ -538,14 +538,14 @@ Dispatch(XephyrContext* context)
                 client->majorOp = ((xReq *) client->requestBuffer)->reqType;
                 client->minorOp = 0;
                 if (client->majorOp >= EXTENSION_BASE) {
-                    ExtensionEntry *ext = GetExtensionEntry(client->majorOp);
+                    ExtensionEntry *ext = GetExtensionEntry(client->majorOp, client->context);
 
                     if (ext)
                         client->minorOp = ext->MinorOpcode(client);
                 }
 #ifdef XSERVER_DTRACE
                 if (XSERVER_REQUEST_START_ENABLED())
-                    XSERVER_REQUEST_START(LookupMajorName(client->majorOp),
+                    XSERVER_REQUEST_START(LookupMajorName(client->majorOp, client->context),
                                           client->majorOp,
                                           ((xReq *) client->requestBuffer)->length,
                                           client->index,
@@ -567,7 +567,7 @@ Dispatch(XephyrContext* context)
 
 #ifdef XSERVER_DTRACE
                 if (XSERVER_REQUEST_DONE_ENABLED())
-                    XSERVER_REQUEST_DONE(LookupMajorName(client->majorOp),
+                    XSERVER_REQUEST_DONE(LookupMajorName(client->majorOp, client->context),
                                          client->majorOp, client->sequence,
                                          client->index, result);
 #endif

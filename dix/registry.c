@@ -221,7 +221,7 @@ LookupRequestName(int major, int minor)
 }
 
 const char *
-LookupMajorName(int major)
+LookupMajorName(int major, XephyrContext* context)
 {
     if (major < 128) {
         const char *retval;
@@ -235,7 +235,7 @@ LookupMajorName(int major)
         return retval ? retval + sizeof(CORE) : XREGISTRY_UNKNOWN;
     }
     else {
-        ExtensionEntry *extEntry = GetExtensionEntry(major);
+        ExtensionEntry *extEntry = GetExtensionEntry(major, context);
 
         return extEntry ? extEntry->name : XREGISTRY_UNKNOWN;
     }

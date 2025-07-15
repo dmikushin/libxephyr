@@ -302,7 +302,7 @@ typedef int (*OsSigWrapperPtr) (int /* sig */ );
 extern _X_EXPORT OsSigHandlerPtr
 OsSignal(int /* sig */ , OsSigHandlerPtr /* handler */ );
 extern _X_EXPORT OsSigWrapperPtr
-OsRegisterSigWrapper(OsSigWrapperPtr newWrap);
+OsRegisterSigWrapper(OsSigWrapperPtr newWrap, XephyrContext* context);
 
 extern _X_EXPORT int auditTrailLevel;
 
@@ -333,27 +333,27 @@ extern _X_EXPORT void
 OsVendorInit(XephyrContext* context);
 
 extern _X_EXPORT void
-OsBlockSignals(void);
+OsBlockSignals(XephyrContext* context);
 
 extern _X_EXPORT void
-OsReleaseSignals(void);
+OsReleaseSignals(XephyrContext* context);
 
 extern void
-OsResetSignals(void);
+OsResetSignals(XephyrContext* context);
 
 extern _X_EXPORT void
-OsAbort(void)
+OsAbort(XephyrContext* context)
     _X_NORETURN;
 
 #if !defined(WIN32)
 extern _X_EXPORT int
 System(const char *);
 extern _X_EXPORT void *
-Popen(const char *, const char *);
+Popen(const char *, const char *, XephyrContext* context);
 extern _X_EXPORT int
-Pclose(void *);
+Pclose(void *, XephyrContext* context);
 extern _X_EXPORT void *
-Fopen(const char *, const char *);
+Fopen(const char *, const char *, XephyrContext* context);
 extern _X_EXPORT int
 Fclose(void *);
 #else
@@ -441,36 +441,36 @@ extern _X_EXPORT int
 GetAccessControl(void);
 
 extern _X_EXPORT void
-AddLocalHosts(void);
+AddLocalHosts(XephyrContext* context);
 
 extern _X_EXPORT void
 ResetHosts(const char *display, XephyrContext* context);
 
 extern _X_EXPORT void
-EnableLocalAccess(void);
+EnableLocalAccess(XephyrContext* context);
 
 extern _X_EXPORT void
-DisableLocalAccess(void);
+DisableLocalAccess(XephyrContext* context);
 
 extern _X_EXPORT void
-EnableLocalHost(void);
+EnableLocalHost(XephyrContext* context);
 
 extern _X_EXPORT void
-DisableLocalHost(void);
+DisableLocalHost(XephyrContext* context);
 
 #ifndef NO_LOCAL_CLIENT_CRED
 extern _X_EXPORT void
-EnableLocalUser(void);
+EnableLocalUser(XephyrContext* context);
 
 extern _X_EXPORT void
-DisableLocalUser(void);
+DisableLocalUser(XephyrContext* context);
 
 extern _X_EXPORT void
-LocalAccessScopeUser(void);
+LocalAccessScopeUser(XephyrContext* context);
 #endif
 
 extern _X_EXPORT void
-AccessUsingXdmcp(void);
+AccessUsingXdmcp(XephyrContext* context);
 
 extern _X_EXPORT void
 DefineSelf(int /*fd */, XephyrContext* /*context*/);
@@ -561,7 +561,7 @@ enum ExitCode {
 };
 
 extern _X_EXPORT void
-ddxGiveUp(enum ExitCode error);
+ddxGiveUp(enum ExitCode error, XephyrContext* context);
 extern _X_EXPORT void
 ddxInputThreadInit(void);
 extern _X_EXPORT int

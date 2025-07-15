@@ -72,7 +72,8 @@ target_compile_options(glamor PRIVATE
     ${XINERAMAPROTO_CFLAGS}
     ${PIXMAN_CFLAGS}
     ${XKBFILE_CFLAGS}
-    ${XFONT2_CFLAGS}
+    # Include path for our custom libXfont2
+    -I${CMAKE_SOURCE_DIR}/ThirdParty/libxfont/include
     ${EPOXY_CFLAGS}
 )
 
@@ -117,7 +118,8 @@ target_compile_options(glamor_egl_stubs PRIVATE
     ${XINERAMAPROTO_CFLAGS}
     ${PIXMAN_CFLAGS}
     ${XKBFILE_CFLAGS}
-    ${XFONT2_CFLAGS}
+    # Include path for our custom libXfont2
+    -I${CMAKE_SOURCE_DIR}/ThirdParty/libxfont/include
 )
 
 if(XSHMFENCE_FOUND)

@@ -85,7 +85,8 @@ target_compile_options(libxserver_xi PRIVATE
     ${XINERAMAPROTO_CFLAGS}
     ${PIXMAN_CFLAGS}
     ${XKBFILE_CFLAGS}
-    ${XFONT2_CFLAGS}
+    # Include path for our custom libXfont2
+    -I${CMAKE_SOURCE_DIR}/ThirdParty/libxfont/include
 )
 
 if(XSHMFENCE_FOUND)
@@ -131,7 +132,8 @@ target_compile_options(libxserver_xi_stubs PRIVATE
     ${XINERAMAPROTO_CFLAGS}
     ${PIXMAN_CFLAGS}
     ${XKBFILE_CFLAGS}
-    ${XFONT2_CFLAGS}
+    # Include path for our custom libXfont2
+    -I${CMAKE_SOURCE_DIR}/ThirdParty/libxfont/include
 )
 
 if(XSHMFENCE_FOUND)

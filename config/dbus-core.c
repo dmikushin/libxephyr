@@ -45,7 +45,6 @@ struct dbus_core_info {
     struct dbus_core_hook *hooks;
 };
 static struct dbus_core_info bus_info = { .fd = -1 };
-static XephyrContext* g_context = NULL;
 
 static CARD32 reconnect_timer(OsTimerPtr timer, CARD32 time, void *arg);
 
@@ -110,11 +109,11 @@ message_filter(DBusConnection * connection, DBusMessage * message, void *data)
     if (dbus_message_is_signal(message, DBUS_INTERFACE_LOCAL, "Disconnected")) {
         DebugF("[dbus-core] disconnected from bus\n");
         bus_info.connection = NULL;
-        teardown(g_context);
+        teardown((XephyrContext*)data);
 
         if (bus_info.timer)
             TimerFree(bus_info.timer);
-        bus_info.timer = TimerSet(NULL, 0, 1, reconnect_timer, NULL);
+        bus_info.timer = TimerSet(NULL, 0, 1, reconnect_timer, data);
 
         return DBUS_HANDLER_RESULT_HANDLED;
     }
@@ -151,7 +150,7 @@ connect_to_bus(XephyrContext* context)
     }
 
     if (!dbus_connection_add_filter(bus_info.connection, message_filter,
-                                    &bus_info, NULL)) {
+                                    context, NULL)) {
         ErrorF("[dbus-core] couldn't add filter: %s (%s)\n", context, error.name,
                error.message);
         goto err_fd;
@@ -181,7 +180,8 @@ connect_to_bus(XephyrContext* context)
 static CARD32
 reconnect_timer(OsTimerPtr timer, CARD32 time, void *arg)
 {
-    if (connect_to_bus(g_context)) {
+    XephyrContext* context = (XephyrContext*)arg;
+    if (connect_to_bus(context)) {
         TimerFree(bus_info.timer);
         bus_info.timer = NULL;
         return 0;
@@ -228,9 +228,8 @@ dbus_core_init(XephyrContext* context)
     memset(&bus_info, 0, sizeof(bus_info));
     bus_info.fd = -1;
     bus_info.hooks = NULL;
-    g_context = context;
     if (!connect_to_bus(context))
-        bus_info.timer = TimerSet(NULL, 0, 1, reconnect_timer, NULL);
+        bus_info.timer = TimerSet(NULL, 0, 1, reconnect_timer, context);
 
     return 1;
 }
@@ -239,6 +238,5 @@ void
 dbus_core_fini(XephyrContext* context)
 {
     teardown(context);
-    g_context = NULL;
 }
 #endif

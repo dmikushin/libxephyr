@@ -50,9 +50,9 @@
 #include "xfixesint.h"
 #include "opaque.h"
 
-static DevPrivateKeyRec ClientDisconnectPrivateKeyRec;
+// static DevPrivateKeyRec ClientDisconnectPrivateKeyRec;
 
-#define ClientDisconnectPrivateKey (&ClientDisconnectPrivateKeyRec)
+#define ClientDisconnectPrivateKey(client) (&(client)->context->ClientDisconnectPrivateKeyRec)
 
 typedef struct _ClientDisconnect {
     int disconnect_mode;
@@ -60,7 +60,7 @@ typedef struct _ClientDisconnect {
 
 #define GetClientDisconnect(s) \
     ((ClientDisconnectPtr) dixLookupPrivate(&(s)->devPrivates, \
-                                            ClientDisconnectPrivateKey))
+                                            ClientDisconnectPrivateKey(s)))
 
 int
 ProcXFixesSetClientDisconnectMode(ClientPtr client)
@@ -140,7 +140,7 @@ XFixesShouldDisconnectClient(ClientPtr client)
 Bool
 XFixesClientDisconnectInit(XephyrContext* context)
 {
-    if (!dixRegisterPrivateKey(&ClientDisconnectPrivateKeyRec,
+    if (!dixRegisterPrivateKey(&context->ClientDisconnectPrivateKeyRec,
                                PRIVATE_CLIENT, sizeof(ClientDisconnectRec), context))
         return FALSE;
 

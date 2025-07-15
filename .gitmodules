@@ -1,0 +1,3 @@
+[submodule "ThirdParty/libxfont"]
+	path = ThirdParty/libxfont
+	url = https://github.com/dmikushin/libxfont.git

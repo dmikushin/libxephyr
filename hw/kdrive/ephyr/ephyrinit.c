@@ -247,7 +247,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         return 1;
     }
     else if (!strcmp(argv[i], "-fullscreen")) {
-        hostx_use_fullscreen();
+        hostx_use_fullscreen(context);
         return 1;
     }
     else if (!strcmp(argv[i], "-grayscale")) {
@@ -327,11 +327,11 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         }
     }
     else if (argv[i][0] == ':') {
-        hostx_set_display_name(argv[i]);
+        hostx_set_display_name(argv[i], context);
     }
     /* Xnest compatibility */
     else if (!strcmp(argv[i], "-display")) {
-        hostx_set_display_name(argv[i + 1]);
+        hostx_set_display_name(argv[i + 1], context);
         return 2;
     }
     else if (!strcmp(argv[i], "-sync") ||

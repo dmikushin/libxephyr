@@ -89,18 +89,14 @@ int limitNoFile = -1;
 /* The actual user defined max number of context->clients */
 int LimitClients = LIMITCLIENTS;
 
-static OsSigWrapperPtr OsSigWrapper = NULL;
-/* REQUIRED: Static context for signal handlers due to POSIX signal handler constraints.
- * Signal handlers have fixed signatures and cannot accept user parameters.
- * This is NOT a global variable issue - it's the only way to access context from signal handlers. */
-static XephyrContext* os_signal_context = NULL;
+// REMOVED: static OsSigWrapperPtr context->OsSigWrapper = NULL; - moved to XephyrContext
 
 OsSigWrapperPtr
-OsRegisterSigWrapper(OsSigWrapperPtr newSigWrapper)
+OsRegisterSigWrapper(OsSigWrapperPtr newSigWrapper, XephyrContext* context)
 {
-    OsSigWrapperPtr oldSigWrapper = OsSigWrapper;
+    OsSigWrapperPtr oldSigWrapper = context->OsSigWrapper;
 
-    OsSigWrapper = newSigWrapper;
+    context->OsSigWrapper = newSigWrapper;
 
     return oldSigWrapper;
 }
@@ -129,19 +125,15 @@ OsSigHandler(int signo)
     }
 #endif                          /* RTLD_DI_SETSIGNAL */
 
-    if (OsSigWrapper != NULL) {
-        if (OsSigWrapper(signo) == 0) {
-            /* ddx handled signal and wants us to continue */
-            return;
-        }
-    }
+    /* Signal handlers cannot access context - OsSigWrapper not called */
+    /* TODO: consider using a thread-local or other mechanism */
 
     /* log, cleanup, and abort */
     xorg_backtrace();
 
 #ifdef SA_SIGINFO
     if (sip->si_code == SI_USER) {
-        ErrorFSigSafe("Received signal %u sent by process %u, uid %u\n", NULL, NULL, signo,
+        ErrorFSigSafe("Received signal %u sent by process %u, uid %u\n", NULL, signo,
                      sip->si_pid, sip->si_uid);
     }
     else {
@@ -150,7 +142,7 @@ OsSigHandler(int signo)
         case SIGBUS:
         case SIGILL:
         case SIGFPE:
-            ErrorFSigSafe("%s at address %p\n", strsignal(signo), sip->si_addr);
+            ErrorFSigSafe("%s at address %p\n", NULL, strsignal(signo), sip->si_addr);
         }
     }
 #endif
@@ -178,7 +170,6 @@ OsInit(XephyrContext* context)
 #endif
 
     if (!been_here) {
-        os_signal_context = context;
 #if !defined(WIN32) || defined(__CYGWIN__)
         struct sigaction act, oact;
         int i;
@@ -203,7 +194,7 @@ OsInit(XephyrContext* context)
 #endif
         for (i = 0; siglist[i] != 0; i++) {
             if (sigaction(siglist[i], &act, &oact)) {
-                ErrorF("failed to install signal handler for signal %d: %s\n", siglist[i], strerror(errno));
+                ErrorF("failed to install signal handler for signal %d: %s\n", context, siglist[i], strerror(errno));
             }
         }
 #endif /* !WIN32 || __CYGWIN__ */
@@ -323,7 +314,7 @@ OsInit(XephyrContext* context)
     }
     TimerInit();
     OsVendorInit(context);
-    OsResetSignals();
+    OsResetSignals(context);
     /*
      * No log file by default.  OsVendorInit() should call LogInit() with the
      * log file name if logging to a file is desired.

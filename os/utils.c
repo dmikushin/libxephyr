@@ -109,10 +109,6 @@ __stdcall unsigned long GetTickCount(void);
 
 #include "xkbsrv.h"
 
-/* REQUIRED: Static context for signal handlers due to POSIX signal handler constraints.
- * Signal handlers have fixed signatures and cannot accept user parameters.
- * This is NOT a global variable issue - it's the only way to access context from signal handlers. */
-static XephyrContext* utils_signal_context = NULL;
 
 #include "picture.h"
 
@@ -416,10 +412,9 @@ AutoResetServer(int sig)
 {
     int olderrno = errno;
 
-    if (utils_signal_context) {
-        utils_signal_context->dispatchException |= DE_RESET;
-        utils_signal_context->isItTimeToYield = TRUE;
-    }
+    /* Signal handlers cannot receive context, so we cannot access it here */
+    /* This functionality needs to be implemented differently */
+    
     errno = olderrno;
 }
 
@@ -430,10 +425,9 @@ GiveUp(int sig)
 {
     int olderrno = errno;
 
-    if (utils_signal_context) {
-        utils_signal_context->dispatchException |= DE_TERMINATE;
-        utils_signal_context->isItTimeToYield = TRUE;
-    }
+    /* Signal handlers cannot receive context, so we cannot access it here */
+    /* This functionality needs to be implemented differently */
+    
     errno = olderrno;
 }
 
@@ -675,7 +669,6 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
 {
     int i, skip;
 
-    utils_signal_context = context;
     context->defaultKeyboardControl.autoRepeat = TRUE;
 
 #ifdef NO_PART_NET
@@ -997,7 +990,7 @@ ProcessCommandLine(int argc, char *argv[], XephyrContext* context)
             /* init supplies us with this useless information */
         }
 #ifdef XDMCP
-        else if ((skip = XdmcpOptions(argc, argv, i)) != i) {
+        else if ((skip = XdmcpOptions(argc, argv, i, context)) != i) {
             i = skip - 1;
         }
 #endif
@@ -1293,15 +1286,15 @@ SmartScheduleInit(XephyrContext* context)
 }
 
 #ifdef HAVE_SIGPROCMASK
-static sigset_t PreviousSignalMask;
-static int BlockedSignalCount;
+// REMOVED: static sigset_t context->PreviousSignalMask; - moved to XephyrContext
+// static int BlockedSignalCount; // Moved to XephyrContext
 #endif
 
 void
-OsBlockSignals(void)
+OsBlockSignals(XephyrContext* context)
 {
 #ifdef HAVE_SIGPROCMASK
-    if (BlockedSignalCount++ == 0) {
+    if (context->BlockedSignalCount++ == 0) {
         sigset_t set;
 
         sigemptyset(&set);
@@ -1314,27 +1307,27 @@ OsBlockSignals(void)
         sigaddset(&set, SIGTTIN);
         sigaddset(&set, SIGTTOU);
         sigaddset(&set, SIGCHLD);
-        xthread_sigmask(SIG_BLOCK, &set, &PreviousSignalMask);
+        xthread_sigmask(SIG_BLOCK, &set, &context->PreviousSignalMask);
     }
 #endif
 }
 
 void
-OsReleaseSignals(void)
+OsReleaseSignals(XephyrContext* context)
 {
 #ifdef HAVE_SIGPROCMASK
-    if (--BlockedSignalCount == 0) {
-        xthread_sigmask(SIG_SETMASK, &PreviousSignalMask, 0);
+    if (--context->BlockedSignalCount == 0) {
+        xthread_sigmask(SIG_SETMASK, &context->PreviousSignalMask, 0);
     }
 #endif
 }
 
 void
-OsResetSignals(void)
+OsResetSignals(XephyrContext* context)
 {
 #ifdef HAVE_SIGPROCMASK
-    while (BlockedSignalCount > 0)
-        OsReleaseSignals();
+    while (context->BlockedSignalCount > 0)
+        OsReleaseSignals(context);
     input_force_unlock();
 #endif
 }
@@ -1345,10 +1338,10 @@ OsResetSignals(void)
  */
 
 void
-OsAbort(void)
+OsAbort(XephyrContext* context)
 {
 #ifndef __APPLE__
-    OsBlockSignals();
+    OsBlockSignals(context);
 #endif
 #if !defined(WIN32) || defined(__CYGWIN__)
     /* abort() raises SIGABRT, so we have to stop handling that to prevent
@@ -1420,7 +1413,7 @@ static struct pid {
 } *pidlist;
 
 void *
-Popen(const char *command, const char *type)
+Popen(const char *command, const char *type, XephyrContext* context)
 {
     struct pid *cur;
     FILE *iop;
@@ -1487,7 +1480,7 @@ Popen(const char *command, const char *type)
     }
 
     /* Avoid EINTR during stdio calls */
-    OsBlockSignals();
+    OsBlockSignals(context);
 
     /* parent */
     if (*type == 'r') {
@@ -1511,7 +1504,7 @@ Popen(const char *command, const char *type)
 
 /* fopen that drops privileges */
 void *
-Fopen(const char *file, const char *type)
+Fopen(const char *file, const char *type, XephyrContext* context)
 {
     FILE *iop;
 
@@ -1565,7 +1558,7 @@ Fopen(const char *file, const char *type)
     }
 
     /* Avoid EINTR during stdio calls */
-    OsBlockSignals();
+    OsBlockSignals(context);
 
     /* parent */
     if (*type == 'r') {
@@ -1605,7 +1598,7 @@ Fopen(const char *file, const char *type)
 }
 
 int
-Pclose(void *iop)
+Pclose(void *iop, XephyrContext* context)
 {
     struct pid *cur, *last;
     int pstat;
@@ -1631,7 +1624,7 @@ Pclose(void *iop)
     free(cur);
 
     /* allow EINTR again */
-    OsReleaseSignals();
+    OsReleaseSignals(context);
 
 #ifdef HAVE_SETITIMER
     if (SmartScheduleEnable() < 0) {

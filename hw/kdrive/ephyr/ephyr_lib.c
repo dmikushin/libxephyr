@@ -232,7 +232,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         exit(1);
     }
     else if (!strcmp(argv[i], "-sw-cursor")) {
-        hostx_use_sw_cursor();
+        hostx_use_sw_cursor(context);
         return 1;
     }
     else if (!strcmp(argv[i], "-host-cursor")) {
@@ -240,7 +240,7 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         return 1;
     }
     else if (!strcmp(argv[i], "-fullscreen")) {
-        hostx_use_fullscreen();
+        hostx_use_fullscreen(context);
         return 1;
     }
     else if (!strcmp(argv[i], "-grayscale")) {
@@ -320,11 +320,11 @@ ddxProcessArgument(int argc, char **argv, int i, XephyrContext* context)
         }
     }
     else if (argv[i][0] == ':') {
-        hostx_set_display_name(argv[i]);
+        hostx_set_display_name(argv[i], context);
     }
     /* Xnest compatibility */
     else if (!strcmp(argv[i], "-context->display")) {
-        hostx_set_display_name(argv[i + 1]);
+        hostx_set_display_name(argv[i + 1], context);
         return 2;
     }
     else if (!strcmp(argv[i], "-sync") ||
@@ -359,9 +359,9 @@ OsVendorInit(XephyrContext* context)
     EPHYR_DBG("mark");
 
     if (context->SeatId)
-        hostx_use_sw_cursor();
+        hostx_use_sw_cursor(context);
 
-    if (hostx_want_host_cursor())
+    if (hostx_want_host_cursor(context))
         ephyrFuncs.initCursor = &ephyrCursorInit;
 
     if (context->serverGeneration == 1) {

@@ -46,7 +46,7 @@ typedef struct _DamageClient {
     int critical;
 } DamageClientRec, *DamageClientPtr;
 
-#define GetDamageClient(pClient) ((DamageClientPtr)dixLookupPrivate(&(pClient)->devPrivates, DamageClientPrivateKey))
+#define GetDamageClient(pClient) ((DamageClientPtr)dixLookupPrivate(&(pClient)->devPrivates, DamageClientPrivateKey(pClient)))
 
 typedef struct _DamageExt {
     DamagePtr pDamage;
@@ -59,7 +59,7 @@ typedef struct _DamageExt {
 
 #define VERIFY_DAMAGEEXT(pDamageExt, rid, client, mode) { \
     int rc = dixLookupResourceByType((void **)&(pDamageExt), rid, \
-                                     DamageExtType, client, mode, client->context); \
+                                     client->context->DamageExtType, client, mode, client->context); \
     if (rc != Success) \
         return rc; \
 }
@@ -68,6 +68,6 @@ void
  DamageExtSetCritical(ClientPtr pClient, Bool critical);
 
 void PanoramiXDamageInit(XephyrContext* context);
-void PanoramiXDamageReset(void);
+void PanoramiXDamageReset(XephyrContext* context);
 
 #endif                          /* _DAMAGEEXTINT_H_ */

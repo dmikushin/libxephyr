@@ -150,7 +150,7 @@ static unsigned long getEventMask(ScreenPtr     pScreen,
  * kept to be freed when the client exits
  */
 
-static RESTYPE AttrType;        /* resource type for attributes */
+// REMOVED: static RESTYPE context->AttrType; - moved to XephyrContext
 
 typedef struct _ScreenSaverAttr {
     ScreenPtr screen;
@@ -1062,7 +1062,7 @@ ScreenSaverSetAttributes(ClientPtr client)
         FreeScreenAttr(pPriv->attr, client->context);
     pPriv->attr = pAttr;
     pAttr->resource = FakeClientID(client->index, client->context);
-    if (!AddResource(pAttr->resource, AttrType, (void *) pAttr, client->context))
+    if (!AddResource(pAttr->resource, context->AttrType, (void *) pAttr, client->context))
         return BadAlloc;
     return Success;
  PatchUp:
@@ -1090,7 +1090,7 @@ ScreenSaverUnsetAttributes(ClientPtr client)
         return rc;
     pPriv = GetScreenPrivate(pDraw->pScreen);
     if (pPriv && pPriv->attr && pPriv->attr->client == client) {
-        FreeResource(pPriv->attr->resource, AttrType, client->context);
+        FreeResource(pPriv->attr->resource, client->context->AttrType, client->context);
         FreeScreenAttr(pPriv->attr, client->context);
         pPriv->attr = NULL;
         CheckScreenPrivate(pDraw->pScreen);
@@ -1395,7 +1395,7 @@ ScreenSaverExtensionInit(XephyrContext* context)
     if (!dixRegisterPrivateKey(&ScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return;
 
-    AttrType = CreateNewResourceType(ScreenSaverFreeAttr, "SaverAttr", context);
+    context->AttrType = CreateNewResourceType(ScreenSaverFreeAttr, "SaverAttr", context);
     SaverEventType = CreateNewResourceType(ScreenSaverFreeEvents, "SaverEvent", context);
     SuspendType = CreateNewResourceType(ScreenSaverFreeSuspend, "SaverSuspend", context);
 
@@ -1403,7 +1403,7 @@ ScreenSaverExtensionInit(XephyrContext* context)
         pScreen = context->screenInfo.screens[i];
         SetScreenPrivate(pScreen, NULL);
     }
-    if (AttrType && SaverEventType && SuspendType &&
+    if (context->AttrType && SaverEventType && SuspendType &&
         (extEntry = AddExtension(ScreenSaverName, ScreenSaverNumberEvents, 0,
                                  ProcScreenSaverDispatch,
                                  SProcScreenSaverDispatch, NULL,

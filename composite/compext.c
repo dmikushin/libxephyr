@@ -51,10 +51,10 @@
 #include "protocol-versions.h"
 #include "extinit.h"
 
-static CARD8 CompositeReqCode;
-static DevPrivateKeyRec CompositeClientPrivateKeyRec;
+//static CARD8 CompositeReqCode;
+// static DevPrivateKeyRec CompositeClientPrivateKeyRec;
 
-#define CompositeClientPrivateKey (&CompositeClientPrivateKeyRec)
+#define CompositeClientPrivateKey(client) (&(client)->context->CompositeClientPrivateKeyRec)
 
 typedef struct _CompositeClient {
     int major_version;
@@ -62,7 +62,7 @@ typedef struct _CompositeClient {
 } CompositeClientRec, *CompositeClientPtr;
 
 #define GetCompositeClient(pClient) ((CompositeClientPtr) \
-    dixLookupPrivate(&(pClient)->devPrivates, CompositeClientPrivateKey))
+    dixLookupPrivate(&(pClient)->devPrivates, CompositeClientPrivateKey(pClient)))
 
 static int
 FreeCompositeClientWindow(void *value, XID ccwid, XephyrContext* context)
@@ -568,7 +568,7 @@ CompositeExtensionInit(XephyrContext* context)
     if (!context->CompositeClientOverlayType)
         return;
 
-    if (!dixRegisterPrivateKey(&CompositeClientPrivateKeyRec, PRIVATE_CLIENT,
+    if (!dixRegisterPrivateKey(&context->CompositeClientPrivateKeyRec, PRIVATE_CLIENT,
                                sizeof(CompositeClientRec), context))
         return;
 
@@ -581,7 +581,7 @@ CompositeExtensionInit(XephyrContext* context)
                             NULL, StandardMinorOpcode, context);
     if (!extEntry)
         return;
-    CompositeReqCode = (CARD8) extEntry->base;
+    context->CompositeReqCode = (CARD8) extEntry->base;
 
     /* Initialization succeeded */
     context->noCompositeExtension = FALSE;

@@ -879,15 +879,15 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
     ps = GetPictureScreenIfSet(pScreen);
 
     if (!dixRegisterPrivateKey(exaScreenPrivateKey(pScreen), PRIVATE_SCREEN, 0, pScreen->context)) {
-        LogMessage(X_WARNING, "EXA(%d): Failed to register screen private\n",
+        LogMessage(X_WARNING, "EXA(%d): Failed to register screen private\n", pScreen->context,
                    pScreen->myNum);
         return FALSE;
     }
 
     pExaScr = calloc(sizeof(ExaScreenPrivRec), 1);
     if (!pExaScr) {
-        LogMessage(X_WARNING, "EXA(%d): Failed to allocate screen private\n",
-                   pScreen->context, pScreen->myNum);
+        LogMessage(X_WARNING, "EXA(%d): Failed to allocate screen private\n", pScreen->context,
+                   pScreen->myNum);
         return FALSE;
     }
 
@@ -901,8 +901,8 @@ exaDriverInit(ScreenPtr pScreen, ExaDriverPtr pScreenInfo)
 
     if (!dixRegisterScreenSpecificPrivateKey
         (pScreen, &pExaScr->gcPrivateKeyRec, PRIVATE_GC, sizeof(ExaGCPrivRec))) {
-        LogMessage(X_WARNING, "EXA(%d): Failed to allocate GC private\n",
-                   pScreen->context, pScreen->myNum);
+        LogMessage(X_WARNING, "EXA(%d): Failed to allocate GC private\n", pScreen->context,
+                   pScreen->myNum);
         return FALSE;
     }
 

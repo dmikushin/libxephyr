@@ -134,7 +134,7 @@ static Bool RunFromSmartParent; /* send SIGUSR1 to parent process */
 /* REMOVED: Bool RunFromSigStopParent; - moved to XephyrContext */
 static char dynamic_display[7]; /* display name */
 /* REMOVED: Bool PartialNetwork; - moved to XephyrContext */
-static Pid_t ParentProcess;
+/* static Pid_t context->ParentProcess; */
 
 // // int GrabInProgress = 0;
 
@@ -147,9 +147,9 @@ set_poll_client(ClientPtr client);
 static void
 set_poll_clients(XephyrContext* context);
 
-static XtransConnInfo *ListenTransConns = NULL;
-static int *ListenTransFds = NULL;
-static int ListenTransCount;
+/* static XtransConnInfo *context->ListenTransConns = NULL; */
+/* static int *context->ListenTransFds = NULL; */
+/* static int context->ListenTransCount; */
 
 struct ConnMaxData {
     XtransConnInfo trans_conn;
@@ -159,14 +159,14 @@ struct ConnMaxData {
 static void ErrorConnMax(XtransConnInfo trans_conn, XephyrContext *context);
 
 static XtransConnInfo
-lookup_trans_conn(int fd)
+lookup_trans_conn(int fd, XephyrContext *context)
 {
-    if (ListenTransFds) {
+    if (context->ListenTransFds) {
         int i;
 
-        for (i = 0; i < ListenTransCount; i++)
-            if (ListenTransFds[i] == fd)
-                return ListenTransConns[i];
+        for (i = 0; i < context->ListenTransCount; i++)
+            if (context->ListenTransFds[i] == fd)
+                return context->ListenTransConns[i];
     }
 
     return NULL;
@@ -186,7 +186,7 @@ lookup_trans_conn(int fd)
  * the signal will be quite useful.
  */
 static void
-InitParentProcess(void)
+InitParentProcess(XephyrContext* context)
 {
 #if !defined(WIN32)
     OsSigHandlerPtr handler;
@@ -195,7 +195,7 @@ InitParentProcess(void)
     if (handler == SIG_IGN)
         RunFromSmartParent = TRUE;
     OsSignal(SIGUSR1, handler);
-    ParentProcess = getppid();
+    context->ParentProcess = getppid();
 #endif
 }
 
@@ -212,8 +212,8 @@ NotifyParentProcess(XephyrContext* context)
         context->displayfd = -1;
     }
     if (RunFromSmartParent) {
-        if (ParentProcess > 1) {
-            kill(ParentProcess, SIGUSR1);
+        if (context->ParentProcess > 1) {
+            kill(context->ParentProcess, SIGUSR1);
         }
     }
     if (context->RunFromSigStopParent)
@@ -227,15 +227,15 @@ NotifyParentProcess(XephyrContext* context)
 }
 
 static Bool
-TryCreateSocket(int num, int *partial)
+TryCreateSocket(int num, int *partial, XephyrContext* context)
 {
     char port[20];
 
     snprintf(port, sizeof(port), "%d", num);
 
     return (_XSERVTransMakeAllCOTSServerListeners(port, partial,
-                                                  &ListenTransCount,
-                                                  &ListenTransConns) >= 0);
+                                                  &context->ListenTransCount,
+                                                  &context->ListenTransConns) >= 0);
 }
 
 /*****************
@@ -253,18 +253,18 @@ CreateWellKnownSockets(XephyrContext* context)
      * number if specified on the command line. */
 
     if (context->NoListenAll) {
-        ListenTransCount = 0;
+        context->ListenTransCount = 0;
     }
     else if ((context->displayfd < 0) || context->explicit_display) {
-        if (TryCreateSocket(atoi(context->display), &partial) &&
-            ListenTransCount >= 1)
+        if (TryCreateSocket(atoi(context->display), &partial, context) &&
+            context->ListenTransCount >= 1)
             if (!context->PartialNetwork && partial)
                 FatalError("Failed to establish all listening sockets", context);
     }
     else { /* -context->displayfd and no explicit context->display number */
         Bool found = 0;
         for (i = 0; i < 65536 - X_TCP_PORT; i++) {
-            if (TryCreateSocket(i, &partial) && !partial) {
+            if (TryCreateSocket(i, &partial, context) && !partial) {
                 found = 1;
                 break;
             }
@@ -278,21 +278,21 @@ CreateWellKnownSockets(XephyrContext* context)
         LogSetDisplay(context);
     }
 
-    ListenTransFds = xallocarray(ListenTransCount, sizeof (int));
-    if (ListenTransFds == NULL)
+    context->ListenTransFds = xallocarray(context->ListenTransCount, sizeof (int));
+    if (context->ListenTransFds == NULL)
         FatalError("Failed to create listening socket array", context);
 
-    for (i = 0; i < ListenTransCount; i++) {
-        int fd = _XSERVTransGetConnectionNumber(ListenTransConns[i]);
+    for (i = 0; i < context->ListenTransCount; i++) {
+        int fd = _XSERVTransGetConnectionNumber(context->ListenTransConns[i]);
 
-        ListenTransFds[i] = fd;
+        context->ListenTransFds[i] = fd;
         SetNotifyFd(fd, EstablishNewConnections, X_NOTIFY_READ, context, context);
 
-        if (!_XSERVTransIsLocal(ListenTransConns[i]))
+        if (!_XSERVTransIsLocal(context->ListenTransConns[i]))
             DefineSelf (fd, context);
     }
 
-    if (ListenTransCount == 0 && !context->NoListenAll)
+    if (context->ListenTransCount == 0 && !context->NoListenAll)
         FatalError("Cannot establish any listening sockets - Make sure an X server isn't already running", context);
 
 #if !defined(WIN32)
@@ -303,7 +303,7 @@ CreateWellKnownSockets(XephyrContext* context)
     OsSignal(SIGTERM, GiveUp);
     ResetHosts(context->display, context);
 
-    InitParentProcess();
+    InitParentProcess(context);
 
 #ifdef XDMCP
     XdmcpInit(context);
@@ -317,20 +317,20 @@ ResetWellKnownSockets(XephyrContext* context)
 
     ResetOsBuffers();
 
-    for (i = 0; i < ListenTransCount; i++) {
-        int status = _XSERVTransResetListener(ListenTransConns[i]);
+    for (i = 0; i < context->ListenTransCount; i++) {
+        int status = _XSERVTransResetListener(context->ListenTransConns[i]);
 
         if (status != TRANS_RESET_NOOP) {
             if (status == TRANS_RESET_FAILURE) {
                 /*
-                 * ListenTransConns[i] freed by xtrans.
+                 * context->ListenTransConns[i] freed by xtrans.
                  * Remove it from out list.
                  */
 
-                RemoveNotifyFd(ListenTransFds[i], context);
-                ListenTransFds[i] = ListenTransFds[ListenTransCount - 1];
-                ListenTransConns[i] = ListenTransConns[ListenTransCount - 1];
-                ListenTransCount -= 1;
+                RemoveNotifyFd(context->ListenTransFds[i], context);
+                context->ListenTransFds[i] = context->ListenTransFds[context->ListenTransCount - 1];
+                context->ListenTransConns[i] = context->ListenTransConns[context->ListenTransCount - 1];
+                context->ListenTransCount -= 1;
                 i -= 1;
             }
             else if (status == TRANS_RESET_NEW_FD) {
@@ -338,14 +338,14 @@ ResetWellKnownSockets(XephyrContext* context)
                  * A new file descriptor was allocated (the old one was closed)
                  */
 
-                int newfd = _XSERVTransGetConnectionNumber(ListenTransConns[i]);
+                int newfd = _XSERVTransGetConnectionNumber(context->ListenTransConns[i]);
 
-                ListenTransFds[i] = newfd;
+                context->ListenTransFds[i] = newfd;
             }
         }
     }
-    for (i = 0; i < ListenTransCount; i++)
-        SetNotifyFd(ListenTransFds[i], EstablishNewConnections, X_NOTIFY_READ,
+    for (i = 0; i < context->ListenTransCount; i++)
+        SetNotifyFd(context->ListenTransFds[i], EstablishNewConnections, X_NOTIFY_READ,
                     context, context);
 
     ResetAuthorization();
@@ -363,15 +363,15 @@ CloseWellKnownConnections(XephyrContext* context)
 {
     int i;
 
-    for (i = 0; i < ListenTransCount; i++) {
-        if (ListenTransConns[i] != NULL) {
-            _XSERVTransClose(ListenTransConns[i]);
-            ListenTransConns[i] = NULL;
-            if (ListenTransFds != NULL)
-                RemoveNotifyFd(ListenTransFds[i], context);
+    for (i = 0; i < context->ListenTransCount; i++) {
+        if (context->ListenTransConns[i] != NULL) {
+            _XSERVTransClose(context->ListenTransConns[i]);
+            context->ListenTransConns[i] = NULL;
+            if (context->ListenTransFds != NULL)
+                RemoveNotifyFd(context->ListenTransFds[i], context);
         }
     }
-    ListenTransCount = 0;
+    context->ListenTransCount = 0;
 }
 
 static void
@@ -681,7 +681,7 @@ EstablishNewConnections(int curconn, int ready, void *data)
         }
     }
 
-    if ((trans_conn = lookup_trans_conn(curconn)) == NULL)
+    if ((trans_conn = lookup_trans_conn(curconn, context)) == NULL)
         return;
 
     if ((new_trans_conn = _XSERVTransAccept(trans_conn, &status)) == NULL)
@@ -801,7 +801,7 @@ CloseDownConnection(ClientPtr client)
     if (oc->output)
 	FlushClient(client, oc, (char *) NULL, 0);
     CloseDownFileDescriptor(oc, client->context);
-    FreeOsBuffers(oc);
+    FreeOsBuffers(oc, client->context);
     free(client->osPrivate);
     client->osPrivate = (void *) NULL;
     if (auditTrailLevel > 1)
@@ -1054,20 +1054,20 @@ ListenOnOpenFD(int fd, int noxauth, XephyrContext* context)
         ciptr->flags = ciptr->flags | TRANS_NOXAUTH;
 
     /* Allocate space to store it */
-    ListenTransFds =
-        XNFreallocarray(ListenTransFds, ListenTransCount + 1, sizeof(int), context);
-    ListenTransConns =
-        XNFreallocarray(ListenTransConns, ListenTransCount + 1,
+    context->ListenTransFds =
+        XNFreallocarray(context->ListenTransFds, context->ListenTransCount + 1, sizeof(int), context);
+    context->ListenTransConns =
+        XNFreallocarray(context->ListenTransConns, context->ListenTransCount + 1,
                         sizeof(XtransConnInfo), context);
 
     /* Store it */
-    ListenTransConns[ListenTransCount] = ciptr;
-    ListenTransFds[ListenTransCount] = fd;
+    context->ListenTransConns[context->ListenTransCount] = ciptr;
+    context->ListenTransFds[context->ListenTransCount] = fd;
 
     SetNotifyFd(fd, EstablishNewConnections, X_NOTIFY_READ, context, context);
 
     /* Increment the count */
-    ListenTransCount++;
+    context->ListenTransCount++;
 }
 
 /* based on TRANS(SocketUNIXAccept) (XtransConnInfo ciptr, int *status) */

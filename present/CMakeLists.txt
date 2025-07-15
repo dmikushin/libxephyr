@@ -50,7 +50,8 @@ target_compile_options(libxserver_present PRIVATE
     ${XINERAMAPROTO_CFLAGS}
     ${PIXMAN_CFLAGS}
     ${XKBFILE_CFLAGS}
-    ${XFONT2_CFLAGS}
+    # Include path for our custom libXfont2
+    -I${CMAKE_SOURCE_DIR}/ThirdParty/libxfont/include
     ${PRESENTPROTO_CFLAGS}
 )
 

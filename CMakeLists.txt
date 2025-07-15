@@ -39,7 +39,8 @@ pkg_check_modules(XSHMFENCE xshmfence>=1.1)
 pkg_check_modules(PIXMAN REQUIRED pixman-1)
 pkg_check_modules(LIBBSD libbsd)
 pkg_check_modules(XKBFILE REQUIRED xkbfile)
-pkg_check_modules(XFONT2 REQUIRED xfont2>=2.0)
+# Use our modified libxfont from ThirdParty instead of system xfont2
+# pkg_check_modules(XFONT2 REQUIRED xfont2>=2.0)
 pkg_check_modules(DBUS dbus-1>=1.0)
 pkg_check_modules(LIBDRM libdrm)
 pkg_check_modules(EPOXY epoxy)
@@ -389,6 +390,9 @@ include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
+# Add ThirdParty libxfont as subdirectory
+add_subdirectory(ThirdParty/libxfont)
+
 # Include must come first, as it sets up dix-config.h
 add_subdirectory(include)
 
@@ -477,7 +481,8 @@ target_link_libraries(xephyr
     ${XINERAMAPROTO_LIBRARIES}
     ${PIXMAN_LIBRARIES}
     ${XKBFILE_LIBRARIES}
-    ${XFONT2_LIBRARIES}
+    # Use our custom libXfont2 instead of system library
+    Xfont2
     ${XAU_LIBRARIES}
     ${GL_LIBRARIES}
     ${M_LIBRARY}
@@ -549,7 +554,8 @@ target_compile_options(xephyr PRIVATE
     ${XINERAMAPROTO_CFLAGS}
     ${PIXMAN_CFLAGS}
     ${XKBFILE_CFLAGS}
-    ${XFONT2_CFLAGS}
+    # Include path for our custom libXfont2
+    -I${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/libxfont/include
     ${XAU_CFLAGS}
     ${GL_CFLAGS}
 )

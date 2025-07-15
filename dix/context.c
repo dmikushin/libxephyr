@@ -87,5 +87,22 @@ void InitGlobalsForContext(XephyrContext* context)
     context->BadMode = 2;
     context->DeviceBusy = 3;
     context->BadClass = 4;
+    
+    // Initialize callback and event static variables (Phase 2)
+    context->ConnectionCallbackList = NULL;
+    context->ExtensionModuleList = NULL;
+    context->OsSigWrapper = NULL;
+    context->AttrType = 0;
+    context->SelectionClientType = 0;
+    context->SelectionWindowType = 0;
+    context->ClientType = 0;
+    context->ShapeEventType = 0;
+    context->CompositeReqCode = 0;
+    context->CursorClientType = 0;
+    context->CursorHideCountType = 0;
+    context->CursorWindowType = 0;
+    context->DamageEventBase = 0;
+    context->DamageExtType = 0;
+    context->DamageReqCode = 0;
 }
 

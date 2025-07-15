@@ -50,7 +50,7 @@
 /* DevPrivateKeyRec PictureWindowPrivateKeyRec; - now in context */
 
 /* DevPrivateKey functions removed - now using macros with context parameter */
-static int PictureGeneration;
+/* static int context->PictureGeneration; */
 
 PictFormatPtr
 PictureWindowFormat(WindowPtr pWindow)
@@ -454,17 +454,9 @@ PictureInitIndexedFormats(ScreenPtr pScreen)
 }
 
 Bool
-PictureFinishInit(void)
+PictureFinishInit(XephyrContext* context)
 {
     int s;
-    XephyrContext* context;
-    
-    /* Get context from extern context->screenInfo - temporary solution */
-/*     extern ScreenInfo context->screenInfo; */
-    if (context->screenInfo.numScreens > 0 && context->screenInfo.screens[0])
-        context = context->screenInfo.screens[0]->context;
-    else
-        return FALSE;
 
     for (s = 0; s < context->screenInfo.numScreens; s++) {
         if (!PictureInitIndexedFormats(context->screenInfo.screens[s]))
@@ -617,7 +609,7 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
     int n;
     CARD32 type, a, r, g, b;
 
-    if (PictureGeneration != pScreen->context->serverGeneration) {
+    if (pScreen->context->PictureGeneration != pScreen->context->serverGeneration) {
         pScreen->context->PictureType = CreateNewResourceType(FreePicture, "PICTURE", pScreen->context);
         if (!pScreen->context->PictureType)
             return FALSE;
@@ -628,7 +620,7 @@ PictureInit(ScreenPtr pScreen, PictFormatPtr formats, int nformats)
         pScreen->context->GlyphSetType = CreateNewResourceType(FreeGlyphSet, "GLYPHSET", pScreen->context);
         if (!pScreen->context->GlyphSetType)
             return FALSE;
-        PictureGeneration = pScreen->context->serverGeneration;
+        pScreen->context->PictureGeneration = pScreen->context->serverGeneration;
     }
     if (!dixRegisterPrivateKey(&pScreen->context->PictureScreenPrivateKeyRec, PRIVATE_SCREEN, 0, pScreen->context))
         return FALSE;

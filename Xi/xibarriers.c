@@ -61,9 +61,9 @@
 #include "mi.h"
 
 
-static DevPrivateKeyRec BarrierScreenPrivateKeyRec;
+// static DevPrivateKeyRec BarrierScreenPrivateKeyRec;
 
-#define BarrierScreenPrivateKey (&BarrierScreenPrivateKeyRec)
+#define BarrierScreenPrivateKey(pScreen) (&(pScreen)->context->BarrierScreenPrivateKeyRec)
 
 typedef struct PointerBarrierClient *PointerBarrierClientPtr;
 
@@ -95,9 +95,9 @@ typedef struct _BarrierScreen {
     struct xorg_list barriers;
 } BarrierScreenRec, *BarrierScreenPtr;
 
-#define GetBarrierScreen(s) ((BarrierScreenPtr)dixLookupPrivate(&(s)->devPrivates, BarrierScreenPrivateKey))
+#define GetBarrierScreen(s) ((BarrierScreenPtr)dixLookupPrivate(&(s)->devPrivates, BarrierScreenPrivateKey(s)))
 #define GetBarrierScreenIfSet(s) GetBarrierScreen(s)
-#define SetBarrierScreen(s,p) dixSetPrivate(&(s)->devPrivates, BarrierScreenPrivateKey, p)
+#define SetBarrierScreen(s,p) dixSetPrivate(&(s)->devPrivates, BarrierScreenPrivateKey(s), p)
 
 static struct PointerBarrierDevice *AllocBarrierDevice(void)
 {
@@ -916,7 +916,7 @@ XIBarrierInit(XephyrContext* context)
 {
     int i;
 
-    if (!dixRegisterPrivateKey(&BarrierScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
+    if (!dixRegisterPrivateKey(&context->BarrierScreenPrivateKeyRec, PRIVATE_SCREEN, 0, context))
         return FALSE;
 
     for (i = 0; i < context->screenInfo.numScreens; i++) {

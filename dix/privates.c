@@ -241,7 +241,7 @@ fixupExtensions(FixupFunc fixup, unsigned bytes, XephyrContext* context)
     unsigned char major;
     ExtensionEntry *extension;
 
-    for (major = EXTENSION_BASE; (extension = GetExtensionEntry(major));
+    for (major = EXTENSION_BASE; (extension = GetExtensionEntry(major, context));
          major++)
         if (!fixup
             (&extension->devPrivates, global_keys[PRIVATE_EXTENSION].offset, bytes, context))

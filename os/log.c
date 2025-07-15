@@ -874,10 +874,10 @@ AbortServer(XephyrContext* context)
     CloseWellKnownConnections(context);
     OsCleanup(TRUE, context);
     AbortDevices(context);
-    ddxGiveUp(EXIT_ERR_ABORT);
+    ddxGiveUp(EXIT_ERR_ABORT, context);
     fflush(stderr);
     if (context->CoreDump)
-        OsAbort();
+        OsAbort(context);
     exit(1);
 }
 
@@ -1017,7 +1017,7 @@ FatalError(const char *f, XephyrContext* context, ...)
         AbortServer(context);
     }
     else
-        OsAbort();
+        OsAbort(context);
  /*NOTREACHED*/}
 
 void

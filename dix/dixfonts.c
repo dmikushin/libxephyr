@@ -88,7 +88,6 @@ static FontPathElementPtr *slept_fpes = (FontPathElementPtr *) 0;
 static xfont2_pattern_cache_ptr patternCache;
 
 /* Store context for xfont2 callbacks that don't have context parameter */
-static XephyrContext *font_callback_context = NULL;
 
 static int
 FontToXError(int err)
@@ -1809,9 +1808,9 @@ DeleteClientFontStuff(ClientPtr client)
     }
 }
 
-static int
-register_fpe_funcs(const xfont2_fpe_funcs_rec *funcs)
+static int register_fpe_funcs(const xfont2_fpe_funcs_rec *funcs, void *user_data)
 {
+    XephyrContext *context = (XephyrContext *)user_data;
     xfont2_fpe_funcs_rec const **new;
 
     /* grow the list */
@@ -1840,15 +1839,15 @@ get_server_client(void)
     return NULL;
 }
 
-static int
-get_default_point_size(void)
+static int get_default_point_size(void *user_data)
 {
+    XephyrContext *context = (XephyrContext *)user_data;
     return 120;
 }
 
-static FontResolutionPtr
-get_client_resolutions(int *num)
+static FontResolutionPtr get_client_resolutions(int *num, void *user_data)
 {
+    XephyrContext *context = (XephyrContext *)user_data;
     static struct _FontResolution res;
     ScreenPtr pScreen;
 
@@ -1893,55 +1892,50 @@ FreeFonts(void)
 
 /* convenience functions for FS interface */
 
-static FontPtr
-find_old_font(XID id)
+static FontPtr find_old_font(XID id, void *user_data)
 {
     void *pFont;
 
     /* xfont2 callback - no context available, use safe defaults */
-    XephyrContext* ctx = NULL;
-    dixLookupResourceByType(&pFont, id, RT_NONE, ctx ? ctx->serverClient : NULL, DixReadAccess, NULL);
+    XephyrContext *context = (XephyrContext *)user_data;
+    dixLookupResourceByType(&pFont, id, RT_NONE, context ? context->serverClient : NULL, DixReadAccess, NULL);
     return (FontPtr) pFont;
 }
 
-static Font
-get_new_font_client_id(void)
+static Font get_new_font_client_id(void *user_data)
 {
     // TODO: This needs proper context but xfont2 API doesn't support it
     /* xfont2 callback - no context available, use safe defaults */
-    XephyrContext* ctx = NULL;
-    return FakeClientID(0, ctx);
+    XephyrContext *context = (XephyrContext *)user_data;
+    return FakeClientID(0, context);
 }
 
-static int
-store_font_Client_font(FontPtr pfont, Font id)
+static int store_font_Client_font(FontPtr pfont, Font id, void *user_data)
 {
     // TODO: This needs proper context but xfont2 API doesn't support it
     /* xfont2 callback - no context available, use safe defaults */
-    XephyrContext* ctx = NULL;
-    return AddResource(id, RT_NONE, (void *) pfont, ctx);
+    XephyrContext *context = (XephyrContext *)user_data;
+    return AddResource(id, RT_NONE, (void *) pfont, context);
 }
 
-static void
-delete_font_client_id(Font id)
+static void delete_font_client_id(Font id, void *user_data)
 {
     // TODO: This needs proper context but xfont2 API doesn't support it
     /* xfont2 callback - no context available, use safe defaults */
-    XephyrContext* ctx = NULL;
-    FreeResource(id, RT_NONE, ctx);
+    XephyrContext *context = (XephyrContext *)user_data;
+    FreeResource(id, RT_NONE, context);
 }
 
-static void
-xfont2_VErrorF_wrapper(const char *f, va_list args)
+static void xfont2_VErrorF_wrapper(const char *f, va_list args, void *user_data)
 {
     /* xfont2 callback - no context available, use safe defaults */
-    XephyrContext* ctx = NULL;
-    VErrorF(f, args, ctx);
+    XephyrContext *context = (XephyrContext *)user_data;
+    VErrorF(f, args, context);
 }
 
-static int
-_client_auth_generation(ClientPtr client)
+static int _client_auth_generation(ClientPtr client, void *user_data)
 {
+    XephyrContext *context = (XephyrContext *)user_data;
     return 0;
 }
 
@@ -1960,6 +1954,7 @@ struct fs_fd_entry {
     int                         fd;
     void                        *data;
     FontFdHandlerProcPtr        handler;
+    XephyrContext              *context;
 };
 
 static void
@@ -1973,9 +1968,10 @@ fs_fd_handler(int fd, int ready, void *data)
 static struct xorg_list fs_fd_list;
 
 static int
-add_fs_fd(int fd, FontFdHandlerProcPtr handler, void *data)
+add_fs_fd(int fd, FontFdHandlerProcPtr handler, void *data, void *user_data)
 {
     struct fs_fd_entry  *entry = calloc(1, sizeof (struct fs_fd_entry));
+    XephyrContext *context = (XephyrContext *)user_data;
 
     if (!entry)
         return FALSE;
@@ -1983,7 +1979,8 @@ add_fs_fd(int fd, FontFdHandlerProcPtr handler, void *data)
     entry->fd = fd;
     entry->data = data;
     entry->handler = handler;
-    if (!SetNotifyFd(fd, fs_fd_handler, X_NOTIFY_READ, entry, font_callback_context)) {
+    entry->context = context;
+    if (!SetNotifyFd(fd, fs_fd_handler, X_NOTIFY_READ, entry, context)) {
         free(entry);
         return FALSE;
     }
@@ -1992,9 +1989,10 @@ add_fs_fd(int fd, FontFdHandlerProcPtr handler, void *data)
 }
 
 static void
-remove_fs_fd(int fd)
+remove_fs_fd(int fd, void *user_data)
 {
     struct fs_fd_entry  *entry, *temp;
+    XephyrContext *context = (XephyrContext *)user_data;
 
     xorg_list_for_each_entry_safe(entry, temp, &fs_fd_list, entry) {
         if (entry->fd == fd) {
@@ -2003,23 +2001,22 @@ remove_fs_fd(int fd)
             break;
         }
     }
-    RemoveNotifyFd(fd, font_callback_context);
+    RemoveNotifyFd(fd, context);
 }
 
 static void
-adjust_fs_wait_for_delay(void *wt, unsigned long newdelay)
+adjust_fs_wait_for_delay(void *wt, unsigned long newdelay, void *user_data)
 {
     AdjustWaitForDelay(wt, newdelay);
 }
 
 static int
-_init_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handler)
+_init_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handler, void *user_data)
 {
     /* if server has reset, make sure the b&w handlers are reinstalled */
-    /* xfont2 callback - no context available, use safe defaults */
-    XephyrContext* ctx = NULL;
-    if (ctx && last_server_gen < ctx->serverGeneration) {
-        last_server_gen = ctx->serverGeneration;
+    XephyrContext* context = (XephyrContext*)user_data;
+    if (context && last_server_gen < context->serverGeneration) {
+        last_server_gen = context->serverGeneration;
         fs_handlers_installed = 0;
     }
     if (fs_handlers_installed == 0) {
@@ -2035,7 +2032,7 @@ _init_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handler)
 
 static void
 _remove_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handler,
-                    Bool all)
+                    void *user_data, Bool all)
 {
     if (all) {
         /* remove the handlers if no one else is using them */
@@ -2047,8 +2044,9 @@ _remove_fs_handlers(FontPathElementPtr fpe, FontBlockHandlerProcPtr block_handle
     RemoveFontWakeup(fpe);
 }
 
-static uint32_t wrap_time_in_millis(void)
+static uint32_t wrap_time_in_millis(void *user_data)
 {
+    XephyrContext *context = (XephyrContext *)user_data;
     return GetTimeInMillis();
 }
 
@@ -2082,11 +2080,8 @@ static const xfont2_client_funcs_rec xfont2_client_funcs = {
 void
 InitFonts(XephyrContext* context)
 {
-    /* Store context for xfont2 callbacks */
-    font_callback_context = context;
-    
     if (context->fontPatternCache)
 	xfont2_free_font_pattern_cache(context->fontPatternCache);
     context->fontPatternCache = xfont2_make_font_pattern_cache();
-    xfont2_init(&xfont2_client_funcs);
+    xfont2_init(&xfont2_client_funcs, context);
 }

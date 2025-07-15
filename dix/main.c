@@ -295,7 +295,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         if (screenIsSaved == SCREEN_SAVER_ON)
             dixSaveScreens(context->serverClient, SCREEN_SAVER_OFF, ScreenSaverReset);
         FreeScreenSaverTimer();
-        CloseDownExtensions();
+        CloseDownExtensions(context);
 
 #ifdef PANORAMIX
         {
@@ -364,7 +364,7 @@ dix_main(int argc, char *argv[], char *envp[], XephyrContext* context)
         OsCleanup((context->dispatchException & DE_TERMINATE) != 0, context);
 
         if (context->dispatchException & DE_TERMINATE) {
-            ddxGiveUp(EXIT_NO_ERROR);
+            ddxGiveUp(EXIT_NO_ERROR, context);
             break;
         }
 

@@ -297,7 +297,7 @@ EnableDisableExtensionError(const char *name, Bool enable, XephyrContext* contex
     ListStaticExtensions(context);
 }
 
-static ExtensionModule *ExtensionModuleList = NULL;
+// REMOVED: static ExtensionModule *context->ExtensionModuleList = NULL; - moved to XephyrContext
 static int numExtensionModules = 0;
 
 static void
@@ -394,7 +394,7 @@ InitExtensions(int argc, char *argv[], XephyrContext* context)
     AddStaticExtensions(context);
 
     for (i = 0; i < numExtensionModules; i++) {
-        ext = &ExtensionModuleList[i];
+        ext = &context->ExtensionModuleList[i];
         if (ext->initFunc != NULL &&
             (ext->disablePtr == NULL || !*ext->disablePtr)) {
             LogMessageVerb(X_INFO, 3, "Initializing extension %s\n", context,
@@ -406,25 +406,25 @@ InitExtensions(int argc, char *argv[], XephyrContext* context)
 }
 
 static ExtensionModule *
-NewExtensionModuleList(int size)
+NewExtensionModuleList(int size, XephyrContext* context)
 {
-    ExtensionModule *save = ExtensionModuleList;
+    ExtensionModule *save = context->ExtensionModuleList;
     int n;
 
     /* Sanity check */
-    if (!ExtensionModuleList)
+    if (!context->ExtensionModuleList)
         numExtensionModules = 0;
 
     n = numExtensionModules + size;
-    ExtensionModuleList = reallocarray(ExtensionModuleList, n,
+    context->ExtensionModuleList = reallocarray(context->ExtensionModuleList, n,
                                        sizeof(ExtensionModule));
-    if (ExtensionModuleList == NULL) {
-        ExtensionModuleList = save;
+    if (context->ExtensionModuleList == NULL) {
+        context->ExtensionModuleList = save;
         return NULL;
     }
     else {
         numExtensionModules += size;
-        return ExtensionModuleList + (numExtensionModules - size);
+        return context->ExtensionModuleList + (numExtensionModules - size);
     }
 }
 
@@ -438,7 +438,7 @@ LoadExtensionList(const ExtensionModule ext[], int size, Bool builtin, XephyrCon
      * in modules. */
     AddStaticExtensions(context);
 
-    if (!(newext = NewExtensionModuleList(size)))
+    if (!(newext = NewExtensionModuleList(size, context)))
         return;
 
     for (i = 0; i < size; i++, newext++) {

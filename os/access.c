@@ -208,7 +208,7 @@ static Bool NewHost(int /*family */ ,
 
 /* XFree86 bug #156: To keep track of which hosts were explicitly requested in
    /etc/X<context->display>.hosts, we've added a requested field to the HOST struct,
-   and a LocalHostRequested variable.  These default to FALSE, but are set
+   and a context->LocalHostRequested variable.  These default to FALSE, but are set
    to TRUE in ResetHosts when reading in /etc/X<context->display>.hosts.  They are
    checked in DisableLocalHost(), which is called to disable the default
    local host entries when stronger authentication is turned on. */
@@ -230,16 +230,16 @@ typedef struct _host {
 static HOST *selfhosts = NULL;
 static HOST *validhosts = NULL;
 static int AccessEnabled = TRUE;
-static int LocalHostEnabled = FALSE;
-static int LocalHostRequested = FALSE;
+/* static int context->LocalHostEnabled = FALSE; */
+/* static int context->LocalHostRequested = FALSE; */
 static int UsingXdmcp = FALSE;
 
-static enum {
+/* static enum {
     LOCAL_ACCESS_SCOPE_HOST = 0,
 #ifndef NO_LOCAL_CLIENT_CRED
     LOCAL_ACCESS_SCOPE_USER,
 #endif
-} LocalAccessScope;
+} context->LocalAccessScope; */
 
 /* FamilyServerInterpreted implementation */
 static Bool siAddrMatch(int family, void *addr, int len, HOST * host,
@@ -253,26 +253,26 @@ static void siTypesInitialize(void);
  */
 
 void
-EnableLocalAccess(void)
+EnableLocalAccess(XephyrContext* context)
 {
-    switch (LocalAccessScope) {
+    switch (context->LocalAccessScope) {
         case LOCAL_ACCESS_SCOPE_HOST:
-            EnableLocalHost();
+            EnableLocalHost(context);
             break;
 #ifndef NO_LOCAL_CLIENT_CRED
         case LOCAL_ACCESS_SCOPE_USER:
-            EnableLocalUser();
+            EnableLocalUser(context);
             break;
 #endif
     }
 }
 
 void
-EnableLocalHost(void)
+EnableLocalHost(XephyrContext* context)
 {
     if (!UsingXdmcp) {
-        LocalHostEnabled = TRUE;
-        AddLocalHosts();
+        context->LocalHostEnabled = TRUE;
+        AddLocalHosts(context);
     }
 }
 
@@ -280,27 +280,27 @@ EnableLocalHost(void)
  * called when authorization is enabled to keep us secure
  */
 void
-DisableLocalAccess(void)
+DisableLocalAccess(XephyrContext* context)
 {
-    switch (LocalAccessScope) {
+    switch (context->LocalAccessScope) {
         case LOCAL_ACCESS_SCOPE_HOST:
-            DisableLocalHost();
+            DisableLocalHost(context);
             break;
 #ifndef NO_LOCAL_CLIENT_CRED
         case LOCAL_ACCESS_SCOPE_USER:
-            DisableLocalUser();
+            DisableLocalUser(context);
             break;
 #endif
     }
 }
 
 void
-DisableLocalHost(void)
+DisableLocalHost(XephyrContext* context)
 {
     HOST *self;
 
-    if (!LocalHostRequested)    /* Fix for XFree86 bug #156 */
-        LocalHostEnabled = FALSE;
+    if (!context->LocalHostRequested)    /* Fix for XFree86 bug #156 */
+        context->LocalHostEnabled = FALSE;
     for (self = selfhosts; self; self = self->next) {
         if (!self->requested)   /* Fix for XFree86 bug #156 */
             (void) RemoveHost((ClientPtr) NULL, self->family, self->len,
@@ -338,7 +338,7 @@ out:
 }
 
 void
-EnableLocalUser(void)
+EnableLocalUser(XephyrContext* context)
 {
     char *addr = NULL;
     int length = -1;
@@ -354,7 +354,7 @@ EnableLocalUser(void)
 }
 
 void
-DisableLocalUser(void)
+DisableLocalUser(XephyrContext* context)
 {
     char *addr = NULL;
     int length = -1;
@@ -370,9 +370,9 @@ DisableLocalUser(void)
 }
 
 void
-LocalAccessScopeUser(void)
+LocalAccessScopeUser(XephyrContext* context)
 {
-    LocalAccessScope = LOCAL_ACCESS_SCOPE_USER;
+    context->LocalAccessScope = LOCAL_ACCESS_SCOPE_USER;
 }
 #endif
 
@@ -382,10 +382,10 @@ LocalAccessScopeUser(void)
  */
 
 void
-AccessUsingXdmcp(void)
+AccessUsingXdmcp(XephyrContext* context)
 {
     UsingXdmcp = TRUE;
-    LocalHostEnabled = FALSE;
+    context->LocalHostEnabled = FALSE;
 }
 
 #if  defined(SVR4) && !defined(__sun)  && defined(SIOCGIFCONF) && !defined(USE_SIOCGLIFCONF)
@@ -914,7 +914,7 @@ AugmentSelf(void *from, int len)
 #endif
 
 void
-AddLocalHosts(void)
+AddLocalHosts(XephyrContext* context)
 {
     HOST *self;
 
@@ -953,7 +953,7 @@ ResetHosts(const char *display, XephyrContext* context)
 
     siTypesInitialize();
     AccessEnabled = !context->defeatAccessControl;
-    LocalHostEnabled = FALSE;
+    context->LocalHostEnabled = FALSE;
     while ((host = validhosts) != 0) {
         validhosts = host->next;
         FreeHost(host);
@@ -986,7 +986,7 @@ ResetHosts(const char *display, XephyrContext* context)
             if (!strncmp("local:", lhostname, 6)) {
                 family = FamilyLocalHost;
                 NewHost(family, "", 0, FALSE);
-                LocalHostRequested = TRUE;      /* Fix for XFree86 bug #156 */
+                context->LocalHostRequested = TRUE;      /* Fix for XFree86 bug #156 */
             }
 #if defined(TCPCONN)
             else if (!strncmp("inet:", lhostname, 5)) {
@@ -1305,7 +1305,7 @@ AddHost(ClientPtr client, int family, unsigned length,  /* of bytes in pAddr */
     switch (family) {
     case FamilyLocalHost:
         len = length;
-        LocalHostEnabled = TRUE;
+        client->context->LocalHostEnabled = TRUE;
         break;
 #ifdef SECURE_RPC
     case FamilyNetname:
@@ -1394,7 +1394,7 @@ RemoveHost(ClientPtr client, int family, unsigned length,       /* of bytes in p
     switch (family) {
     case FamilyLocalHost:
         len = length;
-        LocalHostEnabled = FALSE;
+        client->context->LocalHostEnabled = FALSE;
         break;
 #ifdef SECURE_RPC
     case FamilyNetname:
@@ -1520,7 +1520,7 @@ InvalidHost(register struct sockaddr *saddr, int len, ClientPtr client)
     if (family == -1)
         return 1;
     if (family == FamilyLocal) {
-        if (!LocalHostEnabled) {
+        if (!client->context->LocalHostEnabled) {
             /*
              * check to see if any local address is enabled.  This
              * implicitly enables local connections.

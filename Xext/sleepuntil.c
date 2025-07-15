@@ -55,7 +55,7 @@ typedef struct _Sertafied {
 
 static SertafiedPtr pPending;
 static RESTYPE SertafiedResType;
-static Bool BlockHandlerRegistered;
+// static Bool BlockHandlerRegistered; // Moved to XephyrContext
 static int SertafiedGeneration;
 
 static void ClientAwaken(ClientPtr /* client */ ,
@@ -84,7 +84,7 @@ ClientSleepUntil(ClientPtr client,
         if (!SertafiedResType)
             return FALSE;
         SertafiedGeneration = client->context->serverGeneration;
-        BlockHandlerRegistered = FALSE;
+        client->context->BlockHandlerRegistered = FALSE;
     }
     pRequest = malloc(sizeof(SertafiedRec));
     if (!pRequest)
@@ -93,14 +93,14 @@ ClientSleepUntil(ClientPtr client,
     pRequest->revive = *revive;
     pRequest->id = FakeClientID(client->index, client->context);
     pRequest->closure = closure;
-    if (!BlockHandlerRegistered) {
+    if (!client->context->BlockHandlerRegistered) {
         if (!RegisterBlockAndWakeupHandlers(SertafiedBlockHandler,
                                             SertafiedWakeupHandler,
-                                            (void *) 0)) {
+                                            client->context)) {
             free(pRequest);
             return FALSE;
         }
-        BlockHandlerRegistered = TRUE;
+        client->context->BlockHandlerRegistered = TRUE;
     }
     pRequest->notifyFunc = 0;
     if (!AddResource(pRequest->id, SertafiedResType, (void *) pRequest, client->context))
@@ -200,8 +200,9 @@ SertafiedWakeupHandler(void *data, int i)
         FreeResource(pReq->id, RT_NONE, pReq->pClient->context);
     }
     if (!pPending) {
+        XephyrContext *context = (XephyrContext *)data;
         RemoveBlockAndWakeupHandlers(SertafiedBlockHandler,
-                                     SertafiedWakeupHandler, (void *) 0);
-        BlockHandlerRegistered = FALSE;
+                                     SertafiedWakeupHandler, context);
+        context->BlockHandlerRegistered = FALSE;
     }
 }

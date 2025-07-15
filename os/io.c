@@ -104,7 +104,7 @@ static Bool CriticalOutputPending;
 static int timesThisConnection = 0;
 static ConnectionInputPtr FreeInputs = (ConnectionInputPtr) NULL;
 static ConnectionOutputPtr FreeOutputs = (ConnectionOutputPtr) NULL;
-static OsCommPtr AvailableInput = (OsCommPtr) NULL;
+/* static OsCommPtr AvailableInput = (OsCommPtr) NULL; */ /* Now in XephyrContext */
 
 #define get_req_len(req,cli) ((cli)->swapped ? \
 			      bswap_16((req)->length) : (req)->length)
@@ -202,11 +202,11 @@ YieldControlDeath(void)
  * memory.
  */
 static void
-NextAvailableInput(OsCommPtr oc)
+NextAvailableInput(OsCommPtr oc, XephyrContext* context)
 {
-    if (AvailableInput) {
-        if (AvailableInput != oc) {
-            ConnectionInputPtr aci = AvailableInput->input;
+    if (context->AvailableInput) {
+        if (context->AvailableInput != oc) {
+            ConnectionInputPtr aci = context->AvailableInput->input;
 
             if (aci->size > BUFWATERMARK) {
                 free(aci->buffer);
@@ -216,9 +216,9 @@ NextAvailableInput(OsCommPtr oc)
                 aci->next = FreeInputs;
                 FreeInputs = aci;
             }
-            AvailableInput->input = NULL;
+            context->AvailableInput->input = NULL;
         }
-        AvailableInput = NULL;
+        context->AvailableInput = NULL;
     }
 }
 
@@ -233,7 +233,7 @@ ReadRequestFromClient(ClientPtr client)
     Bool need_header;
     Bool move_header;
 
-    NextAvailableInput(oc);
+    NextAvailableInput(oc, client->context);
 
     /* make sure we have an input buffer */
 
@@ -438,7 +438,7 @@ ReadRequestFromClient(ClientPtr client)
 
     gotnow -= needed;
     if (!gotnow)
-        AvailableInput = oc;
+        client->context->AvailableInput = oc;
     if (move_header) {
         if (client->req_len < bytes_to_int32(sizeof(xBigReq) - sizeof(xReq))) {
             YieldControlDeath();
@@ -506,7 +506,7 @@ InsertFakeRequest(ClientPtr client, char *data, int count)
     ConnectionInputPtr oci = oc->input;
     int gotnow, moveup;
 
-    NextAvailableInput(oc);
+    NextAvailableInput(oc, client->context);
 
     if (!oci) {
         if ((oci = FreeInputs))
@@ -565,8 +565,8 @@ ResetCurrentRequest(ClientPtr client)
     register xReq *request;
     int gotnow, needed;
 
-    if (AvailableInput == oc)
-        AvailableInput = (OsCommPtr) NULL;
+    if (client->context->AvailableInput == oc)
+        client->context->AvailableInput = (OsCommPtr) NULL;
     oci->lenLastReq = 0;
     gotnow = oci->bufcnt + oci->buffer - oci->bufptr;
     if (gotnow < sizeof(xReq)) {
@@ -1023,13 +1023,13 @@ AllocateOutputBuffer(void)
 }
 
 void
-FreeOsBuffers(OsCommPtr oc)
+FreeOsBuffers(OsCommPtr oc, XephyrContext* context)
 {
     ConnectionInputPtr oci;
     ConnectionOutputPtr oco;
 
-    if (AvailableInput == oc)
-        AvailableInput = (OsCommPtr) NULL;
+    if (context->AvailableInput == oc)
+        context->AvailableInput = (OsCommPtr) NULL;
     if ((oci = oc->input)) {
         if (FreeInputs) {
             free(oci->buffer);
